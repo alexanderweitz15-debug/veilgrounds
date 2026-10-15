@@ -1,5 +1,17 @@
 # Roadmap (Stand 2026-10-15)
 
+## Status pro Phase (2026-10-15, nach Bot-Prototyp)
+| Phase | Stand | Erledigt | Offen |
+|---|---|---|---|
+| 1 Simulation + 1 Champion | abgeschlossen | Map, Grid-Pathing, Wellen/Aggro, Türme/Platten, Gold/XP, Kamera/Steuerung/HUD, Mira, Puppe; Abnahme: 107 Minions bis 10:00, Turmschüsse exakt, Replay bit-identisch | – |
+| 2 Champions, Items, Prägungen, Zauber | ~80 % → **läuft (Agents I, J)** | 26 Champions inkl. Hooks, Engine, Shop + Item-Stats, Prägungs-Presets, Flash/Heilen/Geist/Entflammen/Bannen | Item-Passiva/Aktive, Prägungs-Effekte, Erschöpfen/Reinigen/Teleport, Wards/Trinkets, Combo-Abnahme, Telegraph-Audit, Champion-Sprites |
+| 3 Bots Gold | ~30 % | Bot-Prototyp (grobe Logik), Jungle-Camps/Objectives, 5v5-Lobby, bot-sim | Team-KI, Vision/Wards-Nutzung, F9-Overlay, Behavior Trees als JSON, Influence Map, Kalibrierung (CS/min ~3–5 statt 6,8) |
+| 4 Ränge + Humanisierung | ~15 % | Rangprofile, Reaktionszeiten, Varianz, Spielstile, Namen/Chat-Daten | Kalibrierung je Rang, Tilt, Pings/Chat, Siegquoten |
+| 5 Trainer | ~10 % | Sandbox-Cheats, Lane-Übung mit allen Champions | Dodge-/Last-Hit-/Kiting-/Combo-Trainer, Post-Game, Trainingsplan |
+| 6 Politur | ~15 % | Menüs, Enzyklopädie, prozeduraler Sound, Vollbild-Tastensperre, Stil-Labor (läuft) | Art-Pass, Barrierefreiheit, PWA, Performance, Szenarien, Challenger-Geist |
+
+Nutzer-Entscheidung 2026-10-15: zuerst **Phase 2 abschließen**.
+
 ## Umpriorisierung durch den Nutzer (2026-10-15)
 Der Nutzer will zuerst einen **funktionierenden Prototypen: 5v5 gegen Bots**. Deshalb werden die Bots vorgezogen –
 zunächst nur mit **grober Logik**. Die volle Rang-Simulation aus Spec §7/§8 folgt danach.

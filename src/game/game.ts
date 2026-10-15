@@ -203,6 +203,8 @@ export class Game {
   }
 
   private openMenu(): void {
+    // Esc closes an open shop first (LoL behaviour), only then the menu
+    if (this.hud.isPanelOpen('shop')) return this.hud.togglePanel('shop', false);
     this.menu.textContent = '';
     const box = document.createElement('div');
     box.className = 'menu-panel classic-panel settings-panel ingame-panel';

@@ -126,6 +126,7 @@
 .score-table .gold-cell { color: #ffd24a; }
 .mini-item { display: inline-block; min-width: 24px; padding: 1px 2px; margin-right: 2px; font-size: 10px; text-align: center; border: 1px solid #4d4233; background: #15120f; color: #f1e6c8; }
 .mini-item.empty { opacity: 0.3; }
+.mini-item.has-icon { width: 22px; height: 22px; min-width: 0; padding: 0; vertical-align: middle; box-sizing: border-box; }
 .practice-panel { width: min(980px, 100%); }
 .practice-panel .champ-grid { margin-bottom: 8px; }
 .practice-info { font-size: 13.5px; color: var(--text-dim, #a09b8c); line-height: 1.45; }

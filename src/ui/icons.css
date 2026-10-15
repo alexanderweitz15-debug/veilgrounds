@@ -1,0 +1,15 @@
+/* Procedural icons (src/ui/icons.ts) + compact shop layout (fits 1280x720 without scrolling). */
+.slot .icon.has-icon,
+.item .abbr.has-icon { background-size: cover; background-position: center; border-radius: 3px; }
+.item .abbr.has-icon { inset: 1px; }
+.item.trinket .abbr.has-icon { border-radius: 50%; }
+
+.shop-list { display: flex; flex-wrap: wrap; align-content: flex-start; column-gap: 14px; row-gap: 2px; }
+.shop-sec { display: flex; flex-direction: column; }
+.shop-item { width: 38px; height: 46px; gap: 1px; padding: 1px; }
+.shop-item .item-icon { width: 30px; height: 30px; flex: none; border-radius: 2px; background-size: cover; }
+.shop-item .price { font-size: 10px; line-height: 1; }
+.shop-body { grid-template-columns: 1fr 220px; }
+.shop-slot .item-icon { width: 30px; height: 30px; border-radius: 2px; background-size: cover; }
+.shop-slot { min-width: 56px; }
+.shop-tier { margin: 4px 0 2px; }

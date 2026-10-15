@@ -8,8 +8,11 @@ import type { Rank } from '../ai/profiles/schema';
 /** Champion id of Mira Quell (src/data/champions/mira.json). */
 export const MIRA_ID = 'mira';
 
-/** In front of the blue fountain (r=650 at 900,900), out of nexus-tower reach (2350,1950 / 1950,2350). */
-export const SANDBOX_DUMMY = { x: 1700, y: 1000 } as const;
+/**
+ * Beside the blue fountain (r=650 at 900,900): >= 1100 from every blue lane path (minions acquire at 500 + spread, so
+ * the own waves no longer stop to hit it at the base) and ~1500 from the nearest blue tower (nexus towers included).
+ */
+export const SANDBOX_DUMMY = { x: 1700, y: 600 } as const;
 
 export type ModeId = 'lane' | 'sandbox' | 'mock';
 

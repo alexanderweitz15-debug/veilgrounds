@@ -179,6 +179,30 @@ function hash01(s: string, salt: number): number {
 
 const WAVES: OscillatorType[] = ['sine', 'triangle', 'square', 'sawtooth'];
 
+export type AnnounceTone = 'good' | 'bad' | 'neutral' | 'epic' | 'victory' | 'defeat';
+
+/** Announcer banner cue (no voice): a short brass-like motif; rising for good news, falling for bad news. */
+export function playAnnounce(kind: AnnounceTone): void {
+  const v = voice(undefined, undefined, 0.9);
+  if (!v) return;
+  const notes: Record<AnnounceTone, number[]> = {
+    good: [392, 523, 659],
+    bad: [440, 349, 262],
+    neutral: [523, 523, 659],
+    epic: [196, 294, 392, 587],
+    victory: [392, 523, 659, 784, 1047],
+    defeat: [392, 330, 262, 196],
+  };
+  const step = kind === 'victory' || kind === 'defeat' ? 0.16 : 0.11;
+  const sag = kind === 'bad' || kind === 'defeat' ? 0.98 : 1;
+  notes[kind].forEach((f, i) => {
+    const vv = { out: v.out, t: v.t + i * step };
+    tone(vv, 'sawtooth', f, f * sag, 0.28, 0.07, 0.02);
+    tone(vv, 'triangle', f * 2, f * 2 * sag, 0.24, 0.05, 0.02);
+  });
+  if (kind === 'epic' || kind === 'victory') noise(v, 0.5, 300, 0.7, 0.18, 'lowpass');
+}
+
 /** Distinct cast cue per ability id; shape follows the ability type (line = rising whoosh, circle = drop, ...). */
 export function playCast(abilityId: string, type: string, x?: number, y?: number, ultimate = false): void {
   const v = voice(x, y, ultimate ? 1 : 0.85);

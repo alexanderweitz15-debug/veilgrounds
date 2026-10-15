@@ -5,7 +5,6 @@ import type { ClientState } from '../game/state';
 import type { AbilityHud } from '../sim/systems/abilities';
 import { Kind, type SimEvent } from '../sim/types';
 import { t } from '../i18n';
-import { settings } from '../settings';
 import { keyLabel, binds, type Action } from '../input/keybinds';
 import { abilityInfo, champName, summonerName } from './names';
 import type { Panel, Armed } from '../input/controller';
@@ -15,6 +14,9 @@ import { ShopPanel, itemAbbr, itemTooltip } from './shop';
 import { Scoreboard } from './scoreboard';
 import { BotDebugPanel } from './botDebug';
 import { setPortrait } from '../render/portraits';
+import { Announcer } from './announce';
+import { DeathRecap } from './deathRecap';
+import { abilityIcon, itemIcon, setIcon, summonerIcon } from './icons';
 
 const KILLFEED_MS = 9000;
 
@@ -100,7 +102,12 @@ export class Hud {
   private trinketKey = '';
   private trinketSwap: 'schleierward' | 'suchfeuer' | null = null;
 
-  constructor(hooks: HudHooks, sandbox: boolean, players: readonly PlayerSetup[] = []) {
+  private readonly announcer: Announcer;
+  private readonly recap: DeathRecap;
+  private readonly respawnNum: HTMLElement;
+  private lvlTimer = 0;
+
+  constructor(hooks: HudHooks, sandbox: boolean, players: readonly PlayerSetup[] = [], mode?: string) {
     const r = this.root;
     // ---- top bar
     const top = el('div', 'hud-top', r);
@@ -171,6 +178,10 @@ export class Hud {
 
     // ---- centre overlays
     this.respawn = el('div', 'respawn', r);
+    el('div', 'lbl', this.respawn, t('hud.respawnLbl'));
+    this.respawnNum = el('div', 'num', this.respawn);
+    this.recap = new DeathRecap(r);
+    this.announcer = new Announcer(r, mode);
     this.recall = el('div', 'recall', r);
     el('div', 'lbl', this.recall);
     this.recallFill = el('div', 'fill', el('div', 'track', this.recall));
@@ -218,7 +229,8 @@ export class Hud {
   }
 
   applyScale(): void {
-    this.root.style.setProperty('--ui', String(settings.uiScale / 100));
+    // --ui lives on <html> (src/ui/display.ts) so chat, trainer panels and menus scale too
+    this.root.style.removeProperty('--ui');
   }
 
   togglePanel(p: Panel, on?: boolean): void {
@@ -242,6 +254,14 @@ export class Hud {
   }
 
   onEvent(ev: SimEvent, state: ClientState, now: number): void {
+    this.announcer.onEvent(ev, state);
+    this.recap.onEvent(ev, state);
+    if (ev.e === 'level' && ev.eid === state.snap?.me?.eid) {
+      // level-up: the '+' buttons glow brighter for a moment
+      toggle(this.root, 'lvlup', true);
+      clearTimeout(this.lvlTimer);
+      this.lvlTimer = window.setTimeout(() => toggle(this.root, 'lvlup', false), 2500);
+    }
     if (ev.e === 'ping') {
       const who = [...state.byId.values()].find((e) => e.kind === Kind.Champion && e.slot === ev.slot);
       const node = el('div', 'entry ping', this.feed, `${champName(who?.champ ?? null)}: ${t(`ping.${ev.kind}`)}`);
@@ -267,6 +287,7 @@ export class Hud {
     const snap = state.snap;
     // kill feed expiry
     while (this.feedEntries.length && now - this.feedEntries[0]!.at > KILLFEED_MS) this.feedEntries.shift()!.node.remove();
+    this.announcer.update(state, now);
     toggle(this.pause, 'open', state.paused);
     if (state.winner !== null) {
       toggle(this.over, 'open', true);
@@ -305,11 +326,13 @@ export class Hud {
     this.drawTrinket(me.trinket);
     if (this.panels.shop.classList.contains('open')) this.shop.update(me);
     if (meE) {
-      const total = Math.max(meE.maxHp, meE.hp + meE.shield) || 1;
-      setStyle(this.hpFill, 'width', `${(100 * meE.hp) / total}%`);
-      setStyle(this.shieldFill, 'left', `${(100 * meE.hp) / total}%`);
+      // dead: hp can be <= 0 (a negative width is invalid CSS and would keep the last green rest)
+      const hp = me.dead ? 0 : Math.max(0, meE.hp);
+      const total = Math.max(meE.maxHp, hp + meE.shield) || 1;
+      setStyle(this.hpFill, 'width', `${(100 * hp) / total}%`);
+      setStyle(this.shieldFill, 'left', `${(100 * hp) / total}%`);
       setStyle(this.shieldFill, 'width', `${(100 * meE.shield) / total}%`);
-      setText(this.hpText, `${Math.ceil(meE.hp)} / ${Math.round(meE.maxHp)}`);
+      setText(this.hpText, `${Math.ceil(hp)} / ${Math.round(meE.maxHp)}`);
       setStyle(this.mpFill, 'width', `${meE.maxMana ? (100 * meE.mana) / meE.maxMana : 0}%`);
       setText(this.mpText, meE.maxMana ? `${Math.floor(meE.mana)} / ${Math.round(meE.maxMana)}` : '');
     }
@@ -317,7 +340,8 @@ export class Hud {
     // respawn + recall
     toggle(this.respawn, 'open', me.dead);
     toggle(this.root, 'dead', me.dead);
-    if (me.dead) setText(this.respawn, t('hud.respawn', { s: Math.ceil(me.respawnIn) }));
+    if (me.dead) setText(this.respawnNum, String(Math.ceil(me.respawnIn)));
+    this.recap.update(me.dead);
     const tp = me.teleportLeft ?? 0; // Teleport channel reuses the recall bar (4 s)
     toggle(this.recall, 'open', me.recallLeft > 0 || tp > 0);
     if (tp > 0) {
@@ -337,7 +361,10 @@ export class Hud {
     this.items.forEach((s, i) => {
       if (i === 6) return; // trinket slot: drawTrinket
       const id = items[i] ?? null;
-      setText(s.firstElementChild as HTMLElement, id ? itemAbbr(id) : '');
+      const ab = s.firstElementChild as HTMLElement;
+      const icon = id ? itemIcon(id) : null;
+      setIcon(ab, icon);
+      setText(ab, id && !icon ? itemAbbr(id) : '');
       toggle(s, 'filled', !!id);
       s.title = id ? itemTooltip(id) : '';
     });
@@ -383,8 +410,10 @@ ${t(`trinket.${tr.id}.desc`)}${tr.cdLeft > 0 ? ` (${Math.ceil(tr.cdLeft)} s)` : 
       }
       const isSumm = i >= 4;
       const info = isSumm ? { name: summonerName(a.id), desc: '' } : abilityInfo(this.champ, i, a.id);
-      const label = info.name.slice(0, isSumm ? 2 : 3);
-      setText(s.icon, label);
+      // procedural icon (src/ui/icons.ts); the short name stays as fallback
+      const icon = isSumm ? summonerIcon(a.id) : abilityIcon(this.champ, i);
+      setIcon(s.icon, icon);
+      setText(s.icon, icon ? '' : info.name.slice(0, isSumm ? 2 : 3));
       const title = info.desc ? `${info.name}\n${info.desc}` : info.name;
       if (s.root.title !== title) s.root.title = title;
       const ready = a.cdLeft <= 0.05;

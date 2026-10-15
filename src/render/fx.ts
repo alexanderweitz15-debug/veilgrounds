@@ -10,6 +10,7 @@ import type { SimEvent } from '../sim/types';
 import type { AbilityData } from '../sim/champions/schema';
 import { champions } from '../data/champions';
 import { REL } from './palette';
+import { settings } from '../settings';
 import { castDir, castTelegraph, hitboxAbility, lineZone, windupTicks, zoneProgress, type CastTelegraph, type CircleShape, type LineShape, type Shape } from './telegraph';
 
 const MAX_PROJ = 160;
@@ -30,6 +31,35 @@ interface Pulse {
 }
 
 type ZoneEvent = Extract<SimEvent, { e: 'zone' }>;
+
+/** Vertical light column (level-up, recall): open cylinder 0..1 high, alpha fading to the top. */
+let columnGeo: THREE.BufferGeometry | null = null;
+let columnAlpha: THREE.Texture | null = null;
+function columnMat(color: string): THREE.MeshBasicMaterial {
+  if (!columnAlpha && typeof document !== 'undefined') {
+    const c = document.createElement('canvas');
+    c.width = 4;
+    c.height = 64;
+    const g = c.getContext('2d')!;
+    const gr = g.createLinearGradient(0, 0, 0, 64);
+    gr.addColorStop(0, '#000');
+    gr.addColorStop(0.55, '#666');
+    gr.addColorStop(1, '#fff');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, 4, 64);
+    columnAlpha = new THREE.CanvasTexture(c);
+  }
+  return new THREE.MeshBasicMaterial({ color, alphaMap: columnAlpha ?? null, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+}
+function columnMesh(color: string): THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial> {
+  columnGeo ??= new THREE.CylinderGeometry(1, 1, 1, 24, 1, true).translate(0, 0.5, 0);
+  const m = new THREE.Mesh(columnGeo, columnMat(color));
+  m.visible = false;
+  m.renderOrder = 4;
+  return m;
+}
+
+const LEVEL_MS = 1300;
 
 const flatRing = new THREE.RingGeometry(0.9, 1, 48).rotateX(-Math.PI / 2);
 const flatDisc = new THREE.CircleGeometry(1, 64).rotateX(-Math.PI / 2);
@@ -214,6 +244,13 @@ export class Fx {
   private readonly c = new THREE.Color();
   private readonly axis = new THREE.Vector3(1, 0, 0);
   private readonly dir = new THREE.Vector3();
+  /** Level-up light columns following their champion. */
+  private readonly levelCols: { mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>; eid: number; t0: number; active: boolean }[] = [];
+  /** Own recall / teleport channel: ground ring (progress arc) + soft column. */
+  private readonly chanRing = new THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>(flatRing, groundMat('#4f8dff', 0.6));
+  private readonly chanArc = new THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>(flatRing, groundMat('#c49bff', 1));
+  /** Created on first use (no DOM canvas needed by headless tests that build an Fx). */
+  private chanCol: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial> | null = null;
 
   constructor() {
     const g = new THREE.IcosahedronGeometry(1, 1);
@@ -230,6 +267,24 @@ export class Fx {
     this.range = new THREE.Mesh(new THREE.RingGeometry(0.985, 1, 96).rotateX(-Math.PI / 2), groundMat('#f2e7b6', 0.7));
     this.range.visible = false;
     this.group.add(this.range);
+    this.chanRing.renderOrder = this.chanArc.renderOrder = 3;
+    this.chanRing.visible = this.chanArc.visible = false;
+    this.group.add(this.chanRing, this.chanArc);
+  }
+
+  /** Level-up: golden ring burst + rising light column at the champion. */
+  private levelUp(eid: number, x: number, y: number, now: number): void {
+    this.pulse(x, y, '#ffd75a', 40, 230, 700, now, false, 0.95);
+    if (settings.reduceMotion) return;
+    this.pulse(x, y, '#fff1b8', 20, 150, 500, now, true, 0.35);
+    let c = this.levelCols.find((q) => !q.active);
+    if (!c) {
+      c = { mesh: columnMesh('#ffd36a'), eid: 0, t0: 0, active: false };
+      this.group.add(c.mesh);
+      this.levelCols.push(c);
+    }
+    Object.assign(c, { eid, t0: now, active: true });
+    c.mesh.visible = true;
   }
 
   private pulse(x: number, y: number, color: string, r0: number, r1: number, dur: number, now: number, disc = false, a0 = 0.9): void {
@@ -250,7 +305,7 @@ export class Fx {
 
   /** Click feedback for move / attack commands. */
   clickMarker(x: number, y: number, attack: boolean, now: number): void {
-    this.pulse(x, y, attack ? '#ff5a3c' : '#7dff8a', 90, 20, 380, now);
+    this.pulse(x, y, attack ? REL.attackClick : REL.moveClick, 90, 20, 380, now);
   }
 
   onEvent(ev: SimEvent, state: ClientState, now: number): void {
@@ -261,13 +316,18 @@ export class Fx {
       case 'cast': {
         const src = state.byId.get(ev.src);
         if (!src) break;
-        this.pulse(src.x, src.y, src.team === state.myTeam ? REL.ownShot : REL.enemyShot, 40, 160, 300, now);
+        if (!settings.reduceMotion) this.pulse(src.x, src.y, src.team === state.myTeam ? REL.ownShot : REL.enemyShot, 40, 160, 300, now);
         if (!ev.recast) this.addPreview(ev, state);
         break;
       }
       case 'death':
-        this.pulse(ev.x, ev.y, '#c8c4bc', 30, 140, 600, now, true, 0.5);
+        if (!settings.reduceMotion) this.pulse(ev.x, ev.y, '#c8c4bc', 30, 140, 600, now, true, 0.5);
         break;
+      case 'level': {
+        const e = state.byId.get(ev.eid);
+        if (e?.alive) this.levelUp(ev.eid, e.x, e.y, now);
+        break;
+      }
     }
   }
 
@@ -321,6 +381,9 @@ export class Fx {
     // fractional sim tick of the displayed state (snapshot tick = sim tick + 1)
     const tick = snap ? snap.tick - 1 + state.alpha : 0;
     const ownCol = (team: number): string => (team === state.myTeam ? REL.ownShot : REL.enemyShot);
+    // resolve flash strength (reduce motion: softer, no bright fill burst)
+    const flashFill = settings.reduceMotion ? 0.3 : 0.55;
+    const zoneBurst = settings.reduceMotion ? 0.36 : 0.6;
 
     // projectiles + in-flight strips of line skillshots (exact width, to the end of range)
     let n = 0;
@@ -352,7 +415,7 @@ export class Fx {
         this.s.set(homing ? w * 1.8 : w * 2.6, w * 0.7, w * 0.7);
         this.m.compose(this.p, this.q, this.s);
         this.proj.setMatrixAt(n, this.m);
-        this.c.set(homing ? (own ? '#bfe4ff' : '#ffc29a') : own ? REL.ownShot : REL.enemyShot);
+        this.c.set(homing ? (own ? REL.ownHoming : REL.enemyHoming) : own ? REL.ownShot : REL.enemyShot);
         this.proj.setColorAt(n, this.c);
         this.s.multiplyScalar(1.9);
         this.m.compose(this.p, this.q, this.s);
@@ -391,7 +454,7 @@ export class Fx {
           (s as CircleShape).x = state.x(caster);
           (s as CircleShape).y = state.y(caster);
         }
-        if (flash >= 0) pv.views[i]!.show(s, col, 1, 0.55 * flash, 0.9 * flash);
+        if (flash >= 0) pv.views[i]!.show(s, col, 1, flashFill * flash, 0.9 * flash);
         else pv.views[i]!.show(s, col, k, 0.14 + 0.2 * k, tel.approx ? 0.6 : 0.9);
       }
     }
@@ -418,8 +481,8 @@ export class Fx {
       const k = zoneProgress(ev.start, ev.at, tick);
       let fillA: number;
       if (tick <= ev.at) fillA = 0.18 + 0.2 * k;
-      else if (tick <= end) fillA = tick - ev.at < FLASH ? 0.6 - ((0.6 - 0.32) * (tick - ev.at)) / FLASH : 0.32;
-      else fillA = (ev.until !== undefined ? 0.32 : 0.6) * (1 - (tick - end) / FLASH);
+      else if (tick <= end) fillA = tick - ev.at < FLASH ? zoneBurst - ((zoneBurst - 0.32) * (tick - ev.at)) / FLASH : 0.32;
+      else fillA = (ev.until !== undefined ? 0.32 : zoneBurst) * (1 - (tick - end) / FLASH);
       const rimA = tick <= end ? 0.95 : 0.95 * (1 - (tick - end) / FLASH);
       z.view.show(shape, col, k, fillA, rimA, z.centre);
     }
@@ -437,8 +500,50 @@ export class Fx {
       p.mat.opacity = p.a0 * (1 - k);
     }
 
-    // attack range circle (hold C)
+    // level-up columns: rise fast, then fade; follow the champion
+    for (const c of this.levelCols) {
+      if (!c.active) continue;
+      const k = (now - c.t0) / LEVEL_MS;
+      const e = state.byId.get(c.eid);
+      if (k >= 1 || !e) {
+        c.active = false;
+        c.mesh.visible = false;
+        continue;
+      }
+      const rise = Math.min(1, k * 4);
+      c.mesh.position.set(state.x(e), 0, -state.y(e));
+      c.mesh.scale.set(e.radius + 25 - 20 * k, 140 + 520 * rise, e.radius + 25 - 20 * k);
+      c.mesh.material.opacity = 0.85 * (k < 0.4 ? 1 : 1 - (k - 0.4) / 0.6);
+    }
+
+    // own recall / teleport channel
     const me = state.me();
+    const hud = snap?.me;
+    const tp = hud?.teleportLeft ?? 0;
+    const rc = hud?.recallLeft ?? 0;
+    const chan = me && me.alive && (tp > 0 || rc > 0);
+    if (chan && !this.chanCol) this.group.add((this.chanCol = columnMesh('#8fb6ff')));
+    this.chanRing.visible = this.chanArc.visible = !!chan;
+    if (this.chanCol) this.chanCol.visible = !!chan;
+    if (me && chan && this.chanCol) {
+      const x = state.x(me);
+      const y = state.y(me);
+      const prog = tp > 0 ? 1 - tp / 4 : 1 - rc / 8;
+      const r = me.radius + 95;
+      this.chanRing.position.set(x, 4, -y);
+      this.chanRing.scale.setScalar(r);
+      this.chanArc.geometry = ringGeom(0.8, Math.max(0.02, Math.PI * Math.min(1, prog)));
+      this.chanArc.position.set(x, 5, -y);
+      this.chanArc.rotation.set(0, Math.PI / 2, 0); // arc grows symmetrically from the top (north)
+      this.chanArc.scale.setScalar(r);
+      this.chanCol.position.set(x, 0, -y);
+      const flick = settings.reduceMotion ? 0 : Math.sin(now / 140) * 0.06;
+      this.chanCol.scale.set(me.radius + 10, 260 + 160 * prog, me.radius + 10);
+      this.chanCol.material.opacity = 0.5 + 0.35 * prog + flick;
+      this.chanCol.material.color.set(tp > 0 ? '#c79bff' : '#8fb6ff');
+    }
+
+    // attack range circle (hold C)
     const stats = snap?.me?.stats;
     this.range.visible = showRange && !!me && !!stats;
     if (me && stats) {

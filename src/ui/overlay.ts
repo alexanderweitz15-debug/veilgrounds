@@ -7,6 +7,7 @@ import { REL } from '../render/palette';
 import { settings } from '../settings';
 import { t } from '../i18n';
 import { champName } from './names';
+import { VisualCues } from './cues';
 
 interface Floater {
   x: number;
@@ -29,6 +30,8 @@ export class Overlay {
   private w = 1;
   private h = 1;
   private dpr = 1;
+  /** Phase 6: visual cues for important sounds (off-screen pings, tower fire, captions). */
+  private readonly cues = new VisualCues();
 
   constructor() {
     this.canvas.className = 'overlay2d';
@@ -44,6 +47,7 @@ export class Overlay {
   }
 
   onEvent(ev: SimEvent, state: ClientState, now: number): void {
+    this.cues.onEvent(ev, state, now);
     const myEid = state.snap?.me?.eid ?? -1;
     if (ev.e === 'damage' && settings.damageNumbers) {
       if (ev.src !== myEid && ev.dst !== myEid) return;
@@ -72,18 +76,19 @@ export class Overlay {
     const snap = state.snap;
     if (snap) {
       const myEid = snap.me?.eid ?? -1;
+      const hc = settings.highContrast;
       for (const e of snap.entities) {
         if (!e.alive || e.maxHp <= 0) continue;
-        const a = world.barAnchor(e, state.x(e), state.y(e));
-        if (!a) continue;
         const champ = e.kind === Kind.Champion;
         const structure = e.kind >= Kind.Tower && e.kind <= Kind.Nexus;
         const dummy = e.kind === Kind.Dummy;
         const minion = !champ && !structure && !dummy;
-        // minions only show a bar when damaged or hovered (less clutter, like LoL)
+        // minions only show a bar when damaged or hovered (less clutter, like LoL); checked before projecting
         if (minion && e.kind !== Kind.Monster && e.hp >= e.maxHp && e.id !== hoverId) continue;
+        const a = world.barAnchor(e, state.x(e), state.y(e));
+        if (!a) continue;
         const monster = e.kind === Kind.Monster;
-        const color = e.id === myEid ? '#59d35a' : monster ? '#d8a64a' : e.team === state.myTeam ? REL.ally : REL.enemy;
+        const color = e.id === myEid ? REL.meBar : monster ? '#d8a64a' : e.team === state.myTeam ? REL.ally : REL.enemy;
         const bw = champ ? 104 : structure ? 130 : dummy ? 104 : monster && e.radius >= 100 ? 110 : monster && e.radius >= 70 ? 76 : 54;
         const bh = champ ? 11 : structure ? 9 : dummy ? 10 : 5;
         const x = a.sx - bw / 2 + (champ ? 10 : 0);
@@ -96,6 +101,12 @@ export class Overlay {
         if (e.shield > 0) {
           ctx.fillStyle = '#e8eef2';
           ctx.fillRect(x + (bw * e.hp) / total, y, (bw * e.shield) / total, bh);
+        }
+        if (hc) {
+          // high contrast: white frame around every bar
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(x - 1, y - 1, bw + 2, bh + 2);
         }
         if (champ || dummy) {
           // 100-HP ticks
@@ -122,7 +133,7 @@ export class Overlay {
           ctx.lineWidth = 3;
           ctx.strokeStyle = 'rgba(12,10,8,0.9)';
           ctx.strokeText(name, x + bw / 2, y - 5);
-          ctx.fillStyle = e.team === state.myTeam ? '#cfe0ff' : '#ffc9bd';
+          ctx.fillStyle = e.team === state.myTeam ? REL.allyText : REL.enemyText;
           ctx.fillText(name, x + bw / 2, y - 5);
         }
         if (dummy) {
@@ -144,7 +155,7 @@ export class Overlay {
       keep.push(f);
       const p = world.rig.project(f.x, f.y, f.z, this.w, this.h);
       if (p.behind) continue;
-      const pop = k < 0.12 ? 0.7 + (k / 0.12) * 0.5 : 1.2 - Math.min(0.2, k);
+      const pop = settings.reduceMotion ? 1 : k < 0.12 ? 0.7 + (k / 0.12) * 0.5 : 1.2 - Math.min(0.2, k);
       ctx.globalAlpha = k > 0.6 ? 1 - (k - 0.6) / 0.4 : 1;
       ctx.font = `800 ${Math.round(f.size * pop)}px system-ui, sans-serif`;
       const sx = p.sx + f.drift * k;
@@ -157,5 +168,6 @@ export class Overlay {
     }
     ctx.globalAlpha = 1;
     this.floaters = keep;
+    if (snap) this.cues.draw(ctx, state, world, this.w, this.h, now);
   }
 }

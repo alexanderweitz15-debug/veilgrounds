@@ -22,14 +22,16 @@
 .tr-result .tr-score { color: var(--text-dim, #a09b8c); margin-bottom: 12px; }
 .tr-result .row-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
 
+/* right edge, above the minimap (the killfeed sits top left); two button columns keep it short at 1280x720 */
 .sbx-panel {
-  position: absolute; left: 12px; top: 64px; z-index: 30; width: 220px; padding: 10px 12px;
-  background: rgba(10, 12, 14, 0.86); border: 1px solid var(--line, rgba(201, 162, 78, 0.35)); color: #e8e0cc; font: 13px var(--font-body, system-ui);
+  position: absolute; right: 10px; top: 64px; z-index: 30; width: 300px; padding: 8px 10px; max-height: calc(100vh - 400px); overflow-y: auto;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 3px 4px; align-content: start;
+  background: rgba(10, 12, 14, 0.86); border: 1px solid var(--line, rgba(201, 162, 78, 0.35)); color: #e8e0cc; font: 12px var(--font-body, system-ui);
 }
-.sbx-panel .tr-title { font-family: var(--font-label, sans-serif); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold, #c8aa6e); margin-bottom: 6px; }
-.sbx-panel button, .sbx-panel select { width: 100%; margin: 2px 0; padding: 4px 6px; background: rgba(255, 255, 255, 0.04); color: #e8e0cc; border: 1px solid #3c3c41; cursor: pointer; font: inherit; text-align: left; }
+.sbx-panel .tr-title { grid-column: 1 / -1; font-family: var(--font-label, sans-serif); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold, #c8aa6e); margin-bottom: 2px; }
+.sbx-panel button, .sbx-panel select { width: 100%; margin: 0; padding: 3px 6px; background: rgba(255, 255, 255, 0.04); color: #e8e0cc; border: 1px solid #3c3c41; cursor: pointer; font: inherit; text-align: left; }
 .sbx-panel button.on { border-color: var(--gold, #c8aa6e); color: var(--gold-hi, #f0e6d2); background: rgba(200, 170, 110, 0.14); }
-.sbx-panel .sbx-row { display: flex; gap: 4px; }
+.sbx-panel .sbx-row { grid-column: 1 / -1; display: flex; gap: 4px; }
 
 .tr-menu .tr-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; margin: 8px 0 16px; }
 .tr-menu .tr-card { text-align: left; padding: 14px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #2c2c31; color: #e8e0cc; cursor: pointer; }

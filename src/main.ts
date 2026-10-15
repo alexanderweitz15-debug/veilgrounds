@@ -3,19 +3,22 @@ import './ui/style.css';
 import { loadSettings, settings, updateSettings } from './settings';
 import { loadBinds } from './input/keybinds';
 import { t } from './i18n';
-import { Game } from './game/game';
-import { configFor, MIRA_ID, trainerConfig, TRAINER_MODES, type TrainerMode, type TrainerSetup } from './game/modes';
+import type { TrainerMode, TrainerSetup } from './game/modes';
 import type { SimConfig } from './sim/types';
 import type { SessionResult } from './game/session';
-import { isTrainerMode } from './game/session';
-import { renderTrainerMenu, defaultSetup, trainerOptions } from './ui/trainerMenu';
-import { renderPostGame } from './ui/postGame';
 import { buildSettingsPanel } from './ui/settingsPanel';
-import { runesFromPreset } from './sim/items/runes';
 import { renderMainMenu, type MenuEntry } from './ui/mainMenu';
-import { renderEncyclopedia } from './ui/encyclopedia';
-import { renderPracticeLobby } from './ui/practiceLobby';
-import { buildClassicConfig, renderClassicLobby, renderLoading } from './ui/classicLobby';
+import { installDisplaySettings } from './ui/display';
+// Code-split (Phase 6): the game view (three.js, renderer, HUD), encyclopedia, trainer hub and post-game screen
+// load on demand, so the main menu starts without them.
+const loadGame = () => import('./game/game');
+const loadTrainerMenu = () => import('./ui/trainerMenu');
+const loadClassicLobby = () => import('./ui/classicLobby');
+/** Practice lobby + mode configs (sim data, champion sprites for portraits). */
+const loadPlay = async () => {
+  const [modes, lobbyMod, runes] = await Promise.all([import('./game/modes'), import('./ui/practiceLobby'), import('./sim/items/runes')]);
+  return { ...modes, ...lobbyMod, ...runes };
+};
 
 const app = document.getElementById('app')!;
 
@@ -74,13 +77,17 @@ function mainMenu(): void {
 /** Classic 5v5 vs bots (Agent H): lobby -> loading screen -> game. */
 function classicLobby(): void {
   const s = screen();
-  renderClassicLobby(s, mainMenu, (cfg) => renderLoading(screen(), cfg, () => start(cfg)));
+  void loadClassicLobby().then(({ renderClassicLobby, renderLoading }) => {
+    if (s.isConnected) renderClassicLobby(s, mainMenu, (cfg) => renderLoading(screen(), cfg, () => start(cfg)));
+  });
 }
 
 function encyclopedia(): void {
   const s = screen();
   s.classList.add('menu-screen');
-  renderEncyclopedia(s, mainMenu);
+  void import('./ui/encyclopedia').then(({ renderEncyclopedia }) => {
+    if (s.isConnected) renderEncyclopedia(s, mainMenu);
+  });
 }
 
 function settingsScreen(): void {
@@ -96,9 +103,12 @@ function settingsScreen(): void {
 /** Pre-game for the practice modes: any champion, summoners, rune preset (same look as the 5v5 lobby). */
 function lobby(mode: 'lane' | 'sandbox'): void {
   const s = screen();
-  renderPracticeLobby(s, `${t('lobby.title')} – ${mode === 'lane' ? t('menu.lane') : t('menu.sandbox')}`, mainMenu, (p) =>
-    start(configFor(mode, p.runes, p.champion, p.summoners)),
-  );
+  void loadPlay().then(({ renderPracticeLobby, configFor }) => {
+    if (!s.isConnected) return;
+    renderPracticeLobby(s, `${t('lobby.title')} – ${mode === 'lane' ? t('menu.lane') : t('menu.sandbox')}`, mainMenu, (p) =>
+      start(configFor(mode, p.runes, p.champion, p.summoners)),
+    );
+  });
 }
 
 /** Trainer hub (Phase 5) -> practice lobby with the trainer's options -> game. Options persist per trainer. */
@@ -106,10 +116,13 @@ const trainerSetups = new Map<TrainerMode, TrainerSetup>();
 
 function trainerMenu(): void {
   const s = screen();
-  renderTrainerMenu(s, mainMenu, (m) => trainerLobby(m));
+  void loadTrainerMenu().then(({ renderTrainerMenu }) => {
+    if (s.isConnected) renderTrainerMenu(s, mainMenu, (m) => void trainerLobby(m));
+  });
 }
 
-function trainerLobby(mode: TrainerMode): void {
+async function trainerLobby(mode: TrainerMode): Promise<void> {
+  const [{ defaultSetup, trainerOptions }, { renderPracticeLobby, trainerConfig }] = await Promise.all([loadTrainerMenu(), loadPlay()]);
   const setup = trainerSetups.get(mode) ?? defaultSetup(mode);
   trainerSetups.set(mode, setup);
   const s = screen();
@@ -123,27 +136,36 @@ function afterGame(config: SimConfig | null, r?: SessionResult): void {
   const auto = (config.mode === 'classic' || config.mode === 'laneOnly') && r.summary.duration >= 60;
   if (!r.analysis && !auto) return mainMenu();
   const s = screen();
-  renderPostGame(s, r.summary, mainMenu, isTrainerMode(config.mode) ? () => afterGame(config, { ...r, retry: true }) : undefined);
+  void Promise.all([import('./ui/postGame'), import('./game/session')]).then(([{ renderPostGame }, { isTrainerMode }]) => {
+    if (s.isConnected) renderPostGame(s, r.summary, mainMenu, isTrainerMode(config.mode) ? () => afterGame(config, { ...r, retry: true }) : undefined);
+  });
 }
 
 function start(config: SimConfig | null): void {
   disposeMenu?.();
   disposeMenu = null;
-  app.textContent = '';
-  new Game(app, config, (r) => afterGame(config, r));
+  void loadGame().then(({ Game }) => {
+    app.textContent = '';
+    new Game(app, config, (r) => afterGame(config, r));
+  });
 }
 
 void (async () => {
   await Promise.all([loadSettings(), loadBinds()]);
+  installDisplaySettings();
+  setTimeout(() => void loadGame(), 1500); // warm the game chunk while the menu is shown
   document.documentElement.lang = settings.lang;
   const q = new URLSearchParams(location.search);
   // dev shortcuts: ?mock, ?play=lane|sandbox
   if (q.has('mock')) start(null);
-  else if (q.get('play') === 'classic') start(buildClassicConfig());
-  else if (TRAINER_MODES.includes(q.get('play') as TrainerMode)) {
-    const m = q.get('play') as TrainerMode;
-    start(trainerConfig(defaultSetup(m), { champion: MIRA_ID, summoners: ['sprung', 'heilen'], runes: runesFromPreset(MIRA_ID, settings.runePresets[MIRA_ID]) }));
-  }
-  else if (q.get('play') === 'lane' || q.get('play') === 'sandbox') start(configFor(q.get('play') as 'lane' | 'sandbox', runesFromPreset(MIRA_ID, settings.runePresets[MIRA_ID])));
-  else mainMenu();
+  else if (q.get('play') === 'classic') start((await loadClassicLobby()).buildClassicConfig());
+  else if (q.has('play')) {
+    const { TRAINER_MODES, MIRA_ID, trainerConfig, configFor, runesFromPreset } = await loadPlay();
+    const play = q.get('play');
+    if (TRAINER_MODES.includes(play as TrainerMode)) {
+      const { defaultSetup } = await loadTrainerMenu();
+      start(trainerConfig(defaultSetup(play as TrainerMode), { champion: MIRA_ID, summoners: ['sprung', 'heilen'], runes: runesFromPreset(MIRA_ID, settings.runePresets[MIRA_ID]) }));
+    } else if (play === 'lane' || play === 'sandbox') start(configFor(play, runesFromPreset(MIRA_ID, settings.runePresets[MIRA_ID])));
+    else mainMenu();
+  } else mainMenu();
 })();

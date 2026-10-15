@@ -34,6 +34,8 @@ export class InputController {
   mouseY = -1;
   hover: SnapEntity | null = null;
   showRange = false;
+  /** performance.now() until which the camera lock is suspended (minimap peek). */
+  cameraPeekUntil = 0;
   private centerHeld = false;
   private rightHeld = false;
   private lastHoldMove = 0;
@@ -315,7 +317,9 @@ export class InputController {
     if (this.rightHeld && !state.paused && now - this.lastHoldMove > HOLD_MOVE_MS) this.rightClick(now, false);
 
     const me = state.me();
-    if (me && (settings.cameraLocked || this.centerHeld)) {
+    if (this.centerHeld) this.cameraPeekUntil = 0;
+    // minimap click/hold peeks at a spot even with the camera locked (like LoL); the lock resumes afterwards
+    if (me && (settings.cameraLocked || this.centerHeld) && now >= this.cameraPeekUntil) {
       rig.focus(state.x(me), state.y(me));
       return;
     }

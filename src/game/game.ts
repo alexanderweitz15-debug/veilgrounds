@@ -39,6 +39,8 @@ export class Game {
   private fps = 0;
   private snapsThisSec = 0;
   private snapRate = 0;
+  /** EMA of the CPU time per frame part (ms), shown in the F9 panel. */
+  private readonly perf = { input: 0, world: 0, overlay: 0, minimap: 0, hud: 0, total: 0 };
   private readonly offSettings: () => void;
   private readonly onResize = (): void => this.resize();
   private readonly beforeUnload = (e: BeforeUnloadEvent): void => {
@@ -46,6 +48,13 @@ export class Game {
     e.preventDefault();
     e.returnValue = '';
   };
+  private readonly armUnload = (): void => {
+    window.removeEventListener('pointerdown', this.armUnload, true);
+    window.removeEventListener('keydown', this.armUnload, true);
+    window.addEventListener('beforeunload', this.beforeUnload);
+  };
+  /** Sprite atlases baked; until then the sim stays paused (see constructor). */
+  private atlasReady = false;
 
   constructor(parent: HTMLElement, config: SimConfig | null, private readonly onExit: (r?: SessionResult) => void) {
     const map = loadMap();
@@ -62,21 +71,27 @@ export class Game {
     this.world.rig.focus(f.x + 600, f.y + 600);
     // bake the animated champion sprites (worker pool); champions show the placeholder sprite until it is done
     const loading = document.createElement('div');
+    // below the top bar; the sim stays paused until the atlases are ready (loading must not eat game time)
     loading.className = 'sprite-loading';
-    loading.style.cssText = 'position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:50;padding:6px 14px;border-radius:6px;background:rgba(20,16,24,.82);color:#f2dfbd;font:600 14px sans-serif;pointer-events:none';
-    loading.textContent = 'Lade Champions…';
+    loading.textContent = t('hud.loadingChamps', { p: 0 });
     this.root.appendChild(loading);
     void getChampionAtlas(config?.players.map((p) => p.champion) ?? ['mira'], (done, total) => {
-      loading.textContent = `Lade Champions… ${Math.round((done / total) * 100)} %`;
+      loading.textContent = t('hud.loadingChamps', { p: Math.round((done / total) * 100) });
     })
       .then((atlas) => this.world.setChampionAtlas(atlas))
       .catch((e) => console.warn('champion atlas failed, keeping placeholder sprites', e))
+      .then(() => {
+        // champions ready: start the clock (minions only appear at 1:05, they keep baking in the background)
+        loading.remove();
+        this.atlasReady = true;
+        this.link.pause(this.state.paused);
+      })
       // minions after the champions (one worker pool at a time); usually already baked on the loading screen
       .then(() => getMinionAtlas())
       .then((atlas) => this.world.setMinionAtlas(atlas))
-      .catch((e) => console.warn('minion atlas failed, keeping placeholder sprites', e))
-      .finally(() => loading.remove());
+      .catch((e) => console.warn('minion atlas failed, keeping placeholder sprites', e));
     this.link = config ? workerLink(config, 0) : mockLink();
+    this.link.pause(true); // sim builds in the worker meanwhile but does not tick until the sprites are baked
     this.link.onBotDebug = (rows, tick) => this.hud.botDebug.update(rows, tick);
     this.link.onSnap = (s) => {
       const now = performance.now();
@@ -101,15 +116,19 @@ export class Game {
         sell: (slot) => this.link.send({ t: 'sell', slot }),
         swapTrinket: (id) => this.link.send({ t: 'trinket', id }),
       },
-      config?.mode === 'sandbox' || config?.mode === 'kite' || !config,
+      config?.mode === 'kite' || !config, // sandbox: one merged panel (src/ui/sandboxPanel.ts)
       config?.players ?? [],
+      config?.mode,
     );
     this.root.appendChild(this.hud.root);
     // Phase 5: trainer panel/result, sandbox+ panel, stats recorder (src/game/session.ts)
-    this.extras = new SessionExtras(this.root, config, (c) => this.link.send(c), (p) => this.setPaused(p), (o) => this.exit(o));
+    this.extras = new SessionExtras(this.root, config, (c) => this.link.send(c), (p) => this.setPaused(p), (o) => this.exit(o), (a) => this.input.setArmed(a));
     this.minimap = new Minimap(
       map,
-      (x, y) => this.world.rig.focus(x, y),
+      (x, y) => {
+        this.world.rig.focus(x, y);
+        this.input.cameraPeekUntil = performance.now() + 1200;
+      },
       (x, y) => {
         this.link.send({ t: 'move', x, y });
         this.world.fx.clickMarker(x, y, false, performance.now());
@@ -149,10 +168,13 @@ export class Game {
     setVolume(settings.volume);
     this.offSettings = onSettingsChange(() => {
       this.hud.applyScale();
+      this.world.applyQuality();
       setVolume(settings.volume);
     });
     window.addEventListener('resize', this.onResize);
-    window.addEventListener('beforeunload', this.beforeUnload);
+    // beforeunload only after a user gesture (Chrome blocks/logs the prompt for frames without one)
+    window.addEventListener('pointerdown', this.armUnload, true);
+    window.addEventListener('keydown', this.armUnload, true);
     window.addEventListener('keydown', blockBrowserShortcuts, true);
     this.root.addEventListener('pointerdown', audioUnlock);
     window.addEventListener('keydown', audioUnlock);
@@ -171,11 +193,13 @@ export class Game {
     this.root.addEventListener('pointerdown', tryFullscreen);
     this.resize();
     this.raf = requestAnimationFrame(this.loop);
+    // benchmark hook (dev or ?bench): step frames synchronously (works in hidden tabs where rAF is paused)
+    if (import.meta.env.DEV || location.search.includes('bench')) (window as unknown as { __vg?: unknown }).__vg = { frame: (now: number) => this.frame(now), world: this.world, perf: this.perf, state: this.state, link: this.link, hud: this.hud };
   }
 
   private setPaused(p: boolean): void {
     this.state.paused = p;
-    this.link.pause(p);
+    this.link.pause(p || !this.atlasReady);
   }
 
   private openMenu(): void {
@@ -218,8 +242,14 @@ export class Game {
   }
 
   private readonly loop = (now: number): void => {
-    setListener(this.world.rig.tx, this.world.rig.ty);
     this.raf = requestAnimationFrame(this.loop);
+    this.frame(now);
+  };
+
+  /** One client frame (also driven synchronously by the dev benchmark hook, see constructor). */
+  private frame(now: number): void {
+    const t0 = performance.now();
+    setListener(this.world.rig.tx, this.world.rig.ty);
     const dt = Math.min(0.1, (now - this.lastFrame) / 1000);
     this.lastFrame = now;
     const st = this.state;
@@ -233,12 +263,26 @@ export class Game {
     }
     if (!this.minimap.dragging) this.input.update(dt, now);
     const hoverId = this.input.hover?.id ?? -1;
+    const t1 = performance.now();
     this.world.frame(st, now, hoverId, this.input.showRange);
+    const t2 = performance.now();
     this.overlay.draw(st, this.world, now, hoverId);
+    const t3 = performance.now();
     this.minimap.draw(st, this.world, this.world.fog, now);
+    const t4 = performance.now();
     this.hud.update(st, now);
     this.extras.frame(st.snap);
     this.root.classList.toggle('dead', !!st.snap?.me?.dead);
+    const t5 = performance.now();
+    // CPU time per frame part (exponential moving average, ms) for the F9 panel
+    const p = this.perf;
+    const k = 0.05;
+    p.input += (t1 - t0 - p.input) * k;
+    p.world += (t2 - t1 - p.world) * k;
+    p.overlay += (t3 - t2 - p.overlay) * k;
+    p.minimap += (t4 - t3 - p.minimap) * k;
+    p.hud += (t5 - t4 - p.hud) * k;
+    p.total += (t5 - t0 - p.total) * k;
     // stats for the F9 panel
     this.frames++;
     if (now - this.fpsAt >= 1000) {
@@ -257,12 +301,13 @@ export class Game {
       // F9 bot overlay: poll the worker only while the panel is open
       if (this.hud.isPanelOpen('debug')) this.link.requestBotDebug?.();
     }
-  };
+  }
 
   exit(o: ExitOpts = {}): void {
     const result = this.extras.result(o);
     this.extras.dispose();
     cancelAnimationFrame(this.raf);
+    delete (window as unknown as { __vg?: unknown }).__vg;
     this.link.dispose();
     this.input.dispose();
     this.minimap.dispose();
@@ -270,6 +315,8 @@ export class Game {
     this.offSettings();
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('beforeunload', this.beforeUnload);
+    window.removeEventListener('pointerdown', this.armUnload, true);
+    window.removeEventListener('keydown', this.armUnload, true);
     window.removeEventListener('keydown', blockBrowserShortcuts, true);
     window.removeEventListener('keydown', audioUnlock);
     exitGameFullscreen();

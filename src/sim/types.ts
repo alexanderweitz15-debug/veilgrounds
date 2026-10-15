@@ -87,7 +87,7 @@ export interface TickInput {
 
 /** Events are produced during a tick and consumed by render/stats. Cleared at the start of each tick. */
 export type SimEvent =
-  | { e: 'damage'; src: number; dst: number; amount: number; type: DamageType; crit?: boolean }
+  | { e: 'damage'; src: number; dst: number; amount: number; type: DamageType; crit?: boolean; /** Basic attack (render-only info: death recap). */ auto?: true }
   | { e: 'death'; eid: number; kind: number; team: number; killer: number; x: number; y: number }
   | { e: 'gold'; eid: number; amount: number; x: number; y: number }
   | { e: 'lastHitMiss'; eid: number; target: number; earlyHp?: number; lateMs?: number }

@@ -15,6 +15,8 @@ import { Fx } from './fx';
 import { FogOfWar } from './fog';
 import { WardMarkers } from './wards';
 import type { ChampionAtlas } from './champions';
+import { settings } from '../settings';
+import { QUALITY, setFastPcf } from './quality';
 
 /** Direction toward the sun: low morning light from the east-south-east. */
 const SUN_DIR = new THREE.Vector3(0.62, 0.62, 0.48).normalize();
@@ -36,10 +38,13 @@ export class World {
   private readonly up = new THREE.Vector3(0, Math.cos(PITCH), -Math.sin(PITCH));
   private w = 1;
   private h = 1;
+  private quality = settings.graphics;
 
   constructor(readonly canvas: HTMLCanvasElement, map: MapData) {
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    const q = QUALITY[this.quality] ?? QUALITY.medium;
+    setFastPcf(q.fastPcf); // compiled into this renderer's programs
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: q.antialias, powerPreference: 'high-performance' });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, q.pixelRatio));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.scene.background = new THREE.Color('#1a1d1c');
@@ -47,8 +52,8 @@ export class World {
 
     this.scene.add(new THREE.HemisphereLight('#fff1dc', '#3e4a35', 1.1));
     this.sun = new THREE.DirectionalLight('#ffe2b8', 2.2);
-    this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(2048, 2048);
+    this.sun.castShadow = q.shadows;
+    this.sun.shadow.mapSize.set(q.shadowMap, q.shadowMap);
     const sc = this.sun.shadow.camera;
     sc.left = sc.bottom = -SHADOW_HALF;
     sc.right = sc.top = SHADOW_HALF;
@@ -62,6 +67,21 @@ export class World {
     this.terrain = buildTerrain(map, this.renderer.capabilities.getMaxAnisotropy());
     this.units = new Units(buildAtlas(), SUN_DIR);
     this.scene.add(this.terrain.group, this.structures.group, this.units.group, this.fx.group, this.ground.group, this.pings.group, this.wards.group);
+  }
+
+  /** Live part of the graphics quality setting: shadows on/off, shadow map size, render scale. */
+  applyQuality(): void {
+    if (settings.graphics === this.quality) return;
+    this.quality = settings.graphics;
+    const q = QUALITY[this.quality] ?? QUALITY.medium;
+    this.sun.castShadow = q.shadows;
+    if (this.sun.shadow.mapSize.x !== q.shadowMap) {
+      this.sun.shadow.mapSize.set(q.shadowMap, q.shadowMap);
+      this.sun.shadow.map?.dispose();
+      this.sun.shadow.map = null;
+    }
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, q.pixelRatio));
+    this.renderer.setSize(this.w, this.h, false);
   }
 
   resize(w: number, h: number): void {
@@ -99,7 +119,7 @@ export class World {
     const rig = this.rig;
     rig.apply();
     // shadow frustum follows the view; snapped to texels to avoid shimmering
-    const step = (SHADOW_HALF * 2) / 2048;
+    const step = (SHADOW_HALF * 2) / this.sun.shadow.mapSize.x;
     const fx = Math.round(rig.tx / step) * step;
     const fy = Math.round(rig.ty / step) * step;
     this.sun.target.position.set(fx, 0, -fy + 400);
@@ -139,7 +159,7 @@ export class World {
     if (ch !== null) return ch;
     const key = spriteKeyFor(e);
     if (key) return SPRITE_SIZE[key] * 0.92;
-    if (e.kind === Kind.Ward) return 90; // ward markers (render/wards.ts): bars + picking
+    if (e.kind === Kind.Ward) return 165; // ward markers (render/wards.ts): bars + picking
     return this.structures.heightOf(e.kind);
   }
 

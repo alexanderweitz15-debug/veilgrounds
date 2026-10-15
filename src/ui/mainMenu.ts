@@ -1,7 +1,6 @@
 // Main menu in the style of MOBA clients: top bar (wordmark, PLAY, nav), live map scene behind, mode list on the left,
 // build notes on the right. No decorative glow; typography carries the look (Spectral SC + Barlow Condensed).
 import './menu.css';
-import { startMenuScene } from './menuScene';
 
 export interface MenuEntry {
   name: string;
@@ -80,12 +79,15 @@ export function renderMainMenu(screen: HTMLElement, o: MainMenuOpts): () => void
   };
   window.addEventListener('keydown', onKey);
   let stopScene: () => void = () => {};
-  try {
-    stopScene = startMenuScene(canvas);
-  } catch {
-    canvas.remove(); // no WebGL: plain background
-  }
+  let disposed = false;
+  // the 3D backdrop (three.js + headless sim) is its own chunk: the menu is usable before it arrives
+  void import('./menuScene')
+    .then(({ startMenuScene }) => {
+      if (!disposed) stopScene = startMenuScene(canvas);
+    })
+    .catch(() => canvas.remove()); // no WebGL: plain background
   return () => {
+    disposed = true;
     stopScene();
     window.removeEventListener('keydown', onKey);
   };

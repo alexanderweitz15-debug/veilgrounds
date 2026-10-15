@@ -31,6 +31,8 @@ export class SessionExtras {
     send: (cmd: Command) => void,
     private readonly pause: (p: boolean) => void,
     exit: (o: ExitOpts) => void,
+    /** Arms a cursor-targeted sandbox cheat (teleport / practice dummy at the cursor). */
+    arm?: (a: 'teleport' | 'spawnDummy') => void,
   ) {
     this.stats = new MatchStats(config);
     if (config && isTrainerMode(config.mode)) {
@@ -40,7 +42,7 @@ export class SessionExtras {
         quit: () => exit({}),
       });
     }
-    if (config?.mode === 'sandbox') this.sandbox = new SandboxPanel(root, (op, value) => send({ t: 'cheat', op, ...(value !== undefined ? { value } : {}) }));
+    if (config?.mode === 'sandbox') this.sandbox = new SandboxPanel(root, (op, value) => send({ t: 'cheat', op, ...(value !== undefined ? { value } : {}) }), arm);
   }
 
   ingest(s: Snapshot): void {

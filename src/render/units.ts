@@ -6,6 +6,7 @@ import { Kind } from '../sim/types';
 import type { ClientState } from '../game/state';
 import { PITCH } from './camera';
 import { REL } from './palette';
+import { settings } from '../settings';
 import { SPRITE_KEYS, SPRITE_SIZE, type Atlas, type SpriteKey } from './sprites';
 import { MIRA_ID } from '../game/modes';
 import { ChampionSprites, type SpriteBatchOptions } from './championSprites';
@@ -163,6 +164,8 @@ export class Units {
     const tSec = now / 1000;
     const champs = this.champs;
     const minions = this.minions;
+    // hit flash brightness (reduce motion: a faint tint instead of a white flash)
+    const flashAmp = settings.reduceMotion ? 0.35 : 1.6;
     champs?.begin();
     minions?.begin();
     if (snap) {
@@ -210,7 +213,7 @@ export class Units {
           if (f !== undefined) {
             const k = (now - f) / FLASH_MS;
             if (k >= 1) this.flashAt.delete(e.serial);
-            else c = 1 + (1 - k) * 1.6;
+            else c = 1 + (1 - k) * flashAmp;
           }
           if (e.id === hoverId) c *= 1.25;
           batch!.push(e, champId, x, y, c, now);
@@ -231,7 +234,7 @@ export class Units {
         if (f !== undefined) {
           const k = (now - f) / FLASH_MS;
           if (k >= 1) this.flashAt.delete(e.serial);
-          else c = 1 + (1 - k) * 1.6;
+          else c = 1 + (1 - k) * flashAmp;
         }
         if (e.id === hoverId) c *= 1.25;
         this.col.setRGB(c, c, c);

@@ -33,7 +33,9 @@ export function buildTerrain(map: MapData, anisotropy: number): Terrain {
   const skirtGeo = new THREE.PlaneGeometry(MAP_SIZE * 3, MAP_SIZE * 3);
   skirtGeo.rotateX(-Math.PI / 2);
   skirtGeo.translate(MAP_SIZE / 2, -4, -MAP_SIZE / 2);
-  group.add(new THREE.Mesh(skirtGeo, new THREE.MeshBasicMaterial({ color: '#2b3324' })));
+  const skirt = new THREE.Mesh(skirtGeo, new THREE.MeshBasicMaterial({ color: '#2b3324' }));
+  skirt.renderOrder = 1; // after the ground: the depth test rejects the hidden part (was ~1 ms of overdraw at 1080p)
+  group.add(skirt);
 
   // ---------------------------------------------------------------- walls (one merged mesh + outline)
   const rnd = mulberry(7);

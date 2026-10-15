@@ -110,7 +110,7 @@ export function dealDamage(sim: Sim, src: number, dst: number, amount: number, t
         m.set(src, sim.tick);
       }
     }
-    sim.events.push({ e: 'damage', src, dst, amount: dmg, type, crit: opts.crit });
+    sim.events.push({ e: 'damage', src, dst, amount: dmg, type, crit: opts.crit, ...(opts.isAuto ? { auto: true as const } : {}) });
     if (top && dmg > 0) for (const h of passiveHooksOf(sim, dst)) h.onDamageTaken?.(sim, dst, src, { amount: dmg, absorbed, type, isAuto: !!opts.isAuto });
     if (Hp.cur[dst]! <= 0 && Unit.alive[dst]) {
       if (Unit.kind[dst] === Kind.Dummy) {

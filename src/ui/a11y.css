@@ -1,0 +1,57 @@
+/* Phase 6 accessibility: UI scale for panels outside the scaled HUD bars, reduce motion, high contrast.
+   --ui is set on <html> by src/ui/display.ts. The HUD bars/minimap already use transform: scale(var(--ui));
+   panels with their own transforms use `zoom` so their layout transforms stay untouched. */
+
+/* ---------------------------------------------------------------- UI scale */
+.game .panel.open,
+.game .chat-box,
+.game .tr-panel,
+.game .sbx-panel,
+.game .tr-result .tr-box,
+.game .respawn.open,
+.game .recall.open,
+.game .buff-marks,
+.ingame-menu .menu-panel { zoom: var(--ui); }
+/* zoomed boxes: viewport-relative sizes must be divided by the zoom to still fit the screen */
+.game .panel.shop.open { width: min(860px, calc(96vw / var(--ui))); max-height: calc((100vh - 60px - 150px * var(--ui)) / var(--ui)); }
+.game .panel.scoreboard.open { min-width: min(820px, calc(96vw / var(--ui))); }
+.game .chat-box { width: min(420px, calc(40vw / var(--ui))); }
+.ingame-menu .menu-panel { max-height: calc(96vh / var(--ui)); overflow-y: auto; }
+/* buff marks already compensate their offset with --ui; zoom scales it once more */
+.game .buff-marks { bottom: 150px; }
+
+/* ---------------------------------------------------------------- reduce motion */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ---------------------------------------------------------------- high contrast */
+.high-contrast { --panel: rgba(6, 5, 4, 0.98); --brass-dim: #e3c26a; }
+.high-contrast .hud,
+.high-contrast .chat-box,
+.high-contrast .tr-panel,
+.high-contrast .sbx-panel { text-shadow: 0 0 2px #000, 0 0 3px #000, 0 1px 0 #000; }
+.high-contrast .hud-top,
+.high-contrast .hud-bottom,
+.high-contrast .minimap-wrap,
+.high-contrast .panel.open { border-color: #f3d98c; }
+.high-contrast .panel.open,
+.high-contrast .tr-panel,
+.high-contrast .sbx-panel,
+.high-contrast .killfeed .entry,
+.high-contrast .buff-mark { background: #050404; }
+.high-contrast .chat-line { color: #fff; background: rgba(0, 0, 0, 0.8); padding: 0 4px; }
+.high-contrast .slot .key,
+.high-contrast .item .key,
+.high-contrast .bar .txt,
+.high-contrast .hud-top .lbl,
+.high-contrast .hud-top .cs { color: #fff; font-weight: 700; }
+.high-contrast .slot,
+.high-contrast .item { border-color: #f3d98c; }
+.high-contrast .bar { border: 1px solid #fff; }
+.settings-note { margin: 2px 0 4px; font-size: 12px; color: #a99f8a; }

@@ -53,8 +53,10 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     const v = document.createElement('em');
     v.textContent = fmt(settings[key]);
     i.addEventListener('input', () => {
-      updateSettings({ [key]: Number(i.value) });
+      // moving the UI scale slider switches automatic scaling off
+      updateSettings(key === 'uiScale' ? { uiScale: Number(i.value), uiScaleAuto: false } : { [key]: Number(i.value) });
       v.textContent = fmt(Number(i.value));
+      if (key === 'uiScale' && autoBox) autoBox.checked = false;
     });
     wrap.append(i, v);
     return wrap;
@@ -72,6 +74,13 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     return s;
   };
 
+  let autoBox: HTMLInputElement | null = null;
+  const section = (title: string): void => {
+    const h = document.createElement('h3');
+    h.textContent = title;
+    root.appendChild(h);
+  };
+
   function render(): void {
     root.textContent = '';
     row(t('set.lang'), select(settings.lang, [['de', 'Deutsch'], ['en', 'English']], (v) => {
@@ -80,6 +89,8 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
       onLang();
     }));
     row(t('set.cameraSpeed'), slider('cameraSpeed', 0.3, 3, 0.1, (v) => `${v.toFixed(1)}×`));
+    autoBox = check('uiScaleAuto');
+    row(t('set.uiScaleAuto'), autoBox);
     row(t('set.uiScale'), slider('uiScale', 80, 150, 5, (v) => `${v}%`));
     row(t('set.damageNumbers'), check('damageNumbers'));
     row(t('set.attackMoveOnCursor'), check('attackMoveOnCursor'));
@@ -88,6 +99,19 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.fullscreenLock'), check('fullscreenLock'));
     row(t('set.botToxicity'), check('botToxicity'));
     row(t('set.volume'), slider('volume', 0, 1, 0.05, (v) => `${Math.round(v * 100)} %`));
+    section(t('set.graphicsTitle'));
+    row(t('set.graphics'), select<Settings['graphics']>(settings.graphics, [['low', t('set.gfx.low')], ['medium', t('set.gfx.medium')], ['high', t('set.gfx.high')]], (v) => updateSettings({ graphics: v })));
+    const note = document.createElement('p');
+    note.className = 'settings-note';
+    note.textContent = t('set.graphicsNote');
+    root.appendChild(note);
+    section(t('set.a11yTitle'));
+    row(t('set.colorMode'), select<Settings['colorMode']>(settings.colorMode, [
+      ['normal', t('set.cb.normal')], ['deuteranopia', t('set.cb.deuteranopia')], ['protanopia', t('set.cb.protanopia')], ['tritanopia', t('set.cb.tritanopia')],
+    ], (v) => updateSettings({ colorMode: v })));
+    row(t('set.reduceMotion'), check('reduceMotion'));
+    row(t('set.highContrast'), check('highContrast'));
+    row(t('set.visualCues'), check('visualCues'));
     const h = document.createElement('h3');
     h.textContent = t('set.keybinds');
     root.appendChild(h);

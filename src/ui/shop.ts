@@ -7,8 +7,11 @@ import { ITEMS, ITEM_SLOTS, SELL_RATIO, itemById, recipePrice } from '../sim/ite
 import { BUILDS } from '../ai/bot/builds';
 import { settings } from '../settings';
 import { t } from '../i18n';
+import { itemIcon, setIcon } from './icons';
+import './icons.css';
 
-const TIERS: ItemTier[] = ['starter', 'consumable', 'basic', 'component', 'boots', 'legendary'];
+// small tiers first so they share a row (the shop fits a 720p screen without scrolling)
+const TIERS: ItemTier[] = ['starter', 'consumable', 'boots', 'basic', 'component', 'legendary'];
 const PCT: ReadonlySet<ItemStat> = new Set(['asPct', 'critPct', 'lifestealPct', 'msPct', 'hpRegenPct', 'manaRegenPct', 'healShieldPowerPct']);
 
 export const itemName = (id: string | null | undefined): string => (id ? itemById(id)?.name[settings.lang] ?? id : '');
@@ -23,8 +26,8 @@ export function itemTooltip(id: string): string {
   const it = itemById(id);
   if (!it) return id;
   const lines = [`${it.name[settings.lang]} (${it.cost})`, ...statLines(it)];
-  if (it.passive) lines.push(`${it.passive.name[settings.lang]}: ${it.passive.desc[settings.lang]} (${t('shop.later')})`);
-  if (it.active) lines.push(`${it.active.name[settings.lang]}: ${it.active.desc[settings.lang]} (${t('shop.later')})`);
+  if (it.passive) lines.push(`${it.passive.name[settings.lang]}: ${it.passive.desc[settings.lang]}`);
+  if (it.active) lines.push(`${it.active.name[settings.lang]}: ${it.active.desc[settings.lang]}`);
   return lines.join('\n');
 }
 
@@ -34,6 +37,13 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?:
   if (text !== undefined) e.textContent = text;
   parent?.appendChild(e);
   return e;
+}
+
+/** Item icon (procedural, src/ui/icons.ts) with the short name as fallback. */
+function iconEl(parent: HTMLElement, id: string): void {
+  const url = itemIcon(id);
+  const d = el('div', url ? 'abbr item-icon' : 'abbr', parent, url ? '' : itemAbbr(id));
+  setIcon(d, url);
 }
 
 export interface ShopHooks {
@@ -90,8 +100,9 @@ export class ShopPanel {
     for (const tier of TIERS) {
       const items = ITEMS.filter((i) => i.tier === tier).sort((a, b) => a.cost - b.cost);
       if (!items.length) continue;
-      el('div', 'shop-tier', list, t(`shop.tier.${tier}`));
-      const grid = el('div', 'shop-grid', list);
+      const sec = el('div', 'shop-sec', list);
+      el('div', 'shop-tier', sec, t(`shop.tier.${tier}`));
+      const grid = el('div', 'shop-grid', sec);
       for (const it of items) this.card(me, it.id, grid, rec.has(it.id));
     }
 
@@ -103,8 +114,8 @@ export class ShopPanel {
       const q = this.canBuy(me, sel);
       el('div', 'shop-cost', det, q.price !== sel.cost ? `${q.price} (${sel.cost})` : String(sel.cost));
       for (const l of statLines(sel)) el('div', 'shop-stat', det, l);
-      if (sel.passive) el('div', 'shop-passive', det, `${sel.passive.name[settings.lang]}: ${sel.passive.desc[settings.lang]} (${t('shop.later')})`);
-      if (sel.active) el('div', 'shop-passive', det, `${sel.active.name[settings.lang]}: ${sel.active.desc[settings.lang]} (${t('shop.later')})`);
+      if (sel.passive) el('div', 'shop-passive', det, `${sel.passive.name[settings.lang]}: ${sel.passive.desc[settings.lang]}`);
+      if (sel.active) el('div', 'shop-passive', det, `${sel.active.name[settings.lang]}: ${sel.active.desc[settings.lang]}`);
       if (sel.from.length) {
         el('div', 'shop-sub', det, t('shop.recipe'));
         const from = el('div', 'shop-from', det);
@@ -127,7 +138,7 @@ export class ShopPanel {
     me.items.slice(0, ITEM_SLOTS).forEach((id, slot) => {
       const s = el('div', `shop-slot${id ? '' : ' empty'}`, inv);
       if (!id) return;
-      el('div', 'abbr', s, itemAbbr(id));
+      iconEl(s, id);
       s.title = itemTooltip(id);
       const sell = el('button', 'btn small', s, `${t('shop.sell')} +${Math.floor((itemById(id)?.cost ?? 0) * SELL_RATIO)}`);
       sell.disabled = !me.inFountain && !me.dead;
@@ -140,7 +151,7 @@ export class ShopPanel {
     if (!it) return;
     const q = this.canBuy(me, it);
     const c = el('button', `shop-item${rec ? ' rec' : ''}${q.ok ? ' afford' : ''}${this.selected === id ? ' sel' : ''}${me.items.includes(id) ? ' owned' : ''}`, parent);
-    el('div', 'abbr', c, itemAbbr(id));
+    iconEl(c, id);
     el('div', 'price', c, String(q.price));
     c.title = itemTooltip(id);
     c.addEventListener('click', () => {

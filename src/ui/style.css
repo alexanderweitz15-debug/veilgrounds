@@ -10,6 +10,7 @@
   --red: #e0473a;
   --hp: #4fbf4a;
   --mp: #3a7bd5;
+  --ui: 1;
   font-family: 'Segoe UI', system-ui, sans-serif;
   color: var(--ivory);
 }
@@ -79,8 +80,7 @@ h2, h3 { margin: 4px 0; color: #f3d98c; }
 .game { position: absolute; inset: 0; }
 .game canvas.gl, .game canvas.overlay2d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .game canvas.overlay2d { pointer-events: none; }
-.game.dead canvas.gl { filter: grayscale(0.85) brightness(0.8); }
-.hud { position: absolute; inset: 0; pointer-events: none; --ui: 1; }
+.hud { position: absolute; inset: 0; pointer-events: none; }
 .hud button, .hud .minimap, .hud .cheats, .hud .slot, .hud .item { pointer-events: auto; }
 
 .hud-top {
@@ -123,6 +123,9 @@ h2, h3 { margin: 4px 0; color: #f3d98c; }
 .slot .pips i.on { background: #f1c75a; }
 .slot .plus { display: none; position: absolute; top: -22px; left: 50%; transform: translateX(-50%); width: 22px; height: 20px; padding: 0; border-radius: 4px; border: 1px solid #000; background: #f1c75a; color: #241a08; font-weight: 900; cursor: pointer; animation: pulse 1s infinite alternate; }
 .slot .plus.show { display: block; }
+/* level-up: the '+' buttons flare for a moment (hud.ts adds .lvlup on the own level event) */
+.hud.lvlup .slot .plus.show { animation: plusflare 0.5s ease-in-out 5 alternate; box-shadow: 0 0 16px 5px #ffd75a; }
+@keyframes plusflare { from { box-shadow: 0 0 6px 1px #ffd75a; transform: translateX(-50%) scale(1); } to { box-shadow: 0 0 20px 7px #ffe58f; transform: translateX(-50%) scale(1.18); } }
 .slot.unlearned .icon, .slot.empty .icon { filter: grayscale(1) brightness(0.5); }
 .slot.empty { opacity: 0.45; }
 @keyframes pulse { to { box-shadow: 0 0 10px #f1c75a; } }
@@ -148,7 +151,60 @@ h2, h3 { margin: 4px 0; color: #f3d98c; }
 .minimap { width: 280px; height: 280px; display: block; cursor: pointer; }
 
 .respawn, .recall, .nochamp, .pause-overlay, .gameover, .panel { display: none; }
-.respawn.open { display: block; position: absolute; top: 22%; left: 50%; transform: translateX(-50%); font-size: 30px; font-weight: 800; text-shadow: 0 0 8px #000; }
+.respawn.open {
+  display: flex; flex-direction: column; align-items: center; position: absolute; top: 64px; left: 50%; transform: translateX(-50%) scale(var(--ui)); transform-origin: top center;
+  padding: 6px 26px 8px; background: radial-gradient(ellipse at 50% 40%, rgba(40, 10, 12, 0.85), rgba(12, 8, 10, 0.75)); border: 2px solid #7a2a24; border-radius: 10px; box-shadow: 0 0 24px rgba(0, 0, 0, 0.6);
+}
+.respawn .lbl { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #d8b9a8; }
+.respawn .num { font-size: 46px; line-height: 1; font-weight: 900; font-variant-numeric: tabular-nums; color: #ffe2c4; text-shadow: 0 0 12px #c0392b, 0 0 3px #000; }
+/* death: dark vignette over the (still free) camera view */
+.hud.dead { background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0) 35%, rgba(12, 4, 6, 0.55) 75%, rgba(6, 2, 4, 0.85) 100%); }
+.game.dead canvas.gl { filter: grayscale(0.9) brightness(0.62) contrast(1.05); }
+/* death recap: centre bottom, above the ability bar */
+.death-recap { display: none; }
+.death-recap.open {
+  display: block; position: absolute; left: 50%; bottom: calc(150px * var(--ui)); transform: translateX(-50%) scale(var(--ui)); transform-origin: bottom center; width: 380px;
+  padding: 10px 12px; background: rgba(12, 10, 12, 0.9); border: 1px solid #6b2a24; border-radius: 6px; font-size: 12.5px; animation: feedin 0.3s ease-out;
+}
+.dr-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.dr-portrait { width: 44px; height: 44px; flex: none; border-radius: 50%; border: 2px solid #b0453a; display: grid; place-items: center; font-size: 20px; font-weight: 800; background: #2a1a1c; }
+.dr-killed { font-size: 16px; font-weight: 800; color: #ffcfb8; }
+.dr-total { color: #b8a8a0; font-size: 12px; }
+.dr-none { color: #a99f8a; }
+.dr-bar { display: flex; height: 8px; border-radius: 2px; overflow: hidden; background: #222; }
+.dr-bar.small { grid-column: 1 / -1; height: 4px; }
+.dr-seg.phys { background: #e07a3a; }
+.dr-seg.magic { background: #5b8ef0; }
+.dr-seg.true { background: #f2f2f2; }
+.dr-legend { display: flex; gap: 10px; flex-wrap: wrap; margin: 3px 0 6px; font-size: 11px; color: #d6cbb4; }
+.dr-key::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 4px; border-radius: 2px; vertical-align: middle; }
+.dr-key.phys::before { background: #e07a3a; }
+.dr-key.magic::before { background: #5b8ef0; }
+.dr-key.true::before { background: #f2f2f2; }
+.dr-row { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 8px; align-items: baseline; padding: 3px 0; border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.dr-name { font-weight: 700; color: #f1e6c8; }
+.dr-detail { color: #a99f8a; font-size: 11px; }
+.dr-amount { font-weight: 800; color: #ffb59a; font-variant-numeric: tabular-nums; }
+/* announcer banner (src/ui/announce.ts) */
+.announce { display: none; }
+.announce.open {
+  display: flex; flex-direction: column; align-items: center; position: absolute; top: calc(19% + 20px); left: 50%; transform: translateX(-50%) scale(var(--ui)); transform-origin: top center;
+  min-width: 360px; padding: 8px 34px 9px; pointer-events: none; text-align: center; z-index: 5;
+  background: linear-gradient(90deg, transparent, rgba(14, 12, 18, 0.88) 18%, rgba(14, 12, 18, 0.88) 82%, transparent);
+  border-top: 1px solid rgba(201, 162, 78, 0.6); border-bottom: 1px solid rgba(201, 162, 78, 0.6);
+  animation: annin 2.6s ease-out forwards;
+}
+.announce .ann-title { font-size: 24px; font-weight: 900; letter-spacing: 0.06em; color: #f3d98c; text-shadow: 0 0 12px rgba(0, 0, 0, 0.9); white-space: nowrap; }
+.announce .ann-sub { font-size: 13px; color: #d8cfb6; }
+.announce .ann-sub:empty { display: none; }
+.announce.good .ann-title { color: #9fd0ff; }
+.announce.bad .ann-title, .announce.defeat .ann-title { color: #ff8f7a; }
+.announce.bad, .announce.defeat { border-color: rgba(224, 71, 58, 0.6); }
+.announce.epic .ann-title, .announce.victory .ann-title { color: #ffd76a; text-shadow: 0 0 16px rgba(255, 190, 60, 0.7); }
+.announce.victory .ann-title, .announce.defeat .ann-title { font-size: 34px; }
+@keyframes annin { 0% { opacity: 0; letter-spacing: 0.3em; } 10% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+/* sprite bake banner: below the top bar (the sim waits until it is done) */
+.sprite-loading { position: absolute; left: 50%; top: 58px; transform: translateX(-50%); z-index: 50; padding: 6px 14px; border-radius: 6px; background: rgba(20, 16, 24, 0.82); border: 1px solid rgba(201, 162, 78, 0.4); color: #f2dfbd; font: 600 14px sans-serif; pointer-events: none; }
 .recall.open { display: block; position: absolute; bottom: 190px; left: 50%; transform: translateX(-50%); width: 220px; text-align: center; font-size: 13px; text-shadow: 0 0 3px #000; }
 .recall .track { height: 8px; background: #111; border: 1px solid #000; margin-top: 3px; }
 .recall .fill { height: 100%; background: linear-gradient(90deg, #7fb8ff, #c7a6ff); }
@@ -158,7 +214,7 @@ h2, h3 { margin: 4px 0; color: #f3d98c; }
 .gameover:not(.win) .big { color: #e07a6a; }
 .pause-overlay .hint { color: #cdbf9e; }
 .panel.open { display: block; position: absolute; background: var(--panel); border: 2px solid var(--brass-dim); border-radius: 6px; padding: 14px 18px; pointer-events: auto; }
-.panel.scoreboard.open { top: 18%; left: 50%; transform: translateX(-50%); min-width: 480px; text-align: center; }
+.panel.scoreboard.open { top: 56px; left: 50%; transform: translateX(-50%); min-width: 480px; text-align: center; }
 .panel.shop.open { top: 12%; left: 12%; width: 420px; height: 300px; }
 .panel.debug.open { top: 50px; right: 10px; font-size: 12px; }
 .panel .ttl, .cheats .ttl { font-weight: 800; color: #f3d98c; margin-bottom: 6px; }

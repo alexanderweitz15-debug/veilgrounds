@@ -31,6 +31,11 @@ export class ClientState {
   /** Interpolated positions for the current frame, keyed by eid. */
   readonly ix = new Map<number, number>();
   readonly iy = new Map<number, number>();
+  /**
+   * Last snapshot entity seen per eid (kind/team/champ of units that are now hidden or dead), for the death recap
+   * and announcements. Minion eids get reused; the entry is overwritten when the new unit is seen.
+   */
+  readonly known = new Map<number, SnapEntity>();
 
   /** Ingest one snapshot; returns its events for the fx/HUD dispatch. */
   ingest(s: Snapshot, now: number): SimEvent[] {
@@ -38,7 +43,10 @@ export class ClientState {
     this.recvAt = now;
     this.myTeam = s.team;
     this.byId.clear();
-    for (const e of s.entities) this.byId.set(e.id, e);
+    for (const e of s.entities) {
+      this.byId.set(e.id, e);
+      this.known.set(e.id, e);
+    }
     for (const ev of s.events) {
       if (ev.e === 'death') {
         const scorer = ev.team === 0 ? 1 : 0;

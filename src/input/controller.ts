@@ -52,7 +52,9 @@ export class InputController {
     };
     this.wheel = new PingWheel(el.parentElement ?? document.body);
     this.off.push(() => this.wheel.el.remove());
-    on(el, 'contextmenu', (e) => e.preventDefault());
+    // never show the browser context menu during a game (HUD, minimap, overlays included); capture phase so panels
+    // that stop propagation (shop right-click buy) still get their own handler
+    on(window, 'contextmenu', (e) => e.preventDefault(), { capture: true });
     on(el, 'mousedown', (e) => this.mouseDown(e));
     on(window, 'mouseup', (e) => this.mouseUp(e));
     on(window, 'mousemove', (e) => {
@@ -179,7 +181,8 @@ export class InputController {
   }
 
   private act(action: Action, e: KeyboardEvent): void {
-    const levelMod = settings.levelMod === 'shift' ? e.shiftKey : e.ctrlKey;
+    // Ctrl (LoL default) or Shift: Ctrl+W/Q are browser shortcuts outside fullscreen, Shift always works
+    const levelMod = e.ctrlKey || e.shiftKey;
     const abilitySlot = ({ q: 0, w: 1, e: 2, r: 3 } as Partial<Record<Action, 0 | 1 | 2 | 3>>)[action];
     if (abilitySlot !== undefined) {
       if (levelMod) this.send({ t: 'levelUp', slot: abilitySlot });

@@ -15,6 +15,7 @@ import { Minimap } from '../ui/minimap';
 import { buildSettingsPanel } from '../ui/settingsPanel';
 import { onSettingsChange, settings } from '../settings';
 import { t } from '../i18n';
+import { getChampionAtlas } from '../render/sheets';
 
 export class Game {
   private readonly root: HTMLElement;
@@ -55,6 +56,18 @@ export class Game {
     this.world = new World(canvas, map);
     const f = map.sides[0].fountain;
     this.world.rig.focus(f.x + 600, f.y + 600);
+    // bake the animated champion sprites (worker pool); champions show the placeholder sprite until it is done
+    const loading = document.createElement('div');
+    loading.className = 'sprite-loading';
+    loading.style.cssText = 'position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:50;padding:6px 14px;border-radius:6px;background:rgba(20,16,24,.82);color:#f2dfbd;font:600 14px sans-serif;pointer-events:none';
+    loading.textContent = 'Lade Champions…';
+    this.root.appendChild(loading);
+    void getChampionAtlas(config?.players.map((p) => p.champion) ?? ['mira'], (done, total) => {
+      loading.textContent = `Lade Champions… ${Math.round((done / total) * 100)} %`;
+    })
+      .then((atlas) => this.world.setChampionAtlas(atlas))
+      .catch((e) => console.warn('champion atlas failed, keeping placeholder sprites', e))
+      .finally(() => loading.remove());
     this.link = config ? workerLink(config, 0) : mockLink();
     this.link.onBotDebug = (rows, tick) => this.hud.botDebug.update(rows, tick);
     this.link.onSnap = (s) => {
@@ -131,12 +144,12 @@ export class Game {
     const tryFullscreen = (): void => {
       if (!settings.fullscreenLock) return;
       if (!this.state.snap) {
-        this.root.addEventListener('pointerdown', tryFullscreen, { once: true });
         return;
       }
-      void enterGameFullscreen();
+      if (!document.fullscreenElement) void enterGameFullscreen();
     };
-    this.root.addEventListener('pointerdown', tryFullscreen, { once: true });
+    // every click in the running game re-enters fullscreen after the player left it (hold Esc); setting turns it off
+    this.root.addEventListener('pointerdown', tryFullscreen);
     this.resize();
     this.raf = requestAnimationFrame(this.loop);
   }

@@ -353,12 +353,12 @@ export function targetLists(sim: Sim, units: ArrayLike<number>): [TargetLists, T
 }
 
 /** Nearest unit of `list` within AGGRO_RANGE (+ target radius) of minion m; ties -> first in query order. */
-function nearest(sim: Sim, m: number, list: number[]): number {
+function nearest(sim: Sim, m: number, list: number[], range = AGGRO_RANGE): number {
   const { Pos, Unit } = sim.c;
   let best = -1;
   let bestD = Infinity;
   for (const t of list) {
-    const r = AGGRO_RANGE + Unit.radius[t]!;
+    const r = range + Unit.radius[t]!;
     const d = dist2(Pos.x[m]!, Pos.y[m]!, Pos.x[t]!, Pos.y[t]!);
     if (d <= r * r && d < bestD) {
       best = t;
@@ -404,7 +404,7 @@ export function updateMinionAggro(sim: Sim, m: number, lists: [TargetLists, Targ
     const mt = nearest(sim, m, lists[team as 0 | 1].minions);
     if (mt >= 0) return setTarget(sim, m, mt, 4);
     if (st.prio[m] === 6) {
-      const r = AGGRO_RANGE + Unit.radius[cur]!;
+      const r = sim.c.Stats.range[m]! + Unit.radius[m]! + 150 + Unit.radius[cur]!;
       if (dist2(Pos.x[m]!, Pos.y[m]!, Pos.x[cur]!, Pos.y[cur]!) > r * r) {
         Atk.target[m] = -1;
         st.prio[m] = NO_TARGET;
@@ -423,7 +423,8 @@ export function updateMinionAggro(sim: Sim, m: number, lists: [TargetLists, Targ
   if (t >= 0) return setTarget(sim, m, t, 4);
   t = nearest(sim, m, l.structures);
   if (t >= 0) return setTarget(sim, m, t, 5);
-  t = nearest(sim, m, l.champs);
+  // idle champions only when (almost) in the minion's own attack range: no chasing champions across the lane
+  t = nearest(sim, m, l.champs, sim.c.Stats.range[m]! + sim.c.Unit.radius[m]! + 100);
   if (t < 0) t = nearest(sim, m, l.dummies);
   if (t >= 0) return setTarget(sim, m, t, 6);
   walkLane(sim, m);

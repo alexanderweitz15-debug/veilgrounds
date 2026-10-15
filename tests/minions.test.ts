@@ -64,13 +64,16 @@ describe('minion aggro', () => {
     void far;
   });
 
-  it('nearest champion when nothing else is around; nothing beyond 500', () => {
+  it('idle champion only when close to the minion attack range (no lane-wide chasing)', () => {
     const sim = newSim(false);
     const m = spawnMinion(sim, Kind.MinionMelee, 0, Lane.Mid, X, X);
     const champ = spawnChamp(sim, 1, X + 600, X);
     run(sim);
     expect(sim.c.Atk.target[m]).toBe(-1);
     sim.c.Pos.x[champ] = X + 400;
+    run(sim);
+    expect(sim.c.Atk.target[m]).toBe(-1);
+    sim.c.Pos.x[champ] = X + 200;
     run(sim);
     expect(sim.c.Atk.target[m]).toBe(champ);
   });

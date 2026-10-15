@@ -82,5 +82,6 @@
   "lobby.keystone": "Schlüsselprägung",
   "lobby.summoners": "Beschwörerzauber",
   "lobby.role": "Rolle: Mitte",
-  "lobby.start": "Spiel starten"
+  "lobby.start": "Spiel starten",
+  "set.fullscreenLock": "Vollbild + Tastensperre (Strg+W/Q im Spiel nutzbar, Esc halten zum Verlassen; Chrome/Edge)"
 }

@@ -396,6 +396,22 @@ export function updateMinionAggro(sim: Sim, m: number, lists: [TargetLists, Targ
     const c = bestCall(sim, m, calls, 1);
     if (c) return setTarget(sim, m, c.src, 1);
   }
+  // Low-priority targets (structure, idle champion) are not sticky: a minion in aggro range or a call for help
+  // takes over, and an idle champion is dropped once it leaves aggro range (no chasing a champion across the lane).
+  if (cur >= 0 && st.prio[m]! >= 5) {
+    const c = bestCall(sim, m, calls, 3);
+    if (c) return setTarget(sim, m, c.src, c.prio);
+    const mt = nearest(sim, m, lists[team as 0 | 1].minions);
+    if (mt >= 0) return setTarget(sim, m, mt, 4);
+    if (st.prio[m] === 6) {
+      const r = AGGRO_RANGE + Unit.radius[cur]!;
+      if (dist2(Pos.x[m]!, Pos.y[m]!, Pos.x[cur]!, Pos.y[cur]!) > r * r) {
+        Atk.target[m] = -1;
+        st.prio[m] = NO_TARGET;
+        cur = -1;
+      }
+    }
+  }
   if (cur >= 0) {
     Move.mode[m] = 2;
     return;

@@ -28,6 +28,29 @@ describe('minion aggro', () => {
     expect(sim.c.Pos.x[m]!).toBeGreaterThan(before + 150);
   });
 
+  it('drops an idle champion target for a minion that comes into aggro range', () => {
+    const sim = newSim(false);
+    const m = spawnMinion(sim, Kind.MinionMelee, 0, Lane.Mid, X, X);
+    const champ = spawnChamp(sim, 1, X + 150, X + 150);
+    run(sim);
+    expect(sim.c.Atk.target[m]).toBe(champ);
+    const enemy = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Mid, X - 300, X - 300);
+    run(sim);
+    expect(sim.c.Atk.target[m]).toBe(enemy);
+  });
+
+  it('stops chasing an idle champion that leaves aggro range', () => {
+    const sim = newSim(false);
+    const m = spawnMinion(sim, Kind.MinionMelee, 0, Lane.Mid, X, X);
+    const champ = spawnChamp(sim, 1, X + 150, X + 150);
+    run(sim);
+    expect(sim.c.Atk.target[m]).toBe(champ);
+    sim.c.Pos.x[champ] = X + 700;
+    sim.c.Pos.y[champ] = X + 700;
+    run(sim);
+    expect(sim.c.Atk.target[m]).toBe(-1);
+  });
+
   it('prefers the nearest enemy minion over a nearer champion (no calls)', () => {
     const sim = newSim(false);
     const m = spawnMinion(sim, Kind.MinionMelee, 0, Lane.Mid, X, X);

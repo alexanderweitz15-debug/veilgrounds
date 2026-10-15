@@ -1,4 +1,5 @@
 // One running match on the client: sim link, render world, input, HUD, minimap and the frame loop.
+import { blockBrowserShortcuts, enterGameFullscreen, exitGameFullscreen } from './fullscreen';
 import { loadMap } from '../sim/map';
 import type { SimConfig } from '../sim/types';
 import { ClientState } from './state';
@@ -107,6 +108,12 @@ export class Game {
     this.offSettings = onSettingsChange(() => this.hud.applyScale());
     window.addEventListener('resize', this.onResize);
     window.addEventListener('beforeunload', this.beforeUnload);
+    window.addEventListener('keydown', blockBrowserShortcuts, true);
+    // Fullscreen + Keyboard Lock (Ctrl+W levels up instead of closing the tab). Retry on first click if the
+    // start was not a user gesture (e.g. ?play= URL).
+    void enterGameFullscreen().then((ok) => {
+      if (!ok && settings.fullscreenLock) this.root.addEventListener('pointerdown', () => void enterGameFullscreen(), { once: true });
+    });
     this.resize();
     this.raf = requestAnimationFrame(this.loop);
   }
@@ -195,6 +202,8 @@ export class Game {
     this.offSettings();
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('beforeunload', this.beforeUnload);
+    window.removeEventListener('keydown', blockBrowserShortcuts, true);
+    exitGameFullscreen();
     this.world.dispose();
     this.root.remove();
     this.onExit();

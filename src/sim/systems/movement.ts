@@ -4,7 +4,7 @@
 import { query } from 'bitecs';
 import type { Sim } from '../sim';
 import type { System } from './index';
-import { DT, isMinion } from '../types';
+import { DT, isMinion, isStructure } from '../types';
 import { findPath, lineWalkable, walkable } from '../map';
 import { isRef } from '../sim';
 
@@ -76,6 +76,7 @@ export const movementSystem: System = {
       if (path.length === 0 && Move.mode[eid] === 1) Move.mode[eid] = 0;
     }
     separateMinions(sim, ents);
+    collideStructures(sim, ents);
   },
 };
 
@@ -108,6 +109,40 @@ function separateMinions(sim: Sim, ents: ArrayLike<number>): void {
       Pos.y[a] = Pos.y[a]! - uy * push;
       Pos.x[b] = Pos.x[b]! + ux * push;
       Pos.y[b] = Pos.y[b]! + uy * push;
+    }
+  }
+}
+
+/**
+ * Units cannot overlap alive structures (towers, inhibitors, nexus). Overlapping units are pushed to the rim;
+ * this also covers dash/blink endpoints. Sliding along the rim comes from the push-out plus continued movement.
+ * ponytail: O(units x structures) (~120 x 22); fine until profiling says otherwise.
+ */
+function collideStructures(sim: Sim, ents: ArrayLike<number>): void {
+  const { Pos, Unit } = sim.c;
+  const structs: number[] = [];
+  for (let i = 0; i < ents.length; i++) {
+    const e = ents[i]!;
+    const k = Unit.kind[e]!;
+    if (Unit.alive[e] && isStructure(k)) structs.push(e);
+  }
+  for (let i = 0; i < ents.length; i++) {
+    const e = ents[i]!;
+    if (!Unit.alive[e] || isStructure(Unit.kind[e]!)) continue;
+    for (const s of structs) {
+      const dx = Pos.x[e]! - Pos.x[s]!;
+      const dy = Pos.y[e]! - Pos.y[s]!;
+      const min = Unit.radius[s]! + Unit.radius[e]!;
+      const d2 = dx * dx + dy * dy;
+      if (d2 >= min * min) continue;
+      const d = Math.sqrt(d2);
+      // exactly centred: push toward own side (deterministic)
+      const ux = d > 0 ? dx / d : Unit.team[e] === 1 ? 0.7071 : -0.7071;
+      const uy = d > 0 ? dy / d : Unit.team[e] === 1 ? 0.7071 : -0.7071;
+      // tangential nudge so units walking straight at a structure slide around instead of sticking
+      const side = ux * sim.c.Face.y[e]! - uy * sim.c.Face.x[e]! >= 0 ? 1 : -1; // slide toward facing side
+      Pos.x[e] = Pos.x[s]! + ux * min - uy * 2 * side;
+      Pos.y[e] = Pos.y[s]! + uy * min + ux * 2 * side;
     }
   }
 }

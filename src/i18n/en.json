@@ -82,5 +82,6 @@
   "lobby.keystone": "Keystone",
   "lobby.summoners": "Summoner spells",
   "lobby.role": "Role: mid",
-  "lobby.start": "Start game"
+  "lobby.start": "Start game",
+  "set.fullscreenLock": "Fullscreen + keyboard lock (Ctrl+W/Q usable in game, hold Esc to leave; Chrome/Edge)"
 }

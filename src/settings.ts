@@ -14,6 +14,8 @@ export interface Settings {
   /** Modifier for ability level-up (Ctrl+W closes browser tabs, so Shift is offered). */
   levelMod: 'ctrl' | 'shift';
   cameraLocked: boolean;
+  /** Enter fullscreen + Keyboard Lock on game start so Ctrl+W/Q reach the game (Chromium). */
+  fullscreenLock: boolean;
   /** Last picked rune preset id per champion id (lobby). */
   runePresets: Record<string, string>;
 }
@@ -27,6 +29,7 @@ const DEFAULTS: Settings = {
   edgeScroll: true,
   levelMod: 'ctrl',
   cameraLocked: false,
+  fullscreenLock: true,
   runePresets: {},
 };
 

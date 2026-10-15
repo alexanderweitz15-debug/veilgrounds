@@ -85,6 +85,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.attackMoveOnCursor'), check('attackMoveOnCursor'));
     row(t('set.edgeScroll'), check('edgeScroll'));
     row(t('set.cameraLocked'), check('cameraLocked'));
+    row(t('set.fullscreenLock'), check('fullscreenLock'));
     row(t('set.levelMod'), select(settings.levelMod, [['ctrl', 'Strg / Ctrl'], ['shift', 'Shift']], (v) => updateSettings({ levelMod: v })));
     const h = document.createElement('h3');
     h.textContent = t('set.keybinds');

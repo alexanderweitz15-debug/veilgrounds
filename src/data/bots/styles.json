@@ -1,0 +1,30 @@
+{
+  "note": "Bot play-style axes, 0..1 each (0 = left label, 1 = right label). Independent of rank: rank decides how WELL a bot plays, style decides HOW. 'mechanics' shifts execution quality within the rank (±1 rank step at the extremes). Per bot: archetype bias + personality noise, overridable in the lobby later.",
+  "axes": [
+    { "id": "tradeLength", "left": { "de": "kurze Trades", "en": "short trades" }, "right": { "de": "lange Trades", "en": "long trades" } },
+    { "id": "aggression", "left": { "de": "passiv", "en": "passive" }, "right": { "de": "aggressiv", "en": "aggressive" } },
+    { "id": "kiting", "left": { "de": "kitet viel", "en": "kites a lot" }, "right": { "de": "keine Kites", "en": "no kiting" } },
+    { "id": "mechanics", "left": { "de": "Skill: Profi", "en": "skill: pro" }, "right": { "de": "Skill: Anfänger", "en": "skill: beginner" } },
+    { "id": "farmVsFight", "left": { "de": "Farm-Fokus", "en": "farm focus" }, "right": { "de": "Kill-Fokus", "en": "kill focus" } },
+    { "id": "roaming", "left": { "de": "bleibt in Lane", "en": "stays in lane" }, "right": { "de": "roamt viel", "en": "roams a lot" } },
+    { "id": "risk", "left": { "de": "vorsichtig", "en": "careful" }, "right": { "de": "riskant", "en": "risky" } },
+    { "id": "vision", "left": { "de": "wardet wenig", "en": "wards little" }, "right": { "de": "wardet viel", "en": "wards a lot" } },
+    { "id": "objectives", "left": { "de": "ignoriert Objectives", "en": "ignores objectives" }, "right": { "de": "Objective-fokussiert", "en": "objective focused" } },
+    { "id": "teamplay", "left": { "de": "Solo / Splitpush", "en": "solo / splitpush" }, "right": { "de": "Teamplay / gruppiert", "en": "teamplay / grouping" } }
+  ],
+  "archetypeBias": {
+    "marksman": { "tradeLength": 0.6, "kiting": 0.3, "farmVsFight": 0.35, "roaming": 0.3 },
+    "assassin": { "tradeLength": 0.25, "aggression": 0.7, "farmVsFight": 0.7, "roaming": 0.7, "risk": 0.65 },
+    "skillshot_mage": { "tradeLength": 0.3, "kiting": 0.35, "aggression": 0.45 },
+    "burst_mage": { "tradeLength": 0.25, "aggression": 0.6 },
+    "juggernaut": { "tradeLength": 0.8, "kiting": 0.8, "aggression": 0.65, "teamplay": 0.5 },
+    "tank_engage": { "tradeLength": 0.6, "aggression": 0.6, "teamplay": 0.8, "vision": 0.6 },
+    "enchanter": { "aggression": 0.35, "vision": 0.8, "teamplay": 0.85, "farmVsFight": 0.6 },
+    "hook_support": { "aggression": 0.65, "vision": 0.75, "teamplay": 0.8, "risk": 0.6 },
+    "jungle_bruiser": { "roaming": 0.75, "objectives": 0.7, "aggression": 0.6 },
+    "jungle_assassin": { "roaming": 0.8, "aggression": 0.7, "risk": 0.65 },
+    "splitpusher": { "teamplay": 0.15, "roaming": 0.25, "farmVsFight": 0.3, "objectives": 0.6 },
+    "battlemage": { "tradeLength": 0.7, "aggression": 0.55 }
+  },
+  "noiseSigma": 0.15
+}

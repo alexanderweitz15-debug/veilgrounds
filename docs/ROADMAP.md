@@ -7,8 +7,8 @@
 | 2 Champions, Items, Prägungen, Zauber | ~95 % | 26 Champions inkl. Hooks, Engine, Shop (rekursive Rezepte), Item-Passiva/Aktive, Prägungs-Effekte + Presets, alle 8 Beschwörerzauber, Wards/Trinkets, Champion-Sprites | Combo-Abnahme, Telegraph-Audit |
 | 3 Bots Gold | ~70 % → **läuft (Agent Bots)** | Behavior Tree als JSON, Wahrnehmung ohne Allwissen, Team-KI, Ganks/Roams/Trades/Kiten, F9-Overlay, Entscheidungs-Log, bot-sim | CS-Kalibrierung (2,9 statt 6,8 CS/min), Wards/Kontrollwards, Baron/Kesselbrut, Log-Drosselung |
 | 4 Ränge + Humanisierung | ~50 % → **läuft (Agent Bots)** | Rangprofile, 10 Spielstil-Achsen, Reaktionszeiten, Varianz, Pings, Rage-„?“-Pings + Toxizitäts-Schalter | Kalibrierung je Rang, fehlende Fehlerarten, Siegquoten |
-| 5 Trainer | ~10 % → **läuft (Agent Trainer)** | Sandbox-Cheats, Lane-Übung | Last-Hit-, Dodge-, Kiting-/Combo-Trainer, Post-Game-Analyse |
-| 6 Politur | ~30 % → **läuft (Agent Art)** | Menüs, Enzyklopädie, prozeduraler Sound, Vollbild, Stil C, PWA (installierbar, offline nach erstem Laden) | Minion-Sprites, Porträts, Barrierefreiheit, Performance, Szenario-Trainer, Challenger-Geist |
+| 5 Trainer | ~85 % | Last-Hit- (auch Turm), Ausweich-, Kiting-/Combo-Trainer, Lane-Duell 1v1, Jungle-Duell, Teamkampf-Arena, Post-Game-Analyse, Sandbox+ (Level, keine CDs, Godmode, Welle, Camps) | Arena-Bots greifen sich nicht gegenseitig an (src/ai), Trainingsplan, Verlauf über mehrere Matches |
+| 6 Politur | ~45 % | Menüs, Enzyklopädie, prozeduraler Sound, Vollbild, Stil C, PWA, gemalte Minion-Sprites, Porträts, Champions 1,15×, Team-Chat | Audit läuft (Jungle-Optik, Todes-Bildschirm, Ansagen), Barrierefreiheit, Performance, Szenario-Trainer, Challenger-Geist |
 
 Nutzer-Entscheidung 2026-10-15: zuerst **Phase 2 abschließen**.
 

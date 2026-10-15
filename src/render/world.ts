@@ -14,6 +14,7 @@ import { buildAtlas, SPRITE_SIZE } from './sprites';
 import { Fx } from './fx';
 import { FogOfWar } from './fog';
 import { WardMarkers } from './wards';
+import type { ChampionAtlas } from './champions';
 
 /** Direction toward the sun: low morning light from the east-south-east. */
 const SUN_DIR = new THREE.Vector3(0.62, 0.62, 0.48).normalize();
@@ -70,8 +71,15 @@ export class World {
     this.rig.setAspect(w / h);
   }
 
+  /** Switch champions (and Hark) to the animated sprite atlas. */
+  setChampionAtlas(atlas: ChampionAtlas): void {
+    this.units.setChampionAtlas(atlas);
+  }
+
   onEvent(ev: SimEvent, state: ClientState, now: number): void {
     this.fx.onEvent(ev, state, now);
+    if (ev.e === 'cast') this.units.champs?.onCast(ev.src, now);
+    else if (ev.e === 'death') this.units.champs?.onDeath(ev.eid, now);
     if (ev.e === 'damage') {
       const d = state.byId.get(ev.dst);
       if (d) this.units.flash(d.serial, now);
@@ -122,6 +130,8 @@ export class World {
   }
 
   unitHeight(e: SnapEntity): number {
+    const ch = this.units.championHeight(e);
+    if (ch !== null) return ch;
     const key = spriteKeyFor(e);
     if (key) return SPRITE_SIZE[key] * 0.92;
     if (e.kind === Kind.Ward) return 90; // ward markers (render/wards.ts): bars + picking

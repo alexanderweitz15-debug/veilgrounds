@@ -148,6 +148,8 @@ export interface Kit {
   name: string;
   /** world height of the sprite cell (same scale as SPRITE_SIZE in src/render/sprites.ts) */
   world: number;
+  /** per-anim frame count override (0 = anim not baked, e.g. minions have no cast) */
+  frames?: Partial<Record<Anim, number>>;
   body: Partial<BodySpec>;
   outfit: Outfit;
   hold: Hold;

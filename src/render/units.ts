@@ -8,6 +8,8 @@ import { PITCH } from './camera';
 import { REL } from './palette';
 import { SPRITE_KEYS, SPRITE_SIZE, type Atlas, type SpriteKey } from './sprites';
 import { MIRA_ID } from '../game/modes';
+import { ChampionSprites } from './championSprites';
+import type { ChampionAtlas } from './champions';
 
 const CAPACITY: Record<SpriteKey, number> = { mira: 10, champ: 10, melee: 96, caster: 96, siege: 32, super: 32, dummy: 8, monster: 32 };
 const FLASH_MS = 140;
@@ -54,6 +56,8 @@ export class Units {
   private readonly s = new THREE.Vector3();
   private readonly col = new THREE.Color();
   private readonly qFlat = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+  /** Animated champion sprites once their atlas is baked; until then champions use the placeholder sprite. */
+  champs: ChampionSprites | null = null;
 
   constructor(atlas: Atlas, sunDir: THREE.Vector3) {
     this.qCast = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.atan2(sunDir.x, sunDir.z), 0));
@@ -93,6 +97,18 @@ export class Units {
     this.group.add(this.rings);
   }
 
+  setChampionAtlas(atlas: ChampionAtlas): void {
+    if (this.champs) this.group.remove(this.champs.group);
+    this.champs = new ChampionSprites(atlas, this.qVis, this.qCast);
+    this.group.add(this.champs.group);
+  }
+
+  /** Figure height above the feet for bars/picking, or null if not drawn by the champion sprites. */
+  championHeight(e: SnapEntity): number | null {
+    const id = this.champs?.idFor(e);
+    return id ? this.champs!.heightOf(id) : null;
+  }
+
   /** Hit flash on damage. */
   flash(serial: number, now: number): void {
     this.flashAt.set(serial, now);
@@ -110,13 +126,16 @@ export class Units {
     const snap = state.snap;
     const myEid = snap?.me?.eid ?? -1;
     const tSec = now / 1000;
+    const champs = this.champs;
+    champs?.begin();
     if (snap) {
       for (const e of snap.entities) {
         if (!e.alive) continue;
         const key = spriteKeyFor(e);
         if (!key) continue;
+        const champId = champs ? champs.idFor(e) : null;
         const g = this.groups.get(`${key}:${Math.min(1, e.team)}`)!;
-        if (g.n >= g.vis.instanceMatrix.count) continue;
+        if (!champId && g.n >= g.vis.instanceMatrix.count) continue;
         let x = state.x(e);
         let y = state.y(e);
         // monsters scale with their hitbox (Agent H): small camp members ~0.6x, Schleierwächter ~1.8x
@@ -143,6 +162,19 @@ export class Units {
           sx = 1.06;
           sy *= 0.97;
         }
+        if (champId) {
+          let c = 1;
+          const f = this.flashAt.get(e.serial);
+          if (f !== undefined) {
+            const k = (now - f) / FLASH_MS;
+            if (k >= 1) this.flashAt.delete(e.serial);
+            else c = 1 + (1 - k) * 1.6;
+          }
+          if (e.id === hoverId) c *= 1.25;
+          champs!.push(e, champId, x, y, c, now);
+          if (e.kind === Kind.Champion && rings < 48) rings = this.ring(state, e, myEid, rings);
+          continue;
+        }
         const flip = e.fx < 0 ? -1 : 1;
         this.p.set(x, bob, -y);
         this.s.set(flip * size * sx, size * sy, 1);
@@ -164,18 +196,10 @@ export class Units {
         g.vis.setColorAt(g.n, this.col);
         g.n++;
         // ground ring: champions, the dummy and whatever is hovered
-        if ((e.kind === Kind.Champion || e.kind === Kind.Dummy || e.id === hoverId) && rings < 48) {
-          const r = Math.max(e.radius, 40) * 1.5;
-          this.p.set(state.x(e), 2, -state.y(e));
-          this.s.set(r, r, r);
-          this.m.compose(this.p, this.qFlat, this.s);
-          this.rings.setMatrixAt(rings, this.m);
-          this.col.set(e.id === myEid ? REL.me : e.team === state.myTeam ? REL.ally : REL.enemy);
-          this.rings.setColorAt(rings, this.col);
-          rings++;
-        }
+        if ((e.kind === Kind.Champion || e.kind === Kind.Dummy || e.id === hoverId) && rings < 48) rings = this.ring(state, e, myEid, rings);
       }
     }
+    champs?.end(now);
     for (const g of this.groups.values()) {
       g.vis.count = g.cast.count = g.n;
       g.vis.instanceMatrix.needsUpdate = true;
@@ -185,5 +209,16 @@ export class Units {
     this.rings.count = rings;
     this.rings.instanceMatrix.needsUpdate = true;
     if (this.rings.instanceColor) this.rings.instanceColor.needsUpdate = true;
+  }
+
+  private ring(state: ClientState, e: SnapEntity, myEid: number, i: number): number {
+    const r = Math.max(e.radius, 40) * 1.5;
+    this.p.set(state.x(e), 2, -state.y(e));
+    this.s.set(r, r, r);
+    this.m.compose(this.p, this.qFlat, this.s);
+    this.rings.setMatrixAt(i, this.m);
+    this.col.set(e.id === myEid ? REL.me : e.team === state.myTeam ? REL.ally : REL.enemy);
+    this.rings.setColorAt(i, this.col);
+    return i + 1;
   }
 }

@@ -1,4 +1,5 @@
 // One running match on the client: sim link, render world, input, HUD, minimap and the frame loop.
+import { ChatBox } from '../ui/chat';
 import { soundForEvent } from '../audio/eventSounds';
 import { audioUnlock, setListener, setVolume } from '../audio/sfx';
 import { blockBrowserShortcuts, enterGameFullscreen, exitGameFullscreen } from './fullscreen';
@@ -27,6 +28,7 @@ export class Game {
   private readonly overlay = new Overlay();
   private readonly minimap: Minimap;
   private readonly menu: HTMLElement;
+  private readonly chat: ChatBox;
   private raf = 0;
   private lastFrame = performance.now();
   private focusedOnce = false;
@@ -77,6 +79,7 @@ export class Game {
         this.world.onEvent(ev, this.state, now);
         this.overlay.onEvent(ev, this.state, now);
         this.hud.onEvent(ev, this.state, now);
+        this.chat?.onEvent(ev);
         soundForEvent(ev, this.state);
       }
     };
@@ -109,6 +112,13 @@ export class Game {
     mmWrap.appendChild(this.minimap.canvas);
     this.hud.root.appendChild(mmWrap);
 
+    this.chat = new ChatBox(
+      this.root,
+      config?.players ?? [],
+      config?.players.find((p) => p.isHuman)?.slot ?? 0,
+      (text) => this.link.send({ t: 'chat', text }),
+      () => this.menu.classList.contains('open'),
+    );
     this.menu = document.createElement('div');
     this.menu.className = 'ingame-menu';
     this.root.appendChild(this.menu);
@@ -123,7 +133,7 @@ export class Game {
         openMenu: () => this.openMenu(),
         useItem: (i) => this.hud.flashItem(i),
         onArmedChange: (a: Armed) => this.hud.setArmed(a),
-        menuOpen: () => this.menu.classList.contains('open'),
+        menuOpen: () => this.menu.classList.contains('open') || this.chat.typing,
       },
       canvas,
     );
@@ -244,6 +254,7 @@ export class Game {
     this.link.dispose();
     this.input.dispose();
     this.minimap.dispose();
+    this.chat.dispose();
     this.offSettings();
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('beforeunload', this.beforeUnload);

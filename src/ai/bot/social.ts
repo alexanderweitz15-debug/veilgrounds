@@ -7,6 +7,7 @@ import { Kind } from '../../sim/types';
 import type { NodeCtx, NodeResult } from '../bt/types';
 import type { SnapEntity } from './types';
 import { chatLine } from '../humanize/names';
+import { CHAMPION_DATA } from '../../sim/champions';
 import { dst, unit } from './geo';
 import { estimateExchange, rankIdx } from '../bt/deps';
 import { OBJECTIVES } from './teamai';
@@ -33,7 +34,7 @@ export function emitPing(n: NodeCtx, kind: PingKind, x: number, y: number, targe
 /** Team chat line of a category (rank band), at most one per 45 s; refers to the log entry it explains. */
 export function say(n: NodeCtx, cat: string, reason: string, vars: Record<string, string> = {}): void {
   if (n.v.tick - n.mem.ext.chatAt < 45 * 30) return;
-  const text = chatLine(n.rng, cat, n.ctx.profile.rank, true, vars);
+  const text = chatLine(n.rng, cat, n.ctx.profile.rank, n.ctx.toxic, vars);
   if (!text) return;
   n.mem.ext.chatAt = n.v.tick;
   const ref = n.log('chat', cat, reason, { text });
@@ -212,5 +213,10 @@ function ragePings(n: NodeCtx): void {
     const count = Math.min(4, 1 + Math.floor(n.rng.next() * ext.rageDeaths.length * (ri <= SILVER ? 2 : 1)));
     for (let i = 0; i < count; i++) n.out.push({ cmd: { t: 'ping', kind: 'question', x: ev.x, y: ev.y }, delay: i * 6 + n.rng.int(4) });
     n.log('rage', `?x${count}`, 'human ally died', { deaths: ext.rageDeaths.length, pingX: Math.round(ev.x), pingY: Math.round(ev.y), pingSrc: 'ally', pingSlot: victim.slot });
+    // ...and flame the player in team chat (same chance curve, from the 2nd death on)
+    if (ext.rageDeaths.length >= 2 && n.rng.chance(chance)) {
+      const champ = (CHAMPION_DATA as Record<string, { name: string }>)[victim.champ ?? '']?.name ?? '';
+      say(n, 'flamePlayer', 'human ally keeps dying', { champ, d: String(ext.rageDeaths.length) });
+    }
   }
 }

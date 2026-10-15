@@ -41,7 +41,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     i.addEventListener('change', () => updateSettings({ [key]: i.checked } as Partial<Settings>));
     return i;
   };
-  const slider = (key: 'cameraSpeed' | 'uiScale', min: number, max: number, step: number, fmt: (v: number) => string): HTMLElement => {
+  const slider = (key: 'cameraSpeed' | 'uiScale' | 'volume', min: number, max: number, step: number, fmt: (v: number) => string): HTMLElement => {
     const wrap = document.createElement('span');
     wrap.className = 'slider';
     const i = document.createElement('input');
@@ -86,6 +86,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.edgeScroll'), check('edgeScroll'));
     row(t('set.cameraLocked'), check('cameraLocked'));
     row(t('set.fullscreenLock'), check('fullscreenLock'));
+    row(t('set.volume'), slider('volume', 0, 1, 0.05, (v) => `${Math.round(v * 100)} %`));
     row(t('set.levelMod'), select(settings.levelMod, [['ctrl', 'Strg / Ctrl'], ['shift', 'Shift']], (v) => updateSettings({ levelMod: v })));
     const h = document.createElement('h3');
     h.textContent = t('set.keybinds');

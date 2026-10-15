@@ -83,5 +83,11 @@
   "lobby.summoners": "Beschwörerzauber",
   "lobby.role": "Rolle: Mitte",
   "lobby.start": "Spiel starten",
-  "set.fullscreenLock": "Vollbild + Tastensperre (Strg+W/Q im Spiel nutzbar, Esc halten zum Verlassen; Chrome/Edge)"
+  "set.fullscreenLock": "Vollbild + Tastensperre (Strg+W/Q im Spiel nutzbar, Esc halten zum Verlassen; Chrome/Edge)",
+  "menu.tagTraining": "Training",
+  "menu.footBots": "<b>Bots</b> von Eisen bis Challenger",
+  "menu.footVersion": "Prototyp · Platzhalter-Grafik",
+  "set.volume": "Lautstärke",
+  "menu.encyclopedia": "Enzyklopädie",
+  "menu.encyclopediaDesc": "Champions, Fähigkeiten, Items, Bot-Ränge und Spielstile."
 }

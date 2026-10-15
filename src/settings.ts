@@ -16,6 +16,8 @@ export interface Settings {
   cameraLocked: boolean;
   /** Enter fullscreen + Keyboard Lock on game start so Ctrl+W/Q reach the game (Chromium). */
   fullscreenLock: boolean;
+  /** Master volume 0..1 (procedural sound). */
+  volume: number;
   /** Last picked rune preset id per champion id (lobby). */
   runePresets: Record<string, string>;
 }
@@ -30,6 +32,7 @@ const DEFAULTS: Settings = {
   levelMod: 'ctrl',
   cameraLocked: false,
   fullscreenLock: true,
+  volume: 0.6,
   runePresets: {},
 };
 

@@ -83,5 +83,11 @@
   "lobby.summoners": "Summoner spells",
   "lobby.role": "Role: mid",
   "lobby.start": "Start game",
-  "set.fullscreenLock": "Fullscreen + keyboard lock (Ctrl+W/Q usable in game, hold Esc to leave; Chrome/Edge)"
+  "set.fullscreenLock": "Fullscreen + keyboard lock (Ctrl+W/Q usable in game, hold Esc to leave; Chrome/Edge)",
+  "menu.tagTraining": "Training",
+  "menu.footBots": "<b>Bots</b> from Iron to Challenger",
+  "menu.footVersion": "Prototype · placeholder art",
+  "set.volume": "Volume",
+  "menu.encyclopedia": "Encyclopedia",
+  "menu.encyclopediaDesc": "Champions, abilities, items, bot ranks and play styles."
 }

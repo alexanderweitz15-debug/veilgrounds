@@ -1,4 +1,6 @@
 // One running match on the client: sim link, render world, input, HUD, minimap and the frame loop.
+import { soundForEvent } from '../audio/eventSounds';
+import { audioUnlock, setListener, setVolume } from '../audio/sfx';
 import { blockBrowserShortcuts, enterGameFullscreen, exitGameFullscreen } from './fullscreen';
 import { loadMap } from '../sim/map';
 import type { SimConfig } from '../sim/types';
@@ -61,6 +63,7 @@ export class Game {
         this.world.onEvent(ev, this.state, now);
         this.overlay.onEvent(ev, this.state, now);
         this.hud.onEvent(ev, this.state, now);
+        soundForEvent(ev, this.state);
       }
     };
 
@@ -105,10 +108,16 @@ export class Game {
       },
       canvas,
     );
-    this.offSettings = onSettingsChange(() => this.hud.applyScale());
+    setVolume(settings.volume);
+    this.offSettings = onSettingsChange(() => {
+      this.hud.applyScale();
+      setVolume(settings.volume);
+    });
     window.addEventListener('resize', this.onResize);
     window.addEventListener('beforeunload', this.beforeUnload);
     window.addEventListener('keydown', blockBrowserShortcuts, true);
+    this.root.addEventListener('pointerdown', audioUnlock);
+    window.addEventListener('keydown', audioUnlock);
     // Fullscreen + Keyboard Lock (Ctrl+W levels up instead of closing the tab). Retry on first click if the
     // start was not a user gesture (e.g. ?play= URL).
     void enterGameFullscreen().then((ok) => {
@@ -157,6 +166,7 @@ export class Game {
   }
 
   private readonly loop = (now: number): void => {
+    setListener(this.world.rig.tx, this.world.rig.ty);
     this.raf = requestAnimationFrame(this.loop);
     const dt = Math.min(0.1, (now - this.lastFrame) / 1000);
     this.lastFrame = now;
@@ -203,6 +213,7 @@ export class Game {
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('beforeunload', this.beforeUnload);
     window.removeEventListener('keydown', blockBrowserShortcuts, true);
+    window.removeEventListener('keydown', audioUnlock);
     exitGameFullscreen();
     this.world.dispose();
     this.root.remove();

@@ -9,6 +9,8 @@ import { buildSettingsPanel } from './ui/settingsPanel';
 import { champName, summonerName } from './ui/names';
 import { RUNES, runePresets, runesFromPreset } from './sim/items/runes';
 import { CHAMPION_DATA } from './sim/champions';
+import { renderMainMenu, type MenuEntry } from './ui/mainMenu';
+import { renderEncyclopedia } from './ui/encyclopedia';
 
 const app = document.getElementById('app')!;
 
@@ -20,7 +22,11 @@ function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, text?: st
   return e;
 }
 
+let disposeMenu: (() => void) | null = null;
+
 function screen(): HTMLElement {
+  disposeMenu?.();
+  disposeMenu = null;
   app.textContent = '';
   const s = h('div', 'screen menu', undefined, app);
   const lang = h('div', 'lang-toggle', undefined, s);
@@ -36,19 +42,22 @@ function screen(): HTMLElement {
 
 function mainMenu(): void {
   const s = screen();
-  const box = h('div', 'menu-box', undefined, s);
-  h('h1', 'title', t('title'), box);
-  h('div', 'subtitle', t('subtitle'), box);
-  const entry = (label: string, desc: string, fn: () => void, cls = ''): void => {
-    const b = h('button', `btn mode ${cls}`, undefined, box);
-    h('div', 'mode-name', label, b);
-    h('div', 'mode-desc', desc, b);
-    b.addEventListener('click', fn);
-  };
-  entry(t('menu.lane'), t('menu.laneDesc'), () => lobby('lane'));
-  entry(t('menu.sandbox'), t('menu.sandboxDesc'), () => lobby('sandbox'));
-  entry(t('menu.settings'), '', () => settingsScreen());
-  entry(t('menu.mock'), t('menu.mockDesc'), () => start(null), 'dev');
+  // One line per mode; the classic 5v5 entry is added by the classic-lobby work.
+  const entries: MenuEntry[] = [
+    { icon: '⚔', name: t('menu.lane'), desc: t('menu.laneDesc'), tag: t('menu.tagTraining'), kind: 'primary', onSelect: () => lobby('lane') },
+    { icon: '◎', name: t('menu.sandbox'), desc: t('menu.sandboxDesc'), tag: t('menu.tagTraining'), onSelect: () => lobby('sandbox') },
+    { icon: '❖', name: t('menu.encyclopedia'), desc: t('menu.encyclopediaDesc'), onSelect: () => encyclopedia() },
+    { icon: '⚙', name: t('menu.settings'), onSelect: () => settingsScreen() },
+    { icon: '◇', name: t('menu.mock'), desc: t('menu.mockDesc'), kind: 'dev', onSelect: () => start(null) },
+  ];
+  s.style.background = 'none';
+  disposeMenu = renderMainMenu(s, t('title'), t('subtitle'), entries, [t('menu.footBots'), t('menu.footVersion')]);
+}
+
+function encyclopedia(): void {
+  const s = screen();
+  s.classList.add('menu-screen');
+  renderEncyclopedia(s, mainMenu);
 }
 
 function settingsScreen(): void {
@@ -110,6 +119,8 @@ function lobby(mode: 'lane' | 'sandbox'): void {
 }
 
 function start(config: ReturnType<typeof configFor> | null): void {
+  disposeMenu?.();
+  disposeMenu = null;
   app.textContent = '';
   new Game(app, config, () => mainMenu());
 }

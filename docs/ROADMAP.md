@@ -8,7 +8,7 @@
 | 3 Bots Gold | ~70 % → **läuft (Agent Bots)** | Behavior Tree als JSON, Wahrnehmung ohne Allwissen, Team-KI, Ganks/Roams/Trades/Kiten, F9-Overlay, Entscheidungs-Log, bot-sim | CS-Kalibrierung (2,9 statt 6,8 CS/min), Wards/Kontrollwards, Baron/Kesselbrut, Log-Drosselung |
 | 4 Ränge + Humanisierung | ~50 % → **läuft (Agent Bots)** | Rangprofile, 10 Spielstil-Achsen, Reaktionszeiten, Varianz, Pings, Rage-„?“-Pings + Toxizitäts-Schalter | Kalibrierung je Rang, fehlende Fehlerarten, Siegquoten |
 | 5 Trainer | ~10 % → **läuft (Agent Trainer)** | Sandbox-Cheats, Lane-Übung | Last-Hit-, Dodge-, Kiting-/Combo-Trainer, Post-Game-Analyse |
-| 6 Politur | ~25 % → **läuft (Agent Art)** | Menüs, Enzyklopädie, prozeduraler Sound, Vollbild, Stil C | Minion-Sprites, Porträts, Barrierefreiheit, PWA, Performance, Szenarien |
+| 6 Politur | ~30 % → **läuft (Agent Art)** | Menüs, Enzyklopädie, prozeduraler Sound, Vollbild, Stil C, PWA (installierbar, offline nach erstem Laden) | Minion-Sprites, Porträts, Barrierefreiheit, Performance, Szenario-Trainer, Challenger-Geist |
 
 Nutzer-Entscheidung 2026-10-15: zuerst **Phase 2 abschließen**.
 
@@ -37,5 +37,5 @@ zunächst nur mit **grober Logik**. Die volle Rang-Simulation aus Spec §7/§8 f
 5. Phase 6: Art-Pass, Sound (prozedural), Barrierefreiheit, PWA, Performance, Szenario-Trainer, „Was ein Challenger getan hätte“.
 
 ## Offene Punkte aus Phase 1
-- Abnahme „107 CS in 10 min“: Skript-Last-Hitter erreicht aktuell 65 → Ursache wird analysiert (tests/phase1.test.ts).
+- Abnahme „107 CS in 10 min“: erledigt – 107 Minions kommen an, Skript-Last-Hitter ≥ 60 (tests/phase1.test.ts).
 - Fog: Projektile/Events werden gefiltert; Bots dürfen nur Snapshot-Daten lesen.

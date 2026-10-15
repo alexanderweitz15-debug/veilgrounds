@@ -1,5 +1,5 @@
 {
-  "note": "Spec §5. 12 basic (5 starters + 7) + 14 components + 14 legendary (12 + 2 active) = 40; plus 4 boots and consumables. See docs/DECISIONS.md.",
+  "note": "Spec §5. 12 basic (5 starters + 7) + 14 components + 14 legendary (12 + 2 active) = 40; plus base boots (300) + 4 boots upgrades and consumables. See docs/DECISIONS.md.",
   "items": [
     {
       "id": "trank",
@@ -1011,6 +1011,21 @@
       }
     },
     {
+      "id": "stiefel",
+      "name": {
+        "de": "Stiefel",
+        "en": "Boots"
+      },
+      "tier": "boots",
+      "cost": 300,
+      "from": [],
+      "stats": {
+        "msFlat": 25
+      },
+      "tags": [],
+      "unique": "boots"
+    },
+    {
       "id": "stiefel_schnelligkeit",
       "name": {
         "de": "Stiefel der Schnelligkeit",
@@ -1018,7 +1033,9 @@
       },
       "tier": "boots",
       "cost": 1100,
-      "from": [],
+      "from": [
+        "stiefel"
+      ],
       "stats": {
         "msFlat": 60
       },
@@ -1033,7 +1050,9 @@
       },
       "tier": "boots",
       "cost": 1100,
-      "from": [],
+      "from": [
+        "stiefel"
+      ],
       "stats": {
         "msFlat": 45,
         "armor": 20
@@ -1051,7 +1070,9 @@
       },
       "tier": "boots",
       "cost": 1100,
-      "from": [],
+      "from": [
+        "stiefel"
+      ],
       "stats": {
         "msFlat": 45,
         "mr": 25
@@ -1069,7 +1090,9 @@
       },
       "tier": "boots",
       "cost": 1100,
-      "from": [],
+      "from": [
+        "stiefel"
+      ],
       "stats": {
         "msFlat": 45,
         "haste": 15

@@ -11,15 +11,17 @@ const byId = new Map(items.map((i) => [i.id, i]));
 const count = (...tiers: string[]): number => items.filter((i) => tiers.includes(i.tier)).length;
 
 describe('items (spec §5)', () => {
-  it('40 items: 12 basic (incl. 5 starters), 14 components, 14 legendary; 4 boots at 1100', () => {
+  it('40 items: 12 basic (incl. 5 starters), 14 components, 14 legendary; base boots 300 + 4 upgrades at 1100', () => {
     expect(count('starter', 'basic')).toBe(12);
     expect(count('starter')).toBe(5);
     expect(count('component')).toBe(14);
     expect(count('legendary')).toBe(14);
     expect(count('starter', 'basic', 'component', 'legendary')).toBe(40);
-    const boots = items.filter((i) => i.tier === 'boots');
+    const boots = items.filter((i) => i.tier === 'boots' && i.id !== 'stiefel');
+    expect(byId.get('stiefel')?.cost).toBe(300);
     expect(boots.length).toBe(4);
     for (const b of boots) expect(b.cost).toBe(1100);
+    for (const b of boots) expect(b.from).toEqual(['stiefel']);
   });
 
   it('ids unique, recipes reference existing cheaper items, recipe cost non-negative', () => {

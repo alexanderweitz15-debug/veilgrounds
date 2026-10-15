@@ -16,8 +16,9 @@ import { Minimap } from '../ui/minimap';
 import { buildSettingsPanel } from '../ui/settingsPanel';
 import { onSettingsChange, settings } from '../settings';
 import { t } from '../i18n';
-import { getChampionAtlas, getMinionAtlas } from '../render/sheets';
+import { getChampionAtlas, getMinionAtlas, getMonsterAtlases } from '../render/sheets';
 import { SessionExtras, type ExitOpts, type SessionResult } from './session';
+import { withClientSettings } from './modes';
 
 export class Game {
   private readonly root: HTMLElement;
@@ -57,6 +58,7 @@ export class Game {
   private atlasReady = false;
 
   constructor(parent: HTMLElement, config: SimConfig | null, private readonly onExit: (r?: SessionResult) => void) {
+    if (config) config = withClientSettings(config, settings); // e.g. bot toxicity for trainer/duel bots too
     const map = loadMap();
     this.root = document.createElement('div');
     this.root.className = 'game';
@@ -89,10 +91,15 @@ export class Game {
       // minions after the champions (one worker pool at a time); usually already baked on the loading screen
       .then(() => getMinionAtlas())
       .then((atlas) => this.world.setMinionAtlas(atlas))
-      .catch((e) => console.warn('minion atlas failed, keeping placeholder sprites', e));
+      .catch((e) => console.warn('minion atlas failed, keeping placeholder sprites', e))
+      // jungle monsters + plants appear at 1:30: baked last, in the background
+      .then(() => getMonsterAtlases())
+      .then((atlases) => this.world.setMonsterAtlases(atlases))
+      .catch((e) => console.warn('monster atlases failed, keeping placeholder sprites', e));
     this.link = config ? workerLink(config, 0) : mockLink();
     this.link.pause(true); // sim builds in the worker meanwhile but does not tick until the sprites are baked
     this.link.onBotDebug = (rows, tick) => this.hud.botDebug.update(rows, tick);
+    this.link.onError = (msg) => this.showSimError(msg);
     this.link.onSnap = (s) => {
       const now = performance.now();
       this.snapsThisSec++;
@@ -161,7 +168,8 @@ export class Game {
         openMenu: () => this.openMenu(),
         useItem: (i) => this.hud.flashItem(i),
         onArmedChange: (a: Armed) => this.hud.setArmed(a),
-        menuOpen: () => this.menu.classList.contains('open') || this.chat.typing,
+        // the menu, chat input and the victory/defeat screen swallow game input
+        menuOpen: () => this.menu.classList.contains('open') || this.chat.typing || this.state.winner !== null,
       },
       canvas,
     );
@@ -197,7 +205,24 @@ export class Game {
     if (import.meta.env.DEV || location.search.includes('bench')) (window as unknown as { __vg?: unknown }).__vg = { frame: (now: number) => this.frame(now), world: this.world, perf: this.perf, state: this.state, link: this.link, hud: this.hud };
   }
 
+  /** The worker died (e.g. out of memory): say so instead of a silently frozen game. */
+  private showSimError(msg: string): void {
+    if (this.root.querySelector('.sim-error')) return;
+    const box = document.createElement('div');
+    box.className = 'sim-error';
+    box.setAttribute('role', 'alert');
+    box.textContent = t('hud.simError', { msg });
+    const quit = document.createElement('button');
+    quit.className = 'menu-btn';
+    quit.textContent = t('menu.quit');
+    quit.addEventListener('click', () => this.exit());
+    box.appendChild(quit);
+    this.root.appendChild(box);
+  }
+
   private setPaused(p: boolean): void {
+    // a finished trainer run or a decided match never resumes (F10 / Pause behind the result screen)
+    if (!p && (this.extras.over || this.state.winner !== null)) return;
     this.state.paused = p;
     this.link.pause(p || !this.atlasReady);
   }
@@ -216,7 +241,7 @@ export class Game {
     const resume = document.createElement('button');
     resume.className = 'menu-btn';
     resume.textContent = t('menu.resume');
-    resume.addEventListener('click', () => this.menu.classList.remove('open'));
+    resume.addEventListener('click', () => this.closeMenu());
     const quit = document.createElement('button');
     quit.className = 'menu-btn secondary';
     quit.textContent = t('menu.quit');
@@ -225,7 +250,7 @@ export class Game {
     const close = (e: KeyboardEvent): void => {
       if (!this.menu.classList.contains('open')) window.removeEventListener('keydown', close);
       else if (e.code === 'Escape') {
-        this.menu.classList.remove('open');
+        this.closeMenu();
         window.removeEventListener('keydown', close);
       }
     };
@@ -234,6 +259,12 @@ export class Game {
     box.append(title, buildSettingsPanel(() => this.openMenu()), row);
     this.menu.appendChild(box);
     this.menu.classList.add('open');
+  }
+
+  /** Close the Escape menu and drop its content: a pending key capture in the settings panel ends with it. */
+  private closeMenu(): void {
+    this.menu.classList.remove('open');
+    this.menu.textContent = '';
   }
 
   private resize(): void {

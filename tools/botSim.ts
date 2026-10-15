@@ -1,8 +1,9 @@
-// npm run bot-sim -- --rank=gold --games=5 --minutes=20 [--seed=1] [--archetype=farmer] [--out=file.csv]
+// npm run bot-sim -- --rank=gold --games=5 --minutes=20 [--seed=1] [--archetype=farmer] [--vs=silver] [--out=file.csv]
 // Runs headless bot-vs-bot games and prints one CSV line per champion per game (calibration against Table A in the
 // rank profiles) plus style metrics (spec-bots §10 acceptance): trade duration, orbwalk ratio, roams/min,
 // wards/min, recalls/min. --archetype gives all ten bots that lobby preset (data/bots/archetypes.json); a summary
-// per run goes to stderr.
+// per run goes to stderr. --vs gives the red team (slots 5-9) another rank: the summary then reports blue's win
+// rate (nexus, or ahead in team gold earned when the time runs out).
 
 import { RANKS, type Rank } from '../src/ai/profiles/schema';
 import { ARCHETYPES, type Archetype } from '../src/ai/contract';
@@ -26,6 +27,10 @@ const games = Number(args.get('games') ?? 5);
 const minutes = Number(args.get('minutes') ?? 20);
 const seed0 = Number(args.get('seed') ?? 1);
 const outFile = args.get('out');
+const vs = args.get('vs') as Rank | undefined;
+if (vs && !RANKS.includes(vs)) throw new Error(`unknown rank ${vs}`);
+let blueWins = 0;
+let decided = 0;
 
 const lines = ['game,seed,rank,archetype,team,role,champion,cs,csPerMin,kills,deaths,goldPerMin,dmgToChamps,maxIdleS,gameMin,winner,trades,tradeS,orbwalk,roamsPerMin,wardsPerMin,recallsPerMin'];
 const r1 = (n: number): string => n.toFixed(1);
@@ -37,8 +42,12 @@ for (let g = 0; g < games; g++) {
   const t0 = Date.now();
   const config = botGameConfig(seed, rank);
   if (archetype) for (const p of config.players) p.bot!.archetype = archetype;
+  if (vs) for (const p of config.players) if (p.team === 1) p.bot!.rank = vs;
   const res = runBotGame(config, Math.round(minutes * 60 * 30));
   lengths.push(res.minutes);
+  if (res.winner !== undefined) decided++;
+  const teamGold = (t: number): number => res.stats.filter((x) => x.team === t).reduce((a, x) => a + x.goldEarned, 0);
+  if (res.winner === 0 || (res.winner === undefined && teamGold(0) > teamGold(1))) blueWins++;
   for (const s of res.stats) {
     all.push({ s, min: res.minutes });
     lines.push(

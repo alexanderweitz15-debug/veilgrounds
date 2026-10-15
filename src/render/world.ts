@@ -17,9 +17,11 @@ import { WardMarkers } from './wards';
 import type { ChampionAtlas } from './champions';
 import { settings } from '../settings';
 import { QUALITY, setFastPcf } from './quality';
+import { WORLD_LIGHT } from './materials';
+import { disposeTree } from './dispose';
 
-/** Direction toward the sun: low morning light from the east-south-east. */
-const SUN_DIR = new THREE.Vector3(0.62, 0.62, 0.48).normalize();
+/** Direction toward the sun: low warm evening light from behind-right (style C), long shadows toward the camera. */
+const SUN_DIR = WORLD_LIGHT.sunDir;
 const SHADOW_HALF = 2600;
 
 export class World {
@@ -47,11 +49,13 @@ export class World {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, q.pixelRatio));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
-    this.scene.background = new THREE.Color('#1a1d1c');
+    this.scene.background = new THREE.Color(WORLD_LIGHT.haze);
+    // violet distance haze: only the far (top) part of the view sinks into it
+    this.scene.fog = new THREE.Fog(WORLD_LIGHT.haze, 3600, 8200);
     this.rig = new CameraRig(1);
 
-    this.scene.add(new THREE.HemisphereLight('#fff1dc', '#3e4a35', 1.1));
-    this.sun = new THREE.DirectionalLight('#ffe2b8', 2.2);
+    this.scene.add(new THREE.HemisphereLight(WORLD_LIGHT.sky, WORLD_LIGHT.ground, WORLD_LIGHT.hemiIntensity));
+    this.sun = new THREE.DirectionalLight(WORLD_LIGHT.sun, WORLD_LIGHT.sunIntensity);
     this.sun.castShadow = q.shadows;
     this.sun.shadow.mapSize.set(q.shadowMap, q.shadowMap);
     const sc = this.sun.shadow.camera;
@@ -64,7 +68,7 @@ export class World {
     this.scene.add(this.sun, this.sun.target);
 
     this.fog = new FogOfWar(map);
-    this.terrain = buildTerrain(map, this.renderer.capabilities.getMaxAnisotropy());
+    this.terrain = buildTerrain(map, this.renderer.capabilities.getMaxAnisotropy(), this.quality);
     this.units = new Units(buildAtlas(), SUN_DIR);
     this.scene.add(this.terrain.group, this.structures.group, this.units.group, this.fx.group, this.ground.group, this.pings.group, this.wards.group);
   }
@@ -94,6 +98,11 @@ export class World {
   /** Switch champions (and Hark) to the animated sprite atlas. */
   setChampionAtlas(atlas: ChampionAtlas): void {
     this.units.setChampionAtlas(atlas);
+  }
+
+  /** Switch jungle monsters and plants to their painted sprite atlases ([big, camp]). */
+  setMonsterAtlases(atlases: ChampionAtlas[]): void {
+    this.units.setMonsterAtlases(atlases);
   }
 
   /** Switch minions to the animated sprite atlas. */
@@ -192,11 +201,13 @@ export class World {
     return best;
   }
 
+  /** Frees everything on the GPU (geometries, materials, textures, shadow map) and the WebGL context itself. */
   dispose(): void {
+    disposeTree(this.scene);
+    this.fog.dispose();
+    this.sun.shadow.map?.dispose();
+    this.renderer.renderLists.dispose();
     this.renderer.dispose();
-    this.scene.traverse((o) => {
-      const m = o as THREE.Mesh;
-      m.geometry?.dispose();
-    });
+    this.renderer.forceContextLoss(); // browsers cap live contexts; each menu backdrop and match builds a new one
   }
 }

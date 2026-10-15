@@ -2,7 +2,7 @@
 
 import type { Sim } from '../sim';
 import type { System } from './index';
-import { findPath } from '../map';
+import { findPath, nearestWalkable } from '../map';
 import { canTarget, onMoveCommand } from './attack';
 import { castAbility, castSummoner, levelAbility, refreshCooldowns } from './abilities';
 import { cancelRecall, grantGold, grantXp, startRecall, xpToNext } from './economy';
@@ -22,13 +22,31 @@ export const inputSystem: System = {
     for (const { slot, cmd } of sim.pending) {
       const eid = sim.slots[slot];
       if (eid === undefined || eid < 0) continue;
-      apply(sim, eid, cmd);
+      const safe = sanitize(sim, cmd);
+      if (safe) apply(sim, eid, safe);
     }
   },
 };
 
+const clampTo = (v: number, max: number): number => Math.min(max, Math.max(0, v));
+
+/**
+ * Commands come from the UI and from bots: a command with a non-finite coordinate is dropped, coordinates outside
+ * the map are clamped onto it (pathfinding and every ground effect assume in-map points).
+ */
+export function sanitize(sim: Sim, cmd: Command): Command | null {
+  if (!('x' in cmd) || (cmd.x === undefined && cmd.y === undefined)) return cmd;
+  const { x, y } = cmd;
+  if (x === undefined || y === undefined || !Number.isFinite(x) || !Number.isFinite(y)) return null;
+  const S = sim.map.size;
+  return { ...cmd, x: clampTo(x, S), y: clampTo(y, S) };
+}
+
 export function moveTo(sim: Sim, eid: number, x: number, y: number): void {
   const { Move, Pos } = sim.c;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+  x = clampTo(x, sim.map.size);
+  y = clampTo(y, sim.map.size);
   sim.paths.set(eid, findPath(sim.map.nav, Pos.x[eid]!, Pos.y[eid]!, x, y));
   Move.mode[eid] = 1;
   Move.tx[eid] = x;
@@ -102,6 +120,9 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
   }
 }
 
+/** Cheat amounts (gold, XP): finite and not negative. */
+const validAmount = (v: number): boolean => Number.isFinite(v) && v >= 0;
+
 function cheat(sim: Sim, eid: number, cmd: Extract<Command, { t: 'cheat' }>): void {
   // Only sandbox, lane practice and the kiting trainer accept cheats; classic games and scored trainers ignore them.
   if (sim.config.mode !== 'sandbox' && sim.config.mode !== 'laneOnly' && sim.config.mode !== 'kite') return;
@@ -115,15 +136,16 @@ function cheat(sim: Sim, eid: number, cmd: Extract<Command, { t: 'cheat' }>): vo
       Mana.cur[eid] = Mana.max[eid]!;
       break;
     case 'levelUp':
-      grantXp(sim, eid, cmd.value ?? xpToNext(sim, eid));
+      if (cmd.value === undefined || validAmount(cmd.value)) grantXp(sim, eid, cmd.value ?? xpToNext(sim, eid));
       break;
     case 'gold':
-      grantGold(sim, eid, cmd.value ?? 10000);
+      if (cmd.value === undefined || validAmount(cmd.value)) grantGold(sim, eid, cmd.value ?? 10000);
       break;
     case 'teleport':
       if (cmd.x !== undefined && cmd.y !== undefined && Unit.alive[eid]) {
-        Pos.x[eid] = Pos.px[eid] = cmd.x;
-        Pos.y[eid] = Pos.py[eid] = cmd.y;
+        const p = nearestWalkable(sim.map.nav, cmd.x, cmd.y); // never into a wall
+        Pos.x[eid] = Pos.px[eid] = p.x;
+        Pos.y[eid] = Pos.py[eid] = p.y;
         sim.paths.delete(eid);
         sim.c.Move.mode[eid] = 0;
       }
@@ -138,7 +160,7 @@ function cheat(sim: Sim, eid: number, cmd: Extract<Command, { t: 'cheat' }>): vo
       sim.flags.towersInvulnerable = !sim.flags.towersInvulnerable;
       break;
     case 'setLevel':
-      if (cmd.value !== undefined) raiseLevel(sim, eid, cmd.value);
+      if (cmd.value !== undefined && Number.isFinite(cmd.value)) raiseLevel(sim, eid, cmd.value);
       break;
     case 'noCooldowns':
       toggleNoCooldowns(sim, eid);

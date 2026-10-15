@@ -49,6 +49,11 @@ export class SessionExtras {
     this.stats.ingest(s);
   }
 
+  /** Trainer run finished: the sim stays paused behind the result dialog (F10 must not resume it). */
+  get over(): boolean {
+    return this.finished;
+  }
+
   frame(snap: Snapshot | null): void {
     this.sandbox?.update(snap?.me);
     if (this.trainer?.update(snap?.trainer) && !this.finished) {

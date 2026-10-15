@@ -16,6 +16,14 @@ export const SANDBOX_DUMMY = { x: 1700, y: 600 } as const;
 
 export type ModeId = 'lane' | 'sandbox' | 'mock';
 
+/**
+ * Client settings that every mode's config carries (not only the classic lobby): bot toxicity applies to the bots of
+ * trainers and duels too. A value the config already has (classic lobby, replays) wins.
+ */
+export function withClientSettings(config: SimConfig, s: { botToxicity: boolean }): SimConfig {
+  return config.botToxicity === undefined ? { ...config, botToxicity: s.botToxicity } : config;
+}
+
 export function configFor(mode: 'lane' | 'sandbox', runes?: RuneChoice, champion = MIRA_ID, summoners: [string, string] = ['sprung', 'heilen']): SimConfig {
   const player = {
     slot: 0,

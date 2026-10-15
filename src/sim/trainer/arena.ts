@@ -2,6 +2,8 @@
 // (trainer.items, chosen by the client from the bot builds), are placed in the mid-lane centre and fight rounds.
 // A round ends when one team is wiped (point for the other) or after `roundSec` (point for the team with more HP
 // left in percent). Dead champions wait for the next round (no respawn, no recall). First to `rounds` wins.
+// Both teams see every champion during a fight (the starting gap exceeds sight range, a bush must not hide anyone),
+// and draws are capped: after `maxRounds` rounds the match ends on the score (a tie is no win).
 
 import type { Sim } from '../sim';
 import { sec } from '../types';
@@ -9,6 +11,8 @@ import { champions, grantGold } from '../systems/economy';
 import { buyItem } from '../items/inventory';
 import { refreshCooldowns } from '../systems/abilities';
 import { autoLevel, humanEid, place, raiseLevel, runSeconds, type TrainerHud } from './common';
+import { nearestWalkable } from '../map';
+import { reveal } from '../buffs';
 
 export interface ArenaState {
   start: number;
@@ -23,6 +27,8 @@ export interface ArenaState {
   roundTicks: number;
   /** Winner of the last round (-1 draw / none). */
   lastWinner: number;
+  /** Hard cap on rounds played (draws give no point): the match ends on the score after this round. */
+  maxRounds: number;
 }
 
 export const ARENA_CENTRE = { x: 8000, y: 8000 } as const;
@@ -56,6 +62,7 @@ export function initArena(sim: Sim): ArenaState {
     rounds: Math.max(1, o.rounds ?? 3),
     roundTicks: sec(o.roundSec ?? 45),
     lastWinner: -1,
+    maxRounds: 2 * Math.max(1, o.rounds ?? 3) + 1,
   };
   startRound(sim, s);
   return s;
@@ -109,9 +116,12 @@ export function updateArena(sim: Sim, s: ArenaState): void {
     const d2 = dx * dx + dy * dy;
     if (Unit.alive[c] && d2 > ARENA_R * ARENA_R) {
       const k = ARENA_R / Math.sqrt(d2);
-      Pos.x[c] = ARENA_CENTRE.x + dx * k;
-      Pos.y[c] = ARENA_CENTRE.y + dy * k;
+      const p = nearestWalkable(sim.map.nav, ARENA_CENTRE.x + dx * k, ARENA_CENTRE.y + dy * k); // never into a wall
+      Pos.x[c] = p.x;
+      Pos.y[c] = p.y;
     }
+    // mutual vision: an idle player out of sight range must not stall the round (no fog duel in the arena)
+    if (Unit.alive[c] && s.phase === 'fight') for (const team of [0, 1]) if (team !== Unit.team[c]) reveal(sim, team, c, 2);
     if (Unit.alive[c]) alive[Unit.team[c] === 1 ? 1 : 0]!++;
     else Champ.respawnAt[c] = 0; // wait for the next round instead of the fountain respawn
   }
@@ -129,7 +139,7 @@ export function updateArena(sim: Sim, s: ArenaState): void {
   if (winner === -2) return;
   s.lastWinner = winner;
   if (winner >= 0) s.score[winner as 0 | 1]++;
-  if (s.score[0] >= s.rounds || s.score[1] >= s.rounds) {
+  if (s.score[0] >= s.rounds || s.score[1] >= s.rounds || s.round >= s.maxRounds) {
     s.end = sim.tick;
     return;
   }

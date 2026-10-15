@@ -81,6 +81,15 @@ export function windupTicks(sim: Sim, eid: number): number {
   return Math.max(1, Math.round((TICK_HZ * w) / as));
 }
 
+/** Forget every attack order (target, attack-move incl. its chase memory, wind-up): respawn starts idle. */
+export function clearAttackOrders(sim: Sim, eid: number): void {
+  const { Atk } = sim.c;
+  Atk.target[eid] = -1;
+  Atk.attackMove[eid] = 0;
+  Atk.phase[eid] = 0;
+  attackState(sim).amChasing[eid] = 0;
+}
+
 /** Movement/stop command arrived: cancel windup (attack lost, timer kept) or backswing (orbwalk); ends channels. */
 export function onMoveCommand(sim: Sim, eid: number): void {
   sim.c.Atk.phase[eid] = 0;
@@ -91,6 +100,8 @@ export function onMoveCommand(sim: Sim, eid: number): void {
 export function canTarget(sim: Sim, eid: number, t: number): boolean {
   const { Unit } = sim.c;
   if (t < 0 || !Unit.alive[t] || Unit.kind[t] === Kind.Projectile) return false;
+  // jungle plants: only champions pop them (deliberate right-click; attack-move skips them in acquire)
+  if (Unit.kind[t] === Kind.Plant && Unit.kind[eid] !== Kind.Champion) return false;
   const owner = ownerOnlyTarget(sim, t); // summons targetable only by their owner (e.g. a powder keg)
   if (owner >= 0) return owner === eid;
   if (Unit.untargetable[t]) return false;
@@ -198,7 +209,7 @@ function acquire(sim: Sim, eid: number): number {
   const ents = query(sim.world, [Unit]);
   for (let i = 0; i < ents.length; i++) {
     const e = ents[i]!;
-    if (!canTarget(sim, eid, e) || !inAttackRange(sim, eid, e, ACQUIRE_EXTRA)) continue;
+    if (Unit.kind[e] === Kind.Plant || !canTarget(sim, eid, e) || !inAttackRange(sim, eid, e, ACQUIRE_EXTRA)) continue;
     const dx = Pos.x[e]! - Pos.x[eid]!;
     const dy = Pos.y[e]! - Pos.y[eid]!;
     const d = dx * dx + dy * dy;

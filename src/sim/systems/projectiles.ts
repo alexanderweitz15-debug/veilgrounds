@@ -181,7 +181,7 @@ function lineCandidate(sim: Sim, team: number, e: number, anyUnit: boolean): boo
   const { Unit } = sim.c;
   const k = Unit.kind[e]!;
   if (!Unit.alive[e] || Unit.untargetable[e] || Unit.team[e] === team) return false;
-  if (k === Kind.Projectile || k === Kind.Ward || isStructure(k)) return false;
+  if (k === Kind.Projectile || k === Kind.Ward || k === Kind.Plant || isStructure(k)) return false;
   if (hasStat(sim, e, 'projImmune')) return false;
   return anyUnit || k === Kind.Champion || k === Kind.Dummy;
 }

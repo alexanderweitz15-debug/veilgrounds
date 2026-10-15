@@ -76,7 +76,7 @@ Werte, die §5 offen lässt. Code: `src/sim/items/itemHooks.ts`, `src/sim/items/
 | Hüterstab / Hüterlampe | +12 % / +8 % Heil- und Schildkraft | Multiplikativ auf Fähigkeits-Heilungen/-Schilde (Daten-Effekte) und Kettenrelais; Hook-eigene Heilungen in Champion-Dateien ausgenommen | `healShieldPowerPct` war bisher wirkungslos |
 | Zauberring | Last-Hits +6 Mana | Minion- und Monster-Kills | – |
 | Dornenklinge | Nahkampftreffer heilen 3 | Nur Nahkampf-Champions, nur gegen Champions | – |
-| Jägerzahn | +30 % vs. Monster, 50 % Minion-Gold bis 14:00 | Wie Spec; Bannen bleibt ohne Item nutzbar (Beschwörer-Logik bei Agent J) | Tests nutzen Bannen ohne Item |
+| Jägerzahn | +30 % vs. Monster, 50 % Minion-Gold bis 14:00 | Seit der Dschungel-Überarbeitung +80 % + Begleiter-True-Damage/Heilung (siehe unten); sonst wie Spec; Bannen bleibt ohne Item nutzbar (Beschwörer-Logik bei Agent J) | Tests nutzen Bannen ohne Item |
 | Spenderlampe | Ladungen, Gold-Teilen, Quest | 3 Ladungen, +1 je 10 s, 1 s Abstand; 15 Gold für dich + nächsten Verbündeten (≤ 1000); Quest = 500 selbst verdientes Gold → `givingLampQuestDone` (Ward-Ladung bei Agent J). „Keine Minion-Gold-Strafe“: gibt es nicht, also nichts zu tun | – |
 | Zeitglas / Kettenrelais | Stasis 2,5 s / Schild in 500 | Nicht nutzbar unter Stun/Airborne/Unterdrückung; Relais-Schild 80 + 10 × Level, 2,5 s, inkl. Träger. Cooldowns pro Item-ID (nicht pro Slot) | – |
 | Trank | 120 HP über 15 s | Ein Trank pro Slot (kein Stapeln); weitere Tränke reihen sich hinten an (gleiche Rate); endet beim Tod | ponytail: Stapeln braucht Slot-Zähler |
@@ -89,3 +89,27 @@ Werte, die §5 offen lässt. Code: `src/sim/items/itemHooks.ts`, `src/sim/items/
 | Zweiter Wind | 6 % fehlende HP über 10 s | Jeder Champion-Treffer startet neu (fehlende HP zu dem Zeitpunkt) | – |
 | Wachsamkeit | Wards +10 % | `wardDurationMult` für Agent J | – |
 | Fehlende Runen | – | `PlayerSetup.runes` fehlt → Standard-Preset des Champions; unbekannte Runen-IDs werden ignoriert (Tests nutzen eine leere Seite) | – |
+
+## Dschungel-Überarbeitung (2026-10-15)
+
+Monsterwerte LoL-nah, Skalierung nach Durchschnitts-Champion-Level (abgerundet) beim Spawn: HP +6 %, AD +5 % pro Level über 1 (LoL skaliert ähnlich stark; +10 %/+6 % ließ Bot-Jungler ab Minute 8 einbrechen). Schleierwächter nach Zeit: 12000 HP / 150 AD um 20:00, +180 HP / +8 AD pro volle Minute danach. Monster-AD bewusst niedriger als in LoL (kein Begleiter-Schild/-Heilung wie LoL-Jungle-Pets).
+
+| Lager (je Seite) | Mitglieder | HP | AD | Gold | XP |
+|---|---|---|---|---|---|
+| Dornenbock (Blau-Buff) | 1 | 2300 | 22 | 90 | 240 |
+| Glutwächter (Rot-Buff) | 1 | 2300 | 22 | 90 | 240 |
+| Sumpfunke (neu, Gromp) | 1 | 1800 | 24 | 80 | 200 |
+| Moosrudel (Wölfe) | Mooswolf + 2 Mooswelpen | 1600 / 420 | 16 / 6 | 55 + 2×20 | 120 + 2×50 |
+| Hohlkäfer (Raptoren) | Hohlkäfer + 3 Käferlinge | 1200 / 350 | 15 / 5 | 40 + 3×15 | 100 + 3×40 |
+| Schattenkrabbe (Krugs) | Schattenkrabbe + 2 Krabblinge | 1450 / 540 | 18 / 7 | 75 + 2×25 | 130 + 2×45 |
+| Nebelschleicher (Fluss) | 1 | 1050 | 0 | 70→120 | 200 |
+| Flussleviathan | 1 | 3500 | 70 | 25 | 150 |
+| Kesselbrut (neu) | 3 Larven | je 1800 | 30 | je 25 | je 110 |
+| Schleierwächter | 1 | 12000 | 150 | 300 Team | 300 |
+
+- **6. Lager**: Sumpfunke auf der oberen Viertelseite (2900, 8800 blau), Schattenkrabbe nach (6200, 3500) verschoben → jedes Viertel hat 3 Lager, symmetrisch zum x/y-Tausch. Bot-Route: Reihenfolge in map.json (Dornenbock → Sumpfunke → Moosrudel → Schattenkrabbe → Glutwächter → Hohlkäfer).
+- **Kesselbrut** (Voidgrubs): 3 Larven in der Schleier-Grube ab 6:00, Respawn 4:00, keine neue Welle nach 13:45, verbleibende Larven verschwinden um 19:45. Jede Larve = 1 Team-Stack (max 6), je +4 % Champion-Schaden gegen Gebäude. Radius 70 (< 130): keine Epic-Ansage, Bots behandeln sie nicht als Objective (ponytail).
+- **Jägerzahn** stärker, damit der LoL-HP-Dschungel klappt: +80 % Schaden an Monstern (statt +30 %), Autos auf Monster +30 (+3/Level) True Damage und Heilung 6 (+1/Level). Gemessen (tools/scratch/jungleClear.ts, nur Autos + Bannen): Full-Clear 6 Lager ≈ 2:15 ab 1:30 (alt 5 Lager 1:20), Level 3 nach Buff + 2 Lagern ≈ 2:47. Ohne Jägerzahn ist ein Level-1-Clear nicht machbar (wie LoL).
+- **Bot-Check** (4 Spiele × 15 min, Gold, gleiche KI): Jungler-Gold/min 195 → 197, Jungler-CS 31.6 → 24.1 (mehr Gold pro Monster, längere Clears).
+- **Pflanzen** (Kind.Plant, 1 HP, nur Champion-Autos lösen aus, Bots ignorieren sie), je Seite 6 (3 pro Viertel), Wachstum 1:30, Nachwachsen 5:00: Sprungfrucht = Champions im Radius 380 springen 650 von der Pflanze weg, über Wände (Landepunkt bis +500 weiter, sonst kürzer); Honigfrucht = Heilung 60 + 6 % Max-HP und 25 % Slow 1,5 s im Radius 320; Spähfrucht = 3 Sichtpunkte (450/900/1350, Radius 380–560) 10 s in Richtung weg vom Angreifer. Datentyp `spaehbluete` → `spaehfrucht` umbenannt.
+- **Wände**: map.json-Polygone organischer (mehr Ecken, Diagonalen, Halbmond-Gruben um Leviathan/Schleierwächter); die Kollision bleibt das Polygon, gerendert wird eine gerundete, gewellte Kontur (render/organic.ts, −35…+60 um das Polygon; UNIT_CLEARANCE 75 verhindert sichtbares Clipping). Kampf-Testgelände (6000, 8750) unverändert. Test: alle Lager/Pflanzen/Objectives von beiden Brunnen erreichbar.

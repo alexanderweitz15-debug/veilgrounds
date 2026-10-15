@@ -1,7 +1,7 @@
 // LoL-like announcer: queued centre banners + a procedural (voice-less) cue. Minion spawn countdown, first blood,
 // multi-kills (10 s window like LoL, 30 s for the fifth), ace, kills, towers/inhibitors, epic monsters, victory.
 // Client-side only: everything is derived from fog-filtered snapshot events.
-import type { ClientState } from '../game/state';
+import { deathKillerChamp, deathVictimChamp, type ClientState } from '../game/state';
 import { Kind, type SimEvent } from '../sim/types';
 import { FIRST_WAVE_TICK } from '../sim/systems/waves';
 import { playAnnounce, type AnnounceTone } from '../audio/sfx';
@@ -34,7 +34,7 @@ export class Announcer {
   private warned = false;
   private spawned = false;
   private firstBlood = false;
-  private readonly streak = new Map<number, { n: number; at: number }>();
+  private readonly streak = new Map<string, { n: number; at: number }>();
   private readonly aced = [false, false];
 
   constructor(parent: HTMLElement, private readonly mode?: string) {
@@ -82,17 +82,19 @@ export class Announcer {
     if (ev.kind === Kind.Monster) {
       const which = this.epic(ev, state);
       if (!which) return;
-      const killer = state.known.get(ev.killer);
-      const ours = killer ? killer.team === mine : false;
+      const killerTeam = ev.killerTeam ?? state.entity(ev.killer)?.team;
+      const ours = killerTeam === mine;
       this.push(t(`ann.${which}${ours ? 'Own' : 'Enemy'}`), ours ? 'epic' : 'bad', 2);
       return;
     }
     if (ev.kind !== Kind.Champion || ev.team > 1) return;
-    const victim = state.known.get(ev.eid);
-    const killer = state.known.get(ev.killer);
-    const vName = champName(victim?.champ ?? null);
-    const byChamp = killer?.kind === Kind.Champion && killer.team !== ev.team;
-    const kName = byChamp ? champName(killer.champ) : '';
+    // names come with the event (a dead or never-seen enemy is not in the snapshot)
+    const vName = champName(deathVictimChamp(ev, state));
+    const kChamp = deathKillerChamp(ev, state);
+    const byChamp = kChamp !== null;
+    const kName = byChamp ? champName(kChamp) : '';
+    // streak key: the killer champion (its eid may be fog-masked to -1)
+    const streakKey = `${ev.killerTeam ?? (ev.team === 0 ? 1 : 0)}:${kChamp ?? ev.killer}`;
     const sub = byChamp ? t('kill.slain', { a: kName, b: vName }) : t('kill.executed', { b: vName });
     const meId = snap.me?.eid ?? -1;
     const allyDied = ev.team === mine;
@@ -105,9 +107,9 @@ export class Announcer {
     }
     if (byChamp) {
       const now = snap.time;
-      const s = this.streak.get(ev.killer);
+      const s = this.streak.get(streakKey);
       const n = s && now - s.at <= (s.n === 4 ? PENTA_S : MULTI_S) && s.n < 5 ? s.n + 1 : 1;
-      this.streak.set(ev.killer, { n, at: now });
+      this.streak.set(streakKey, { n, at: now });
       if (n >= 2 && !done) {
         this.push(t(MULTI_KEYS[n]!), allyDied ? 'bad' : 'epic', 1, kName);
         done = true;
@@ -128,7 +130,7 @@ export class Announcer {
 
   /** Leviathan / Schleierwächter by last seen radius, else by the death position (epic deaths are always sent). */
   private epic(ev: Extract<SimEvent, { e: 'death' }>, state: ClientState): 'leviathan' | 'schleier' | null {
-    const r = state.known.get(ev.eid)?.radius;
+    const r = state.entity(ev.eid)?.radius;
     const near = (p: { x: number; y: number }): boolean => (ev.x - p.x) ** 2 + (ev.y - p.y) ** 2 < 1200 * 1200;
     if (r !== undefined && r < 130) return null;
     if (r !== undefined) return r >= 150 ? 'schleier' : 'leviathan';

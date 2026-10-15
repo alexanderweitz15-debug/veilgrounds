@@ -8,7 +8,9 @@ import { BUILDS } from '../ai/bot/builds';
 import { settings } from '../settings';
 import { t } from '../i18n';
 import { itemIcon, setIcon } from './icons';
+import { shopLayoutKey } from './shopLayout';
 import './icons.css';
+import { setTip } from './tooltip';
 
 // small tiers first so they share a row (the shop fits a 720p screen without scrolling)
 const TIERS: ItemTier[] = ['starter', 'consumable', 'boots', 'basic', 'component', 'legendary'];
@@ -54,6 +56,12 @@ export interface ShopHooks {
 export class ShopPanel {
   private selected: string | null = null;
   private key = '';
+  private gold = -1;
+  /** Latest HUD data (click handlers read it, not the snapshot the panel was built from). */
+  private me: PlayerHud | null = null;
+  private cards: { el: HTMLElement; it: ItemData }[] = [];
+  private goldEl: HTMLElement | null = null;
+  private buyBtn: { el: HTMLButtonElement; it: ItemData } | null = null;
 
   constructor(private readonly root: HTMLElement, private readonly hooks: ShopHooks) {
     root.textContent = '';
@@ -63,16 +71,31 @@ export class ShopPanel {
 
   update(me: PlayerHud | null): void {
     if (!me) return;
-    const key = [me.champ, Math.floor(me.gold), me.items.join(','), me.inFountain || me.dead, this.selected, settings.lang].join('|');
-    if (key === this.key) return;
-    this.key = key;
-    this.render(me);
+    this.me = me;
+    const key = shopLayoutKey(me, this.selected, settings.lang);
+    if (key !== this.key) {
+      this.key = key;
+      this.render(me);
+    } else if (Math.floor(me.gold) !== this.gold) this.refresh(me);
+  }
+
+  /** Gold changed: update the gold label and affordability in place (no rebuild). */
+  private refresh(me: PlayerHud): void {
+    this.gold = Math.floor(me.gold);
+    if (this.goldEl) this.goldEl.textContent = String(this.gold);
+    for (const c of this.cards) c.el.classList.toggle('afford', this.canBuy(me, c.it).ok);
+    if (this.buyBtn) {
+      const q = this.canBuy(me, this.buyBtn.it);
+      this.buyBtn.el.disabled = !q.ok;
+      this.buyBtn.el.title = q.why ?? '';
+    }
   }
 
   private canBuy(me: PlayerHud, it: ItemData): { ok: boolean; price: number; why?: string } {
     const { price, consumes } = recipePrice(me.items, it);
     if (!me.inFountain && !me.dead) return { ok: false, price, why: t('shop.notInShop') };
     if (it.unique && me.items.some((x, i) => x && !consumes.includes(i) && itemById(x)?.unique === it.unique)) return { ok: false, price, why: t('shop.unique') };
+    if (it.tier === 'legendary' && me.items.some((x, i) => x === it.id && !consumes.includes(i))) return { ok: false, price, why: t('shop.unique') };
     if (!me.items.some((x, i) => i < ITEM_SLOTS && (x === null || consumes.includes(i)))) return { ok: false, price, why: t('shop.full') };
     if (me.gold < price) return { ok: false, price, why: t('shop.gold') };
     return { ok: true, price };
@@ -80,10 +103,14 @@ export class ShopPanel {
 
   private render(me: PlayerHud): void {
     const r = this.root;
+    const scroll = [...r.querySelectorAll<HTMLElement>('.shop-list, .shop-detail')].map((e) => e.scrollTop);
     r.textContent = '';
+    this.cards = [];
+    this.buyBtn = null;
+    this.gold = Math.floor(me.gold);
     const head = el('div', 'shop-head', r);
     el('div', 'ttl', head, t('hud.shop'));
-    el('div', 'gold', head, String(Math.floor(me.gold)));
+    this.goldEl = el('div', 'gold', head, String(this.gold));
     if (!me.inFountain && !me.dead) el('div', 'shop-hint', head, t('shop.notInShop'));
     el('button', 'btn small shop-close', head, '✕').addEventListener('click', () => r.classList.remove('open'));
 
@@ -131,6 +158,7 @@ export class ShopPanel {
       b.disabled = !q.ok;
       if (q.why) b.title = q.why;
       b.addEventListener('click', () => this.hooks.buy(sel.id));
+      this.buyBtn = { el: b, it: sel };
     }
 
     const inv = el('div', 'shop-inv', r);
@@ -139,11 +167,13 @@ export class ShopPanel {
       const s = el('div', `shop-slot${id ? '' : ' empty'}`, inv);
       if (!id) return;
       iconEl(s, id);
-      s.title = itemTooltip(id);
+      setTip(s, `item:${id}`);
       const sell = el('button', 'btn small', s, `${t('shop.sell')} +${Math.floor((itemById(id)?.cost ?? 0) * SELL_RATIO)}`);
       sell.disabled = !me.inFountain && !me.dead;
       sell.addEventListener('click', () => this.hooks.sell(slot));
     });
+    // a rebuild (inventory / selection changed) keeps the scroll position
+    [...r.querySelectorAll<HTMLElement>('.shop-list, .shop-detail')].forEach((e, i) => (e.scrollTop = scroll[i] ?? 0));
   }
 
   private card(me: PlayerHud, id: string, parent: HTMLElement, rec: boolean): void {
@@ -153,16 +183,17 @@ export class ShopPanel {
     const c = el('button', `shop-item${rec ? ' rec' : ''}${q.ok ? ' afford' : ''}${this.selected === id ? ' sel' : ''}${me.items.includes(id) ? ' owned' : ''}`, parent);
     iconEl(c, id);
     el('div', 'price', c, String(q.price));
-    c.title = itemTooltip(id);
+    setTip(c, `item:${id}`);
+    this.cards.push({ el: c, it });
     c.addEventListener('click', () => {
       this.selected = id;
       this.key = '';
-      this.render(me);
+      this.update(this.me ?? me);
     });
-    // right click buys directly (like LoL)
+    // right click buys directly (like LoL); checked against the latest gold, not the one at build time
     c.addEventListener('contextmenu', (e) => {
       e.preventDefault();
-      if (q.ok) this.hooks.buy(id);
+      if (this.canBuy(this.me ?? me, it).ok) this.hooks.buy(id);
     });
   }
 }

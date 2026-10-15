@@ -88,6 +88,8 @@ export function quote(sim: Sim, eid: number, id: string): BuyQuote {
   const res = (reason?: BuyQuote['reason']): BuyQuote => ({ ok: !reason, reason, price, consumes });
   if (!canShop(sim, eid)) return res('notInShop');
   if (item.unique && inv.some((x, i) => x && !consumes.includes(i) && itemById(x)?.unique === item.unique)) return res('unique');
+  // LoL rule: at most one of each legendary item
+  if (item.tier === 'legendary' && inv.some((x, i) => x === item.id && !consumes.includes(i))) return res('unique');
   const free = inv.some((x, i) => i < ITEM_SLOTS && (x === null || consumes.includes(i)));
   if (!free) return res('full');
   if (sim.c.Champ.gold[eid]! < price) return res('gold');

@@ -40,14 +40,27 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?:
   return e;
 }
 
-function describe(state: ClientState, eid: number): { key: string; name: string; kind: SrcKind; champ: string | null } {
-  const e = eid >= 0 ? (state.byId.get(eid) ?? state.known.get(eid)) : undefined;
-  if (!e) return { key: 'other', name: t('recap.other'), kind: 'other', champ: null };
-  if (e.kind === Kind.Champion) return { key: `c${e.id}`, name: champName(e.champ), kind: 'champ', champ: e.champ };
-  if (e.kind === Kind.Tower || e.kind === Kind.Nexus) return { key: 'tower', name: t('recap.tower'), kind: 'tower', champ: null };
-  if (isMinion(e.kind)) return { key: 'minion', name: t('recap.minion'), kind: 'minion', champ: null };
-  if (e.kind === Kind.Monster) return { key: 'monster', name: t('recap.monster'), kind: 'monster', champ: null };
+type Described = { key: string; name: string; kind: SrcKind; champ: string | null };
+
+function describeKind(kind: number): Described {
+  if (kind === Kind.Tower || kind === Kind.Nexus) return { key: 'tower', name: t('recap.tower'), kind: 'tower', champ: null };
+  if (isMinion(kind)) return { key: 'minion', name: t('recap.minion'), kind: 'minion', champ: null };
+  if (kind === Kind.Monster) return { key: 'monster', name: t('recap.monster'), kind: 'monster', champ: null };
   return { key: 'other', name: t('recap.other'), kind: 'other', champ: null };
+}
+
+function describe(state: ClientState, eid: number): Described {
+  const e = eid >= 0 ? state.entity(eid) : undefined;
+  if (!e) return describeKind(-1);
+  if (e.kind === Kind.Champion) return { key: `c${e.id}`, name: champName(e.champ), kind: 'champ', champ: e.champ };
+  return describeKind(e.kind);
+}
+
+/** The killer as the death event names it (its eid may be fog-masked to -1 or already gone from the snapshot). */
+function describeKiller(state: ClientState, ev: Extract<SimEvent, { e: 'death' }>): Described {
+  if (ev.killerChamp !== undefined) return { key: 'killer', name: champName(ev.killerChamp), kind: 'champ', champ: ev.killerChamp };
+  const d = describe(state, ev.killer);
+  return d.kind === 'other' && ev.killerKind !== undefined ? describeKind(ev.killerKind) : d;
 }
 
 export class DeathRecap {
@@ -69,7 +82,7 @@ export class DeathRecap {
       // keep a little more than the window
       if (this.hits.length > 400 || (this.hits.length && this.hits[0]!.at < snap.time - RECAP_S * 2)) this.hits = this.hits.filter((h) => h.at >= snap.time - RECAP_S);
     } else if (ev.e === 'death' && ev.eid === me.eid) {
-      this.build(state, ev.killer, snap.time);
+      this.build(state, ev, snap.time);
       this.hits = [];
     }
   }
@@ -81,7 +94,7 @@ export class DeathRecap {
     this.root.classList.toggle('open', dead);
   }
 
-  private build(state: ClientState, killer: number, now: number): void {
+  private build(state: ClientState, death: Extract<SimEvent, { e: 'death' }>, now: number): void {
     const r = this.root;
     r.textContent = '';
     const src = new Map<string, Source>();
@@ -98,12 +111,12 @@ export class DeathRecap {
       total += h.amount;
       byType[h.type] += h.amount;
     }
-    const k = describe(state, killer);
+    const k = describeKiller(state, death);
     const head = el('div', 'dr-head', r);
     const pic = el('div', `dr-portrait ${k.kind}`, head, k.kind === 'champ' ? k.name.charAt(0) : k.kind === 'tower' ? '♜' : k.kind === 'minion' ? '⚔' : '✶');
     if (k.champ) setPortrait(pic, k.champ);
     const ht = el('div', 'dr-headtext', head);
-    el('div', 'dr-killed', ht, killer < 0 || k.kind === 'other' ? t('recap.executed') : t('recap.killedBy', { name: k.name }));
+    el('div', 'dr-killed', ht, k.kind === 'other' ? t('recap.executed') : t('recap.killedBy', { name: k.name }));
     el('div', 'dr-total', ht, t('recap.total', { n: Math.round(total), s: RECAP_S }));
     if (total > 0) {
       const bar = el('div', 'dr-bar', r);

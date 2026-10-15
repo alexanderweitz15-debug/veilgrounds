@@ -7,6 +7,7 @@ import type { Sim } from './sim';
 import { dealDamage, heal } from './damage';
 import { cancelRecall } from './systems/economy';
 import { MAX_ENT } from './ecs';
+import { isStructure } from './types';
 
 export type CcKind = 'slow' | 'blind' | 'root' | 'silence' | 'stun' | 'airborne' | 'suppress' | 'stasis';
 export type StatKey =
@@ -32,6 +33,8 @@ export interface Buff {
   /** Source key: a buff with the same (id, kind, stat, src) refreshes instead of stacking. */
   id: string;
   src: number;
+  /** Serial of `src` when applied (eids are recycled; a dead champion keeps its serial, so DoT kills still credit). */
+  srcSerial?: number;
   stat?: StatKey;
   pct: number;
   flat: number;
@@ -100,6 +103,8 @@ const NO_TENACITY: ReadonlySet<BuffKind> = new Set(['airborne', 'suppress']);
 export function addBuff(sim: Sim, eid: number, init: BuffInit): boolean {
   const { Unit, Stats } = sim.c;
   if (!Unit.alive[eid] || init.ticks <= 0) return false;
+  // towers, inhibitors and the nexus are immune to crowd control (and displacement: airborne)
+  if ((CC.has(init.kind) || init.kind === 'stasis') && isStructure(Unit.kind[eid]!)) return false;
   const e = entry(sim, eid, true)!;
   if (CC.has(init.kind)) {
     const immune = e.list.some((b) => b.kind === 'stasis' || (b.kind === 'unstoppable' && init.kind !== 'suppress'));
@@ -113,6 +118,7 @@ export function addBuff(sim: Sim, eid: number, init: BuffInit): boolean {
     kind: init.kind,
     id: init.id,
     src: init.src ?? -1,
+    srcSerial: init.src !== undefined && init.src >= 0 ? Unit.serial[init.src]! : 0,
     stat: init.stat,
     pct: init.pct ?? 0,
     flat: init.flat ?? 0,
@@ -303,7 +309,8 @@ export function tickBuffs(sim: Sim): void {
       if (b.kind !== 'dot' || b.period <= 0 || b.until < sim.tick) continue;
       const age = sim.tick - b.start;
       if (age > 0 && age % b.period === 0 && Unit.alive[eid]) {
-        const src = b.src >= 0 && Unit.alive[b.src] ? b.src : -1;
+        // the source keeps the credit after its own death (Ignite kill), but not once its eid is a different unit
+        const src = b.src >= 0 && Unit.serial[b.src] === b.srcSerial ? b.src : -1;
         dealDamage(sim, src, eid, b.amount, b.dmgType ?? 'true');
       }
     }

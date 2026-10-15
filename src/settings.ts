@@ -26,8 +26,6 @@ export interface Settings {
   /** A immediately attack-moves to the cursor instead of arming a left-click. */
   attackMoveOnCursor: boolean;
   edgeScroll: boolean;
-  /** Modifier for ability level-up (Ctrl+W closes browser tabs, so Shift is offered). */
-  levelMod: 'ctrl' | 'shift';
   cameraLocked: boolean;
   /** Enter fullscreen + Keyboard Lock on game start so Ctrl+W/Q reach the game (Chromium). */
   fullscreenLock: boolean;
@@ -52,7 +50,6 @@ const DEFAULTS: Settings = {
   damageNumbers: true,
   attackMoveOnCursor: false,
   edgeScroll: true,
-  levelMod: 'ctrl',
   cameraLocked: false,
   fullscreenLock: true,
   volume: 0.6,
@@ -68,6 +65,7 @@ export async function loadSettings(): Promise<void> {
   // first start: follow the OS "reduce motion" preference
   if (saved?.reduceMotion === undefined) settings.reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (saved) Object.assign(settings, saved);
+  delete (settings as unknown as Record<string, unknown>).levelMod; // removed setting (old saves still carry it)
   // saves from before auto scaling: a customised scale stays manual
   if (saved && saved.uiScaleAuto === undefined && saved.uiScale !== undefined && saved.uiScale !== 100) settings.uiScaleAuto = false;
 }

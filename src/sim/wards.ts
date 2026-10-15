@@ -208,15 +208,16 @@ export function canSwapTrinket(sim: Sim, eid: number, id: TrinketId): boolean {
   return id === 'schleierward' || sim.c.Champ.level[eid]! >= SWEEP.unlockLevel;
 }
 
-/** Trinket swap (command 'trinket'). Back to Schleierward starts empty (no free charges from swapping). */
+/**
+ * Trinket swap (command 'trinket'). Back to Schleierward starts empty (no free charges from swapping); the Suchfeuer
+ * cooldown keeps running across swaps (swapping away and back must not reset it).
+ */
 export function swapTrinket(sim: Sim, eid: number, id: TrinketId): boolean {
   if (!canSwapTrinket(sim, eid, id)) return false;
   const t = trinket(sim, eid);
   t.id = id;
   t.charges = 0;
   t.nextCharge = 0;
-  t.cdUntil = 0;
-  t.cdTotal = 0;
   return true;
 }
 
@@ -256,6 +257,10 @@ function rechargeTrinkets(sim: Sim): void {
 
 export const wardsSystem: System = {
   name: 'wards',
+  init(sim) {
+    // trinket records for every champion up front (champion order): HUD/snapshot reads must not create state
+    for (const eid of champions(sim)) trinket(sim, eid);
+  },
   update(sim) {
     const s = wardState(sim);
     const { Unit, Pos, Vision, LastHit } = sim.c;

@@ -5,7 +5,7 @@ import { query } from 'bitecs';
 import type { Sim } from '../sim';
 import type { System } from './index';
 import { DT, isMinion, isStructure } from '../types';
-import { findPath, lineWalkable, walkable } from '../map';
+import { findPath, lineWalkable, nearestWalkable, walkable } from '../map';
 import { isRef } from '../sim';
 
 const REPATH_TICKS = 15;
@@ -110,12 +110,27 @@ function separateMinions(sim: Sim, ents: ArrayLike<number>): void {
       const ux = d > 0 ? dx / d : 1;
       const uy = d > 0 ? dy / d : 0;
       const push = (min - d) * 0.25;
-      Pos.x[a] = Pos.x[a]! - ux * push;
-      Pos.y[a] = Pos.y[a]! - uy * push;
-      Pos.x[b] = Pos.x[b]! + ux * push;
-      Pos.y[b] = Pos.y[b]! + uy * push;
+      nudge(sim, a, Pos.x[a]! - ux * push, Pos.y[a]! - uy * push);
+      nudge(sim, b, Pos.x[b]! + ux * push, Pos.y[b]! + uy * push);
     }
   }
+}
+
+/** Soft push: never into a wall or off the map (a blocked push is dropped; a unit already inside is let through). */
+function nudge(sim: Sim, e: number, x: number, y: number): void {
+  const { Pos } = sim.c;
+  const nav = sim.map.nav;
+  if (!walkable(nav, x, y) && walkable(nav, Pos.x[e]!, Pos.y[e]!)) return;
+  Pos.x[e] = x;
+  Pos.y[e] = y;
+}
+
+/** Hard push (structure rim): must move the unit, so a blocked target point snaps to the nearest walkable one. */
+function shove(sim: Sim, e: number, x: number, y: number): void {
+  const { Pos } = sim.c;
+  const p = walkable(sim.map.nav, x, y) ? { x, y } : nearestWalkable(sim.map.nav, x, y);
+  Pos.x[e] = p.x;
+  Pos.y[e] = p.y;
 }
 
 /**
@@ -146,8 +161,7 @@ function collideStructures(sim: Sim, ents: ArrayLike<number>): void {
       const uy = d > 0 ? dy / d : Unit.team[e] === 1 ? 0.7071 : -0.7071;
       // tangential nudge so units walking straight at a structure slide around instead of sticking
       const side = ux * sim.c.Face.y[e]! - uy * sim.c.Face.x[e]! >= 0 ? 1 : -1; // slide toward facing side
-      Pos.x[e] = Pos.x[s]! + ux * min - uy * 2 * side;
-      Pos.y[e] = Pos.y[s]! + uy * min + ux * 2 * side;
+      shove(sim, e, Pos.x[s]! + ux * min - uy * 2 * side, Pos.y[s]! + uy * min + ux * 2 * side);
     }
   }
 }

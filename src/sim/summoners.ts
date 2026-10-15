@@ -14,6 +14,7 @@ import { onMoveCommand } from './systems/attack';
 import { dealDamage } from './damage';
 import { nearestWalkable, walkable } from './map';
 import { isPlayerWard } from './wards';
+import { sees } from './vision';
 
 export interface SummonerDef {
   id: string;
@@ -116,9 +117,10 @@ export function castSummonerSpell(sim: Sim, eid: number, id: string, x: number, 
     case 'bannen': {
       // Smite (Agent H): true damage to a monster or minion in range, nearest to the cursor if no target given.
       const ok = (t: number): boolean => {
-        const k = Unit.kind[t]!;
         if (t < 0 || !Unit.alive[t] || Unit.untargetable[t] || Unit.team[t] === Unit.team[eid]) return false;
+        const k = Unit.kind[t]!;
         if (k !== Kind.Monster && !(k >= Kind.MinionMelee && k <= Kind.MinionSuper)) return false;
+        if (!sees(sim, Unit.team[eid]!, t)) return false; // no smiting into fog / unseen bushes
         const r = 500 + Unit.radius[eid]! + Unit.radius[t]!;
         return dist2(Pos.x[t]!, Pos.y[t]!, Pos.x[eid]!, Pos.y[eid]!) <= r * r;
       };
@@ -146,6 +148,7 @@ function enemyChampionTarget(sim: Sim, eid: number, x: number, y: number, range:
   const ok = (t: number): boolean => {
     if (t < 0 || !Unit.alive[t] || Unit.untargetable[t] || Unit.team[t] === Unit.team[eid]) return false;
     if (Unit.kind[t] !== Kind.Champion && Unit.kind[t] !== Kind.Dummy) return false;
+    if (!sees(sim, Unit.team[eid]!, t)) return false; // targets in fog, bushes or invisible are not castable
     const r = range + Unit.radius[eid]! + Unit.radius[t]!;
     return dist2(Pos.x[t]!, Pos.y[t]!, Pos.x[eid]!, Pos.y[eid]!) <= r * r;
   };

@@ -279,6 +279,9 @@ export function updateTowerTarget(sim: Sim, tower: number, lists: [TargetLists, 
   setTowerTarget(sim, tower, t, 2);
 }
 
+/** The match is decided (a nexus fell): drivers stop stepping, the world freezes behind the result screen. */
+export const matchOver = (sim: Sim): boolean => sim.state.winner !== undefined;
+
 /** Called from economy.onDeath for structures: rewards, inhibitor respawn timer, game end. */
 export function onStructureDeath(sim: Sim, victim: number, killer: number): void {
   const { Unit } = sim.c;

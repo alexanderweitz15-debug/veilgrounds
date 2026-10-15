@@ -6,7 +6,7 @@ import { Kind, type SimEvent } from '../sim/types';
 import { REL } from '../render/palette';
 import { settings } from '../settings';
 import { t } from '../i18n';
-import { champName } from './names';
+import { champName, variantName } from './names';
 import { VisualCues } from './cues';
 
 interface Floater {
@@ -51,7 +51,8 @@ export class Overlay {
     const myEid = state.snap?.me?.eid ?? -1;
     if (ev.e === 'damage' && settings.damageNumbers) {
       if (ev.src !== myEid && ev.dst !== myEid) return;
-      const d = state.byId.get(ev.dst);
+      // the killing blow's target already left the snapshot: fall back to where it was last seen
+      const d = state.entity(ev.dst);
       if (!d) return;
       const received = ev.dst === myEid;
       const amt = Math.round(ev.amount);
@@ -67,6 +68,19 @@ export class Overlay {
       const me = state.byId.get(myEid);
       if (me) this.floaters.push({ x: me.x, y: me.y, z: 300, text: `${t('hud.level')} ${ev.level}!`, color: '#9ff0ff', size: 22, t0: now, dur: 1500, drift: 0 });
     }
+  }
+
+  /** Small outlined name label, bottom-centred at (x, y). */
+  private label(text: string, x: number, y: number, color: string): void {
+    const ctx = this.ctx;
+    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(12,10,8,0.9)';
+    ctx.strokeText(text, x, y);
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
   }
 
   draw(state: ClientState, world: World, now: number, hoverId: number): void {
@@ -87,9 +101,14 @@ export class Overlay {
         if (minion && e.kind !== Kind.Monster && e.hp >= e.maxHp && e.id !== hoverId) continue;
         const a = world.barAnchor(e, state.x(e), state.y(e));
         if (!a) continue;
+        if (e.kind === Kind.Plant) {
+          // plants (1 HP): no bar, only the name while hovered
+          this.label(variantName(e.variant, e.kind), a.sx, a.sy - 2, '#f3e6c4');
+          continue;
+        }
         const monster = e.kind === Kind.Monster;
         const color = e.id === myEid ? REL.meBar : monster ? '#d8a64a' : e.team === state.myTeam ? REL.ally : REL.enemy;
-        const bw = champ ? 104 : structure ? 130 : dummy ? 104 : monster && e.radius >= 100 ? 110 : monster && e.radius >= 70 ? 76 : 54;
+        const bw = champ ? 104 : structure ? 130 : dummy ? 104 : monster && e.radius >= 130 ? 150 : monster && e.radius >= 100 ? 116 : monster && e.radius >= 80 ? 86 : monster && e.radius >= 70 ? 72 : 54;
         const bh = champ ? 11 : structure ? 9 : dummy ? 10 : 5;
         const x = a.sx - bw / 2 + (champ ? 10 : 0);
         const y = a.sy - bh;
@@ -136,6 +155,7 @@ export class Overlay {
           ctx.fillStyle = e.team === state.myTeam ? REL.allyText : REL.enemyText;
           ctx.fillText(name, x + bw / 2, y - 5);
         }
+        if (monster && e.id === hoverId) this.label(variantName(e.variant, e.kind), a.sx, y - 5, '#f3e6c4');
         if (dummy) {
           ctx.fillStyle = '#fff';
           ctx.font = 'bold 11px system-ui, sans-serif';

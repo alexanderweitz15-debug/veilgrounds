@@ -3,7 +3,7 @@
 import { query } from 'bitecs';
 import type { Sim } from './sim';
 import { pointVisible, sees } from './vision';
-import { Kind, isStructure, type SimEvent } from './types';
+import { Kind, VARIANTS, isStructure, type SimEvent, type Variant } from './types';
 import { abilityHud, type AbilityHud } from './systems/abilities';
 import { inFountain, inventory, itemValue } from './items/inventory';
 import { itemCooldownHud } from './items/itemHooks';
@@ -47,6 +47,10 @@ export interface SnapEntity {
   ward?: WardType;
   /** Own team only: current vision radius of wards (0 = disabled by an enemy seal ward / sweep). */
   vision?: number;
+  /** Own team only: vision radius of jungle vision points (river vision, Spähfrucht), for the fog overlay. */
+  sight?: number;
+  /** Monster / plant type (types.ts VARIANTS): sprite and name. */
+  variant?: Variant;
 }
 
 export interface SnapProjectile {
@@ -181,9 +185,10 @@ function scoreRows(sim: Sim, team: number): ScoreRow[] {
   });
 }
 
-function wardFields(sim: Sim, e: number, team: number): { ward?: WardType; vision?: number } {
+function wardFields(sim: Sim, e: number, team: number): { ward?: WardType; vision?: number; sight?: number } {
   const w = wardTypeOf(sim, e);
-  if (!w) return {};
+  // jungle vision points (river vision, Spähfrucht): own team gets the radius for the fog overlay
+  if (!w) return sim.c.Unit.team[e] === team ? { sight: sim.c.Vision.r[e]! } : {};
   return sim.c.Unit.team[e] === team ? { ward: w, vision: sim.c.Vision.r[e]! } : { ward: w };
 }
 
@@ -221,6 +226,7 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
       moving: Move.mode[e] !== 0,
       alive,
       ...(k === Kind.Ward ? wardFields(sim, e, team) : {}),
+      ...(Unit.variant[e] ? { variant: VARIANTS[Unit.variant[e]!] } : {}),
     });
   }
   const projectiles: SnapProjectile[] = [];
@@ -297,12 +303,19 @@ export function teamEvents(sim: Sim, team: number): { events: SimEvent[]; audio:
       tick: sim.tick,
     });
   }
-  const events = sim.events.filter((ev) => {
+  // Units that died this tick where the team could see it (own units, or a visible death point): vision is computed
+  // after the kill and no longer lists them, but their killing blow (damage number, kill credit) belongs to the view.
+  const dying = new Set<number>();
+  for (const ev of sim.events) if (ev.e === 'death' && (ev.team === team || pointVisible(sim, team, ev.x, ev.y))) dying.add(ev.eid);
+  // structures are always in the snapshot, so they are always known too
+  const known = (eid: number): boolean => seen(eid) || dying.has(eid) || isStructure(Unit.kind[eid]!);
+  const mask = (eid: number): number => (known(eid) ? eid : -1);
+  const filtered = sim.events.filter((ev) => {
     switch (ev.e) {
       case 'damage':
-        return seen(ev.dst);
+        return known(ev.dst);
       case 'attack':
-        return seen(ev.src) || seen(ev.dst);
+        return known(ev.src) || known(ev.dst);
       case 'cast':
         return seen(ev.src);
       case 'ping':
@@ -317,10 +330,26 @@ export function teamEvents(sim: Sim, team: number): { events: SimEvent[]; audio:
         return Unit.team[ev.eid] === team;
       case 'death':
         // camp kills stay in the fog (no free jungle timers); epic objectives (r >= 130) are announced like LoL
-        if (ev.kind !== Kind.Monster || Unit.radius[ev.eid]! >= 130) return true;
+        if ((ev.kind !== Kind.Monster && ev.kind !== Kind.Plant) || Unit.radius[ev.eid]! >= 130) return true;
         return (ev.killer >= 0 && Unit.team[ev.killer] === team) || pointVisible(sim, team, ev.x, ev.y);
       default:
         return true;
+    }
+  });
+  // Unseen units inside kept events are masked to -1 (an attacker in a bush, a killer in the fog): no eid leaks.
+  // Events are shared between both teams' views, so masked ones are copies.
+  const events = filtered.map((ev): SimEvent => {
+    switch (ev.e) {
+      case 'damage':
+        return known(ev.src) ? ev : { ...ev, src: -1 };
+      case 'attack':
+        return known(ev.src) && known(ev.dst) ? ev : { ...ev, src: mask(ev.src), dst: mask(ev.dst) };
+      case 'death':
+        return known(ev.killer) ? ev : { ...ev, killer: -1 };
+      case 'zone':
+        return known(ev.src) ? ev : { ...ev, src: -1 };
+      default:
+        return ev;
     }
   });
   return { events, audio };

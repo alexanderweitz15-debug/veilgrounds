@@ -13,6 +13,7 @@ import { projectilesSystem } from './projectiles';
 import { movementSystem } from './movement';
 import { economySystem } from './economy';
 import { jungleSystem } from './jungle';
+import { plantsSystem } from './plants';
 import { computeVision } from '../vision';
 import { summonersSystem } from '../summoners';
 import { wardsSystem } from '../wards';
@@ -35,6 +36,7 @@ export const systems = (): System[] =>
   statsSystem, // buffs + level -> final stats
   wavesSystem, // minion spawning
   jungleSystem, // camps, monster aggro/leash, jungle buffs, objectives (Agent H)
+  plantsSystem, // jungle plants: growth timers, Spähfrucht vision expiry (effects fire from economy.onDeath)
   minionsSystem, // minion aggro + lane following intents
   abilitiesSystem, // cast timers, ability effects
   summonersSystem, // Teleport channel (Agent J)

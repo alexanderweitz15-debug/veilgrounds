@@ -20,6 +20,8 @@ export interface SpriteBatchOptions {
   corpseMs: number;
   /** atlas id for an entity, or null if this batch does not draw it */
   idFor: (e: SnapEntity, atlas: ChampionAtlas) => string | null;
+  /** size multiplier per entity (small camp members reuse their leader's frames), default 1 */
+  scaleFor?: (e: SnapEntity) => number;
 }
 
 /** Champions by champion id; Hark (Ottilie's wolf) for the big pet. Corvin's keg (hp 1) stays on the placeholder. */
@@ -35,6 +37,7 @@ export const CHAMPION_BATCH: SpriteBatchOptions = {
 };
 
 interface AnimState {
+  scale: number;
   serial: number;
   seen: number;
   id: string;
@@ -46,6 +49,7 @@ interface AnimState {
   y: number;
 }
 interface Ghost {
+  scale: number;
   on: boolean;
   id: string;
   dir: Dir;
@@ -86,7 +90,7 @@ export class ChampionSprites {
     private readonly qCast: THREE.Quaternion,
     private readonly opts: SpriteBatchOptions = CHAMPION_BATCH,
   ) {
-    this.ghosts = Array.from({ length: opts.ghosts }, () => ({ on: false, id: '', dir: 'S' as Dir, x: 0, y: 0, t0: 0 }));
+    this.ghosts = Array.from({ length: opts.ghosts }, () => ({ scale: 1, on: false, id: '', dir: 'S' as Dir, x: 0, y: 0, t0: 0 }));
     const CAP = (this.cap = opts.cap + opts.ghosts);
     const tex = new THREE.CanvasTexture(atlas.canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -124,8 +128,8 @@ export class ChampionSprites {
   }
 
   /** Height of the figure's top above the feet (health bars, picking). */
-  heightOf(id: string): number {
-    return (this.atlas.foot[id]! - this.atlas.top[id]!) * this.atlas.worldSize[id]!;
+  heightOf(id: string, e?: SnapEntity): number {
+    return (this.atlas.foot[id]! - this.atlas.top[id]!) * this.atlas.worldSize[id]! * (e && this.opts.scaleFor ? this.opts.scaleFor(e) : 1);
   }
 
   onCast(eid: number, now: number): void {
@@ -137,6 +141,7 @@ export class ChampionSprites {
     if (!a) return;
     const g = this.ghosts.find((x) => !x.on) ?? this.ghosts[0]!;
     g.on = true;
+    g.scale = a.scale;
     g.id = a.id;
     g.dir = a.dir;
     g.x = a.x;
@@ -155,7 +160,7 @@ export class ChampionSprites {
     if (this.n >= this.opts.cap) return;
     let a = this.st.get(e.serial);
     if (!a) {
-      a = { serial: e.serial, seen: now, id, anim: 'idle', t0: now, dir: 'S', phase: 0, x, y };
+      a = { scale: this.opts.scaleFor?.(e) ?? 1, serial: e.serial, seen: now, id, anim: 'idle', t0: now, dir: 'S', phase: 0, x, y };
       this.st.set(e.serial, a);
     }
     a.seen = now;
@@ -174,10 +179,10 @@ export class ChampionSprites {
       a.t0 = anim === 'cast' && ca !== undefined ? ca : now;
     }
     a.phase = e.atkPhase;
-    this.draw(id, anim, a.dir, now - a.t0 + (this.atlas.loop[anim] ? e.id * 97 : 0), x, y, c);
+    this.draw(id, anim, a.dir, now - a.t0 + (this.atlas.loop[anim] ? e.id * 97 : 0), x, y, c, a.scale);
   }
 
-  private draw(id: string, anim: Anim, dir: Dir, ms: number, x: number, y: number, c: number): void {
+  private draw(id: string, anim: Anim, dir: Dir, ms: number, x: number, y: number, c: number, scale = 1): void {
     const list = this.atlas.frames[id]![anim][dir];
     if (!list.length) return;
     const k = Math.floor((ms / 1000) * this.atlas.fps[anim]);
@@ -185,7 +190,7 @@ export class ChampionSprites {
     if (this.n >= this.cap) return;
     const i = this.n++;
     this.uv.setXYZW(i, r.u0, r.v0, r.u1, r.v1);
-    const size = this.atlas.worldSize[id]!;
+    const size = this.atlas.worldSize[id]! * scale;
     const below = (1 - this.atlas.foot[id]!) * size; // cell bottom below the feet
     this.p.set(x, 0, -y).addScaledVector(this.up, -below);
     this.s.set(size, size, 1);
@@ -202,7 +207,7 @@ export class ChampionSprites {
     for (const g of this.ghosts) {
       if (!g.on) continue;
       if (now - g.t0 > this.opts.corpseMs) g.on = false;
-      else this.draw(g.id, this.atlas.frames[g.id]!.death.S.length ? 'death' : 'idle', g.dir, now - g.t0, g.x, g.y, 1);
+      else this.draw(g.id, this.atlas.frames[g.id]!.death.S.length ? 'death' : 'idle', g.dir, now - g.t0, g.x, g.y, 1, g.scale);
     }
     if (now - this.lastPrune > STALE_MS) {
       this.lastPrune = now;

@@ -24,10 +24,36 @@ export const Kind = {
   Ward: 12,
   /** Temporary allied unit spawned by a champion hook (src/sim/summons.ts). */
   Pet: 13,
+  /** Jungle plant (src/sim/systems/plants.ts): neutral, 1 HP, popped by one champion basic attack. */
+  Plant: 14,
 } as const;
 export type KindId = (typeof Kind)[keyof typeof Kind];
 export const isMinion = (k: number): boolean => k >= Kind.MinionMelee && k <= Kind.MinionSuper;
 export const isStructure = (k: number): boolean => k >= Kind.Tower && k <= Kind.Nexus;
+
+/** Jungle monster types (sprite + name); small camp members have their own type. */
+export const MONSTER_TYPES = [
+  'dornenbock',
+  'glutwaechter',
+  'sumpfunke',
+  'mooswolf',
+  'mooswelpe',
+  'hohlkaefer',
+  'kaeferling',
+  'schattenkrabbe',
+  'krabbling',
+  'nebelschleicher',
+  'leviathan',
+  'schleierwaechter',
+  'kesselbrut',
+] as const;
+export type MonsterType = (typeof MONSTER_TYPES)[number];
+export const PLANT_TYPES = ['sprungfrucht', 'honigfrucht', 'spaehfrucht'] as const;
+export type PlantType = (typeof PLANT_TYPES)[number];
+/** Unit.variant indexes this list (0 = none). Order is part of determinism/replays: append only. */
+export const VARIANTS = ['', ...MONSTER_TYPES, ...PLANT_TYPES] as const;
+export type Variant = (typeof VARIANTS)[number];
+export const variantIndex = (v: Variant): number => VARIANTS.indexOf(v);
 
 export const Lane = { Top: 0, Mid: 1, Bot: 2, None: 255 } as const;
 export type LaneId = 0 | 1 | 2;
@@ -88,7 +114,16 @@ export interface TickInput {
 /** Events are produced during a tick and consumed by render/stats. Cleared at the start of each tick. */
 export type SimEvent =
   | { e: 'damage'; src: number; dst: number; amount: number; type: DamageType; crit?: boolean; /** Basic attack (render-only info: death recap). */ auto?: true }
-  | { e: 'death'; eid: number; kind: number; team: number; killer: number; x: number; y: number }
+  | {
+      e: 'death'; eid: number; kind: number; team: number; killer: number; x: number; y: number;
+      /** Victim champion id (champions only). */
+      champ?: string;
+      /** Killer unit kind/team (killer >= 0 in the sim; the eid itself may be fog-masked to -1 in snapshots). */
+      killerKind?: number;
+      killerTeam?: number;
+      /** Killer champion id (champion kills only). */
+      killerChamp?: string;
+    }
   | { e: 'gold'; eid: number; amount: number; x: number; y: number }
   | { e: 'lastHitMiss'; eid: number; target: number; earlyHp?: number; lateMs?: number }
   | { e: 'level'; eid: number; level: number }

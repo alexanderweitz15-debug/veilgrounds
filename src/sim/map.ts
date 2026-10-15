@@ -189,12 +189,18 @@ export function lineWalkable(nav: NavGrid, ax: number, ay: number, bx: number, b
   return true;
 }
 
-/** Nearest walkable point to (x,y), searching outward ring by ring. */
+/** Grid cell index clamped into [0, n-1]; NaN maps to 0 (callers validate inputs, this only keeps the grid safe). */
+const clampCell = (c: number, n: number): number => (c !== c ? 0 : Math.min(n - 1, Math.max(0, c)));
+
+/**
+ * Nearest walkable point to (x,y), searching outward ring by ring. Points outside the map (or NaN) are clamped
+ * into the grid first, so the result is always inside the map.
+ */
 export function nearestWalkable(nav: NavGrid, x: number, y: number): Pt {
   if (walkable(nav, x, y)) return { x, y };
-  const cx = Math.floor(x / CELL);
-  const cy = Math.floor(y / CELL);
-  for (let r = 1; r < 60; r++) {
+  const cx = clampCell(Math.floor(x / CELL), nav.w);
+  const cy = clampCell(Math.floor(y / CELL), nav.h);
+  for (let r = 0; r < 60; r++) {
     for (let dy = -r; dy <= r; dy++) {
       for (let dx = -r; dx <= r; dx++) {
         if (Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
@@ -204,7 +210,7 @@ export function nearestWalkable(nav: NavGrid, x: number, y: number): Pt {
       }
     }
   }
-  return { x, y };
+  return { x: (cx + 0.5) * CELL, y: (cy + 0.5) * CELL };
 }
 
 /**
@@ -258,7 +264,8 @@ export function findPath(nav: NavGrid, sx: number, sy: number, tx: number, ty: n
   }
   if (from[g] === -1 && g !== s) return [goal]; // unreachable: walk straight, movement will stop at walls
   const cells: Pt[] = [];
-  for (let c = g; c !== s && c !== -1; c = from[c]!) {
+  // guarded walk back (g and s are in-grid cells; the counter only protects against a corrupt parent chain)
+  for (let c = g, n = 0; c !== s && c >= 0 && c < w * h && n < w * h; c = from[c]!, n++) {
     const cx = c % w;
     cells.push({ x: (cx + 0.5) * CELL, y: ((c - cx) / w + 0.5) * CELL });
   }

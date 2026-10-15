@@ -14,6 +14,8 @@ export interface SimLink {
   /** F9 bot overlay (worker link only): ask for the latest bot decision rows, answered via onBotDebug. */
   requestBotDebug?(): void;
   onBotDebug?: ((rows: BotDebugRow[], tick: number) => void) | null;
+  /** The simulation died (worker error / out of memory): the game cannot continue, the client must say so. */
+  onError?: ((message: string) => void) | null;
 }
 
 export function workerLink(config: SimConfig, slot: number): SimLink {
@@ -26,12 +28,17 @@ export function workerLink(config: SimConfig, slot: number): SimLink {
     dispose: () => worker.terminate(),
     requestBotDebug: () => post({ type: 'getBotDebug' }),
     onBotDebug: null,
+    onError: null,
   };
   worker.onmessage = (ev: MessageEvent<FromWorker>) => {
     if (ev.data.type === 'snap') link.onSnap?.(ev.data.snap);
     else if (ev.data.type === 'botDebug') link.onBotDebug?.(ev.data.rows, ev.data.tick);
   };
-  worker.onerror = (ev) => console.error('sim worker error', ev.message);
+  worker.onerror = (ev) => {
+    console.error('sim worker error', ev.message);
+    link.onError?.(ev.message || 'worker error');
+  };
+  worker.onmessageerror = () => link.onError?.('message error');
   post({ type: 'start', config, slot });
   return link;
 }

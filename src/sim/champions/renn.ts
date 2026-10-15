@@ -9,6 +9,7 @@ import { dir, dist2 } from '../vec';
 import { nearestWalkable } from '../map';
 import { applyEffects, channelOf, enemiesInRadius, landingPoint, reduceCooldown, setCooldown, teleport } from '../systems/abilities';
 import { addGroundObject, groundObjects, removeGroundObject, type GroundObject } from '../summons';
+import { sees } from '../vision';
 import type { ChampionHooks, EffectCtx } from './hooks';
 import { byLevel, ctxFor, hookState, isChampLike } from './util';
 
@@ -163,7 +164,8 @@ export const hooks: ChampionHooks = {
       let best = -1;
       let bestD = Infinity;
       for (const i of query(sim.world, [Unit])) {
-        if (i === e || !Unit.alive[i] || Unit.untargetable[i] || isStructure(Unit.kind[i]!) || Unit.kind[i] === Kind.Projectile) continue;
+        if (i === e || !Unit.alive[i] || Unit.untargetable[i] || isStructure(Unit.kind[i]!) || Unit.kind[i] === Kind.Projectile || Unit.kind[i] === Kind.Ward) continue;
+        if (Unit.team[i] !== Unit.team[e] && !sees(sim, Unit.team[e]!, i)) continue; // no locking onto hidden enemies
         if (!ok(Pos.x[i]!, Pos.y[i]!)) continue;
         const d = dist2(Pos.x[i]!, Pos.y[i]!, ctx.cursorX, ctx.cursorY);
         if (d < bestD) (bestD = d), (best = i);

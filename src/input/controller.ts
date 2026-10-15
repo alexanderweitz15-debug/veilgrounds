@@ -73,7 +73,11 @@ export class InputController {
     on(window, 'keydown', (e) => this.keyDown(e));
     on(window, 'keyup', (e) => this.keyUp(e));
     on(window, 'blur', () => {
+      // keys/buttons released while the window was in the background never send keyup/mouseup
       this.centerHeld = this.rightHeld = this.showRange = false;
+      this.dragFrom = null; // middle-mouse camera drag
+      this.wheel.hide(); // ping wheel (G held): closes without pinging
+      this.wheelAt = null;
       this.host.togglePanel('scoreboard', false);
     });
   }

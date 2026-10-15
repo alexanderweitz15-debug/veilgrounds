@@ -199,7 +199,9 @@ export function addGroundObject(sim: Sim, o: { owner: number; tag: string; x: nu
 
 /** Active ground objects (optionally filtered), oldest first. */
 export function groundObjects(sim: Sim, tag?: string, owner?: number): GroundObject[] {
-  return st(sim).objects.filter((o) => o.until > sim.tick && (tag === undefined || o.tag === tag) && (owner === undefined || o.owner === owner));
+  const s = sim.state.summons as SummonState | undefined; // read-only: snapshots call this, it must not create state
+  if (!s) return [];
+  return s.objects.filter((o) => o.until > sim.tick && (tag === undefined || o.tag === tag) && (owner === undefined || o.owner === owner));
 }
 
 export function removeGroundObject(sim: Sim, id: number): void {

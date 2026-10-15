@@ -44,7 +44,10 @@ export const LIFE_ROOT = { pctPer5s: 0.015, combatTicks: sec(5) };
 export const WARDEN_STAFF_MULT = 1.12;
 export const SPELL_RING_MANA = 6;
 export const THORN_BLADE_HEAL = 3;
-export const HUNTER_FANG = { monsterMult: 1.3, minionGoldMult: 0.5, untilTick: sec(14 * 60) };
+/** Jägerzahn ("Jagdgefährte", LoL jungle companion stand-in): monsters have LoL HP since the jungle overhaul, so the
+ *  item carries the clear: +80 % damage to monsters, basic attacks on monsters deal +30 (+3 per level) true damage
+ *  and heal 6 (+1 per level) HP. */
+export const HUNTER_FANG = { monsterMult: 1.8, petTrue: 30, petTruePerLevel: 3, heal: 6, healPerLevel: 1, minionGoldMult: 0.5, untilTick: sec(14 * 60) };
 /** Giving Lamp: 3 charges (+1 per 10 s), a champion hit spends one (1 s apart) for 15 gold to you and the nearest
  *  allied champion within 1000. Quest: 500 gold earned this way. */
 export const LAMP = { max: 3, regen: sec(10), icd: sec(1), gold: 15, allyRange: 1000, quest: 500 };
@@ -245,6 +248,12 @@ export const ITEM_HOOKS: Record<string, ItemHook> = {
   hunter_fang: {
     // Banish unlock: bannen is a summoner (summoners.ts, not gated here). Gold malus: minionGoldMult (economy.ts).
     modifyDamage: (sim, _eid, t, amount) => (sim.c.Unit.kind[t] === Kind.Monster ? amount * HUNTER_FANG.monsterMult : amount),
+    onAutoHit(sim, eid, t) {
+      if (sim.c.Unit.kind[t] !== Kind.Monster) return;
+      const lvl = sim.c.Champ.level[eid]! - 1;
+      dealDamage(sim, eid, t, HUNTER_FANG.petTrue + HUNTER_FANG.petTruePerLevel * lvl, 'true');
+      heal(sim, eid, HUNTER_FANG.heal + HUNTER_FANG.healPerLevel * lvl);
+    },
   },
   giving_lamp: {
     // "No minion gold penalty": this game has no support gold penalty, so nothing to lift.

@@ -11,6 +11,11 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
 
   const onKey = (e: KeyboardEvent): void => {
     if (!capturing) return;
+    // the menu was closed (e.g. "Weiter") while waiting for a key: the capture ends, the key goes to the game
+    if (!root.isConnected || !root.getClientRects().length) {
+      capturing = null;
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     if (e.code !== 'Escape') setBind(capturing.action, e.code);

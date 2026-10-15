@@ -14,6 +14,7 @@ import { bodyOf, drawHumanoid, solveRig } from './humanoid';
 import { KITS } from './kits';
 import { drawWolf, HARK } from './wolf';
 import { MINION_DRAWERS, MINION_KITS } from './minions';
+import { MONSTER_DRAWERS } from './monsters';
 import { ANIMS, DIRS, type Anim, type Dir, type Kit } from './types';
 
 /** Canvas in the page or (in a Worker) an OffscreenCanvas. */
@@ -42,7 +43,7 @@ export interface SpriteDrawer {
 }
 // minions are defined here (not registered from game code) so the bake workers know them too
 const EXTRA_KITS: Record<string, Kit> = Object.fromEntries(MINION_KITS.map((k) => [k.id, k]));
-const DRAWERS: Record<string, SpriteDrawer> = { ...MINION_DRAWERS };
+const DRAWERS: Record<string, SpriteDrawer> = { ...MINION_DRAWERS, ...MONSTER_DRAWERS };
 export function registerSpriteKit(kit: Kit): void {
   EXTRA_KITS[kit.id] = kit;
 }

@@ -144,8 +144,8 @@
           "en": "Hunt"
         },
         "desc": {
-          "de": "+30 % Schaden an Monstern, schaltet Bannen frei. Bis 14:00 nur 50 % Gold von Lane-Minions.",
-          "en": "+30% damage to monsters, unlocks Banish. Until 14:00 only 50% gold from lane minions."
+          "de": "+80 % Schaden an Monstern; Angriffe auf Monster verursachen zusätzlich 30 (+3 pro Level) absoluten Schaden und heilen 6 (+1 pro Level) LP. Schaltet Bannen frei. Bis 14:00 nur 50 % Gold von Lane-Minions.",
+          "en": "+80% damage to monsters; attacks on monsters deal an extra 30 (+3 per level) true damage and heal 6 (+1 per level) HP. Unlocks Banish. Until 14:00 only 50% gold from lane minions."
         },
         "hook": "hunter_fang"
       },

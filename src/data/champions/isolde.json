@@ -115,6 +115,7 @@
       "costType": "mana",
       "radius": 450,
       "duration": 3.5,
+      "flags": ["mobility"],
       "effects": [
         { "kind": "hook", "id": "isolde_r_glass_dome" }
       ]

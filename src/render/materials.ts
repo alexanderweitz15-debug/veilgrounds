@@ -1,4 +1,5 @@
-// Shared material helpers: two-tone toon shading, inverted-hull outlines and the fog-of-war shader patch.
+// Shared material helpers: gouache world shading (style C), toon shading, inverted-hull outlines and the
+// fog-of-war shader patch.
 import * as THREE from 'three';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
@@ -20,45 +21,138 @@ export function toon(params: THREE.MeshToonMaterialParameters): THREE.MeshToonMa
   return withFog(new THREE.MeshToonMaterial({ gradientMap: toonGradient(), ...params }));
 }
 
-/**
- * Darken fragments outside own-team vision. Works for plain and instanced meshes. All patched materials share
- * one shader source, so the program cache key stays valid.
- */
-export function withFog<T extends THREE.Material>(m: T): T {
-  m.onBeforeCompile = (sh) => {
-    sh.uniforms.fogTex = fogUniform;
-    sh.vertexShader =
-      'varying vec2 vFogUv;\n' +
-      sh.vertexShader.replace(
-        '#include <project_vertex>',
-        `#include <project_vertex>
+// Fog of war look: fogged ground keeps its painted shapes but sinks into a desaturated violet dusk; the edge is
+// feathered by the fog texture (fog.ts) and broken up with a little world-space noise so it reads painterly.
+const FOW_HEAD = `uniform sampler2D fogTex;
+varying vec2 vFogUv;
+float fowHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float fowNoise(vec2 p) {
+  vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(fowHash(i), fowHash(i + vec2(1.0, 0.0)), f.x), mix(fowHash(i + vec2(0.0, 1.0)), fowHash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+`;
+const FOW_APPLY = `
+        vec2 fowJit = vec2(fowNoise(vFogUv * 90.0), fowNoise(vFogUv * 90.0 + 17.3)) - 0.5;
+        float fogA = texture2D(fogTex, vFogUv + fowJit * 0.006).a;
+        fogA = smoothstep(0.08, 0.92, fogA);
+        float fowL = dot(gl_FragColor.rgb, vec3(0.299, 0.587, 0.114));
+        vec3 fowC = mix(vec3(fowL), gl_FragColor.rgb, 0.35) * vec3(0.46, 0.43, 0.56) + vec3(0.03, 0.022, 0.055);
+        gl_FragColor.rgb = mix(gl_FragColor.rgb, fowC, fogA * 0.92);`;
+const FOW_VERT = `#include <project_vertex>
         vec4 fogWp = vec4(transformed, 1.0);
         #ifdef USE_INSTANCING
           fogWp = instanceMatrix * fogWp;
         #endif
         fogWp = modelMatrix * fogWp;
-        vFogUv = vec2(fogWp.x / 16000.0, -fogWp.z / 16000.0);`,
+        vFogUv = vec2(fogWp.x / 16000.0, -fogWp.z / 16000.0);`;
+
+function patchFog(sh: THREE.WebGLProgramParametersWithUniforms): void {
+  sh.uniforms.fogTex = fogUniform;
+  sh.vertexShader = `varying vec2 vFogUv;
+` + sh.vertexShader.replace('#include <project_vertex>', FOW_VERT);
+  sh.fragmentShader = FOW_HEAD + sh.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>' + FOW_APPLY);
+}
+
+/**
+ * Sink fragments outside own-team vision into the violet dusk. Works for plain and instanced meshes. All patched
+ * materials share one shader source, so the program cache key stays valid.
+ */
+export function withFog<T extends THREE.Material>(m: T): T {
+  m.onBeforeCompile = patchFog;
+  return m;
+}
+
+// ------------------------------------------------------------------------------------------------ gouache world
+/** World lighting (style C "Gouache-Dämmerung"): low warm evening sun from behind-right, violet sky fill. */
+export const WORLD_LIGHT = {
+  sun: '#ffb877',
+  sunIntensity: 2.9,
+  /** direction toward the sun (three.js axes: x east, y up, -z north) */
+  sunDir: new THREE.Vector3(0.66, 0.5, -0.36).normalize(),
+  sky: '#7a68b0',
+  ground: '#2c2a22',
+  hemiIntensity: 1.05,
+  /** distance haze / background */
+  haze: '#221c2c',
+};
+const lumLin = (hex: string): number => {
+  const c = new THREE.Color(hex);
+  return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+};
+const GOUACHE_UNI = {
+  uShadowTint: { value: new THREE.Color('#3a2d5a') },
+  uRim: { value: new THREE.Color('#ffbf72') },
+  uSunTint: { value: new THREE.Color(WORLD_LIGHT.sun) },
+  // tone of fully lit flat ground = 1.0 (lambert: (sun * N.L + hemi sky) / PI)
+  uToneRef: { value: (lumLin(WORLD_LIGHT.sun) * WORLD_LIGHT.sunIntensity * WORLD_LIGHT.sunDir.y + lumLin(WORLD_LIGHT.sky) * WORLD_LIGHT.hemiIntensity) / Math.PI },
+  uDetail: { value: null as THREE.Texture | null },
+};
+/** World-space brush-stroke detail texture (terrain.ts) blended into gouache materials created with detail. */
+export const detailUniform = GOUACHE_UNI.uDetail;
+
+const GOUACHE_HEAD = `uniform vec3 uShadowTint; uniform vec3 uRim; uniform vec3 uSunTint; uniform float uToneRef;
+uniform sampler2D uDetail; varying vec2 vWorldXZ;
+`;
+// three hard value steps, shadows shift to cool violet, warm terminator band, fresnel rim on lit forms
+const GOUACHE_PAINT = `
+  float gBase = max(dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722)), 0.02);
+  float tone = dot(outgoingLight, vec3(0.2126, 0.7152, 0.0722)) / gBase / uToneRef;
+  vec3 dc = diffuseColor.rgb;
+  vec3 shadowC = mix(dc * 0.42, uShadowTint, 0.34);
+  vec3 midC = mix(dc * 0.7, uShadowTint, 0.12);
+  vec3 litC = dc * mix(vec3(1.0), uSunTint, 0.3) * 1.08;
+  vec3 gCol = mix(shadowC, midC, smoothstep(0.24, 0.32, tone));
+  gCol = mix(gCol, litC, smoothstep(0.52, 0.6, tone));
+  gCol += uRim * 0.1 * (1.0 - clamp(abs(tone - 0.56) / 0.07, 0.0, 1.0));
+  float fres = pow(1.0 - clamp(abs(dot(normalize(vViewPosition), normal)), 0.0, 1.0), 3.0);
+  gCol += uRim * fres * GOUACHE_RIM * smoothstep(0.2, 0.5, tone);
+  gl_FragColor = vec4(gCol, diffuseColor.a);
+`;
+const DETAIL = `#include <map_fragment>
+  #ifdef GOUACHE_DETAIL
+    vec3 gDet = texture2D(uDetail, vWorldXZ / 900.0).rgb * 0.6 + texture2D(uDetail, vWorldXZ / 2600.0 + 0.37).rgb * 0.4;
+    diffuseColor.rgb *= mix(vec3(1.0), gDet * 2.0, 0.55);
+  #endif`;
+
+/**
+ * Painted world material (Lambert lighting re-graded into gouache value steps) with the fog-of-war patch.
+ * `detail` multiplies the world-space brush texture into the albedo (ground); `rim` scales the fresnel rim light.
+ */
+export function gouache(params: THREE.MeshLambertMaterialParameters, o: { detail?: boolean; rim?: number } = {}): THREE.MeshLambertMaterial {
+  const m = new THREE.MeshLambertMaterial(params);
+  const rim = (o.rim ?? 0.45).toFixed(3);
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, GOUACHE_UNI);
+    sh.vertexShader =
+      `varying vec2 vWorldXZ;
+` +
+      sh.vertexShader.replace(
+        '#include <project_vertex>',
+        `#include <project_vertex>
+        vec4 gWp = vec4(transformed, 1.0);
+        #ifdef USE_INSTANCING
+          gWp = instanceMatrix * gWp;
+        #endif
+        gWp = modelMatrix * gWp;
+        vWorldXZ = gWp.xz;`,
       );
-    sh.fragmentShader =
-      'uniform sampler2D fogTex;\nvarying vec2 vFogUv;\n' +
-      sh.fragmentShader.replace(
-        '#include <dithering_fragment>',
-        `#include <dithering_fragment>
-        float fogA = texture2D(fogTex, vFogUv).a;
-        gl_FragColor.rgb = mix(gl_FragColor.rgb, gl_FragColor.rgb * vec3(0.36, 0.36, 0.46), fogA);`,
-      );
+    if (o.detail) sh.fragmentShader = `#define GOUACHE_DETAIL
+` + sh.fragmentShader;
+    sh.fragmentShader = GOUACHE_HEAD + sh.fragmentShader.replace('#include <map_fragment>', DETAIL).replace('#include <opaque_fragment>', GOUACHE_PAINT.replace('GOUACHE_RIM', rim));
+    patchFog(sh);
   };
+  m.customProgramCacheKey = () => `gouache-${o.detail ? 1 : 0}-${rim}`;
   return m;
 }
 
 const outlineMats = new Map<number, THREE.MeshBasicMaterial>();
 /** Inverted hull outline material: back faces pushed out along smooth normals. */
-function outlineMaterial(thickness: number): THREE.MeshBasicMaterial {
+export function outlineMaterial(thickness: number): THREE.MeshBasicMaterial {
   let m = outlineMats.get(thickness);
   if (!m) {
-    m = new THREE.MeshBasicMaterial({ color: 0x15110e, side: THREE.BackSide });
+    m = new THREE.MeshBasicMaterial({ color: 0x1c1622, side: THREE.BackSide });
     m.onBeforeCompile = (sh) => {
-      sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', `vec3 transformed = position + normal * ${thickness.toFixed(1)};`);
+      sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', `vec3 transformed = position + normal * ${thickness.toFixed(3)};`);
     };
     m.customProgramCacheKey = () => 'outline' + thickness;
     outlineMats.set(thickness, m);

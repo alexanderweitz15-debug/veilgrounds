@@ -3,10 +3,11 @@
 
 import type { Sim } from './sim';
 import { despawn } from './sim';
-import { Kind, sec, type DamageType } from './types';
+import { Kind, isStructure, sec, type DamageType } from './types';
 import { onDeath } from './systems/economy';
 import { damageDealtMult, damageTakenMult, healMult, statMods } from './buffs';
 import { passiveHooksOf } from './champions';
+import { KESSELBRUT_STRUCT_PCT, kesselbrutStacks } from './systems/jungle';
 
 export interface DamageOpts {
   isAuto?: boolean;
@@ -75,9 +76,11 @@ export function dealDamage(sim: Sim, src: number, dst: number, amount: number, t
   const { Unit, Hp, LastHit } = sim.c;
   if (!Unit.alive[dst] || Unit.invulnerable[dst] || amount <= 0) return 0;
   if (sim.flags.towersInvulnerable && Unit.kind[dst]! >= Kind.Tower && Unit.kind[dst]! <= Kind.Nexus) return 0;
-  if (Unit.kind[dst] === Kind.Ward) {
-    // wards (src/sim/wards.ts) lose exactly 1 HP per basic attack; nothing else damages them
+  if (Unit.kind[dst] === Kind.Ward || Unit.kind[dst] === Kind.Plant) {
+    // wards (src/sim/wards.ts) lose exactly 1 HP per basic attack; nothing else damages them.
+    // Jungle plants (src/sim/systems/plants.ts): the same, but only champion basic attacks pop them.
     if (!opts.isAuto) return 0;
+    if (Unit.kind[dst] === Kind.Plant && (src < 0 || Unit.kind[src] !== Kind.Champion)) return 0;
     amount = 1;
     opts = { ...opts, raw: true, crit: false };
   }
@@ -85,9 +88,11 @@ export function dealDamage(sim: Sim, src: number, dst: number, amount: number, t
   const top = log.depth === 0;
   log.depth++;
   try {
-    const ward = Unit.kind[dst] === Kind.Ward;
+    const ward = Unit.kind[dst] === Kind.Ward || Unit.kind[dst] === Kind.Plant;
     if (top && src >= 0 && !ward) for (const h of passiveHooksOf(sim, src)) if (h.modifyDamage) amount = h.modifyDamage(sim, src, dst, amount, type, !!opts.isAuto);
     if (src >= 0 && !ward) amount *= damageDealtMult(sim, src);
+    // Kesselbrut team stacks: champions deal more damage to structures (jungle.ts)
+    if (src >= 0 && Unit.kind[src] === Kind.Champion && isStructure(Unit.kind[dst]!)) amount *= 1 + (KESSELBRUT_STRUCT_PCT / 100) * kesselbrutStacks(sim, Unit.team[src]!);
     if (amount <= 0) return 0;
     let dmg = opts.raw || type === 'true' ? amount : amount * mitigation(effectiveResist(sim, src, dst, type));
     if (!ward) dmg *= damageTakenMult(sim, dst);
@@ -138,7 +143,17 @@ export function kill(sim: Sim, victim: number, killer: number): void {
   const { Unit, Hp, Pos } = sim.c;
   if (!Unit.alive[victim]) return;
   Hp.cur[victim] = 0;
-  sim.events.push({ e: 'death', eid: victim, kind: Unit.kind[victim]!, team: Unit.team[victim]!, killer, x: Pos.x[victim]!, y: Pos.y[victim]! });
+  // champion ids ride along: the victim leaves the (fog-filtered) snapshot in this very tick, so clients could not
+  // name it otherwise (kill feed, announcer, death recap)
+  const champOf = (e: number): string | undefined => (e >= 0 && Unit.kind[e] === Kind.Champion ? sim.championIds[Unit.champ[e]!] : undefined);
+  const vChamp = champOf(victim);
+  const kChamp = champOf(killer);
+  sim.events.push({
+    e: 'death', eid: victim, kind: Unit.kind[victim]!, team: Unit.team[victim]!, killer, x: Pos.x[victim]!, y: Pos.y[victim]!,
+    ...(vChamp !== undefined ? { champ: vChamp } : {}),
+    ...(killer >= 0 ? { killerKind: Unit.kind[killer]!, killerTeam: Unit.team[killer]! } : {}),
+    ...(kChamp !== undefined ? { killerChamp: kChamp } : {}),
+  });
   onDeath(sim, victim, killer); // rewards, respawn timers, structure state (economy.ts)
   // hook events while the victim's position is still valid
   if (killer >= 0 && Unit.kind[killer] === Kind.Champion) for (const h of passiveHooksOf(sim, killer)) h.onKill?.(sim, killer, victim);

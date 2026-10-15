@@ -1,22 +1,23 @@
 // DOM HUD: bottom panel (portrait, bars, abilities, summoners, items, gold), top bar (clock, kills, towers,
 // CS), kill feed, respawn timer, pause / game-over overlays and placeholder panels. Writes are diffed.
 import { PING_COLOR } from './pingWheel';
-import type { ClientState } from '../game/state';
+import { deathKillerChamp, deathVictimChamp, type ClientState } from '../game/state';
 import type { AbilityHud } from '../sim/systems/abilities';
 import { Kind, type SimEvent } from '../sim/types';
 import { t } from '../i18n';
-import { keyLabel, binds, type Action } from '../input/keybinds';
+import { keyLabel, binds, bindsVersion, type Action } from '../input/keybinds';
 import { abilityInfo, champName, summonerName } from './names';
 import type { Panel, Armed } from '../input/controller';
 import { CUM_XP } from '../sim/systems/economy';
 import type { PlayerSetup } from '../sim/types';
-import { ShopPanel, itemAbbr, itemTooltip } from './shop';
+import { ShopPanel, itemAbbr } from './shop';
 import { Scoreboard } from './scoreboard';
 import { BotDebugPanel } from './botDebug';
 import { setPortrait } from '../render/portraits';
 import { Announcer } from './announce';
 import { DeathRecap } from './deathRecap';
 import { abilityIcon, itemIcon, setIcon, summonerIcon } from './icons';
+import { setTip } from './tooltip';
 
 const KILLFEED_MS = 9000;
 
@@ -66,6 +67,9 @@ type TrinketHud = NonNullable<NonNullable<ClientState['snap']>['me']>['trinket']
 export class Hud {
   readonly root = el('div', 'hud');
   private readonly slots: SlotView[] = [];
+  /** Key labels on ability/item slots, refreshed after a rebind (settings menu during the game). */
+  private readonly keyLabels: { el: HTMLElement; action: Action }[] = [];
+  private bindsSeen = bindsVersion();
   private readonly items: HTMLElement[] = [];
   private readonly hpFill: HTMLElement;
   private readonly hpText: HTMLElement;
@@ -139,6 +143,7 @@ export class Hud {
       const cd = el('div', 'cd', root);
       const cdNum = el('div', 'cdnum', root);
       const key = el('div', 'key', root, keyLabel(binds[k]));
+      this.keyLabels.push({ el: key, action: k });
       const pips = el('div', 'pips', root);
       const plus = el('button', 'plus', root, '+');
       plus.addEventListener('mousedown', (e) => {
@@ -161,7 +166,7 @@ export class Hud {
     itemKeys.forEach((k, i) => {
       const s = el('div', i === 6 ? 'item trinket' : 'item', grid);
       el('div', 'abbr', s);
-      el('div', 'key', s, keyLabel(binds[k]));
+      this.keyLabels.push({ el: el('div', 'key', s, keyLabel(binds[k])), action: k });
       if (i === 6) {
         el('div', 'tcd', s);
         el('div', 'charges', s);
@@ -272,10 +277,10 @@ export class Hud {
     if (ev.e !== 'death') return;
     let text = '';
     if (ev.kind === Kind.Champion) {
-      const victim = state.byId.get(ev.eid);
-      const killer = state.byId.get(ev.killer);
-      const vName = champName(victim?.champ ?? null);
-      text = killer && killer.kind === Kind.Champion ? t('kill.slain', { a: champName(killer.champ), b: vName }) : t('kill.executed', { b: vName });
+      // the event names both champions: a dead (or never seen) enemy is no longer in the snapshot
+      const vName = champName(deathVictimChamp(ev, state));
+      const kChamp = deathKillerChamp(ev, state);
+      text = kChamp ? t('kill.slain', { a: champName(kChamp), b: vName }) : t('kill.executed', { b: vName });
     } else if (ev.kind === Kind.Tower) text = t('kill.tower', { team: t(`team.${ev.team}`) });
     else if (ev.kind === Kind.Inhibitor) text = t('kill.inhib', { team: t(`team.${ev.team}`) });
     else return;
@@ -284,6 +289,10 @@ export class Hud {
   }
 
   update(state: ClientState, now: number): void {
+    if (this.bindsSeen !== bindsVersion()) {
+      this.bindsSeen = bindsVersion();
+      for (const k of this.keyLabels) setText(k.el, keyLabel(binds[k.action]));
+    }
     const snap = state.snap;
     // kill feed expiry
     while (this.feedEntries.length && now - this.feedEntries[0]!.at > KILLFEED_MS) this.feedEntries.shift()!.node.remove();
@@ -312,7 +321,7 @@ export class Hud {
     if (me.champ !== this.champ) {
       this.champ = me.champ;
       setText(this.portrait, champName(me.champ).charAt(0));
-      this.portrait.title = champName(me.champ);
+      setTip(this.portrait, `passive:${me.champ}`);
       if (me.champ) setPortrait(this.portrait, me.champ);
     }
     setText(this.cs, `${t('hud.cs')} ${me.cs} (${(me.cs / Math.max(1, time / 60)).toFixed(1)}/min)`);
@@ -366,7 +375,7 @@ export class Hud {
       setIcon(ab, icon);
       setText(ab, id && !icon ? itemAbbr(id) : '');
       toggle(s, 'filled', !!id);
-      s.title = id ? itemTooltip(id) : '';
+      setTip(s, id ? `item:${id}` : null);
     });
     this.marks.textContent = '';
     for (const m of marks) {
@@ -414,8 +423,7 @@ ${t(`trinket.${tr.id}.desc`)}${tr.cdLeft > 0 ? ` (${Math.ceil(tr.cdLeft)} s)` : 
       const icon = isSumm ? summonerIcon(a.id) : abilityIcon(this.champ, i);
       setIcon(s.icon, icon);
       setText(s.icon, icon ? '' : info.name.slice(0, isSumm ? 2 : 3));
-      const title = info.desc ? `${info.name}\n${info.desc}` : info.name;
-      if (s.root.title !== title) s.root.title = title;
+      setTip(s.root, isSumm ? `summoner:${a.id}` : `ability:${this.champ}:${i}:${a.rank}`);
       const ready = a.cdLeft <= 0.05;
       toggle(s.root, 'unlearned', !isSumm && a.rank === 0);
       toggle(s.root, 'cooling', !ready);

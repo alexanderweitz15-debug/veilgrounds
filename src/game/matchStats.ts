@@ -34,6 +34,8 @@ export class MatchStats {
   private readonly s: MatchSummary;
   private nextSample = 0;
   private latest: StatSample | null = null;
+  /** Champion eids seen so far (champion eids are never recycled): the killing blow's target is no longer in the snapshot. */
+  private readonly champs = new Set<number>();
 
   constructor(config: SimConfig | null) {
     this.s = {
@@ -55,6 +57,10 @@ export class MatchStats {
   ingest(snap: Snapshot): void {
     const me = snap.me;
     const s = this.s;
+    // match / trainer run over: the stats are final (a few more snapshots arrive before the sim stops)
+    if (s.winner !== null || s.trainer?.done) return;
+    for (const e of snap.entities) if (e.kind === Kind.Champion) this.champs.add(e.id);
+    for (const ev of snap.events) if (ev.e === 'death' && ev.kind === Kind.Champion) this.champs.add(ev.eid);
     s.duration = snap.time;
     s.team = snap.team;
     if (snap.trainer) s.trainer = snap.trainer;
@@ -73,8 +79,7 @@ export class MatchStats {
       if (ev.e === 'damage') {
         if (ev.src === me.eid) {
           add(s.dealtAll, ev.amount);
-          const dst = snap.entities.find((e) => e.id === ev.dst);
-          if (dst?.kind === Kind.Champion) add(s.dealtChamp, ev.amount);
+          if (this.champs.has(ev.dst)) add(s.dealtChamp, ev.amount);
         }
         if (ev.dst === me.eid) add(s.taken, ev.amount);
       } else if (ev.e === 'death' && ev.kind === Kind.Champion) {

@@ -16,10 +16,11 @@ import type { System } from './index';
 import { DT, Kind, isMinion, isStructure, sec } from '../types';
 import { dist2 } from '../vec';
 import { heal } from '../damage';
-import { onMoveCommand } from './attack';
+import { clearAttackOrders, onMoveCommand } from './attack';
 import { MINION_STATS, recordCombat } from './minions';
 import { onStructureDeath } from './towers';
 import { onMonsterDeath } from './jungle';
+import { onPlantDeath } from './plants';
 import { minionGoldMult } from '../items/itemHooks';
 
 export const START_GOLD = 500;
@@ -63,8 +64,17 @@ function st(sim: Sim): EconSt {
   return s;
 }
 
-/** [kills, deaths, assists] of a champion. */
+/**
+ * [kills, deaths, assists] of a champion (a copy). Read-only: snapshots (and so bots) call this every tick, and a
+ * read must never create sim state, or a replay (which builds no snapshots) ends with a different state hash.
+ */
 export function kda(sim: Sim, eid: number): [number, number, number] {
+  const k = (sim.state.economy as EconSt | undefined)?.kda.get(eid);
+  return k ? [k[0], k[1], k[2]] : [0, 0, 0];
+}
+
+/** Mutable tally (kill bookkeeping only). */
+function kdaEntry(sim: Sim, eid: number): [number, number, number] {
   const s = st(sim);
   let k = s.kda.get(eid);
   if (!k) s.kda.set(eid, (k = [0, 0, 0]));
@@ -219,10 +229,10 @@ function championDeath(sim: Sim, victim: number, killer: number): void {
       const f = Math.min(2, Math.max(0.4, 1 + 0.2 * (avg - Champ.level[p]!)));
       grantXp(sim, p, (total / parts.length) * f);
     }
-    kda(sim, credited)[0]++;
-    for (const a of assisters) kda(sim, a)[2]++;
+    kdaEntry(sim, credited)[0]++;
+    for (const a of assisters) kdaEntry(sim, a)[2]++;
   }
-  kda(sim, victim)[1]++;
+  kdaEntry(sim, victim)[1]++;
   s.killStreak.set(victim, 0);
   s.deathStreak.set(victim, (s.deathStreak.get(victim) ?? 0) + 1);
   s.dmg.delete(victim);
@@ -237,10 +247,11 @@ export function onDeath(sim: Sim, victim: number, killer: number): void {
   else if (k === Kind.Champion) championDeath(sim, victim, killer);
   else if (isStructure(k)) onStructureDeath(sim, victim, killer);
   else if (k === Kind.Monster) onMonsterDeath(sim, victim, killer); // camp data in jungle.ts (Agent H)
+  else if (k === Kind.Plant) onPlantDeath(sim, victim, killer); // jungle plants (plants.ts)
 }
 
 function respawn(sim: Sim, eid: number): void {
-  const { Unit, Champ, Pos, Hp, Mana, Move, Atk } = sim.c;
+  const { Unit, Champ, Pos, Hp, Mana, Move } = sim.c;
   const f = sim.map.sides[Unit.team[eid]!]!.fountain;
   Pos.x[eid] = Pos.px[eid] = f.x;
   Pos.y[eid] = Pos.py[eid] = f.y;
@@ -248,7 +259,7 @@ function respawn(sim: Sim, eid: number): void {
   Mana.cur[eid] = Mana.max[eid]!;
   Unit.alive[eid] = 1;
   Move.mode[eid] = 0;
-  Atk.target[eid] = -1;
+  clearAttackOrders(sim, eid); // no walking back to the attack-move point of the previous life
   sim.paths.delete(eid);
   Champ.respawnAt[eid] = 0;
   sim.events.push({ e: 'respawn', eid });

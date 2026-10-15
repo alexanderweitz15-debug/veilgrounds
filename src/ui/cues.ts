@@ -4,7 +4,7 @@
 // - "Unter Turmbeschuss": red screen-edge vignette + label while a tower shoots the player
 // - captions for sounds without a visual (minion wave, tower plate, off-screen champion death)
 // Toggle: settings.visualCues.
-import type { ClientState } from '../game/state';
+import { deathVictimChamp, type ClientState } from '../game/state';
 import type { World } from '../render/world';
 import { Kind, type SimEvent } from '../sim/types';
 import { REL } from '../render/palette';
@@ -48,8 +48,7 @@ export class VisualCues {
         return;
       case 'death':
         if (ev.kind === Kind.Champion) {
-          const v = state.byId.get(ev.eid);
-          this.caption(t(ev.team === state.myTeam ? 'cue.allyDied' : 'cue.enemyDied', { name: champName(v?.champ ?? null) }), now);
+          this.caption(t(ev.team === state.myTeam ? 'cue.allyDied' : 'cue.enemyDied', { name: champName(deathVictimChamp(ev, state)) }), now);
         }
         return;
       default:

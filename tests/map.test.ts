@@ -11,7 +11,7 @@ describe('map', () => {
     // red top lane is the physical top lane (y high) and mirrors blue's bot lane
     expect(r.towers.top[0]!.y).toBeGreaterThan(14000);
     expect(b.towers.top[0]!.x).toBeLessThan(2000);
-    expect(map.bushes.length).toBe(14);
+    expect(map.bushes.length).toBe(18);
   });
 
   it('nexus-to-nexus distance along mid is about 17000', () => {
@@ -29,6 +29,30 @@ describe('map', () => {
         }
       }
       for (const c of side.camps) expect(walkable(map.nav, c.x, c.y)).toBe(true);
+      expect(side.camps).toHaveLength(6);
+    }
+  });
+
+  it('every camp, plant and objective is reachable from both fountains (organic walls keep their corridors)', () => {
+    const goals = [
+      ...map.sides.flatMap((s) => [...s.camps, ...s.plants]),
+      map.objectives.leviathan,
+      map.objectives.kesselbrut,
+      map.objectives.schleierwaechter,
+      ...map.objectives.nebelschleicher,
+    ];
+    for (const side of map.sides) {
+      for (const g of goals) {
+        const path = findPath(map.nav, side.fountain.x, side.fountain.y, g.x, g.y);
+        let x = side.fountain.x;
+        let y = side.fountain.y;
+        for (const p of path) {
+          expect(lineWalkable(map.nav, x, y, p.x, p.y)).toBe(true);
+          x = p.x;
+          y = p.y;
+        }
+        expect(Math.hypot(x - g.x, y - g.y)).toBeLessThan(120);
+      }
     }
   });
 

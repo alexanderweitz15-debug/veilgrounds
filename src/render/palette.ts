@@ -15,6 +15,15 @@ export const TEAM: [TeamPalette, TeamPalette] = [
 
 export const INK = '#1b1612';
 
+/**
+ * Team identity of structures and bases (style C), matching the minion looks (render/champions/minions.ts):
+ * Lichtwerk = ivory sandstone, blue cloth, brass, cold lantern light; Aschehalle = basalt, red cloth, iron, embers.
+ */
+export const BASE_LOOK = [
+  { stone: '#a3937a', stoneDark: '#7c6e5a', cloth: '#3f66ad', clothDark: '#2b3f68', metal: '#c9973f', metal2: '#b0683c', roof: '#41689e', glow: '#bfe4ff', fire: '#ffe2a0' },
+  { stone: '#5a5862', stoneDark: '#3c3a44', cloth: '#a8382a', clothDark: '#5a221c', metal: '#5d6470', metal2: '#3e3c44', roof: '#2a272e', glow: '#ff8a3a', fire: '#ff7a2a' },
+] as const;
+
 /** Relation colours (rings, bars, projectiles, telegraphs, minimap, pings). Mutated in place by applyColorMode. */
 export interface RelPalette {
   me: string;

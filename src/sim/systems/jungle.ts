@@ -1,21 +1,21 @@
 // OWNER: agent H (jungle camps, river scuttler, big objectives, jungle buffs).
 //
-// Camps per side from map data (sides[team].camps), first spawn 1:30, Nebelschleicher (river, flees) 3:15.
-// Respawn timers start when the last monster of a camp dies: buffs 5:00, small camps 2:15, Nebelschleicher 2:30.
-// Flussleviathan 5:00 (respawn 5:00, permanent team stack), Schleierwächter 20:00 (respawn 6:00, 300 gold to the
-// team + 180 s buff). Monsters attack whoever hit them, chase within a leash, then walk home and heal to full.
-// Gold/XP/CS go to the killing champion (monster XP is not shared).
-// Numbers are scaled for a level-1 clear without a jungle item: buff + two small camps = 680 XP >= level 3 (660),
-// measured (tests/jungle.test.ts): Mira with autos only, buff -> Moosrudel -> Schattenkrabbe, level 3 at 2:55.
-// ponytail: Kesselbrut (herald) is not spawned yet; monster HP/AD grow +2 % per minute of spawn time instead of
-// LoL's level-based scaling; Glutwächter burn/slow procs on any damage the buffed champion deals to its current
-// attack target (detected through LastHit, so this needs no change in attack.ts).
+// Camps per side from map data (sides[team].camps, 6 per side), first spawn 1:30, Nebelschleicher (river, flees)
+// 3:15. Respawn timers start when the last monster of a camp dies: buffs 5:00, small camps 2:15, Nebelschleicher
+// 2:30. Flussleviathan 5:00 (respawn 5:00, permanent team stack), Kesselbrut 6:00 in the Schleier pit (3 grubs,
+// respawn 4:00, no wave after 13:45, gone at 19:45; each grub = team stack of structure damage), Schleierwaechter
+// 20:00 (respawn 6:00, 300 gold to the team + 180 s buff). Monsters attack whoever hit them, chase within a leash,
+// then walk home and heal to full. Gold/XP/CS go to the killing champion (monster XP is not shared).
+// Stats are LoL-like (docs/DECISIONS.md "Jungle"): buffs 2300 HP, camp leaders 1200-1800 HP, Baron 12000 HP at
+// 20:00 (+180/min), scaled at spawn by the average champion level (HP +6 %, AD +5 % per level above 1).
+// Glutwaechter burn/slow procs on any damage the buffed champion deals to its current attack target (detected
+// through LastHit, so this needs no change in attack.ts).
 
 import { query } from 'bitecs';
 import type { Sim } from '../sim';
 import { isRef, spawnUnit, despawn } from '../sim';
 import type { System } from './index';
-import { Kind, Team, isStructure, sec } from '../types';
+import { Kind, Team, isStructure, sec, variantIndex, type MonsterType } from '../types';
 import { nearestWalkable } from '../map';
 import { dist2, clamp } from '../vec';
 import { addBuff, hasBuff } from '../buffs';
@@ -24,6 +24,8 @@ import { moveTo } from './input';
 import { champions, grantXp, reward } from './economy';
 
 export interface MonsterDef {
+  /** Sprite / name (Unit.variant). */
+  type: MonsterType;
   hp: number;
   ad: number;
   as: number;
@@ -41,11 +43,13 @@ export interface MonsterDef {
 export type CampId =
   | 'dornenbock'
   | 'glutwaechter'
+  | 'sumpfunke'
   | 'moosrudel'
   | 'hohlkaefer'
   | 'schattenkrabbe'
   | 'nebelschleicher'
   | 'leviathan'
+  | 'kesselbrut'
   | 'schleierwaechter';
 
 export interface CampDef {
@@ -56,25 +60,48 @@ export interface CampDef {
   /** Jungle buff granted to the killer of the first (big) monster. */
   buff?: 'dornenbock' | 'glutwaechter';
   flees?: boolean;
+  /** No new wave after this many seconds of game time. */
+  lastSpawn?: number;
+  /** Living monsters leave at this game time (seconds); the camp is closed for good. */
+  until?: number;
+  /** Stat scaling: 'level' = average champion level (default), 'baron' = minutes after 20:00. */
+  scale?: 'level' | 'baron';
 }
 
-const m = (hp: number, ad: number, as: number, armor: number, mr: number, radius: number, gold: number, xp: number, dx = 0, dy = 0): MonsterDef => ({
-  hp, ad, as, armor, mr, range: 125 + radius / 2, radius, gold, xp, dx, dy,
+const m = (type: MonsterType, hp: number, ad: number, as: number, armor: number, mr: number, radius: number, gold: number, xp: number, dx = 0, dy = 0): MonsterDef => ({
+  type, hp, ad, as, armor, mr, range: 125 + radius / 2, radius, gold, xp, dx, dy,
 });
 
+// prettier-ignore
 export const CAMPS: Record<CampId, CampDef> = {
-  dornenbock: { first: 90, respawn: 300, buff: 'dornenbock', monsters: [m(1000, 18, 0.6, 10, 10, 100, 100, 240)] },
-  glutwaechter: { first: 90, respawn: 300, buff: 'glutwaechter', monsters: [m(1000, 18, 0.6, 10, 10, 100, 100, 240)] },
+  dornenbock: { first: 90, respawn: 300, buff: 'dornenbock', monsters: [m('dornenbock', 2300, 22, 0.5, 10, 10, 110, 90, 240)] },
+  glutwaechter: { first: 90, respawn: 300, buff: 'glutwaechter', monsters: [m('glutwaechter', 2300, 22, 0.5, 10, 10, 110, 90, 240)] },
+  sumpfunke: { first: 90, respawn: 135, monsters: [m('sumpfunke', 1800, 24, 0.45, 0, 0, 95, 80, 200)] },
   moosrudel: {
     first: 90,
     respawn: 135,
-    monsters: [m(500, 14, 0.6, 5, 0, 80, 40, 100), m(140, 5, 0.7, 0, 0, 45, 10, 40, 170, 0), m(140, 5, 0.7, 0, 0, 45, 10, 40, -120, 120), m(140, 5, 0.7, 0, 0, 45, 10, 40, -120, -120)],
+    monsters: [m('mooswolf', 1600, 16, 0.6, 8, 0, 85, 55, 120), m('mooswelpe', 420, 6, 0.7, 0, 0, 50, 20, 50, 170, 0), m('mooswelpe', 420, 6, 0.7, 0, 0, 50, 20, 50, -120, -150)],
   },
-  hohlkaefer: { first: 90, respawn: 135, monsters: [m(600, 14, 0.6, 5, 0, 80, 40, 120), m(180, 6, 0.7, 0, 0, 50, 15, 50, 160, 60), m(180, 6, 0.7, 0, 0, 50, 15, 50, -60, -160)] },
-  schattenkrabbe: { first: 90, respawn: 135, monsters: [m(650, 15, 0.6, 5, 0, 80, 45, 120), m(200, 6, 0.7, 0, 0, 50, 20, 60, 160, -60), m(200, 6, 0.7, 0, 0, 50, 20, 60, -60, 160)] },
-  nebelschleicher: { first: 195, respawn: 150, flees: true, monsters: [m(900, 0, 0, 20, 20, 70, 70, 200)] },
-  leviathan: { first: 300, respawn: 300, monsters: [m(3500, 70, 0.5, 30, 30, 130, 25, 150)] },
-  schleierwaechter: { first: 1200, respawn: 360, monsters: [m(8000, 120, 0.6, 60, 50, 160, 0, 300)] },
+  hohlkaefer: {
+    first: 90,
+    respawn: 135,
+    monsters: [m('hohlkaefer', 1200, 15, 0.65, 5, 0, 80, 40, 100), m('kaeferling', 350, 5, 0.7, 0, 0, 45, 15, 40, 160, 60), m('kaeferling', 350, 5, 0.7, 0, 0, 45, 15, 40, -60, -160), m('kaeferling', 350, 5, 0.7, 0, 0, 45, 15, 40, 120, -150)],
+  },
+  schattenkrabbe: {
+    first: 90,
+    respawn: 135,
+    monsters: [m('schattenkrabbe', 1450, 18, 0.5, 15, 0, 90, 75, 130), m('krabbling', 540, 7, 0.6, 5, 0, 55, 25, 45, 170, -60), m('krabbling', 540, 7, 0.6, 5, 0, 55, 25, 45, -60, 170)],
+  },
+  nebelschleicher: { first: 195, respawn: 150, flees: true, monsters: [m('nebelschleicher', 1050, 0, 0, 20, 20, 70, 70, 200)] },
+  leviathan: { first: 300, respawn: 300, monsters: [m('leviathan', 3500, 70, 0.5, 30, 30, 130, 25, 150)] },
+  kesselbrut: {
+    first: 360,
+    respawn: 240,
+    lastSpawn: 825,
+    until: 1185,
+    monsters: [m('kesselbrut', 1800, 30, 0.5, 20, 20, 70, 25, 110, -220, 60), m('kesselbrut', 1800, 30, 0.5, 20, 20, 70, 25, 110, 200, 140), m('kesselbrut', 1800, 30, 0.5, 20, 20, 70, 25, 110, 20, -200)],
+  },
+  schleierwaechter: { first: 1200, respawn: 360, scale: 'baron', monsters: [m('schleierwaechter', 12000, 150, 0.6, 60, 50, 160, 0, 300)] },
 };
 
 export const MONSTER_MS = 330;
@@ -88,6 +115,17 @@ export const BUFF_TICKS = sec(120);
 export const SCHLEIER_BUFF_TICKS = sec(180);
 export const SCHLEIER_TEAM_GOLD = 300;
 export const LEVIATHAN_MAX_STACKS = 4;
+/** Kesselbrut: team stacks (one per grub, max 6), each +4 % damage of that team's champions to structures. */
+export const KESSELBRUT_MAX_STACKS = 6;
+export const KESSELBRUT_STRUCT_PCT = 4;
+/** Monster HP / AD growth per average champion level above 1. */
+export const MONSTER_HP_PER_LEVEL = 0.06;
+export const MONSTER_AD_PER_LEVEL = 0.05;
+/** Schleierwaechter growth per full minute after 20:00. */
+export const BARON_HP_PER_MIN = 180;
+export const BARON_AD_PER_MIN = 8;
+/** spawnAt of a camp that will never spawn again (Kesselbrut after 13:45 / 19:45). */
+export const CLOSED = 0x7fffffff;
 export const RIVER_VISION_TICKS = sec(75);
 export const RIVER_VISION_R = 1000;
 
@@ -111,6 +149,8 @@ interface JungleState {
   camps: Camp[];
   /** Flussleviathan stacks per team. */
   leviathan: [number, number];
+  /** Kesselbrut stacks per team. */
+  kesselbrut: [number, number];
   /** River-vision wards: eid, serial, expiry tick. */
   wards: { eid: number; serial: number; until: number }[];
 }
@@ -125,8 +165,9 @@ export function jungleState(sim: Sim): JungleState {
     for (const side of [0, 1]) for (const c of sim.map.sides[side]!.camps) if (c.id in CAMPS) add(c.id as CampId, side, c.x, c.y);
     for (const p of sim.map.objectives.nebelschleicher) add('nebelschleicher', 2, p.x, p.y);
     add('leviathan', 2, sim.map.objectives.leviathan.x, sim.map.objectives.leviathan.y);
+    add('kesselbrut', 2, sim.map.objectives.kesselbrut.x, sim.map.objectives.kesselbrut.y);
     add('schleierwaechter', 2, sim.map.objectives.schleierwaechter.x, sim.map.objectives.schleierwaechter.y);
-    s = { camps, leviathan: [0, 0], wards: [] };
+    s = { camps, leviathan: [0, 0], kesselbrut: [0, 0], wards: [] };
     sim.state.jungle = s;
   }
   return s;
@@ -135,8 +176,29 @@ export function jungleState(sim: Sim): JungleState {
 export const leviathanStacks = (sim: Sim, team: number): number =>
   team === 0 || team === 1 ? ((sim.state.jungle as JungleState | undefined)?.leviathan[team] ?? 0) : 0;
 
-/** HP/AD multiplier for monsters spawned at `tick` (+2 % per minute). */
-export const monsterScale = (tick: number): number => 1 + 0.02 * Math.floor(tick / sec(60));
+/** Kesselbrut stacks of a team (0 for neutral). Function declaration: imported by damage.ts (import cycle). */
+export function kesselbrutStacks(sim: Sim, team: number): number {
+  return team === 0 || team === 1 ? ((sim.state.jungle as JungleState | undefined)?.kesselbrut?.[team] ?? 0) : 0;
+}
+
+/** Average champion level, rounded down (1 without champions). */
+export function averageLevel(sim: Sim): number {
+  const list = champions(sim);
+  if (!list.length) return 1;
+  let sum = 0;
+  for (const e of list) sum += sim.c.Champ.level[e]!;
+  return Math.max(1, Math.floor(sum / list.length));
+}
+
+/** [HP, AD] multipliers for a camp spawning now: average champion level (LoL-like), Baron by minutes after 20:00. */
+export function monsterScale(sim: Sim, def: CampDef, md: MonsterDef): [number, number] {
+  if (def.scale === 'baron') {
+    const min = Math.max(0, Math.floor((sim.tick - sec(1200)) / sec(60)));
+    return [(md.hp + BARON_HP_PER_MIN * min) / md.hp, (md.ad + BARON_AD_PER_MIN * min) / Math.max(1, md.ad)];
+  }
+  const l = averageLevel(sim) - 1;
+  return [1 + MONSTER_HP_PER_LEVEL * l, 1 + MONSTER_AD_PER_LEVEL * l];
+}
 
 /** Nebelschleicher gold: 70 at 3:15 rising linearly to 120 at 20:00. */
 export const nebelGold = (tick: number): number => Math.round(70 + 50 * clamp((tick - sec(195)) / (sec(1200) - sec(195)), 0, 1));
@@ -144,13 +206,14 @@ export const nebelGold = (tick: number): number => Math.round(70 + 50 * clamp((t
 function spawnCamp(sim: Sim, camp: Camp): void {
   const def = CAMPS[camp.id];
   const { Unit, Hp, Stats, Vision } = sim.c;
-  const k = monsterScale(sim.tick);
   camp.members = [];
   for (const md of def.monsters) {
+    const [kh, ka] = monsterScale(sim, def, md);
     const p = nearestWalkable(sim.map.nav, camp.x + md.dx, camp.y + md.dy);
     const eid = spawnUnit(sim, Kind.Monster, Team.Neutral, p.x, p.y, md.radius);
-    Hp.max[eid] = Hp.cur[eid] = md.hp * k;
-    Stats.ad[eid] = md.ad * k;
+    Unit.variant[eid] = variantIndex(md.type);
+    Hp.max[eid] = Hp.cur[eid] = md.hp * kh;
+    Stats.ad[eid] = md.ad * ka;
     Stats.as[eid] = md.as;
     Stats.range[eid] = md.range;
     Stats.armor[eid] = md.armor;
@@ -274,6 +337,15 @@ export const jungleSystem: System = {
   update(sim) {
     const s = jungleState(sim);
     for (const c of s.camps) {
+      const def = CAMPS[c.id];
+      if (def.until !== undefined && sim.tick >= sec(def.until) && c.spawnAt !== CLOSED) {
+        // Kesselbrut leaves before the Schleierwaechter takes the pit (no rewards)
+        for (const x of alive(sim, c)) despawn(sim, x.eid);
+        c.members = [];
+        c.spawnAt = CLOSED;
+        c.target = -1;
+        continue;
+      }
       if (c.spawnAt >= 0 && sim.tick >= c.spawnAt) spawnCamp(sim, c);
       else if (c.spawnAt < 0) updateCamp(sim, c);
     }
@@ -318,6 +390,10 @@ export function onMonsterDeath(sim: Sim, victim: number, killer: number): void {
       const s = jungleState(sim);
       s.leviathan[team as 0 | 1] = Math.min(LEVIATHAN_MAX_STACKS, s.leviathan[team as 0 | 1] + 1);
     }
+    if (c.id === 'kesselbrut' && (team === 0 || team === 1)) {
+      const s = jungleState(sim);
+      s.kesselbrut[team] = Math.min(KESSELBRUT_MAX_STACKS, s.kesselbrut[team] + 1);
+    }
     if (c.id === 'schleierwaechter') {
       for (const p of champions(sim)) {
         if (Unit.team[p] !== team) continue;
@@ -331,7 +407,9 @@ export function onMonsterDeath(sim: Sim, victim: number, killer: number): void {
   }
   // last one down: start the respawn timer (victim is still "alive" until kill() despawns it)
   if (alive(sim, c).every((x) => x.eid === victim)) {
-    c.spawnAt = sim.tick + sec(CAMPS[c.id].respawn);
+    const def = CAMPS[c.id];
+    c.spawnAt = sim.tick + sec(def.respawn);
+    if (def.lastSpawn !== undefined && c.spawnAt > sec(def.lastSpawn)) c.spawnAt = CLOSED;
     c.target = -1;
   }
 }

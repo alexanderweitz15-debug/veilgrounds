@@ -10,7 +10,8 @@ import { settings } from '../settings';
 import { SPRITE_KEYS, SPRITE_SIZE, type Atlas, type SpriteKey } from './sprites';
 import { MIRA_ID } from '../game/modes';
 import { ChampionSprites, type SpriteBatchOptions } from './championSprites';
-import { minionId, type ChampionAtlas, type MinionKind } from './champions';
+import { disposeTree } from './dispose';
+import { minionId, MONSTER_SPRITE, type ChampionAtlas, type MinionKind } from './champions';
 
 const CAPACITY: Record<SpriteKey, number> = { mira: 10, champ: 10, melee: 96, caster: 96, siege: 32, super: 32, dummy: 8, monster: 32 };
 const FLASH_MS = 140;
@@ -41,6 +42,20 @@ const MINION_BATCH: SpriteBatchOptions = {
   },
 };
 
+/** Jungle monsters and plants: one painted sprite per type (small camp members reuse their leader, scaled). */
+const monsterSprite = (e: SnapEntity): { id: string; scale: number } | null =>
+  (e.kind === Kind.Monster || e.kind === Kind.Plant) && e.variant ? (MONSTER_SPRITE[e.variant] ?? { id: e.variant, scale: 1 }) : null;
+const MONSTER_BATCH: SpriteBatchOptions = {
+  cap: 40,
+  ghosts: 16,
+  corpseMs: 2600,
+  idFor: (e, atlas) => {
+    const m = monsterSprite(e);
+    return m && atlas.frames[m.id] ? m.id : null;
+  },
+  scaleFor: (e) => monsterSprite(e)?.scale ?? 1,
+};
+
 export function spriteKeyFor(e: SnapEntity): SpriteKey | null {
   switch (e.kind) {
     case Kind.Champion:
@@ -56,6 +71,7 @@ export function spriteKeyFor(e: SnapEntity): SpriteKey | null {
     case Kind.Dummy:
       return 'dummy';
     case Kind.Monster:
+    case Kind.Plant:
     case Kind.Pet: // placeholder art: pets (Hark, Corvin's keg) reuse the monster sprite, scaled by hitbox
       return 'monster';
     default:
@@ -80,6 +96,8 @@ export class Units {
   champs: ChampionSprites | null = null;
   /** Animated minion sprites (own atlas, same pipeline); placeholder sprites until baked. */
   minions: ChampionSprites | null = null;
+  /** Jungle monsters + plants: [big, camp] atlases; placeholder blob until baked. */
+  monsters: ChampionSprites[] = [];
 
   constructor(atlas: Atlas, sunDir: THREE.Vector3) {
     this.qCast = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.atan2(sunDir.x, sunDir.z), 0));
@@ -120,22 +138,34 @@ export class Units {
   }
 
   setChampionAtlas(atlas: ChampionAtlas): void {
-    if (this.champs) this.group.remove(this.champs.group);
+    if (this.champs) {
+      this.group.remove(this.champs.group);
+      disposeTree(this.champs.group); // the replaced batch's texture/buffers would stay on the GPU
+    }
     this.champs = new ChampionSprites(atlas, this.qVis, this.qCast);
     this.group.add(this.champs.group);
   }
 
+  setMonsterAtlases(atlases: ChampionAtlas[]): void {
+    for (const b of this.monsters) this.group.remove(b.group);
+    this.monsters = atlases.map((a) => new ChampionSprites(a, this.qVis, this.qCast, MONSTER_BATCH));
+    for (const b of this.monsters) this.group.add(b.group);
+  }
+
   setMinionAtlas(atlas: ChampionAtlas): void {
-    if (this.minions) this.group.remove(this.minions.group);
+    if (this.minions) {
+      this.group.remove(this.minions.group);
+      disposeTree(this.minions.group);
+    }
     this.minions = new ChampionSprites(atlas, this.qVis, this.qCast, MINION_BATCH);
     this.group.add(this.minions.group);
   }
 
   /** Figure height above the feet for bars/picking, or null if not drawn by the animated sprite batches. */
   spriteHeight(e: SnapEntity): number | null {
-    for (const b of [this.champs, this.minions]) {
+    for (const b of [this.champs, this.minions, ...this.monsters]) {
       const id = b?.idFor(e);
-      if (id) return b!.heightOf(id);
+      if (id) return b!.heightOf(id, e);
     }
     return null;
   }
@@ -143,6 +173,7 @@ export class Units {
   onDeath(eid: number, now: number): void {
     this.champs?.onDeath(eid, now);
     this.minions?.onDeath(eid, now);
+    for (const b of this.monsters) b.onDeath(eid, now);
   }
 
   /** Hit flash on damage. */
@@ -168,6 +199,7 @@ export class Units {
     const flashAmp = settings.reduceMotion ? 0.35 : 1.6;
     champs?.begin();
     minions?.begin();
+    for (const b of this.monsters) b.begin();
     if (snap) {
       for (const e of snap.entities) {
         if (!e.alive) continue;
@@ -178,6 +210,10 @@ export class Units {
         if (!champId && minions) {
           batch = minions;
           champId = minions.idFor(e);
+        }
+        for (let i = 0; !champId && i < this.monsters.length; i++) {
+          batch = this.monsters[i]!;
+          champId = batch.idFor(e);
         }
         const g = this.groups.get(`${key}:${Math.min(1, e.team)}`)!;
         if (!champId && g.n >= g.vis.instanceMatrix.count) continue;
@@ -246,6 +282,7 @@ export class Units {
     }
     champs?.end(now);
     minions?.end(now);
+    for (const b of this.monsters) b.end(now);
     for (const g of this.groups.values()) {
       g.vis.count = g.cast.count = g.n;
       g.vis.instanceMatrix.needsUpdate = true;

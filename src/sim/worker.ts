@@ -7,6 +7,7 @@ import { Recorder } from '../replay/replay';
 import type { FromWorker, ToWorker } from './protocol';
 import type { TickInput } from './types';
 import { BotRunner, isBotSlot } from '../ai/runner';
+import { matchOver } from './systems/towers';
 
 let sim: Sim | null = null;
 let rec: Recorder | null = null;
@@ -56,11 +57,12 @@ setInterval(() => {
   const now = performance.now();
   acc += Math.min(250, now - last) * speed;
   last = now;
-  if (!sim || paused) {
+  // a decided match stops ticking (no bots playing on, no commands behind the victory screen)
+  if (!sim || paused || matchOver(sim)) {
     acc = 0;
     return;
   }
-  while (acc >= TICK_MS) {
+  while (acc >= TICK_MS && !matchOver(sim)) {
     acc -= TICK_MS;
     // human first, then bots: the merge order is part of the replay
     const inputs = bots ? [...queued, ...bots.tick(sim)] : queued;

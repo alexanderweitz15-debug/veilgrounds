@@ -8,6 +8,7 @@ import type { FogOfWar } from '../render/fog';
 import { Kind } from '../sim/types';
 import { canvasToSim, mulberry, simToCanvas, MAP_SIZE } from '../render/coords';
 import { REL, INK } from '../render/palette';
+import { organicOutline } from '../render/organic';
 
 const SIZE = 280;
 const REDRAW_MS = 66;
@@ -44,6 +45,8 @@ export class Minimap {
       } else if (e.button === 2) this.onMove(x, y);
     });
     const move = (e: MouseEvent): void => {
+      // the button was released outside the window (no mouseup reached us): the drag is over
+      if (this.dragging && !(e.buttons & 1)) this.dragging = false;
       if (this.dragging) this.onCamera(...toSim(e));
     };
     const up = (): void => {
@@ -51,9 +54,11 @@ export class Minimap {
     };
     window.addEventListener('mousemove', move);
     window.addEventListener('mouseup', up);
+    window.addEventListener('blur', up);
     this.dispose = () => {
       window.removeEventListener('mousemove', move);
       window.removeEventListener('mouseup', up);
+      window.removeEventListener('blur', up);
     };
   }
 
@@ -226,7 +231,9 @@ function paintParchment(map: MapData, W: number): HTMLCanvasElement {
     }
   }
   // cliffs: ink outline + hatching
-  for (const poly of map.walls) {
+  map.walls.forEach((wall, wi) => {
+    // same rounded, wobbly outline as the 3D cliffs (render/organic.ts)
+    const poly = organicOutline(wall, wi * 1.7 + 0.3);
     ctx.beginPath();
     poly.forEach((p, i) => (i ? ctx.lineTo(...P(p)) : ctx.moveTo(...P(p))));
     ctx.closePath();
@@ -246,7 +253,7 @@ function paintParchment(map: MapData, W: number): HTMLCanvasElement {
     ctx.strokeStyle = INK;
     ctx.lineWidth = 1.2;
     ctx.stroke();
-  }
+  });
   for (const b of map.bushes) {
     const [x, y] = P(b);
     ctx.fillStyle = 'rgba(50,90,60,0.7)';

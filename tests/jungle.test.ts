@@ -4,7 +4,11 @@ import { describe, expect, it } from 'vitest';
 import { query } from 'bitecs';
 import { Kind, sec } from '../src/sim/types';
 import type { Sim } from '../src/sim/sim';
-import { CAMPS, jungleState, nebelGold, type Camp } from '../src/sim/systems/jungle';
+import { CAMPS, CLOSED, KESSELBRUT_MAX_STACKS, MONSTER_AD_PER_LEVEL, MONSTER_HP_PER_LEVEL, averageLevel, jungleState, kesselbrutStacks, nebelGold, type Camp } from '../src/sim/systems/jungle';
+import { SPRUNG_DIST, leapLanding, plantState, type Plant } from '../src/sim/systems/plants';
+import { inventory } from '../src/sim/items/inventory';
+import { lineWalkable, walkable } from '../src/sim/map';
+import { cosDeg, sinRad } from '../src/sim/vec';
 import { dealDamage, kill } from '../src/sim/damage';
 import { hasBuff } from '../src/sim/buffs';
 import { CUM_XP } from '../src/sim/systems/economy';
@@ -28,7 +32,7 @@ describe('jungle camps', () => {
     steps(sim, sec(90));
     expect(monsters(sim)).toHaveLength(0);
     steps(sim, 1);
-    const perSide = (['dornenbock', 'glutwaechter', 'moosrudel', 'hohlkaefer', 'schattenkrabbe'] as const).reduce((n, id) => n + CAMPS[id].monsters.length, 0);
+    const perSide = (['dornenbock', 'glutwaechter', 'sumpfunke', 'moosrudel', 'hohlkaefer', 'schattenkrabbe'] as const).reduce((n, id) => n + CAMPS[id].monsters.length, 0);
     expect(monsters(sim)).toHaveLength(2 * perSide);
     expect(living(sim, camp(sim, 'nebelschleicher', 2))).toHaveLength(0);
     steps(sim, sec(195) - sim.tick + 1);
@@ -108,9 +112,12 @@ describe('jungle camps', () => {
   it('buff + two small camps reach level 3', () => {
     const xp = (id: keyof typeof CAMPS): number => CAMPS[id].monsters.reduce((s, m) => s + m.xp, 0);
     expect(xp('dornenbock') + xp('moosrudel') + xp('hohlkaefer')).toBeGreaterThanOrEqual(CUM_XP[3]!);
-    expect(CAMPS.moosrudel.monsters.reduce((s, m) => s + m.gold, 0)).toBe(70);
-    expect(CAMPS.hohlkaefer.monsters.reduce((s, m) => s + m.gold, 0)).toBe(70);
-    expect(CAMPS.schattenkrabbe.monsters.reduce((s, m) => s + m.gold, 0)).toBe(85);
+    // LoL-like camp gold (wolves 95, raptors 85, krugs 125, gromp 80, buffs 90)
+    expect(CAMPS.moosrudel.monsters.reduce((s, m) => s + m.gold, 0)).toBe(95);
+    expect(CAMPS.hohlkaefer.monsters.reduce((s, m) => s + m.gold, 0)).toBe(85);
+    expect(CAMPS.schattenkrabbe.monsters.reduce((s, m) => s + m.gold, 0)).toBe(125);
+    expect(CAMPS.sumpfunke.monsters[0]!.gold).toBe(80);
+    expect(CAMPS.dornenbock.monsters[0]!.hp).toBe(2300);
     expect(nebelGold(sec(195))).toBe(70);
     expect(nebelGold(sec(1500))).toBe(120);
   });
@@ -141,6 +148,7 @@ describe('jungle camps', () => {
     const c = camp(sim, 'hohlkaefer');
     const mon = living(sim, c)[0]!;
     place(sim, me, sim.c.Pos.x[mon]! + 300, sim.c.Pos.y[mon]!);
+    steps(sim, 1); // vision update: no smiting into the fog
     const hp = sim.c.Hp.cur[mon]!;
     expect(castSummonerSpell(sim, me, 'bannen', sim.c.Pos.x[mon]!, sim.c.Pos.y[mon]!)).toBe(true);
     expect(hp - sim.c.Hp.cur[mon]!).toBeCloseTo(450);
@@ -161,18 +169,18 @@ describe('jungle fog', () => {
 });
 
 describe('jungle clear timing', () => {
-  it('a level-1 champion clearing buff + two small camps with autos reaches level 3 in time', () => {
+  it('a level-1 champion with Jägerzahn clearing buff, Sumpfunke and Moosrudel with autos reaches level 3 in time', () => {
     const sim = atSpawn();
     const me = mira(sim);
-    // ponytail: hohlkaefer route avoided; the champion snags on the wall corner near (3850, 2740), see report
-    const route = ['dornenbock', 'moosrudel', 'schattenkrabbe'];
+    inventory(sim, me)[0] = 'jaegerzahn';
+    const route = ['dornenbock', 'sumpfunke', 'moosrudel'];
     const first = camp(sim, route[0]!);
     place(sim, me, first.x + 300, first.y); // walked there before 1:30
     let level3 = -1;
     for (const id of route) {
       const c = camp(sim, id);
       for (let guard = 0; guard < sec(120) && living(sim, c).length; guard++) {
-        const target = living(sim, c)[0]!;
+        const target = living(sim, c).sort((a, b) => sim.c.Hp.cur[a]! - sim.c.Hp.cur[b]!)[0]!;
         const far = (sim.c.Pos.x[me]! - c.x) ** 2 + (sim.c.Pos.y[me]! - c.y) ** 2 > 700 ** 2;
         if (far && sim.c.Move.mode[me] === 0) cmd(sim, { t: 'move', x: c.x, y: c.y });
         else if (!far && sim.c.Atk.target[me] !== target) cmd(sim, { t: 'attack', target });
@@ -183,6 +191,159 @@ describe('jungle clear timing', () => {
     }
     console.log(`jungle: level 3 at ${(level3 / 30).toFixed(1)} s, HP ${Math.round(sim.c.Hp.cur[me]!)}/${Math.round(sim.c.Hp.max[me]!)}`);
     expect(level3).toBeGreaterThan(0);
-    expect(level3).toBeLessThan(sec(215)); // measured 2:55 with autos only (spec target ~3:15)
+    expect(level3).toBeLessThan(sec(185)); // measured 2:47 (LoL ~2:45 for buff + 2 camps)
+  });
+});
+
+describe('monster scaling and objectives', () => {
+  it('camps scale with the average champion level, the Schleierwächter has 12000 HP at 20:00', () => {
+    const sim = makeSim();
+    const me = mira(sim);
+    const c = camp(sim, 'moosrudel');
+    c.spawnAt = sim.tick + 1;
+    steps(sim, 2);
+    const lead = living(sim, c)[0]!;
+    expect(sim.c.Hp.max[lead]).toBeCloseTo(1600);
+    for (const m of living(sim, c)) kill(sim, m, -1);
+    sim.c.Champ.level[me] = 9; // only champion: average level 9
+    c.spawnAt = sim.tick + 1;
+    steps(sim, 2);
+    expect(averageLevel(sim)).toBe(9);
+    const l2 = living(sim, c)[0]!;
+    expect(sim.c.Hp.max[l2]).toBeCloseTo(1600 * (1 + 8 * MONSTER_HP_PER_LEVEL));
+    expect(sim.c.Stats.ad[l2]).toBeCloseTo(CAMPS.moosrudel.monsters[0]!.ad * (1 + 8 * MONSTER_AD_PER_LEVEL));
+    const baron = camp(sim, 'schleierwaechter', 2);
+    sim.tick = sec(1200);
+    baron.spawnAt = sim.tick;
+    steps(sim, 1);
+    expect(sim.c.Hp.max[living(sim, baron)[0]!]).toBeCloseTo(12000);
+  });
+
+  it('Kesselbrut: 3 grubs at 6:00, team stacks boost structure damage, closed after 13:45 and gone at 19:45', () => {
+    const sim = makeSim();
+    const me = mira(sim);
+    const k = camp(sim, 'kesselbrut', 2);
+    expect(k.spawnAt).toBe(sec(360));
+    steps(sim, sec(360) + 1);
+    const grubs = living(sim, k);
+    expect(grubs).toHaveLength(3);
+    for (const g of grubs) expect(sim.c.Unit.radius[g]).toBeLessThan(130); // not announced as an epic objective
+    for (const g of grubs) kill(sim, g, me);
+    expect(kesselbrutStacks(sim, 0)).toBe(3);
+    expect(kesselbrutStacks(sim, 1)).toBe(0);
+    expect(k.spawnAt).toBe(sim.tick + sec(240));
+    // structure damage: +4 % per stack
+    const tower = [...query(sim.world, [sim.c.Unit])].find((e) => sim.c.Unit.kind[e] === Kind.Tower && sim.c.Unit.team[e] === 1)!;
+    const hp = sim.c.Hp.cur[tower]!;
+    dealDamage(sim, me, tower, 100, 'true');
+    expect(hp - sim.c.Hp.cur[tower]!).toBeCloseTo(100 * (1 + 0.04 * 3));
+    // second wave 4:00 later, then no third wave (it would start after 13:45)
+    steps(sim, k.spawnAt - sim.tick + 1);
+    expect(living(sim, k)).toHaveLength(3);
+    sim.tick = sec(800);
+    for (const g of living(sim, k)) kill(sim, g, me);
+    expect(kesselbrutStacks(sim, 0)).toBe(KESSELBRUT_MAX_STACKS);
+    expect(k.spawnAt).toBe(CLOSED);
+    // a wave still alive at 19:45 leaves the pit
+    k.spawnAt = sim.tick + 1;
+    steps(sim, 2);
+    expect(living(sim, k)).toHaveLength(3);
+    sim.tick = sec(1185);
+    steps(sim, 1);
+    expect(living(sim, k)).toHaveLength(0);
+    expect(k.spawnAt).toBe(CLOSED);
+  });
+});
+
+describe('jungle plants', () => {
+  const plants = (sim: Sim, type: string, side = 0): Plant[] =>
+    plantState(sim).plants.filter((p) => p.type === type && (side === 0 ? p.x + p.y < 16000 : p.x + p.y > 16000));
+  const popWith = (sim: Sim, me: number, p: Plant, fromX: number, fromY: number): void => {
+    place(sim, me, fromX, fromY);
+    steps(sim, 1);
+    cmd(sim, { t: 'attack', target: p.eid });
+    for (let i = 0; i < sec(3) && p.spawnAt < 0; i++) steps(sim, 1);
+  };
+
+  it('grow at 1:30 as 1-HP neutral units only champions can pop; regrow after 5:00', () => {
+    const sim = atSpawn();
+    const all = plantState(sim).plants;
+    expect(all.length).toBe(12);
+    for (const p of all) {
+      expect(p.spawnAt).toBe(-1);
+      expect(sim.c.Unit.kind[p.eid]).toBe(Kind.Plant);
+      expect(sim.c.Hp.max[p.eid]).toBe(1);
+      expect(walkable(sim.map.nav, p.x, p.y)).toBe(true);
+    }
+    const me = mira(sim);
+    const p = plants(sim, 'honigfrucht')[0]!;
+    // abilities / true damage do nothing
+    expect(dealDamage(sim, me, p.eid, 500, 'true')).toBe(0);
+    popWith(sim, me, p, p.x + 400, p.y);
+    expect(p.spawnAt).toBeGreaterThan(sim.tick);
+    expect(p.spawnAt - sim.tick).toBeLessThanOrEqual(sec(300));
+  });
+
+  it('Sprungfrucht launches nearby champions away from the plant, over walls', () => {
+    const sim = atSpawn();
+    const me = mira(sim);
+    const p = plants(sim, 'sprungfrucht')[0]!;
+    // the first blue Sprungfrucht sits next to a rock: from some side the leap clears it (wall between start and landing)
+    let pick: { sx: number; sy: number; land: { x: number; y: number } } | null = null;
+    for (let i = 0; i < 16 && !pick; i++) {
+      const dx = cosDeg(i * 22.5);
+      const dy = sinRad((i * 22.5 * Math.PI) / 180);
+      const sx = p.x + dx * 250;
+      const sy = p.y + dy * 250;
+      if (!walkable(sim.map.nav, sx, sy)) continue;
+      const land = leapLanding(sim, sx, sy, dx, dy, SPRUNG_DIST);
+      if (!lineWalkable(sim.map.nav, sx, sy, land.x, land.y) && Math.hypot(land.x - sx, land.y - sy) >= SPRUNG_DIST - 1) pick = { sx, sy, land };
+    }
+    expect(pick).not.toBeNull();
+    const { sx, sy, land } = pick!;
+    popWith(sim, me, p, sx, sy);
+    steps(sim, sec(1));
+    expect(Math.hypot(sim.c.Pos.x[me]! - land.x, sim.c.Pos.y[me]! - land.y)).toBeLessThan(30);
+    expect(walkable(sim.map.nav, sim.c.Pos.x[me]!, sim.c.Pos.y[me]!)).toBe(true);
+    expect(Math.hypot(land.x - sx, land.y - sy)).toBeGreaterThanOrEqual(SPRUNG_DIST - 1);
+  });
+
+  it('leapLanding passes a wall to the first walkable spot behind it', () => {
+    const sim = makeSim();
+    const nav = sim.map.nav;
+    let spot: [number, number] | null = null;
+    for (let y = 2000; y < 14000 && !spot; y += 100) {
+      for (let x = 2000; x < 14000 && !spot; x += 100) {
+        if (walkable(nav, x, y) && !walkable(nav, x + 400, y) && walkable(nav, x + 650, y) && walkable(nav, x + 100, y)) spot = [x, y];
+      }
+    }
+    expect(spot).not.toBeNull();
+    const land = leapLanding(sim, spot![0], spot![1], 1, 0, SPRUNG_DIST);
+    expect(land.x).toBeGreaterThanOrEqual(spot![0] + SPRUNG_DIST);
+    expect(walkable(nav, land.x, land.y)).toBe(true);
+  });
+
+  it('Honigfrucht heals and slows champions next to it', () => {
+    const sim = atSpawn();
+    const me = mira(sim);
+    const p = plants(sim, 'honigfrucht')[0]!;
+    sim.c.Hp.cur[me] = 200;
+    popWith(sim, me, p, p.x + 250, p.y);
+    expect(sim.c.Hp.cur[me]).toBeGreaterThan(200 + 60);
+    expect(hasBuff(sim, me, 'slow', 'honigfrucht')).toBe(true);
+  });
+
+  it('Spähfrucht reveals a cone away from the attacker for the popping team', () => {
+    const sim = atSpawn();
+    const me = mira(sim);
+    const p = plants(sim, 'spaehfrucht')[0]!;
+    popWith(sim, me, p, p.x - 400, p.y);
+    steps(sim, 2);
+    const ahead = { x: p.x + 1300, y: p.y };
+    const wards = [...query(sim.world, [sim.c.Unit])].filter((e) => sim.c.Unit.kind[e] === Kind.Ward && sim.c.Unit.alive[e] && sim.c.Unit.team[e] === 0);
+    expect(wards.length).toBe(3);
+    expect(wards.some((w) => Math.hypot(sim.c.Pos.x[w]! - ahead.x, sim.c.Pos.y[w]! - ahead.y) < 200)).toBe(true);
+    steps(sim, sec(10) + 2);
+    expect(wards.every((w) => !sim.c.Unit.alive[w])).toBe(true);
   });
 });

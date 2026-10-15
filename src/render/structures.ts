@@ -1,11 +1,18 @@
-// placeholder art: low-poly towers, inhibitors and nexus, created from snapshot entities (keyed by serial).
-// ponytail: one mesh (+ outline + glow) per structure, ~25 per team. Upgrade: InstancedMesh per type/team.
+// Towers, inhibitors and nexus in style C, team-themed like the minions (palette.ts BASE_LOOK):
+//   Lichtwerk (blue): ivory sandstone, brass bands and railings, blue banners, a lantern cage with a cold light
+//                     crystal under a blue-slate dome; inhibitor = brass ring arch around a light crystal; nexus =
+//                     stepped sandstone ziggurat with four brass arches holding a great light crystal.
+//   Aschehalle (red): basalt and riveted iron, red banners, a furnace chamber with a glowing grate and chimney
+//                     horns; inhibitor = iron brazier cage with an ember crystal; nexus = basalt forge with chimneys
+//                     around a great ember core.
+// Created from snapshot entities (keyed by serial). One merged body mesh (+ outline) and one glow mesh per
+// structure (~11 per team).
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { SnapEntity } from '../sim/snapshot';
 import { Kind } from '../sim/types';
-import { outlineMesh, paint, toon, withFog } from './materials';
-import { TEAM } from './palette';
+import { gouache, outlineMesh, paint, withFog } from './materials';
+import { BASE_LOOK } from './palette';
 
 interface Template {
   body: THREE.BufferGeometry;
@@ -17,74 +24,195 @@ interface Template {
 
 /** Overall structure scale (towers ~2.5x champion height). */
 const SCALE = 0.8;
-const bodyMat = toon({ vertexColors: true });
-const glowMats = [0, 1].map((t) => withFog(new THREE.MeshBasicMaterial({ color: TEAM[t]!.glow })));
+const bodyMat = gouache({ vertexColors: true }, { rim: 0.5 });
+const glowMats = [0, 1].map((t) => withFog(new THREE.MeshBasicMaterial({ color: BASE_LOOK[t]!.glow })));
 
-function cyl(rt: number, rb: number, h: number, seg: number, y: number, color: string): THREE.BufferGeometry {
+function cyl(rt: number, rb: number, h: number, seg: number, y: number, color: string, x = 0, z = 0): THREE.BufferGeometry {
   const g = new THREE.CylinderGeometry(rt, rb, h, seg);
-  g.translate(0, y + h / 2, 0);
+  g.translate(x, y + h / 2, z);
   return paint(g, color);
+}
+function ring(r: number, tube: number, y: number, color: string, seg = 12): THREE.BufferGeometry {
+  const g = new THREE.TorusGeometry(r, tube, 5, seg);
+  g.rotateX(Math.PI / 2);
+  g.translate(0, y, 0);
+  return paint(g, color);
+}
+function cone(r: number, h: number, seg: number, y: number, color: string, x = 0, z = 0, tilt = 0, ry = 0): THREE.BufferGeometry {
+  const g = new THREE.ConeGeometry(r, h, seg);
+  g.translate(0, h / 2, 0);
+  if (tilt) g.rotateZ(tilt);
+  if (ry) g.rotateY(ry);
+  g.translate(x, y, z);
+  return paint(g, color);
+}
+/** Hanging banner (two-sided quad with a swallow tail), facing +z rotated by ry. */
+function banner(w: number, h: number, y: number, r: number, ry: number, cloth: string, trim: string): THREE.BufferGeometry[] {
+  const g = new THREE.PlaneGeometry(w, h, 1, 3);
+  const pos = g.getAttribute('position') as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    const py = pos.getY(i);
+    pos.setZ(i, Math.sin(py * 0.05) * 5);
+    if (py < -h / 2 + 1 && Math.abs(pos.getX(i)) < 1) pos.setY(i, py + h * 0.18);
+  }
+  g.translate(0, y, r);
+  g.rotateY(ry);
+  const back = g.clone();
+  back.scale(-1, 1, 1);
+  back.rotateY(Math.PI);
+  const t = new THREE.BoxGeometry(w + 8, 10, 6);
+  t.translate(0, y + h / 2, r);
+  t.rotateY(ry);
+  return [paint(g, cloth), paint(back, cloth), paint(t, trim)];
 }
 
 function tower(team: number): Template {
-  const p = TEAM[team]!;
-  const parts = [
-    cyl(150, 170, 60, 8, 0, p.stone),
-    cyl(85, 110, 360, 8, 60, p.primary),
-    cyl(120, 100, 50, 8, 420, p.accent),
-    cyl(70, 70, 40, 8, 470, p.secondary),
-  ];
+  const L = BASE_LOOK[team]!;
+  const parts: THREE.BufferGeometry[] = [];
+  const glow: THREE.BufferGeometry[] = [];
   if (team === 0) {
-    const roof = new THREE.ConeGeometry(130, 170, 8);
-    roof.translate(0, 600, 0);
-    parts.push(paint(roof, p.primary));
-  } else {
-    for (let i = 0; i < 4; i++) {
-      const spike = new THREE.ConeGeometry(30, 190, 4);
-      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-      spike.translate(Math.cos(a) * 85, 600, Math.sin(a) * 85);
-      parts.push(paint(spike, p.accent));
+    parts.push(cyl(170, 185, 34, 8, 0, L.stoneDark), cyl(145, 160, 30, 8, 34, L.stone));
+    parts.push(cyl(78, 98, 300, 8, 64, L.stone));
+    for (const y of [120, 230, 330]) parts.push(cyl(100 - (y - 64) * 0.06, 102 - (y - 64) * 0.06, 14, 8, y, L.metal));
+    for (let i = 0; i < 2; i++) parts.push(...banner(70, 150, 250, 92, (i * Math.PI) + Math.PI / 4, L.cloth, L.metal));
+    // gallery with railing posts
+    parts.push(cyl(132, 92, 30, 8, 364, L.stoneDark), cyl(134, 134, 10, 12, 394, L.metal));
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      parts.push(cyl(6, 6, 36, 4, 404, L.metal2, Math.cos(a) * 124, Math.sin(a) * 124));
     }
+    parts.push(ring(124, 5, 440, L.metal, 16));
+    // lantern cage: brass pillars around the light crystal
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      parts.push(cyl(9, 11, 130, 5, 404, L.metal, Math.cos(a) * 66, Math.sin(a) * 66));
+    }
+    parts.push(cyl(84, 84, 16, 8, 534, L.metal));
+    parts.push(cone(110, 150, 8, 550, L.roof));
+    parts.push(cyl(6, 6, 70, 4, 690, L.metal), cone(16, 34, 6, 756, L.metal));
+    const crystal = new THREE.OctahedronGeometry(46, 0);
+    crystal.scale(1, 1.5, 1);
+    crystal.translate(0, 470, 0);
+    glow.push(crystal);
+    return { body: mergeGeometries(parts)!, outline: outlineMesh(mergeGeometries(parts)!, 7), glow: mergeGeometries(glow.map((g) => paint(g, '#ffffff')))!, height: 790 };
   }
-  const body = mergeGeometries(parts)!;
-  const glow = new THREE.OctahedronGeometry(55);
-  glow.scale(1, 1.5, 1);
-  glow.translate(0, team === 0 ? 720 : 560, 0);
-  return { body, outline: outlineMesh(body, 8), glow, height: 780 };
+  parts.push(cyl(175, 190, 40, 6, 0, L.stoneDark), cyl(150, 165, 26, 6, 40, L.stone));
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
+    parts.push(cone(16, 70, 4, 40, L.metal, Math.cos(a) * 160, Math.sin(a) * 160, (Math.cos(a) > 0 ? -1 : 1) * 0.5));
+  }
+  parts.push(cyl(84, 104, 290, 6, 66, L.metal2));
+  for (const y of [110, 200, 290]) parts.push(cyl(108 - (y - 66) * 0.07, 110 - (y - 66) * 0.07, 16, 6, y, L.metal));
+  for (let i = 0; i < 2; i++) parts.push(...banner(74, 160, 240, 98, (i * Math.PI) + Math.PI / 3, L.cloth, L.metal));
+  // furnace chamber with chimney horns
+  parts.push(cyl(130, 96, 40, 6, 356, L.stoneDark), cyl(122, 130, 110, 6, 396, L.metal2), cyl(140, 128, 20, 6, 506, L.metal));
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+    const x = Math.cos(a) * 92;
+    const z = Math.sin(a) * 92;
+    const c = new THREE.CylinderGeometry(20, 26, 170, 6);
+    c.translate(0, 85, 0);
+    c.rotateZ(-Math.cos(a) * 0.32);
+    c.rotateX(Math.sin(a) * 0.32);
+    c.translate(x, 520, z);
+    parts.push(paint(c, L.metal2));
+    const tip = new THREE.OctahedronGeometry(16, 0);
+    tip.translate(x * 1.6, 690, z * 1.6);
+    glow.push(tip);
+  }
+  parts.push(cone(70, 90, 6, 526, L.roof));
+  // glowing grate band around the chamber
+  const grate = new THREE.CylinderGeometry(124, 128, 46, 6, 1, true);
+  grate.translate(0, 430, 0);
+  glow.push(grate);
+  return { body: mergeGeometries(parts)!, outline: outlineMesh(mergeGeometries(parts)!, 7), glow: mergeGeometries(glow.map((g) => paint(g, '#ffffff')))!, height: 760 };
 }
 
 function inhibitor(team: number): Template {
-  const p = TEAM[team]!;
-  const ring = new THREE.TorusGeometry(120, 30, 6, 10);
-  ring.translate(0, 200, 0);
-  const body = mergeGeometries([cyl(190, 210, 50, 10, 0, p.stone), cyl(150, 170, 30, 10, 50, p.primary), paint(ring, p.accent)])!;
-  const glow = new THREE.IcosahedronGeometry(70, 0);
-  glow.translate(0, 200, 0);
-  return { body, outline: outlineMesh(body, 7), glow, height: 380 };
+  const L = BASE_LOOK[team]!;
+  const parts: THREE.BufferGeometry[] = [cyl(200, 220, 36, 10, 0, L.stoneDark), cyl(160, 180, 26, 10, 36, L.stone)];
+  const glow: THREE.BufferGeometry[] = [];
+  if (team === 0) {
+    const arch = new THREE.TorusGeometry(130, 18, 6, 16, Math.PI);
+    arch.translate(0, 60, 0);
+    parts.push(paint(arch, L.metal));
+    const arch2 = arch.clone();
+    arch2.rotateY(Math.PI / 2);
+    parts.push(paint(arch2, L.metal2));
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      parts.push(cyl(14, 18, 120, 6, 62, L.stone, Math.cos(a) * 150, Math.sin(a) * 150), cone(20, 34, 6, 182, L.metal, Math.cos(a) * 150, Math.sin(a) * 150));
+    }
+  } else {
+    parts.push(cyl(120, 70, 70, 7, 62, L.metal));
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2;
+      const bar = new THREE.CylinderGeometry(8, 10, 170, 4);
+      bar.translate(0, 85, 0);
+      bar.rotateZ(-Math.cos(a) * 0.25);
+      bar.rotateX(Math.sin(a) * 0.25);
+      bar.translate(Math.cos(a) * 100, 110, Math.sin(a) * 100);
+      parts.push(paint(bar, L.metal2));
+    }
+  }
+  const crystal = new THREE.OctahedronGeometry(62, 0);
+  crystal.scale(0.8, 1.4, 0.8);
+  crystal.translate(0, 210, 0);
+  glow.push(crystal);
+  return { body: mergeGeometries(parts)!, outline: outlineMesh(mergeGeometries(parts)!, 6), glow: mergeGeometries(glow.map((g) => paint(g, '#ffffff')))!, height: 380 };
 }
 
 function nexus(team: number): Template {
-  const p = TEAM[team]!;
-  const parts = [cyl(330, 360, 80, 8, 0, p.stone), cyl(240, 280, 70, 8, 80, p.primary), cyl(160, 200, 50, 8, 150, p.accent)];
-  for (let i = 0; i < 4; i++) {
-    const a = (i / 4) * Math.PI * 2;
-    const pylon = new THREE.CylinderGeometry(30, 45, 380, 5);
-    pylon.translate(Math.cos(a) * 290, 190, Math.sin(a) * 290);
-    parts.push(paint(pylon, p.secondary));
+  const L = BASE_LOOK[team]!;
+  const parts: THREE.BufferGeometry[] = [];
+  const glow: THREE.BufferGeometry[] = [];
+  if (team === 0) {
+    parts.push(cyl(360, 390, 60, 8, 0, L.stoneDark), cyl(300, 330, 60, 8, 60, L.stone), cyl(230, 260, 60, 8, 120, L.stoneDark), cyl(240, 240, 12, 16, 178, L.metal));
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const pillar = new THREE.CylinderGeometry(26, 34, 340, 6);
+      pillar.translate(Math.cos(a) * 250, 180 + 170, Math.sin(a) * 250);
+      parts.push(paint(pillar, L.stone));
+      parts.push(cone(40, 70, 6, 520, L.metal, Math.cos(a) * 250, Math.sin(a) * 250));
+      const beam = new THREE.CylinderGeometry(12, 12, 260, 5);
+      beam.rotateZ(Math.PI / 2);
+      beam.translate(-130, 0, 0);
+      beam.rotateZ(-0.55);
+      beam.rotateY(-a);
+      beam.translate(Math.cos(a) * 250, 500, Math.sin(a) * 250);
+      parts.push(paint(beam, L.metal));
+      parts.push(...banner(90, 170, 300, 200, -a + Math.PI / 2, L.cloth, L.metal));
+    }
+    const core = new THREE.OctahedronGeometry(150, 0);
+    core.scale(1, 1.6, 1);
+    core.translate(0, 500, 0);
+    glow.push(core);
+    return { body: mergeGeometries(parts)!, outline: outlineMesh(mergeGeometries(parts)!, 8), glow: mergeGeometries(glow.map((g) => paint(g, '#ffffff')))!, height: 820 };
   }
-  const body = mergeGeometries(parts)!;
-  const glow = new THREE.OctahedronGeometry(170);
-  glow.scale(1, 1.7, 1);
-  glow.translate(0, 480, 0);
-  return { body, outline: outlineMesh(body, 9), glow, height: 820 };
+  parts.push(cyl(370, 400, 70, 6, 0, L.stoneDark), cyl(300, 340, 90, 6, 70, L.metal2), cyl(280, 300, 18, 6, 160, L.metal));
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    const x = Math.cos(a) * 260;
+    const z = Math.sin(a) * 260;
+    parts.push(cyl(38, 50, 300 + (i % 2) * 80, 6, 160, L.metal2, x, z), cyl(54, 46, 24, 6, 460 + (i % 2) * 80, L.metal, x, z));
+    const ember = new THREE.OctahedronGeometry(22, 0);
+    ember.translate(x, 500 + (i % 2) * 80, z);
+    glow.push(ember);
+    if (i % 2 === 0) parts.push(...banner(90, 160, 280, 240, -a + Math.PI / 2, L.cloth, L.metal));
+  }
+  const core = new THREE.OctahedronGeometry(140, 0);
+  core.scale(1, 1.5, 1);
+  core.translate(0, 420, 0);
+  glow.push(core);
+  return { body: mergeGeometries(parts)!, outline: outlineMesh(mergeGeometries(parts)!, 8), glow: mergeGeometries(glow.map((g) => paint(g, '#ffffff')))!, height: 820 };
 }
 
 function rubble(): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 9; i++) {
     const b = new THREE.DodecahedronGeometry(50 + (i % 3) * 25, 0);
     b.scale(1, 0.5, 1);
-    b.translate(Math.cos(i * 2.1) * 110, 15, Math.sin(i * 2.1) * 110);
+    b.translate(Math.cos(i * 2.1) * 120, 15, Math.sin(i * 2.1) * 120);
     parts.push(paint(b, i % 2 ? '#4a463e' : '#2e2b27'));
   }
   return mergeGeometries(parts)!;
@@ -97,6 +225,7 @@ interface View {
   glow: THREE.Mesh;
   height: number;
   seen: boolean;
+  spin: boolean;
 }
 
 export class Structures {
@@ -137,8 +266,13 @@ export class Structures {
         v.alive.visible = false;
         v.rubble.visible = true;
       }
-      v.glow.rotation.y = timeSec * 0.8;
-      v.glow.position.y = Math.sin(timeSec * 1.6) * 12;
+      if (v.spin) {
+        v.glow.rotation.y = timeSec * 0.8;
+        v.glow.position.y = Math.sin(timeSec * 1.6) * 12;
+      } else {
+        const s = 1 + Math.sin(timeSec * 3.1) * 0.04;
+        v.glow.scale.set(s, 1, s);
+      }
     }
   }
 
@@ -154,6 +288,7 @@ export class Structures {
     const root = new THREE.Group();
     root.position.set(e.x, 0, -e.y);
     root.scale.setScalar(SCALE);
+    root.rotation.y = e.team === 1 ? Math.PI : 0;
     const alive = new THREE.Group();
     const body = new THREE.Mesh(t.body, bodyMat);
     body.castShadow = body.receiveShadow = true;
@@ -166,7 +301,9 @@ export class Structures {
     rub.receiveShadow = true;
     root.add(alive, rub);
     this.group.add(root);
-    const v: View = { root, alive, rubble: rub, glow, height: t.height, seen: true };
+    // single crystals spin and bob; Aschehalle furnace grates / chimney embers only pulse
+    const spin = !(e.team === 1 && (e.kind === Kind.Tower || e.kind === Kind.Nexus));
+    const v: View = { root, alive, rubble: rub, glow, height: t.height, seen: true, spin };
     this.views.set(e.serial, v);
     return v;
   }

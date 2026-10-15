@@ -1,5 +1,5 @@
 // Cached sprite atlas builds for the game (baked in a worker pool, main-thread fallback).
-import { buildChampionAtlasAsync, MINION_IDS, type ChampionAtlas } from './champions';
+import { buildChampionAtlasAsync, BIG_MONSTER_IDS, CAMP_MONSTER_IDS, MINION_IDS, type ChampionAtlas } from './champions';
 
 const cache = new Map<string, Promise<ChampionAtlas>>();
 const makeWorker = (): Worker => new Worker(new URL('./spriteWorker.ts', import.meta.url), { type: 'module' });
@@ -40,3 +40,26 @@ export function getMinionAtlas(onProgress?: (done: number, total: number) => voi
   }
   return minions;
 }
+
+let monsters: Promise<[ChampionAtlas, ChampionAtlas]> | null = null;
+/**
+ * Jungle monster + plant atlases, the same for every match: [big, camp]. Buffs and epic objectives get a 160 px
+ * cell (they are drawn 2-3x champion size), camps and plants 128 px; each atlas is 4096 x 2048.
+ */
+export function getMonsterAtlases(onProgress?: (done: number, total: number) => void): Promise<[ChampionAtlas, ChampionAtlas]> {
+  if (!monsters) {
+    const t0 = performance.now();
+    const p = buildChampionAtlasAsync(BIG_MONSTER_IDS, { master: 256, frame: 160, autoHark: false, worker: makeWorker, onProgress: (d, n) => onProgress?.(d * 0.4, n) })
+      .then((big) => buildChampionAtlasAsync(CAMP_MONSTER_IDS, { master: 192, frame: 128, autoHark: false, worker: makeWorker, onProgress: (d, n) => onProgress?.(n * 0.4 + d * 0.6, n) }).then((camp) => [big, camp] as [ChampionAtlas, ChampionAtlas]))
+      .then((a) => {
+        console.info(`monster atlases: ${a[0].canvas.width}x${a[0].canvas.height} + ${a[1].canvas.width}x${a[1].canvas.height} in ${Math.round(performance.now() - t0)} ms`);
+        return a;
+      });
+    p.catch(() => {
+      if (monsters === p) monsters = null;
+    });
+    monsters = p;
+  }
+  return monsters;
+}
+

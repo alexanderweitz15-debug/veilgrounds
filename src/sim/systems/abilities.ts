@@ -11,7 +11,8 @@
 import { query } from 'bitecs';
 import type { Sim } from '../sim';
 import type { System } from './index';
-import { DT, Kind, isStructure, sec } from '../types';
+import { isRef } from '../sim';
+import { DT, Kind, isMinion, isStructure, sec } from '../types';
 import { dealDamage } from '../damage';
 import { dir, dist2, circleInCone, cosDeg, segDist2 } from '../vec';
 import { findPath, nearestWalkable, walkable } from '../map';
@@ -65,6 +66,8 @@ interface CastState {
   x: number;
   y: number;
   target: number;
+  /** Serial of `target` at cast start: eids are recycled, a dead target's eid may be a new unit at resolution. */
+  targetSerial: number;
   end: number;
   cost: number;
   prevCdUntil: number;
@@ -86,6 +89,8 @@ interface Displace {
   stopAtEnemy: number;
   cx: number;
   cy: number;
+  /** Leap (Sprungfrucht): ignores walls on the way; the caller picks a walkable landing point. */
+  through?: 1;
 }
 
 interface ChampAbil {
@@ -222,8 +227,9 @@ export function cancelCast(sim: Sim, eid: number, opts: { refund: boolean; coold
 function refund(sim: Sim, eid: number, c: CastState): void {
   const { Mana, Hp } = sim.c;
   const ab = abilityOf(sim, eid, c.slot);
-  if (ab.costType === 'mana' || ab.costType === 'energy') Mana.cur[eid] = Mana.cur[eid]! + c.cost;
-  else if (ab.costType === 'hp') Hp.cur[eid] = Hp.cur[eid]! + c.cost;
+  // regen kept running during the wind-up: the refund never fills past the maximum
+  if (ab.costType === 'mana' || ab.costType === 'energy') Mana.cur[eid] = Math.min(Mana.max[eid]!, Mana.cur[eid]! + c.cost);
+  else if (ab.costType === 'hp') Hp.cur[eid] = Math.min(Hp.max[eid]!, Hp.cur[eid]! + c.cost);
   champAbil(sim, eid).cdUntil[c.slot] = c.prevCdUntil;
 }
 
@@ -316,7 +322,11 @@ export function castAbility(sim: Sim, eid: number, slot: number, x: number, y: n
   if (ab.flags?.includes('recast')) {
     const w = a.recast[slot]!;
     const win = sim.tick >= w.from && sim.tick <= w.until;
-    if (a.cast?.slot === slot || win) {
+    // a press during the own wind-up is a cancel/feint (Gorvam Q) and always allowed; a hook-opened window is a real
+    // cast: blocked by stun/silence/airborne (and roots for dash/blink/mobility recasts), the window stays open
+    const windup = a.cast?.slot === slot;
+    if (win && !windup && (!canCast(sim, eid) || (movesCaster(ab) && !canMove(sim, eid)))) return;
+    if (windup || win) {
       if (win) w.until = -1;
       sim.events.push({ e: 'cast', src: eid, slot, x, y, rank, recast: true });
       runHooks(sim, makeCtx(sim, eid, slot, rank, 'recast', x, y, target ?? -1));
@@ -324,7 +334,7 @@ export function castAbility(sim: Sim, eid: number, slot: number, x: number, y: n
     }
   }
   if (a.cast || isBusy(sim, eid) || sim.tick < a.cdUntil[slot]! || !canCast(sim, eid)) return;
-  if ((ab.type === 'dash' || ab.type === 'blink') && !canMove(sim, eid)) return;
+  if (movesCaster(ab) && !canMove(sim, eid)) return;
   const mods: CastMods = { cost: rv(ab.cost, rank), timeMult: 1 };
   for (const h of passiveHooksOf(sim, eid)) h.modifyCast?.(sim, eid, slot, mods);
   const cost = Math.max(0, mods.cost);
@@ -353,22 +363,26 @@ export function castAbility(sim: Sim, eid: number, slot: number, x: number, y: n
   if (ab.castTime > 0 || ab.type !== 'self') onMoveCommand(sim, eid);
   if (ab.flags?.includes('unstoppable')) addBuff(sim, eid, { kind: 'unstoppable', id: ab.id, src: eid, ticks: sec(castTime) + 1 });
   if (sec(castTime) > 0) {
-    a.cast = { slot, rank, x, y, target: tgt, end: sim.tick + sec(castTime), cost, prevCdUntil, timeMult: mods.timeMult };
+    a.cast = { slot, rank, x, y, target: tgt, targetSerial: tgt >= 0 ? Unit.serial[tgt]! : 0, end: sim.tick + sec(castTime), cost, prevCdUntil, timeMult: mods.timeMult };
   } else {
     execute(sim, eid, slot, rank, x, y, tgt, mods.timeMult);
   }
 }
 
+/** Dashes, blinks and abilities flagged 'mobility' (e.g. Isolde R's leap) relocate the caster: roots block them. */
+const movesCaster = (ab: AbilityData): boolean => ab.type === 'dash' || ab.type === 'blink' || (ab.flags?.includes('mobility') ?? false);
+
 function pickTarget(sim: Sim, eid: number, ab: AbilityData, rank: number, x: number, y: number, target?: number): number {
   const { Unit, Pos } = sim.c;
   const ally = ab.flags?.includes('ally_target') ?? false;
   const team = Unit.team[eid]!;
+  // enemy casts: fighting units only (no wards, plants, structures, projectiles); ally casts: allied champions only
+  const kindOk = (k: number): boolean => (ally ? k === Kind.Champion : k === Kind.Champion || k === Kind.Dummy || isMinion(k) || k === Kind.Monster || k === Kind.Pet);
   const ok = (t: number): boolean =>
     t >= 0 &&
     !!Unit.alive[t] &&
     !Unit.untargetable[t] &&
-    Unit.kind[t] !== Kind.Projectile &&
-    !isStructure(Unit.kind[t]!) &&
+    kindOk(Unit.kind[t]!) &&
     (ally ? Unit.team[t] === team && t !== eid : Unit.team[t] !== team && sees(sim, team, t)) &&
     within(sim, eid, t, rv(ab.range, rank));
   if (target !== undefined) return ok(target) ? target : -1;
@@ -468,7 +482,7 @@ function execute(sim: Sim, eid: number, slot: number, rank: number, x: number, y
       break;
     }
     case 'targeted':
-      if (!Unit.alive[target]) break;
+      if (target < 0 || !Unit.alive[target]) break;
       if (ab.speed) spawnProjectile(sim, { kind: 2, src: eid, team: Unit.team[eid]!, x: ox, y: oy, target, speed: ab.speed, width: ab.width ?? 0, payload: payload() });
       else resolve(sim, ctx([target], Pos.x[target]!, Pos.y[target]!));
       break;
@@ -577,7 +591,7 @@ export function applyEffects(sim: Sim, ctx: EffectCtx, which: 'all' | 'hit' | 's
 function isEnemyUnit(sim: Sim, eid: number, e: number): boolean {
   const { Unit } = sim.c;
   const k = Unit.kind[e]!;
-  return !!Unit.alive[e] && !Unit.untargetable[e] && Unit.team[e] !== Unit.team[eid] && k !== Kind.Projectile && k !== Kind.Ward && !isStructure(k);
+  return !!Unit.alive[e] && !Unit.untargetable[e] && Unit.team[e] !== Unit.team[eid] && k !== Kind.Projectile && k !== Kind.Ward && k !== Kind.Plant && !isStructure(k);
 }
 
 function unitsWhere(sim: Sim, pred: (e: number) => boolean): number[] {
@@ -729,6 +743,18 @@ export function displace(sim: Sim, src: number, t: number, distance: number, ove
   moveUnit(sim, src, t, dx, dy, d, overTicks);
 }
 
+/** Leap t to (x, y) over `ticks`, passing over walls (Sprungfrucht); (x, y) must be walkable. Airborne meanwhile. */
+export function leapTo(sim: Sim, src: number, t: number, x: number, y: number, ticks: number): void {
+  const { Pos } = sim.c;
+  const d = Math.sqrt(dist2(Pos.x[t]!, Pos.y[t]!, x, y));
+  if (d <= 0) return;
+  const [dx, dy] = dir(Pos.x[t]!, Pos.y[t]!, x, y);
+  const speed = (d * 30) / Math.max(1, ticks);
+  if (!addBuff(sim, t, { kind: 'airborne', id: 'leap', src, ticks: Math.ceil((d / speed) * 30) + 1 })) return;
+  onMoveCommand(sim, t);
+  abilState(sim).moves.set(t, { serial: sim.c.Unit.serial[t]!, dx, dy, speed, left: d, slot: -1, rank: 0, target: -1, targetSerial: 0, stopAtEnemy: 0, cx: 0, cy: 0, through: 1 });
+}
+
 /** Move t to (x, y) over `overTicks` (airborne while moving). */
 export function displaceTo(sim: Sim, src: number, t: number, x: number, y: number, overTicks?: number): void {
   const { Pos } = sim.c;
@@ -804,7 +830,7 @@ function stepMoves(sim: Sim): void {
         ny = oy + m.dy * back;
       }
     }
-    const blocked = !walkable(sim.map.nav, nx, ny);
+    const blocked = !m.through && !walkable(sim.map.nav, nx, ny);
     if (!blocked) {
       Pos.x[eid] = nx;
       Pos.y[eid] = ny;
@@ -851,7 +877,9 @@ export const abilitiesSystem: System = {
       }
       if (sim.tick >= c.end) {
         a.cast = null;
-        execute(sim, eid, c.slot, c.rank, c.x, c.y, c.target, c.timeMult);
+        // a targeted cast whose target died during the wind-up (eid possibly recycled) fizzles
+        const target = c.target >= 0 && !isRef(sim, c.target, c.targetSerial) ? -1 : c.target;
+        execute(sim, eid, c.slot, c.rank, c.x, c.y, target, c.timeMult);
       }
     }
     stepMoves(sim);
@@ -886,6 +914,8 @@ export function castSummoner(sim: Sim, eid: number, slot: number, x: number, y: 
   if (!def || def.todo) return;
   if (id === 'teleport' && cancelTeleport(sim, eid)) return; // recast during the channel cancels it
   if (sim.tick < a.sumCdUntil[slot]!) return;
+  // no Flash out of an own dash / displacement / wind-up, no Teleport channel started mid-cast
+  if ((id === 'sprung' || id === 'teleport') && isBusy(sim, eid)) return;
   if (!castSummonerSpell(sim, eid, id, x, y, target)) return;
   cancelRecall(sim, eid);
   const setup = sim.config.players.find((p) => p.slot === Unit.slot[eid]);

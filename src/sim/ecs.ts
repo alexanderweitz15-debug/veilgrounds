@@ -27,6 +27,8 @@ export function createComponents() {
       radius: f64(),
       untargetable: u8(),
       invulnerable: u8(),
+      /** Monster / plant type: index into VARIANTS (types.ts), 0 otherwise. */
+      variant: u8(),
     },
     Hp: { cur: f64(), max: f64(), regen: f64() /* per second */, shield: f64() },
     Mana: { cur: f64(), max: f64(), regen: f64() },

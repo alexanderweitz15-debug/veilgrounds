@@ -94,6 +94,7 @@ export function spawnUnit(sim: Sim, kind: number, team: number, x: number, y: nu
   Unit.radius[eid] = radius;
   Unit.untargetable[eid] = 0;
   Unit.invulnerable[eid] = 0;
+  Unit.variant[eid] = 0;
   Hp.shield[eid] = 0;
   Hp.regen[eid] = 0;
   Mana.cur[eid] = Mana.max[eid] = Mana.regen[eid] = 0;

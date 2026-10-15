@@ -4,11 +4,8 @@ import type { Anim } from './types';
 
 export const HARK = { world: 300, frames: { idle: 4, run: 6, attack: 4, cast: 0, death: 3 } as Record<Anim, number> };
 
-const FUR = m('#8d8a86', 'fur');
-const FUR_LIGHT = m('#c9c2b4', 'fur');
-const FUR_DARK = m('#55524f', 'fur');
 
-function jag(pts: { x: number; y: number }[], tooth: number): { x: number; y: number }[] {
+export function jag(pts: { x: number; y: number }[], tooth: number): { x: number; y: number }[] {
   let cx = 0;
   let cy = 0;
   for (const q of pts) {
@@ -31,7 +28,7 @@ function jag(pts: { x: number; y: number }[], tooth: number): { x: number; y: nu
   return out;
 }
 
-function furHull(st: Stage, pts: V3[], tooth: number) {
+export function furHull(st: Stage, pts: V3[], tooth: number) {
   const h = hull2(st.pts2(pts));
   const j = jag(h, tooth * st.view.k);
   const path = new Path2D();
@@ -40,7 +37,21 @@ function furHull(st: Stage, pts: V3[], tooth: number) {
   return shapeFrom(j, path);
 }
 
-export function drawWolf(st: Stage, p: Painter, anim: Anim, frame: number): void {
+/** Fur colours of a wolf drawing: Hark (default) or the jungle's Mooswolf (moss tufts, glowing eyes, no collar). */
+export interface WolfLook {
+  fur: ReturnType<typeof m>;
+  light: ReturnType<typeof m>;
+  dark: ReturnType<typeof m>;
+  eye: string;
+  collar: boolean;
+  moss?: ReturnType<typeof m>;
+}
+const HARK_LOOK: WolfLook = { fur: m('#8d8a86', 'fur'), light: m('#c9c2b4', 'fur'), dark: m('#55524f', 'fur'), eye: '#e8c050', collar: true };
+
+export function drawWolf(st: Stage, p: Painter, anim: Anim, frame: number, look: WolfLook = HARK_LOOK): void {
+  const FUR = look.fur;
+  const FUR_LIGHT = look.light;
+  const FUR_DARK = look.dark;
   const n = Math.max(1, HARK.frames[anim]);
   const t = (frame % n) / n;
   let bob = 0;
@@ -155,6 +166,11 @@ export function drawWolf(st: Stage, p: Painter, anim: Anim, frame: number): void
     // pale belly / chest
     const belly = furHull(st, [bodyZ(22, -6), bodyZ(26, -20), bodyZ(10, -18), bodyZ(-6, -14), bodyZ(16, -4)], 2.2);
     pp.fill(belly, FUR_LIGHT, { lw: 1.2, rim: false });
+    if (look.moss) {
+      // moss mantle along the spine (jungle wolves)
+      const mantle = furHull(st, [bodyZ(-30, 14), bodyZ(-10, 17), bodyZ(12, 19), bodyZ(20, 13), bodyZ(-34, 9), bodyZ(-4, 22), bodyZ(8, 23)], 4.5);
+      pp.fill(mantle, look.moss, { lw: 1.3 });
+    }
   });
   // neck ruff + head
   const neckBase = bodyZ(24, 8);
@@ -180,10 +196,11 @@ export function drawWolf(st: Stage, p: Painter, anim: Anim, frame: number): void
       const e = at(H, [s * 5.5, 3.5, 9.5]);
       if (st.faces(norm(sub(e, headC))) > 0.05) {
         const q = st.p(e);
-        pp.dot(q.x, q.y, 2 * st.view.k, 1.4 * st.view.k, '#e8c050');
+        pp.dot(q.x, q.y, 2 * st.view.k, 1.4 * st.view.k, look.eye);
         pp.dot(q.x, q.y, 0.9 * st.view.k, 1.2 * st.view.k, INK);
       }
     }
+    if (!look.collar) return;
     // leather collar with a brass tag (Ottilie's)
     const col = st.hull([...ring(frameYZ(lerp3(neckBase, headC, 0.35), [0, 1, 0.5], [0, 0, 1]), 0, 12.5, 12, 12), ...ring(frameYZ(lerp3(neckBase, headC, 0.42), [0, 1, 0.5], [0, 0, 1]), 0, 12, 11.5, 12)]);
     pp.fill(col, m('#7a3a2a', 'leather'), { lw: 1.4 });

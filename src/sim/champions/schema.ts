@@ -77,7 +77,8 @@ export interface AbilityData {
   /** Dash/blink distance (if different from range). Dashes go the full distance unless flag ground_target
    *  (then up to the cursor). */
   distance?: number;
-  flags?: ('blocked_by_minions' | 'pierce' | 'unstoppable' | 'recast' | 'ground_target' | 'ally_target' | 'auto_reset' | 'channel')[];
+  /** mobility: a non-dash/blink ability whose hook relocates the caster (leap); like dashes it is blocked by roots. */
+  flags?: ('blocked_by_minions' | 'pierce' | 'unstoppable' | 'recast' | 'ground_target' | 'ally_target' | 'auto_reset' | 'channel' | 'mobility')[];
   effects: Effect[];
 }
 

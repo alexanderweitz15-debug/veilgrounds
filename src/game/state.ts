@@ -6,6 +6,20 @@ const TICK_MS = 1000 / TICK_HZ;
 /** Moves longer than this in one tick are teleports/respawns: snap, do not sweep across the map. */
 const SNAP_DIST2 = 250 * 250;
 
+type DeathEvent = Extract<SimEvent, { e: 'death' }>;
+
+/** Victim champion id of a death event (the event carries it; older events fall back to the last-seen entity). */
+export function deathVictimChamp(ev: DeathEvent, state: ClientState): string | null {
+  return ev.champ ?? state.entity(ev.eid)?.champ ?? null;
+}
+
+/** Killer champion id of a champion kill by an enemy champion, else null (tower/minion/monster execution). */
+export function deathKillerChamp(ev: DeathEvent, state: ClientState): string | null {
+  if (ev.killerChamp !== undefined) return ev.killerTeam !== ev.team ? ev.killerChamp : null;
+  const k = ev.killer >= 0 ? state.entity(ev.killer) : undefined;
+  return k && k.kind === Kind.Champion && k.team !== ev.team ? k.champ : null;
+}
+
 export interface KillFeedEntry {
   at: number;
   text: string;
@@ -72,6 +86,11 @@ export class ClientState {
       this.ix.set(e.id, jump ? e.x : e.px + dx * a);
       this.iy.set(e.id, jump ? e.y : e.py + dy * a);
     }
+  }
+
+  /** Entity of this snapshot, else the last one seen with that eid (units that died or vanished into the fog). */
+  entity(eid: number): SnapEntity | undefined {
+    return this.byId.get(eid) ?? this.known.get(eid);
   }
 
   me(): SnapEntity | undefined {

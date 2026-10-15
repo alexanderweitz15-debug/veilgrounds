@@ -3,6 +3,7 @@ import { CHAMPION_DATA } from '../sim/champions';
 import summoners from '../data/summoners.json';
 import { settings } from '../settings';
 import { Kind } from '../sim/types';
+import { t } from '../i18n';
 
 type L10n = { de: string; en: string };
 const loc = (l: L10n | undefined, fallback: string): string => (l ? l[settings.lang] : fallback);
@@ -35,7 +36,14 @@ export function kindName(kind: number): string {
       return de ? 'Übungspuppe' : 'Practice dummy';
     case Kind.Monster:
       return de ? 'Monster' : 'Monster';
+    case Kind.Plant:
+      return t('unit.plant');
     default:
       return kind >= Kind.MinionMelee && kind <= Kind.MinionSuper ? (de ? 'Vasall' : 'Minion') : '?';
   }
+}
+
+/** Display name of a jungle monster / plant type (snapshot `variant`), falling back to the kind name. */
+export function variantName(variant: string | undefined, kind: number): string {
+  return variant ? t(`unit.${variant}`) : kindName(kind);
 }

@@ -1,0 +1,29 @@
+/* Classic lobby: one difficulty for all bots (rank buttons), compact team list, "Erweitert" for per-bot settings. */
+.rank-pick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 6px; }
+.rank-btn {
+  padding: 6px 2px;
+  font: 600 13px/1.1 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.03em;
+  color: var(--rc, #cfc6b2);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #3a3226;
+  cursor: pointer;
+}
+.rank-btn:hover { border-color: var(--rc, #8a7550); }
+.rank-btn.active { background: color-mix(in srgb, var(--rc, #8a7550) 22%, transparent); border-color: var(--rc, #e8c45a); color: #fff; box-shadow: 0 0 0 1px var(--rc, #e8c45a); }
+.rank-mixed { font-size: 12px; color: #a69c88; margin: -2px 0 6px; }
+.rank-iron { --rc: #9a948c; }
+.rank-bronze { --rc: #c58b5a; }
+.rank-silver { --rc: #b9c2cc; }
+.rank-gold { --rc: #e8c45a; }
+.rank-platinum { --rc: #5fc4b8; }
+.rank-emerald { --rc: #3fbf74; }
+.rank-diamond { --rc: #7fa8f0; }
+.rank-master { --rc: #b783e8; }
+.rank-grandmaster { --rc: #e25d5d; }
+.rank-challenger { --rc: #f2d77a; }
+.bot-list.compact .bot-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; }
+.bot-row .role-icon { width: 18px; height: 18px; margin: 0; flex: 0 0 auto; }
+.bot-portrait { flex: 0 0 26px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid #6b5a35; background: #1c1824; font-size: 0; }
+.bot-list.compact .bot-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bot-rank-badge { font: 600 12px 'Barlow Condensed', sans-serif; color: var(--rc, #cfc6b2); border: 1px solid var(--rc, #3a3226); padding: 0 6px; }

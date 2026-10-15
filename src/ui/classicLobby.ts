@@ -2,6 +2,7 @@
 // The other 9 slots are filled role-conform without duplicate champions by src/ai/runner.ts classicConfig (Agent G).
 // Then a loading screen shows all ten players with bot names and ranks.
 import './gamePanels.css';
+import './botDifficulty.css';
 import type { PlayerSetup, SimConfig } from '../sim/types';
 import { CHAMPION_DATA } from '../sim/champions';
 import { SUMMONERS } from '../sim/summoners';
@@ -54,6 +55,8 @@ const pick = {
   styles: new Map<number, { archetype?: Archetype; playstyle?: Playstyle }>(),
   /** Slots whose 10-axis editor is open. */
   expanded: new Set<number>(),
+  /** "Erweitert": per-bot rank, variance and playstyle editors (default: one difficulty for all bots). */
+  advanced: false,
 };
 
 export const championsFor = (role: Role): string[] =>
@@ -222,39 +225,34 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
       });
     }
 
-    // bots: global rank, variance, per-bot override
-    el('div', 'field-label', right, t('classic.botRank'));
-    const rr = el('div', 'rank-row', right);
-    const slider = el('input', 'rank-slider', rr);
-    slider.type = 'range';
-    slider.min = '0';
-    slider.max = String(RANKS.length - 1);
-    slider.value = String(pick.rank);
-    el('span', 'rank-value', rr, t(`rank.${RANKS[pick.rank]}`));
-    slider.addEventListener('input', () => {
-      pick.rank = Number(slider.value);
-      pick.overrides.clear();
-      draw();
-    });
-    el('div', 'field-label', right, t('classic.variance'));
-    const vr = el('div', 'role-tabs', right);
-    for (const v of ['stable', 'normal', 'volatile'] as const) {
-      const b = el('button', `role-tab${v === pick.variance ? ' active' : ''}`, vr, t(`variance.${v}`));
+    // bots: ONE difficulty for all bots (user request); per-bot ranks, variance and playstyles only under "Erweitert"
+    el('div', 'field-label', right, t('classic.botDifficulty'));
+    const rr = el('div', 'rank-pick', right);
+    RANKS.forEach((r, i) => {
+      const b = el('button', `rank-btn rank-${r}${i === pick.rank && !pick.overrides.size ? ' active' : ''}`, rr, t(`rank.${r}`));
       b.addEventListener('click', () => {
-        pick.variance = v;
+        pick.rank = i;
+        pick.overrides.clear();
         draw();
       });
-    }
+    });
+    if (pick.overrides.size) el('div', 'rank-mixed', right, t('classic.rankMixed'));
+
     const cfg = buildClassicConfig();
     for (const team of [0, 1] as const) {
       el('div', 'field-label', right, t(team === 0 ? 'classic.allies' : 'classic.enemies'));
-      const list = el('div', `bot-list team${team}`, right);
+      const list = el('div', `bot-list team${team}${pick.advanced ? '' : ' compact'}`, right);
       for (const p of cfg.players.filter((x) => x.team === team)) {
         const row = el('div', `bot-row${p.isHuman ? ' me' : ''}`, list);
-        el('span', 'bot-role', row, t(`role.${p.role}`));
+        setIcon(el('span', 'role-icon', row), roleIcon(p.role));
+        setPortrait(el('span', 'bot-portrait', row), p.champion);
         el('span', 'bot-champ', row, champName(p.champion));
         el('span', 'bot-name', row, p.isHuman ? t('score.you') : (p.bot?.name ?? 'Bot'));
         if (!p.isHuman && p.bot) {
+          if (!pick.advanced) {
+            el('span', `bot-rank-badge rank-${p.bot.rank}`, row, t(`rank.${p.bot.rank}`));
+            continue;
+          }
           const sel = el('select', 'bot-rank', row);
           for (const r of RANKS) {
             const o = el('option', '', sel, t(`rank.${r}`));
@@ -269,12 +267,28 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
         }
       }
     }
-    const reroll = el('button', 'menu-btn secondary', right, t('classic.reroll'));
+    const tools = el('div', 'row-buttons', right);
+    const reroll = el('button', 'menu-btn secondary', tools, t('classic.reroll'));
     reroll.addEventListener('click', () => {
       pick.seed = (Math.random() * 2 ** 31) | 0;
-      pick.overrides.clear();
       draw();
     });
+    const adv = el('button', `menu-btn secondary${pick.advanced ? ' active' : ''}`, tools, `${t('classic.advanced')} ${pick.advanced ? '▾' : '▸'}`);
+    adv.addEventListener('click', () => {
+      pick.advanced = !pick.advanced;
+      draw();
+    });
+    if (pick.advanced) {
+      el('div', 'field-label', right, t('classic.variance'));
+      const vr = el('div', 'role-tabs', right);
+      for (const v of ['stable', 'normal', 'volatile'] as const) {
+        const b = el('button', `role-tab${v === pick.variance ? ' active' : ''}`, vr, t(`variance.${v}`));
+        b.addEventListener('click', () => {
+          pick.variance = v;
+          draw();
+        });
+      }
+    }
   };
   draw();
 

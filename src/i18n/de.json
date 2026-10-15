@@ -405,5 +405,8 @@
   "enc.ranged": "Fernkampf",
   "enc.melee": "Nahkampf",
   "enc.range": "Reichweite",
-  "showcase.hint": "Fahre über ein Symbol, um zu sehen, was die Fähigkeit macht."
+  "showcase.hint": "Fahre über ein Symbol, um zu sehen, was die Fähigkeit macht.",
+  "classic.botDifficulty": "Bot-Schwierigkeit (alle Bots)",
+  "classic.advanced": "Erweitert",
+  "classic.rankMixed": "Gemischte Ränge (unter „Erweitert“ einzeln gesetzt) – ein Klick oben setzt wieder alle gleich."
 }

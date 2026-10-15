@@ -23,6 +23,9 @@ let mapCache: MapData | null = null;
 /** Static map (walls, lanes, camps); built once and shared by all bots. */
 const staticMap = (): MapData => (mapCache ??= loadMap());
 
+/** Decision-log throttle: an unchanged decision of a node is logged again at most every 5 s (heartbeat). */
+export const LOG_DEDUP_TICKS = 150;
+
 const LANE_OF: Record<PlayerSetup['role'], LaneName | null> = { top: 'top', mid: 'mid', adc: 'bot', support: 'bot', jungle: null };
 
 interface BotSlot {
@@ -47,7 +50,7 @@ export class BotRunner {
   onPerceive?: (slot: number, snap: Snapshot) => void;
   private bufferedTick = -1;
   /** Decision log of all bots of this game (spec-bots §1/§10): F9 overlay, Replay.botLog. */
-  readonly log = new BotDecisionLog();
+  readonly log = new BotDecisionLog(100_000, 50 * 1024 * 1024, LOG_DEDUP_TICKS);
   /** Team AI per team (spec-bots §8, Agent M): desires re-evaluated at the macro interval. */
   readonly teams: [TeamAI, TeamAI];
 
@@ -74,6 +77,7 @@ export class BotRunner {
         params,
         log: this.log,
         teamAI: this.teams[p.team === 1 ? 1 : 0],
+        mode: config.mode,
       };
       ctx.teamAI.register({ slot: p.slot, role: p.role, champion: p.champion, profile, params });
       const interval = decisionTicks(ctx);

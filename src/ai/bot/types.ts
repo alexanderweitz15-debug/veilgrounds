@@ -33,6 +33,8 @@ export interface BotStatic {
   params: BotParams;
   log: DecisionLog;
   teamAI: TeamAI;
+  /** Game mode (SimConfig.mode); 'arena' = teamfight trainer: no lanes, fight on sight. Absent = classic. */
+  mode?: string;
 }
 
 /** A command plus how many ticks from now it should be issued (reaction delay, last-hit timing). */

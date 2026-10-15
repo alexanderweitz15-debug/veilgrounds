@@ -6,20 +6,22 @@
 // Rank parameters come only from ctx.profile (src/data/bots/profiles/*.json), style only from ctx.params.
 
 import type { LaneName, Pt } from '../../sim/map';
-import type { Rng } from '../../sim/rng';
 import { sampleReactionMs } from '../profiles';
 import type { BotAction, BotMemory, BotStatic, Brain, PlayerHud, SnapEntity } from './types';
-import { near, ticksOfMs, type View } from './perception';
-import { escapeCast, hpPct, supportCast } from './combat';
-import { jungle, lastHit, laneSpot, pushTarget, incomingDps } from './laning';
-import { shop } from './shop';
+import { near, ticksOfMs, towerCovering, type View } from './perception';
+import { escapeCast, hpPct, offensiveCast, supportCast } from './combat';
+import { jungle, laneSpot, pushTarget, incomingDps } from './laning';
+import { planLastHit } from './lasthit';
+import { shop, spendable } from './shop';
 import { dst, laneProgress, lanePoint } from './geo';
+import { laneLength } from '../perception/waves';
 import { cleanseStep, exhaustStep, teleportStep } from './spells';
 import { runTree } from '../bt/leaves';
+import { ARENA_CENTRE } from '../../sim/trainer/arena';
 import type { NodeCtx, NodeResult } from '../bt/types';
 import { cancelOrbwalk, attackTicks } from './kite';
-import { chooseWave, laneOf, wardDue } from './macro';
-import { laningSafety, rankIdx } from '../bt/deps';
+import { chooseWave, laneOf, sealWard, sweep, visionShop, wardDue } from './macro';
+import { laningSafety, rankIdx, rollError } from '../bt/deps';
 
 /** Decision interval in ticks for this bot (profile microHz). */
 export const decisionTicks = (ctx: BotStatic): number => Math.max(1, Math.round(30 / ctx.profile.behavior.microHz));
@@ -61,8 +63,6 @@ const push = (n: NodeCtx, a: BotAction | null): boolean => {
   return !!a;
 };
 
-/** Error injection: skip a correct but non-critical action (profile errorInjectionPct). */
-const fumble = (ctx: BotStatic, rng: Rng): boolean => rng.chance(ctx.profile.behavior.errorInjectionPct / 100);
 
 export function levelUp(me: PlayerHud, ctx: BotStatic): BotAction | null {
   const can = (s: number): boolean => !!me.abilities[s]?.canLevel;
@@ -92,7 +92,11 @@ export function utilitySpells(n: NodeCtx): NodeResult {
   if (n.v.me.dead || n.v.me.recallLeft > 0) return 'success';
   push(n, cleanseStep(n.v, n.ctx, n.rng));
   push(n, exhaustStep(n.v));
-  if (!inFountain(n)) push(n, drinkPotion(n.v, n.v.me, n.mem));
+  if (!inFountain(n)) {
+    push(n, drinkPotion(n.v, n.v.me, n.mem));
+    // seal ward / sweeper on spots the bot walks past (item and trinket use do not stop the walk)
+    if (!sealWard(n)) sweep(n);
+  }
   return 'success';
 }
 
@@ -103,6 +107,36 @@ export function dead(n: NodeCtx): NodeResult {
   n.mem.lastMove = null;
   n.mem.trail = [];
   return 'success';
+}
+
+/**
+ * Teamfight arena (trainer mode 'arena'): no lanes, no recall, no retreat home — fight the enemy champion most worth
+ * hitting (low HP, close) with abilities and autos. Dodges and peel still run before this leaf.
+ */
+export function arena(n: NodeCtx): NodeResult {
+  const { v, ctx, mem, rng } = n;
+  if (ctx.mode !== 'arena') return 'failure';
+  const foes = [...v.enemies, ...v.unnoticed];
+  if (!foes.length) {
+    // nobody in sight (an idle player out of range): search where it was last seen, else the arena centre
+    const last = [...mem.aware.values()].sort((a, b) => b.lastSeen - a.lastSeen)[0];
+    const goal = last ?? ARENA_CENTRE;
+    if (mem.mode !== 'search') n.log('arena', 'search', last ? 'enemy out of sight: last seen spot' : 'enemy out of sight: arena centre', {});
+    mem.mode = 'search';
+    if (dst(v.self, goal) > 150) push(n, moveTo(v, mem, goal));
+    else push(n, moveTo(v, mem, { x: 2 * ARENA_CENTRE.x - v.self.x + (n.rng.next() - 0.5) * 400, y: 2 * ARENA_CENTRE.y - v.self.y + (n.rng.next() - 0.5) * 400 }));
+    return 'running';
+  }
+  const score = (e: SnapEntity): number => hpPct(e) * 1000 + dst(e, v.self);
+  const t = foes.sort((a, b) => score(a) - score(b))[0]!;
+  if (mem.mode !== 'fight') n.log('arena', 'fight', 'arena round: engage', { targetSlot: t.slot, targetX: Math.round(t.x), targetY: Math.round(t.y), targetSrc: 'seen' });
+  mem.mode = 'fight';
+  mem.lastMove = null;
+  if (v.self.atkPhase === 1) return 'running';
+  const c = v.enemies.includes(t) ? offensiveCast(v, ctx, rng, t) : null;
+  if (c) n.out.push(c);
+  else if (v.self.atkTarget !== t.id) n.out.push({ cmd: { t: 'attack', target: t.id } });
+  return 'running';
 }
 
 /** Recall channel: keep still unless an enemy shows up. */
@@ -121,7 +155,10 @@ export function fountain(n: NodeCtx): NodeResult {
     n.mem.shopVisitDone = false;
     return 'failure';
   }
-  n.out.push(...shop(n.v.me, n.ctx, n.mem));
+  const firstLook = !n.mem.shopVisitDone;
+  const buys = shop(n.v.me, n.ctx, n.mem);
+  n.out.push(...buys);
+  if (firstLook) n.out.push(...visionShop(n, spendable(n.v.me, n.mem) - (n.mem.pendingBuy?.cost ?? 0)));
   const manaOk = n.v.self.maxMana <= 0 || n.v.self.mana / n.v.self.maxMana > 0.6;
   if (n.v.hpPct < 0.9 || !manaOk) {
     n.mem.mode = 'heal';
@@ -133,12 +170,13 @@ export function fountain(n: NodeCtx): NodeResult {
 /** Retreat (prototype survive): low HP / outnumbered / tower aggro -> run home with summoners and escape casts. */
 export function retreat(n: NodeCtx): NodeResult {
   const { v, ctx, mem } = n;
-  if (inFountain(n)) return 'failure';
+  if (inFountain(n) || ctx.mode === 'arena') return 'failure'; // arena: no way home, fight it out
+  if (mem.ext.trade && v.tick < mem.ext.overcommitUntil) return 'failure'; // overcommit_after_kill: no retreat
   const home = fountainOf(n);
   const foes = near(v.enemies, v.self, 1200);
   const friends = near(v.allies, v.self, 1200);
   const towerOnMe = v.enemyTowers.some((t) => t.atkTarget === v.me.eid);
-  const lowHp = 0.3 - n.p.playstyle.aggression * 0.016; // aggressive bots stay longer
+  const lowHp = 0.25 - n.p.playstyle.aggression * 0.016; // aggressive bots stay longer
   const low = v.hpPct < lowHp && foes.length > 0;
   const outnumbered = v.hpPct < 0.55 && foes.length >= friends.length + 2;
   const stillUnsafe = mem.mode === 'retreat' && v.hpPct < 0.6 && foes.length > 0;
@@ -163,7 +201,9 @@ export function retreat(n: NodeCtx): NodeResult {
   const safe = near([...v.enemies, ...v.unnoticed], v.self, 1600).length === 0 && near(v.monsters, v.self, 800).length === 0;
   const goHome = v.hpPct < lowHp || (mem.mode === 'retreat' && v.hpPct < 0.6) || mem.mode === 'home';
   if (goHome) {
-    if (safe && dst(v.self, home) > 2500 && near(v.enemyMinions, v.self, 650).length === 0) {
+    // a recall broken by damage (DoT, unseen attacker) is retried only after 6 s of walking home: no recall spam
+    if (safe && dst(v.self, home) > 2500 && near(v.enemyMinions, v.self, 650).length === 0 && v.tick - mem.ext.recallTryAt > 6 * 30) {
+      mem.ext.recallTryAt = v.tick;
       mem.mode = 'recall';
       mem.lastMove = null;
       n.out.push({ cmd: { t: 'recall' } });
@@ -284,7 +324,10 @@ export function laneLeaf(n: NodeCtx): NodeResult {
   let farm = true;
   if (v.enemyMinions.filter((m) => m.atkTarget === v.me.eid).length >= 2) behind += 350;
   let spot = laneSpot(v, ctx, lane, behind);
-  if (safety?.stayNearTower) {
+  // stay in Flash reach of the tower only while the stand point is on the enemy half (on the own half the bot is
+  // close enough anyway; clamping there pulls it out of last-hit range of a wave in the middle)
+  const half = (pts: Pt[]): boolean => laneProgress(pts, spot).s > laneLength(pts) * 0.5;
+  if (safety?.stayNearTower && half(ctx.map.sides[ctx.team].lanes[lane])) {
     const tower = v.ownTowers.filter((t) => ctx.map.sides[ctx.team].towers[lane].some((p) => dst(p, t) < 200)).sort((a, b) => dst(a, spot) - dst(b, spot))[0];
     const d = tower ? dst(tower, spot) : 0;
     if (tower && d > 1150) spot = { x: tower.x + ((spot.x - tower.x) * 1150) / d, y: tower.y + ((spot.y - tower.y) * 1150) / d };
@@ -302,31 +345,59 @@ export function laneLeaf(n: NodeCtx): NodeResult {
     }
   }
   if (v.self.atkPhase === 1) return 'running'; // never cancel own wind-up
+  // §6 ignore_minion_aggro (Iron-Silver): auto-attacks the enemy champion while standing in the enemy wave
+  // (minions switch to the bot); rolled at most every 10 s while the situation lasts
+  if (!mem.ext.trade && v.tick - mem.ext.aggroRollAt > 10 * 30) {
+    const champ = v.enemies.find((e) => dst(e, v.self) <= v.reach + e.radius);
+    if (champ && near(v.enemyMinions, v.self, 500).length >= 2) {
+      mem.ext.aggroRollAt = v.tick;
+      if (rollError('ignore_minion_aggro', n.p, rng)) {
+        n.log('lane', 'harass', 'attacks the champion inside the enemy wave', { target: champ.slot }, { minions: near(v.enemyMinions, v.self, 500).length }, 'ignore_minion_aggro');
+        mem.lastMove = null;
+        n.out.push({ cmd: { t: 'attack', target: champ.id } });
+        return 'running';
+      }
+    }
+  }
+  let holdTimer = false;
   if (farm && !(mem.wardTrip >= 0 && v.tick - mem.wardTrip < 8 * 30)) {
-    const lh = lastHit(v, ctx, mem, rng, decisionTicks(ctx));
+    // re-plan every decision: drop a last hit queued by the previous decision (the plan below replaces it)
+    mem.cancelTags.add('lh');
+    const plan = planLastHit(v, ctx, mem.ext.lh, rng, decisionTicks(ctx), n.p.behavior); // tilt-adjusted
+    // keep the attack timer free for an upcoming kill window (no push auto that would still be cooling down)
+    holdTimer = plan.nextWindow < v.tick + plan.period + plan.windup + 4;
+    const lh = plan.action;
     if (lh) {
-      // under pressure (gank risk / enemy in trade range), Diamond+ only takes last hits inside the auto window
-      // without walking up while the enemy has a poke ready; Gold always takes them; farm +5 always
+      // under pressure (gank risk / enemy in trade range), Diamond+ does not walk up for a last hit while the enemy
+      // has a poke ready (spec §7); Gold always takes them ("verwundbar beim Last-Hitten"); farm +5 always
       const pr = pressure(n, lane);
       const target = v.enemyMinions.find((m) => m.id === (lh.cmd as { target: number }).target);
-      const walkUp = target ? dst(v.self, target) > v.reach + target.radius : false;
+      const walkUp = target ? dst(v.self, target) > v.reach + target.radius + 250 : false;
       const pokeReady = pr && pr !== v.self ? (mem.ext.enemyCastAt.get(pr.serial) ?? -1e9) < v.tick - 6 * 30 : true;
       if (pr && rankIdx(ctx.profile.rank) >= rankIdx('diamond') && n.p.playstyle.farmPriority < 5 && walkUp && pokeReady) {
         n.log('lane', 'skip_last_hit', 'last hit under pressure', { minionHp: Math.round(target?.hp ?? 0) });
       } else {
-        if (fumble(ctx, rng)) return 'running';
         mem.lastMove = null;
         if (lh.delay || v.self.atkTarget !== (lh.cmd as { target: number }).target) n.out.push(lh);
         return 'running';
       }
+    } else if (plan.approach && v.self.atkPhase === 0) {
+      // a kill window opens soon on a minion out of reach: step up to it now (not into an enemy tower's shots)
+      const m = plan.approach;
+      const d = dst(v.self, m);
+      const r = v.reach + m.radius - 30;
+      const p = { x: m.x + ((v.self.x - m.x) * r) / d, y: m.y + ((v.self.y - m.y) * r) / d };
+      if (!towerCovering(v, p) && push(n, moveTo(v, mem, p))) return 'running';
     }
     if (dst(v.self, spot) < 700 && pushOk) {
       const ahead = v.ownMinions.filter((m) => dst(m, spot) < 1200).length - v.enemyMinions.filter((m) => dst(m, spot) < 1200).length;
       let want = -1;
       if (wave.state === 'crash') {
         const inReach = v.enemyMinions.filter((m) => dst(v.self, m) <= v.reach + m.radius + 50).sort((a, b) => a.hp - b.hp);
-        want = inReach[0]?.id ?? pushTarget(v, ctx);
+        const pt = pushTarget(v, ctx);
+        want = v.enemyTowers.some((t) => t.id === pt) ? pt : inReach[0]?.id ?? pt;
       } else if (wave.state !== 'slowPush' || ahead >= 2) want = pushTarget(v, ctx);
+      if (holdTimer && wave.state !== 'crash') want = -1;
       if (want >= 0) {
         mem.lastMove = null;
         if (v.self.atkTarget !== want) n.out.push({ cmd: { t: 'attack', target: want } });

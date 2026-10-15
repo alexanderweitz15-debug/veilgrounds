@@ -72,7 +72,10 @@ process.stderr.write(
   `summary rank=${rank} archetype=${archetype ?? 'rolled'} games=${games}: laner CS/min ${r2(mean((x) => x.s.cs / x.min, (s) => s.role !== 'support' && s.role !== 'jungle'))}, ` +
     `deaths/game ${r2(mean((x) => x.s.deaths))}, kills/game ${r2(mean((x) => x.s.kills))}, game length ${r1(lengths.reduce((a, b) => a + b, 0) / lengths.length)} min, ` +
     `trade ${r2(trades ? tradeS / trades : 0)} s (${trades}), orbwalk ${r2(autos ? orbOk / autos : 0)}, roams/min ${r2(mean((x) => x.s.roams / x.min))}, ` +
-    `wards/min ${r2(mean((x) => x.s.wards / x.min))}, recalls/min ${r2(mean((x) => x.s.recalls / x.min))}, max idle ${r1(Math.max(...all.map((x) => x.s.maxIdleS)))} s\n`,
+    `wards/min ${r2(mean((x) => x.s.wards / x.min))}, recalls/min ${r2(mean((x) => x.s.recalls / x.min))}, max idle ${r1(Math.max(...all.map((x) => x.s.maxIdleS)))} s` +
+    `, gold/min ${r1(mean((x) => x.s.goldEarned / x.min))}, total kills/game ${r1(all.reduce((a, x) => a + x.s.kills, 0) / Math.max(1, all.length / 10))}, decided ${decided}/${games}` +
+    (vs ? `, blue (${rank}) vs red (${vs}): blue wins ${blueWins}/${games} (nexus, or more team gold at the end)` : '') +
+    '\n',
 );
 const csv = lines.join('\n') + '\n';
 if (outFile) {

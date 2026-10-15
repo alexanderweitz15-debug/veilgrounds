@@ -2,8 +2,8 @@
 
 import { MINION_STATS, minionScale } from '../../sim/systems/minions';
 import { TOWER_AS } from '../../sim/systems/towers';
+import { CAMPS } from '../../sim/systems/jungle';
 import type { LaneName, Pt } from '../../sim/map';
-import type { Rng } from '../../sim/rng';
 import type { BotAction, BotMemory, BotStatic, SnapEntity } from './types';
 import type { View } from './perception';
 import { dst, laneProgress, lanePoint } from './geo';
@@ -54,65 +54,15 @@ export function incomingDps(v: View, m: SnapEntity): number {
   return dps;
 }
 
-/**
- * Damage expected on `m` within `t` seconds: attackers in wind-up land one hit soon, then hit at their attack rate;
- * the others start on average half an attack period from now. Towers continuous.
- */
-function incomingWithin(v: View, m: SnapEntity, t: number): number {
-  let dmg = 0;
-  for (const a of v.ownMinions) {
-    if (a.atkTarget !== m.id) continue;
-    const s = MINION_STATS[a.kind];
-    if (!s) continue;
-    const ad = s.ad * minionScale(v.tick);
-    const first = s.range > 300 ? 0.45 : 0.2; // caster: wind-up + travel
-    if (a.atkPhase === 1) dmg += (t >= first ? ad : 0) + ad * s.as * Math.max(0, t - first - 1 / s.as);
-    else dmg += ad * s.as * Math.max(0, t - 0.5 / s.as);
-  }
-  for (const tw of v.ownTowers) if (tw.atkTarget === m.id) dmg += (MINION_STATS[m.kind]?.towerPct ?? 0.1) * m.maxHp * TOWER_AS * t;
-  return dmg;
-}
-
-/**
- * Last hit: attack now if the minion will be in kill range when the auto lands, or schedule the attack for the
- * predicted moment if that falls before the next decision. Timing error: profile lastHitJitterMs.
- */
-export function lastHit(v: View, ctx: BotStatic, mem: BotMemory, rng: Rng, intervalTicks: number): BotAction | null {
-  const b = ctx.profile.behavior;
-  const as = Math.max(0.1, v.me.stats.as);
-  const windup = ctx.champ.base.windup / as;
-  const proj = ctx.champ.attackType === 'ranged' ? ctx.champ.base.projectileSpeed ?? 2000 : 0;
-  const ms = Math.max(100, v.me.stats.ms);
-  const jitter = (rng.normal() * b.lastHitJitterMs) / 1000;
-  // own attack timer: estimated from the last observed wind-up/backswing (players see their own animation)
-  const cooldown = Math.max(0, mem.atkStart + (30 / as) - v.tick) / 30;
-  let now: SnapEntity | null = null;
-  let later: { m: SnapEntity; delay: number } | null = null;
-  for (const m of v.enemyMinions) {
-    const d = dst(v.self, m);
-    const reach = v.reach + m.radius;
-    if (d > reach + 500) continue;
-    const dmg = (v.me.stats.ad * 100) / (100 + (MINION_STATS[m.kind]?.armor ?? 0));
-    const dps = incomingDps(v, m);
-    const tLand = cooldown + windup + Math.max(0, d - reach) / ms + (proj > 0 ? Math.min(d, reach) / proj : 0);
-    const hpAt = (t: number): number => m.hp - incomingWithin(v, m, t);
-    if (hpAt(tLand) > 0 && hpAt(tLand + jitter) <= dmg) {
-      if (!now || m.hp < now.hp) now = m;
-    } else if (dps > 0) {
-      const wait = (m.hp - dmg) / dps - tLand - jitter;
-      const delay = Math.round(wait * 30);
-      if (delay > 0 && delay <= intervalTicks && (!later || delay < later.delay)) later = { m, delay };
-    }
-  }
-  if (now) return { cmd: { t: 'attack', target: now.id } };
-  if (later) return { cmd: { t: 'attack', target: later.m.id }, delay: later.delay };
-  return null;
-}
-
 /** Light push target (-1 = none): the healthiest minion in reach when nothing is about to die; else the first enemy tower. */
 export function pushTarget(v: View, ctx: BotStatic): number {
   const dmg = v.me.stats.ad;
   const inReach = v.enemyMinions.filter((m) => dst(v.self, m) <= v.reach + m.radius + 50);
+  // a tower tanked by a big own wave is the better target than its last defenders (the caller keeps last hits first)
+  const firstTower = (['top', 'mid', 'bot'] as const)
+    .map((l) => ctx.map.sides[1 - ctx.team]!.towers[l].map((p) => v.enemyTowers.find((e) => dst(e, p) < 200)).find((t) => !!t))
+    .find((t) => !!t && dst(v.self, t) <= v.reach + t.radius && t.atkTarget !== v.me.eid && v.ownMinions.filter((m) => dst(m, t) < 850).length >= 4);
+  if (firstTower) return firstTower.id;
   if (inReach.length) {
     // wait for last hits instead of messing up the timing: no push while any nearby minion drops into kill
     // range within ~3 s
@@ -124,19 +74,37 @@ export function pushTarget(v: View, ctx: BotStatic): number {
     for (const p of ctx.map.sides[1 - ctx.team]!.towers[lane]) {
       const t = v.enemyTowers.find((e) => dst(e, p) < 200);
       if (!t) continue;
-      if (dst(v.self, t) <= v.reach + t.radius + 300 && v.ownMinions.filter((m) => dst(m, t) < 850).length >= 2) {
+      // tanked by own minions, or a group siege: at least two allies at the tower and not more enemies defending
+      const tanked = v.ownMinions.filter((m) => dst(m, t) < 850).length >= 2;
+      const siege = t.atkTarget !== v.me.eid && v.ownMinions.some((m) => dst(m, t) < 900) && v.allies.filter((a) => dst(a, t) < 1100).length >= 2 && v.enemies.filter((e) => dst(e, t) < 1200).length <= v.allies.filter((a) => dst(a, t) < 1100).length;
+      if (dst(v.self, t) <= v.reach + t.radius + 300 && (tanked || siege)) {
         return t.id;
       }
       break; // later towers of this lane are protected
     }
   }
-  return -1;
+  // base structures (inhibitors, nexus towers, nexus): the nearest one in reach while minions tank or allies siege
+  // (a still protected one rejects the attack in the sim; the next decision picks again)
+  const laneTower = (t: SnapEntity): boolean => (['top', 'mid', 'bot'] as const).some((l) => ctx.map.sides[1 - ctx.team]!.towers[l].some((p) => dst(p, t) < 200));
+  const base = [...v.enemyStructures, ...v.enemyTowers.filter((t) => !laneTower(t))]
+    .filter((t) => dst(v.self, t) <= v.reach + t.radius + 300)
+    .filter((t) => v.ownMinions.filter((m) => dst(m, t) < 850).length >= 2 || (t.atkTarget !== v.me.eid && v.allies.filter((a) => dst(a, t) < 1100).length >= 2))
+    .sort((a, b) => dst(v.self, a) - dst(v.self, b));
+  return base[0]?.id ?? -1;
 }
 
+/** Static camp timers (game knowledge, src/sim/systems/jungle.ts): first spawn and respawn in seconds. */
+const campTimer = (id: string): { first: number; respawn: number } => (CAMPS as Record<string, { first: number; respawn: number }>)[id] ?? { first: 90, respawn: 135 };
+/** Seconds the jungler waits at a camp that is about to spawn rather than leaving for a gank / lane. */
+const CAMP_WAIT_S = 15;
+/** From this game time a jungler without a camp up soon farms a lane meanwhile (no lane CS stolen in laning). */
+const LANE_FARM_FROM_S = 14 * 60;
+
 /**
- * Jungle route over the own camps (map data). Returns 'roam' when no monsters exist (camps not in yet)
- * or every camp was cleared recently.
- * ponytail: fixed route, no camp timers from vision, no smite, no objectives; Phase 3 jungle pathing.
+ * Jungle clear over the own camps with camp timers: a camp counts as cleared when the bot stands at it and sees no
+ * monster there (it just killed it, or someone else did); it is back after its respawn time. Next camp = the
+ * nearest one that is up (or up within CAMP_WAIT_S). Returns 'roam' when nothing is up soon (gank / lane time).
+ * Epic monsters are never pulled by the clear (objective desires take them).
  */
 export function jungle(v: View, ctx: BotStatic, mem: BotMemory): BotAction | Pt | 'wait' | 'roam' {
   if (v.monsters.length) {
@@ -144,7 +112,8 @@ export function jungle(v: View, ctx: BotStatic, mem: BotMemory): BotAction | Pt 
     mem.noMonsters = false;
   }
   if (mem.noMonsters) return 'roam';
-  const m = v.monsters.filter((x) => dst(x, v.self) < 900).sort((a, b) => a.hp - b.hp)[0];
+  const epic = (x: SnapEntity): boolean => Object.values(ctx.map.objectives).some((o) => !Array.isArray(o) && dst(o as Pt, x) < 800);
+  const m = v.monsters.filter((x) => dst(x, v.self) < 900 && !epic(x)).sort((a, b) => a.hp - b.hp)[0];
   if (m) {
     // smite (true damage 450-900 by level) as a finisher
     const smite = [4, 5].find((i) => v.me.abilities[i]?.id === 'bannen' && v.me.abilities[i]!.cdLeft <= 0);
@@ -155,18 +124,28 @@ export function jungle(v: View, ctx: BotStatic, mem: BotMemory): BotAction | Pt 
     return v.self.atkTarget === m.id ? 'wait' : { cmd: { t: 'attack', target: m.id } };
   }
   const camps = ctx.map.sides[ctx.team].camps;
-  for (let i = 0; i < camps.length; i++) {
-    const c = camps[(mem.campIdx + i) % camps.length]!;
-    if (v.tick - (mem.campCleared.get(c.id) ?? -1e9) < 150 * 30) continue;
-    mem.campIdx = (mem.campIdx + i) % camps.length;
-    if (dst(v.self, c) < 350) {
-      if (v.time < 90) return 'wait'; // camps not up yet: wait at the first camp
+  const upAt = (c: { id: string }): number => {
+    const t = campTimer(c.id);
+    const cleared = mem.campCleared.get(c.id);
+    return cleared === undefined ? t.first * 30 : cleared + t.respawn * 30;
+  };
+  for (const c of camps) {
+    // standing at a camp that should be up but shows no monster: it is cleared (by us or by an invader)
+    if (dst(v.self, c) < 450 && v.tick >= upAt(c) && !v.monsters.some((x) => dst(x, c) < 700)) {
       mem.campCleared.set(c.id, v.tick);
-      mem.campIdx++;
-      if (!mem.monstersSeen) mem.noMonsters = true;
-      return 'wait';
+      if (!mem.monstersSeen && v.time > campTimer(c.id).first + 5) mem.noMonsters = true;
     }
-    return { x: c.x, y: c.y };
   }
-  return 'roam';
+  let best: { c: Pt; cost: number; up: number } | null = null;
+  for (const c of camps) {
+    const up = upAt(c);
+    const travel = (dst(v.self, c) / Math.max(200, v.me.stats.ms)) * 30;
+    // early game the jungler waits for its next camp (ganks run before this leaf); later it may farm a lane meanwhile
+    if (up > v.tick + travel + CAMP_WAIT_S * 30 && v.time >= LANE_FARM_FROM_S) continue;
+    const cost = Math.max(travel, up - v.tick) - (c.buff ? 60 : 0);
+    if (!best || cost < best.cost) best = { c, cost, up };
+  }
+  if (!best) return 'roam';
+  if (dst(v.self, best.c) < 350) return 'wait'; // at the camp, it spawns soon
+  return { x: best.c.x, y: best.c.y };
 }

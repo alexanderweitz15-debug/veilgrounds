@@ -1,0 +1,19 @@
+{
+  "note": "Bot ward spots (spec-bots §2 vision axis, §8 objectives) in the blue-team frame (team 0, fountain bottom-left); team 1 mirrors them (x -> size - x, y -> size - y). kind: river (lane-side river entrance), objective (pit entrance; obj = objective id), jungle (own jungle entrance), deep (enemy jungle, Platinum+). roles: who wards there. Placement snaps to walkable ground in the sim. Bushes from the map are used too.",
+  "spots": [
+    { "x": 3300, "y": 12000, "kind": "river", "lane": "top", "roles": ["top", "jungle", "support"] },
+    { "x": 2300, "y": 11200, "kind": "river", "lane": "top", "roles": ["top"] },
+    { "x": 7200, "y": 8800, "kind": "river", "lane": "mid", "roles": ["mid", "jungle", "support"] },
+    { "x": 8800, "y": 7200, "kind": "river", "lane": "mid", "roles": ["mid", "jungle", "support"] },
+    { "x": 12000, "y": 3300, "kind": "river", "lane": "bot", "roles": ["adc", "support", "jungle"] },
+    { "x": 11200, "y": 2300, "kind": "river", "lane": "bot", "roles": ["adc", "support"] },
+    { "x": 9600, "y": 4900, "kind": "objective", "obj": "leviathan", "roles": ["support", "jungle", "adc"] },
+    { "x": 11200, "y": 6300, "kind": "objective", "obj": "leviathan", "roles": ["support", "jungle"] },
+    { "x": 4900, "y": 9600, "kind": "objective", "obj": "schleierwaechter", "roles": ["support", "jungle", "top"] },
+    { "x": 6300, "y": 11200, "kind": "objective", "obj": "schleierwaechter", "roles": ["support", "jungle"] },
+    { "x": 4600, "y": 6600, "kind": "jungle", "roles": ["jungle", "mid", "support"] },
+    { "x": 6600, "y": 4600, "kind": "jungle", "roles": ["jungle", "mid", "support"] },
+    { "x": 11800, "y": 9100, "kind": "deep", "roles": ["jungle", "support"] },
+    { "x": 9100, "y": 11800, "kind": "deep", "roles": ["jungle", "support"] }
+  ]
+}

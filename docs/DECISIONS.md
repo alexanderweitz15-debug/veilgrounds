@@ -113,3 +113,33 @@ Monsterwerte LoL-nah, Skalierung nach Durchschnitts-Champion-Level (abgerundet) 
 - **Bot-Check** (4 Spiele × 15 min, Gold, gleiche KI): Jungler-Gold/min 195 → 197, Jungler-CS 31.6 → 24.1 (mehr Gold pro Monster, längere Clears).
 - **Pflanzen** (Kind.Plant, 1 HP, nur Champion-Autos lösen aus, Bots ignorieren sie), je Seite 6 (3 pro Viertel), Wachstum 1:30, Nachwachsen 5:00: Sprungfrucht = Champions im Radius 380 springen 650 von der Pflanze weg, über Wände (Landepunkt bis +500 weiter, sonst kürzer); Honigfrucht = Heilung 60 + 6 % Max-HP und 25 % Slow 1,5 s im Radius 320; Spähfrucht = 3 Sichtpunkte (450/900/1350, Radius 380–560) 10 s in Richtung weg vom Angreifer. Datentyp `spaehbluete` → `spaehfrucht` umbenannt.
 - **Wände**: map.json-Polygone organischer (mehr Ecken, Diagonalen, Halbmond-Gruben um Leviathan/Schleierwächter); die Kollision bleibt das Polygon, gerendert wird eine gerundete, gewellte Kontur (render/organic.ts, −35…+60 um das Polygon; UNIT_CLEARANCE 75 verhindert sichtbares Clipping). Kampf-Testgelände (6000, 8750) unverändert. Test: alle Lager/Pflanzen/Objectives von beiden Brunnen erreichbar.
+
+## Bot-Kalibrierung Phase 3/4 (Bot-Agent, 2026-10-15)
+
+Messung: `npm run bot-sim -- --rank=<r> --games=6 --minutes=15` (Seeds 1–6) und `--games=2 --minutes=25`; Rang-gegen-Rang mit `--vs=<rang>` (Rot spielt den zweiten Rang). Stand auf dem Baum mit Dschungel-Überarbeitung (Commit d8ad6a0 + Bot-Änderungen).
+
+| Kennzahl | Iron | Gold | Challenger | Tabelle A (I / G / C) |
+|---|---|---|---|---|
+| Laner-CS/min, 15 min, vorher (3 Seeds) | 2,02 | 2,40 | 2,06 | 5,0 / 6,8 / 8,6 |
+| Laner-CS/min, 15 min, jetzt (6 Seeds) | 2,48 | 3,20 | 3,80 | |
+| Laner-CS/min, 25 min, jetzt (2 Seeds) | 3,02 | 3,63 | 3,96 | |
+| Mid-CS/min (25 min) | 2,9 | 3,2 | 2,3 | |
+| Dschungel-CS/min (25 min) | 3,4 | 2,2 | 1,6 | – |
+| Kills pro Spiel (gesamt, 25 min) | 6 | 9,5 | 8 | ~ 2 × 6–8 pro 32 min |
+| Gold/min (alle Bots, 25 min) | 203 | 212 | 198 | 410 / 465 / 520 |
+| Wards/min Support | 0,26 | 0,30 | 0,30 | 0,45 / 0,69 / 0,94 |
+| Gold vs. Silber / Diamant vs. Gold (6 × 25 min, Sieg = Nexus oder mehr Teamgold) | | 3/6 | 3/6 (Dia vs. Gold) | ≳ 65 % / ≳ 80 % |
+
+| Thema | Spec | Entscheidung | Grund |
+|---|---|---|---|
+| Last-Hit-Vorhersage | §7, Tabelle B lastHitJitterMs | `src/ai/bot/lasthit.ts`: Minion-HP-Verlauf aus den sichtbaren Angriffs-Events (Wind-up-Start eigener Minions/Türme, Projektilflug, gesehener Schaden), Kill-Fenster, eigener Auto mit Wind-up + Flug + Laufweg in das Fenster gelegt; Zauber-Last-Hit (gezielt/Linie) wenn der Auto zu spät käme | Vorhersage trifft den Todestick in > 75 % exakt (Test); kein Sim-Hook nötig |
+| Rangfehler beim Farmen | lastHitJitterMs, errorInjectionPct | Zeitfehler N(0, Jitter) **einmal pro Minion** (nicht pro Takt), Aufmerksamkeits-Aussetzer = errorInjectionPct × 0,5 (`LAPSE_SHARE`) einmal pro Minion | Pro-Takt-Würfe mitteln sich weg bzw. kosten jedes knappe Fenster |
+| Abstand von Tabelle A | ±10 % (Abnahme) | **nicht erreicht** (≈ 45–50 % der Zielwerte, Rang-Abstufung stimmt: Iron/Gold/Chall ≈ 0,65/0,84/1) | Struktur: erste Welle trifft erst bei 1:35–1:45, ≈ 11 Lane-Minions/min pro Lane; Turmschüsse (80 % Caster-HP) lassen kein Fenster; viele Trades → Recalls/Laufwege (≈ 35–40 % der Lane-Minions sterben, während der Bot weg ist). csAt10-Ziele (78–105) liegen über dem, was bis 10:00 überhaupt spawnt |
+| Gruppieren/Belagern | §8 groupAfterFirstTowerPct | Ab 14:00 alle 3 min neu gewürfelt (Turm gefallen ×2), Gruppe = Jungler + Support + Mid (+ Side-Laner außer bei sideLaneFarmAfter15Pct), Ziel = nächster gegnerischer Turm der am weitesten gepushten Lane, Welle crashen; Turm-Schläge nur mit eigenen Minions am Turm | Vorher: ein Wurf, dann nie; danach alle fünf in einer Lane → CS aller Ränge ≈ 2,9 |
+| Objectives | §8 | Drache: Jungler + Support + nächster Laner; Kesselbrut: Jungler + Support; Baron: Team, Start erst mit 4 am Pit; kein Neustart desselben Objectives für 180 s; Machbarkeit mit skalierten Monster-HP (Baron +180/min ab 20:00, sonst Ø-Level) | Laner verloren 14 % ihrer Zeit an Drachen-Versuche |
+| Smite | §8 „Erfolg am Reaktionsjitter“ | HP-Abfall seit dem letzten Blick → HP beim nächsten Blick; Smite wenn ≤ Smite-Schaden; Zeitfehler lastHitJitterMs | Secure und Steal mit demselben Modell |
+| Wards | §2 Vision-Achse | Ward-Spots pro Rolle/Seite in `data/bots/wardSpots.json` (blau, rot gespiegelt) + Büsche; Siegelward-Kauf pro Brunnenbesuch mit Wahrscheinlichkeit Tabelle-A-Kontrollwards/3 und Knob controlWardBuyGold; Platzierung auf Objective/Fluss-Spots im Vorbeigehen; Suchfeuer ab Stufe 9 (Support/Jungle, useSweeper, Gold+) | Daten statt Code |
+| Fehler chase_third_kill / overcommit_after_kill / ignore_minion_aggro | §6 | Nach 2 Kills Ziel im Nebel verloren → Jagd trotz wenig HP; nach Kill All-in ohne Turm-/Rückzugsabbruch für 10 s; im gegnerischen Minion-Pulk Champion anklicken (alle 10 s gewürfelt) | Raten aus errors.json, im Log mit injectedError |
+| Tilt | §4.2 | +1 pro Tod, −1 pro Kill oder 120 s, max 3; `withTilt` jetzt zur Laufzeit angewendet (war nie aufgerufen) und geloggt (`tilt`) | |
+| Log-Drosselung | §1 | Identische Entscheidung (Knoten, chosen, reason, Fehler) desselben Bots innerhalb 150 Ticks wird verworfen (Herzschlag alle 5 s) | Vorher pro Takt ein Eintrag |
+| Offene Punkte | | Spiele dauern 40–45 min, Kills 6–10 pro 25 min (Ziel ≈ 30 bis 25 min); höherer Rang gewinnt nicht messbar öfter (3/6); All-ins enden meist per Timeout oder unter dem Turm | Sim-Balance (Schaden/HP/Turm) + Kampf-Logik, nächster Schritt |

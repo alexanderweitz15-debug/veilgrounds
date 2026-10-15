@@ -28,6 +28,11 @@ interface RoamState {
   active: { lane: LaneName; slot: number; since: number; startT: number; reached: boolean; home: LaneName } | null;
 }
 
+/** Target sighting age limit for a roam start (ticks). */
+const ROAM_FRESH_TICKS = 60;
+/** No new roam evaluation for this long after a roam ended (ticks): no start/abort flicker, back to the wave. */
+export const ROAM_COOLDOWN_TICKS = 30 * 30;
+
 const ROAM_TARGETS: Record<string, LaneName[]> = { mid: ['top', 'bot'], support: ['mid'], top: ['mid', 'bot'] };
 
 /** Own lane wave allows a roam (§5.1 prerequisite). */
@@ -52,7 +57,8 @@ export function roamScore(n: NodeCtx, pv: BotPerception, lane: LaneName): RoamEv
   const tick = n.snap.tick;
   const map = n.ctx.map;
   const team = n.ctx.team as 0 | 1;
-  const cands = laneEnemies(pv, lane).filter((t) => !t.dead && t.known && tick - t.lastTick <= 300);
+  // a target must be fresh: runRoam aborts once it is unseen for 5 s, so a stale one would start and abort at once
+  const cands = laneEnemies(pv, lane).filter((t) => !t.dead && t.known && tick - t.lastTick <= ROAM_FRESH_TICKS);
   if (!cands.length) return null;
   const target = cands.sort((a, b) => a.hpFrac - b.hpFrac)[0]!;
   const pos = trackPos(target)!;
@@ -145,6 +151,7 @@ function runRoam(n: NodeCtx, pv: BotPerception, st: RoamState): NodeResult {
     pv.mem.tactics.roamReturn = back;
     log(n, pv, 'roam', chosen, `${reason}; return: ${back}`, inputs);
     st.active = null;
+    st.nextEval = tick + ROAM_COOLDOWN_TICKS;
     pv.mem.tactics.focus = null;
     if (back === 'recall') n.out.push({ cmd: { t: 'recall' } });
     else {

@@ -4,6 +4,7 @@
 import { Kind } from '../../sim/types';
 import type { LaneName, Pt } from '../../sim/map';
 import type { NodeCtx, NodeResult } from '../bt/types';
+import type { BotAction, SnapEntity } from './types';
 import type { WaveChoice } from '../bt/state';
 import type { Desire } from './teamai';
 import { dst, laneProgress } from './geo';
@@ -14,6 +15,7 @@ import { cancelOrbwalk, moveCmd, orbwalkAttack } from './kite';
 import { decisionInterval, summonerReady } from './trade';
 import { emitPing, say } from './social';
 import treeData from '../../data/bots/tree.json';
+import wardSpotsJson from '../../data/bots/wardSpots.json';
 
 const RECALL = treeData.params.recall;
 const WARD_EVERY = treeData.params.wardEveryS as Record<'support' | 'jungle' | 'laner', number>;
@@ -43,6 +45,9 @@ export function waveEstimate(n: NodeCtx, lane: LaneName): { own: number; enemy: 
  * behind and the own jungler not near, slow-push before recall/roam/objective, crash before recall or when the
  * enemy laner is absent, hold on gank danger. Tempo slow -> freeze, roam high -> slow-push/crash.
  */
+/** Own minions around the bot that make a wave 'big' (crash it into the tower). */
+const BIG_WAVE = 7;
+
 export function chooseWave(n: NodeCtx, lane: LaneName): WaveChoice {
   const ext = n.mem.ext;
   if (n.v.tick - ext.wave.at < 90) return ext.wave;
@@ -52,6 +57,10 @@ export function chooseWave(n: NodeCtx, lane: LaneName): WaveChoice {
     return ext.wave;
   };
   const b = n.ctx.profile.behavior;
+  // a big own wave (stacked minions) is taken to the tower by every rank: crash it and hit the tower
+  const own = near(n.v.ownMinions, n.v.self, 1500).length;
+  const foe = near(n.v.enemyMinions, n.v.self, 1500).length;
+  if (own >= BIG_WAVE && foe * 2 <= own && (n.pv.gankRisk[lane] ?? 0) < 0.5) return set('crash', `big wave (${own} vs ${foe})`);
   if (rankIdx(n.ctx.profile.rank) < SILVER || !n.rng.chance(b.waveStateDeliberatePct / 100)) return set('default', 'no deliberate wave state');
   const risk = n.pv.gankRisk[lane] ?? 0;
   if (risk >= 0.4) return set('hold', `gank risk ${risk.toFixed(2)}`);
@@ -172,7 +181,7 @@ export function hasObjectiveDesire(n: NodeCtx): boolean {
   if (d && (d.kind === 'push_lane' || d.kind === 'defend_lane' || d.kind === 'group_mid' || d.kind === 'split_push') && d.lane) {
     ext.laneOverride = d.lane;
     ext.splitting = d.kind === 'split_push';
-    if (d.kind === 'push_lane' || d.kind === 'split_push') ext.wave = { state: 'crash', at: n.v.tick, reason: d.reason };
+    if (d.kind === 'push_lane' || d.kind === 'split_push' || d.kind === 'group_mid') ext.wave = { state: 'crash', at: n.v.tick, reason: d.reason };
     return false;
   }
   ext.laneOverride = null;
@@ -226,14 +235,39 @@ function go(n: NodeCtx, p: Pt): NodeResult {
   return 'running';
 }
 
+/**
+ * Smite on an epic monster (secure or steal, spec §8): the bot predicts the HP at the moment its smite lands from
+ * the HP drop since its last look (team damage) and smites when that is within smite damage. Timing error: a
+ * normal jitter with the profile's lastHitJitterMs (Iron smites late/early, Challenger on the dot).
+ */
+export function smiteCheck(n: NodeCtx, mon: SnapEntity, why: 'secure' | 'steal', obj: string): boolean {
+  const v = n.v;
+  const memo = n.mem.bt.get('_smiteHp') as { id?: number; hp?: number; tick?: number } | undefined;
+  const rate = memo && memo.id === mon.id && memo.tick! < v.tick ? Math.max(0, (memo.hp! - mon.hp) / (v.tick - memo.tick!)) : 0;
+  n.mem.bt.set('_smiteHp', { id: mon.id, hp: mon.hp, tick: v.tick } as never);
+  const smite = summonerReady(n, 'bannen');
+  if (smite < 0 || dst(v.self, mon) > 500 + mon.radius + v.self.radius) return false;
+  const jitter = (n.rng.normal() * n.ctx.profile.behavior.lastHitJitterMs * 30) / 1000;
+  // the bot looks again only after its decision interval: smite now if the HP will be in range before then
+  // (the timing error shifts that moment: too early = smite does not kill, too late = the team takes it)
+  const lead = Math.max(0, decisionInterval(n) + jitter);
+  const hpAt = mon.hp - rate * lead;
+  if (hpAt > smiteDmg(v.me.level)) return false;
+  n.out.push({ cmd: { t: 'spell', slot: smite as 0 | 1, x: mon.x, y: mon.y, target: mon.id } });
+  n.log('objective', 'smite', why, { obj, hp: Math.round(mon.hp), dps: Math.round(rate * 30) });
+  return true;
+}
+
 function takeObjective(n: NodeCtx, d: Desire, logOnce: (c: string, r: string) => void): NodeResult {
   const v = n.v;
   const p = { x: d.x, y: d.y };
-  const mon = v.monsters.filter((m) => dst(m, p) < 700 && m.radius >= 120).sort((a, b) => a.hp - b.hp)[0];
+  // epic pit monsters (the pits hold nothing else; Kesselbrut's three are smaller than the others)
+  const mon = v.monsters.filter((m) => dst(m, p) < 700 && m.radius >= 100).sort((a, b) => a.hp - b.hp)[0];
   // group up first: start only with >= 3 of the assigned bots at the pit (or after 20 s); a lone bot tanks the
   // monster, retreats and the monster resets
   const here = [v.self, ...v.allies].filter((a) => d.slots.includes(a.slot) && dst(a, p) < 1300).length;
-  const need = Math.min(3, d.slots.length);
+  // the baron needs the team: four of the assigned bots (spec §8 baron decisions with team grouping)
+  const need = Math.min(d.obj === 'schleierwaechter' ? 4 : 3, d.slots.length);
   if (d.kind === 'take_objective' && here < need && v.tick - d.from < 20 * 30 && !(mon && mon.hp < mon.maxHp * 0.9)) {
     logOnce('gather', `waiting for ${need - here} more at ${d.obj}`);
     const fountain = n.ctx.map.sides[n.ctx.team].fountain;
@@ -257,12 +291,7 @@ function takeObjective(n: NodeCtx, d: Desire, logOnce: (c: string, r: string) =>
     return go(n, p);
   }
   n.mem.bt.delete('_pitWait');
-  const smite = summonerReady(n, 'bannen');
-  if (smite >= 0 && mon.hp <= smiteDmg(v.me.level) && dst(v.self, mon) <= 500 + mon.radius + v.self.radius) {
-    n.out.push({ cmd: { t: 'spell', slot: smite as 0 | 1, x: mon.x, y: mon.y, target: mon.id } });
-    n.log('objective', 'smite', d.kind === 'contest_objective' ? 'steal' : 'secure', { obj: d.obj!, hp: Math.round(mon.hp) });
-    return 'running';
-  }
+  if (smiteCheck(n, mon, d.kind === 'contest_objective' ? 'steal' : 'secure', d.obj!)) return 'running';
   if (d.kind === 'contest_objective') {
     // wait at the pit edge for the smite window
     logOnce('contest', d.reason);
@@ -321,29 +350,42 @@ export function vision(n: NodeCtx): NodeResult {
   return r ?? 'failure';
 }
 
+interface WardSpot extends Pt {
+  kind: 'river' | 'objective' | 'jungle' | 'deep' | 'bush';
+  roles: string[];
+  obj?: string;
+}
+const SPOTS = (wardSpotsJson.spots as (Pt & { kind: WardSpot['kind']; roles: string[]; obj?: string })[]);
+
+/** Ward spots of the bot's team frame (data spots mirrored for red) plus the map bushes (any role). */
+export function wardSpots(n: NodeCtx): WardSpot[] {
+  const size = n.ctx.map.size;
+  const mirror = n.ctx.team === 1;
+  const data = SPOTS.map((q) => ({ ...q, x: mirror ? size - q.x : q.x, y: mirror ? size - q.y : q.y }));
+  return [...data, ...n.ctx.map.bushes.map((b) => ({ x: b.x, y: b.y, kind: 'bush' as const, roles: ['top', 'jungle', 'mid', 'adc', 'support'] }))];
+}
+
+/** Value of a spot for this bot (lower = better): distance, minus a bonus for its role's spots and the objective. */
+function spotCost(n: NodeCtx, q: WardSpot, center: Pt, d: Desire | null): number {
+  let c = dst(q, center);
+  if (q.roles.includes(n.ctx.role)) c -= 500;
+  if (d?.obj && q.obj === d.obj) c -= 1500;
+  if (q.kind === 'deep' && rankIdx(n.ctx.profile.rank) < rankIdx('platinum')) c += 1e6; // deep wards: Platinum+
+  return c;
+}
+
 function wardNear(n: NodeCtx, d: Desire | null): NodeResult | null {
   const v = n.v;
   const tr = v.me.trinket;
-  if (!tr || tr.charges <= 0) return d ? go(n, { x: d.x, y: d.y }) : null;
-  const own = n.snap.entities.filter((e) => e.kind === Kind.Ward && e.ward && e.team === n.ctx.team);
-  const fountain = n.ctx.map.sides[n.ctx.team].fountain;
+  if (!tr || tr.id !== 'schleierward' || tr.charges <= 0) return d ? go(n, { x: d.x, y: d.y }) : null;
+  const spot = pickSpot(n, d);
   const center = d ? { x: d.x, y: d.y } : v.self;
-  const maxD = d ? 1600 : n.ctx.role === 'support' || n.ctx.role === 'jungle' ? 2200 : 1200;
-  let spot: Pt | null = null;
-  let bestD = maxD;
-  for (const b of n.ctx.map.bushes) {
-    const dd = dst(b, center);
-    if (dd >= bestD || dst(b, fountain) < 4000 || towerCovering(v, b)) continue;
-    if (own.some((w) => dst(w, b) < 900)) continue;
-    bestD = dd;
-    spot = b;
-  }
   if (!spot) return d ? go(n, center) : null;
   if (dst(spot, v.self) <= 550) {
     n.mem.wardAt = v.tick;
     n.mem.wardTrip = -1;
-    n.out.push({ cmd: { t: 'ward', x: spot.x, y: spot.y } });
-    n.log('vision', 'ward', d ? `vision for ${d.obj ?? d.kind}` : 'ward due', { wardX: Math.round(spot.x), wardY: Math.round(spot.y), wardSrc: 'static' });
+    n.out.push({ cmd: { t: 'ward', x: Math.round(spot.x), y: Math.round(spot.y) } });
+    n.log('vision', 'ward', d ? `vision for ${d.obj ?? d.kind}` : `ward due (${spot.kind})`, { wardX: Math.round(spot.x), wardY: Math.round(spot.y), wardSrc: 'static' });
     return 'success';
   }
   if (n.mem.wardTrip < 0) n.mem.wardTrip = v.tick;
@@ -353,6 +395,82 @@ function wardNear(n: NodeCtx, d: Desire | null): NodeResult | null {
     return null;
   }
   return go(n, spot);
+}
+
+/** Best unwarded spot within the role's walking budget (support/jungle roam further), none in enemy tower range. */
+function pickSpot(n: NodeCtx, d: Desire | null, kinds?: WardSpot['kind'][]): WardSpot | null {
+  const v = n.v;
+  const own = n.snap.entities.filter((e) => e.kind === Kind.Ward && e.ward && e.team === n.ctx.team && (e.vision ?? 1) > 0);
+  const fountain = n.ctx.map.sides[n.ctx.team].fountain;
+  const center = d ? { x: d.x, y: d.y } : v.self;
+  const maxD = d ? 1600 : n.ctx.role === 'support' || n.ctx.role === 'jungle' ? 2500 : 1300;
+  let spot: WardSpot | null = null;
+  let best = Infinity;
+  for (const q of wardSpots(n)) {
+    if (kinds && !kinds.includes(q.kind)) continue;
+    if (dst(q, center) > maxD || dst(q, fountain) < 4000 || towerCovering(v, q)) continue;
+    if (own.some((w) => dst(w, q) < 900)) continue;
+    const c = spotCost(n, q, center, d);
+    if (c < best) (best = c), (spot = q);
+  }
+  return spot;
+}
+
+/**
+ * Seal ward (Siegelward, consumable): placed on an objective / river spot near the bot when it carries one and no
+ * own seal ward of its team stands within 1500 (sim: one per player; a refused placement is retried after 20 s).
+ */
+export function sealWard(n: NodeCtx): boolean {
+  const v = n.v;
+  const slot = v.me.items.findIndex((id, i) => i < 6 && id === 'siegelward');
+  if (slot < 0 || v.tick - n.mem.ext.sealTryAt < 20 * 30 || v.enemies.some((e) => dst(e, v.self) < 1200)) return false;
+  const seals = n.snap.entities.filter((e) => e.kind === Kind.Ward && e.ward === 'seal' && e.team === n.ctx.team);
+  const q = pickSpot(n, null, ['objective', 'river', 'jungle', 'deep']);
+  if (!q || dst(q, v.self) > 600 || seals.some((w) => dst(w, q) < 1500)) return false;
+  n.mem.ext.sealTryAt = v.tick;
+  n.out.push({ cmd: { t: 'item', slot, x: Math.round(q.x), y: Math.round(q.y) } });
+  n.log('vision', 'seal_ward', `seal ward at ${q.kind}`, { wardX: Math.round(q.x), wardY: Math.round(q.y), wardSrc: 'static' });
+  return true;
+}
+
+/** Suchfeuer (sweeper trinket): sweep a river/objective spot the bot passes (enemy wards there are cleared). */
+export function sweep(n: NodeCtx): boolean {
+  const v = n.v;
+  const tr = v.me.trinket;
+  if (!tr || tr.id !== 'suchfeuer' || tr.charges <= 0 || v.enemies.some((e) => dst(e, v.self) < 1200)) return false;
+  const q = wardSpots(n).filter((s) => s.kind === 'objective' || s.kind === 'river' || s.kind === 'bush').find((s) => dst(s, v.self) < 500 && !towerCovering(v, s));
+  if (!q) return false;
+  n.out.push({ cmd: { t: 'ward', x: Math.round(q.x), y: Math.round(q.y) } });
+  n.log('vision', 'sweep', `sweeper at ${q.kind}`, { wardX: Math.round(q.x), wardY: Math.round(q.y), wardSrc: 'static' });
+  return true;
+}
+
+/** Seal-ward price (data/items.json 'siegelward'). */
+const SEAL_COST = 75;
+const SEAL_GOLD_ROLE: Record<string, number> = { support: 0.2, jungle: 0.5, top: 1, mid: 1, adc: 1 };
+
+/**
+ * Vision purchases on a fountain visit (after the build items): a Siegelward when the bot has none, gold to spare
+ * (knob controlWardBuyGold x role) and passes the rank's control-ward rate (Table A controlWards per game / 3 per
+ * visit); support and jungle swap to the Suchfeuer from level 9 when the vision axis uses the sweeper (Gold+).
+ */
+export function visionShop(n: NodeCtx, goldLeft: number): BotAction[] {
+  const v = n.v;
+  const out: BotAction[] = [];
+  const tg = n.ctx.profile.targets;
+  const perGame = n.ctx.role === 'support' ? tg.controlWardsSupport : tg.controlWardsLaner;
+  const has = v.me.items.some((id, i) => i < 6 && id === 'siegelward');
+  const free = v.me.items.some((id, i) => i < 6 && !id);
+  if (!has && free && goldLeft >= SEAL_COST + n.p.knobs.controlWardBuyGold * (SEAL_GOLD_ROLE[n.ctx.role] ?? 1) && n.rng.chance(Math.min(1, perGame / 3))) {
+    out.push({ cmd: { t: 'buy', item: 'siegelward' }, delay: 7 });
+    n.log('vision', 'buy_seal_ward', 'control ward on the fountain visit', { gold: Math.round(goldLeft) });
+  }
+  const tr = v.me.trinket;
+  if (tr && tr.canSwap === 'suchfeuer' && n.p.knobs.useSweeper && (n.ctx.role === 'support' || n.ctx.role === 'jungle') && rankIdx(n.ctx.profile.rank) >= rankIdx('gold')) {
+    out.push({ cmd: { t: 'trinket', id: 'suchfeuer' } });
+    n.log('vision', 'swap_sweeper', 'level 9: sweeper trinket', {});
+  }
+  return out;
 }
 
 export const isDiamondPlus = (n: NodeCtx): boolean => rankIdx(n.ctx.profile.rank) >= DIAMOND;

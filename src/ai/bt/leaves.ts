@@ -16,6 +16,7 @@ import { holdTrades, followUp, pingRetreat, pingsIn, socialTick } from '../bot/s
 import { joinFight, teamfight, teamfightNear } from '../bot/teamfight';
 import { hasObjectiveDesire, idleAfterShove, objective, recall, recallScore, splitPush, vision } from '../bot/macro';
 import { dst } from '../bot/geo';
+import { MAX_TILT, withTilt } from '../params';
 
 import { escape } from '../ganks/escape';
 import { gankRiskReaction } from '../ganks/risk';
@@ -36,6 +37,7 @@ export const registry = (): Registry => ({
     pingsIn,
     utilitySpells: brain.utilitySpells,
     dead: brain.dead,
+    arena: brain.arena,
     recallChannel: brain.recallChannel,
     fountain: brain.fountain,
     escape,
@@ -114,8 +116,26 @@ function bookkeeping(n: NodeCtx): NodeResult {
   if (row) ext.ownKills = row.kills;
   const died = mem.wasDead;
   mem.wasDead = false;
+  updateTilt(n, killed, died);
   socialTick(n, killed, died);
   return 'success';
+}
+
+/** Tilt decays by one stack per this many seconds alive without a new death. */
+const TILT_DECAY_S = 120;
+
+/** Tilt counter (applied to the params of the next decisions via withTilt in runTree); every change is logged. */
+function updateTilt(n: NodeCtx, killed: boolean, died: boolean): void {
+  const ext = n.mem.ext;
+  const before = ext.tilt;
+  let why = '';
+  if (died) (ext.tilt = Math.min(MAX_TILT, ext.tilt + 1)), (why = 'died');
+  else if (killed && ext.tilt > 0) (ext.tilt--, (why = 'got a kill'));
+  else if (ext.tilt > 0 && n.v.tick - ext.tiltAt > TILT_DECAY_S * 30) (ext.tilt--, (why = 'calmed down'));
+  if (ext.tilt === before) return;
+  ext.tiltAt = n.v.tick;
+  const drop = (n.ctx.params.behavior.tiltPerformanceDropPct * ext.tilt) / MAX_TILT;
+  n.log('tilt', `tilt${ext.tilt}`, why, { stacks: ext.tilt }, { performanceDropPct: Math.round(drop) });
 }
 
 /**
@@ -163,7 +183,7 @@ export function runTree(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng
     ctx,
     mem,
     rng,
-    p: ctx.params,
+    p: mem.ext.tilt > 0 ? withTilt(ctx.params, mem.ext.tilt) : ctx.params,
     pv,
     out: [],
     log(node, chosen, reason, inputs = {}, scores, err) {
@@ -173,6 +193,10 @@ export function runTree(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng
   };
   botTree().tick(n);
   watchdog(n);
+  // a move issued outside brain.moveTo (roam/gank/kite/ward walks) replaces the walk goal moveTo remembers: forget
+  // it, or moveTo's throttle ("same goal, still moving") would leave the bot walking to the other leaf's point
+  const lm = mem.lastMove;
+  if (lm && n.out.some((a) => a.cmd.t === 'move' && !a.delay && (a.cmd.x !== lm.x || a.cmd.y !== lm.y))) mem.lastMove = null;
   return n.out;
 }
 

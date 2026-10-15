@@ -44,12 +44,31 @@ export class BotDecisionLog implements DecisionLog {
   /** Entries dropped by the caps (oldest first). */
   dropped = 0;
 
+  /** Throttle state per bot+node: last logged decision (spec-bots §1: one entry per decision, not per tick). */
+  private lastByNode = new Map<string, { tick: number; key: string }>();
+  /** Entries skipped by the throttle (same bot, node, chosen, reason and error within dedupTicks). */
+  throttled = 0;
+
   constructor(
     readonly maxEntries = 100_000,
     readonly maxBytes = 50 * 1024 * 1024,
+    /** > 0: an entry identical to the bot's last entry of the same node (chosen, reason, injected error) within
+     *  this many ticks is dropped, so an unchanged decision re-evaluated every tick logs once (plus a heartbeat
+     *  every dedupTicks). 0 = log everything (unit tests of the cap). */
+    readonly dedupTicks = 0,
   ) {}
 
   push(e: DecisionLogEntry): void {
+    if (this.dedupTicks > 0) {
+      const k = `${e.bot}|${e.node}`;
+      const key = `${e.chosen}|${e.reason}|${e.injectedError ?? ''}`;
+      const last = this.lastByNode.get(k);
+      if (last && last.key === key && e.tick >= last.tick && e.tick - last.tick < this.dedupTicks) {
+        this.throttled++;
+        return;
+      }
+      this.lastByNode.set(k, { tick: e.tick, key });
+    }
     const s = shortenEntry(e);
     const size = JSON.stringify(s).length + 1;
     this.buf.push(s);

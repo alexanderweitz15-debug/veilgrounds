@@ -291,7 +291,7 @@ describe('M2: replays of bot games reproduce the state hash', () => {
 
 describe('M3: the 1v1 arena always ends', () => {
   // TODO(bot agent): unskip once bots engage in arena mode (src/ai arena change not committed yet)
-  it.skip('an idle player out of sight range is found and fought by the bot', async () => {
+  it('an idle player out of sight range is found and fought by the bot', async () => {
     const { BotRunner } = await import('../src/ai/runner');
     const { trainerConfig } = await import('../src/game/modes');
     const { trainerHud } = await import('../src/sim/trainer');

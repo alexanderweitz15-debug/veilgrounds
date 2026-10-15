@@ -4,6 +4,7 @@
 import type { PingKind } from '../../sim/types';
 import type { LaneName } from '../../sim/map';
 import { newPerceptionState, type PerceptionState } from '../perception';
+import { newLastHitMem, type LastHitMem } from '../bot/lasthit';
 
 export interface TradeState {
   /** Enemy champion serial / entity id. */
@@ -83,6 +84,19 @@ export interface BotExt {
   stillSince: number;
   /** Agent L's perception memory (tracks, clouds, tactics of the gank/roam nodes). */
   perception: PerceptionState;
+  /** Last-hit planner memory (observed minion/tower swings, per-minion timing error). */
+  lh: LastHitMem;
+  /** Tick of the last low-HP recall command (a recall broken by damage is not spammed; walk home instead). */
+  recallTryAt: number;
+  /** Named errors (spec §6): overcommit after a kill (roll per kill, retreat suppressed until), minion-aggro roll. */
+  overcommitUntil: number;
+  overcommitRolledFor: number;
+  aggroRollAt: number;
+  /** Tick of the last seal-ward placement attempt. */
+  sealTryAt: number;
+  /** Tilt stacks (spec §4.2 "gestorben -> Tilt +1"): +1 per death, -1 per kill or per TILT_DECAY_S alive. */
+  tilt: number;
+  tiltAt: number;
 }
 
 export const newExt = (): BotExt => ({
@@ -116,6 +130,14 @@ export const newExt = (): BotExt => ({
   lastMode: '',
   stillSince: -1,
   perception: newPerceptionState(),
+  lh: newLastHitMem(),
+  recallTryAt: -1e9,
+  overcommitUntil: -1,
+  overcommitRolledFor: -1,
+  aggroRollAt: -1e9,
+  sealTryAt: -1e9,
+  tilt: 0,
+  tiltAt: 0,
 });
 
 export type { TeamAI } from '../bot/teamai';

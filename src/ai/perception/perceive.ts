@@ -321,7 +321,8 @@ export function perceive(st: PerceptionState, snap: Snapshot, bot: BotStatic, pa
   const clouds = new Map<number, Cloud | null>();
   for (const t of st.tracks.values()) {
     const env: CloudEnv = { map, enemyTeam, ms: msOf(t), campKilled: st.campKilled };
-    t.cloud = cloudOf(t, tick, params, env);
+    // seen but not yet noticed (reaction delay): the bot still believes its previous estimate, not "nothing"
+    t.cloud = cloudOf(t.visibleNow && tick < t.usableFrom ? { ...t, visibleNow: false } : t, tick, params, env);
     clouds.set(t.slot, t.cloud);
   }
   const waves = waveStates(map, snap, team);

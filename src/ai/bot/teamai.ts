@@ -9,7 +9,7 @@
 // Emerald+ force baron without vision.
 
 import { Rng } from '../../sim/rng';
-import { CAMPS } from '../../sim/systems/jungle';
+import { BARON_HP_PER_MIN, CAMPS, MONSTER_HP_PER_LEVEL } from '../../sim/systems/jungle';
 import { Kind, type PlayerSetup } from '../../sim/types';
 import type { LaneName, MapData, Pt } from '../../sim/map';
 import type { RankProfile } from '../profiles/schema';
@@ -29,8 +29,18 @@ export type DesireKind =
   | 'recall_window'
   | 'chase'
   | 'idle';
-export type ObjectiveId = 'leviathan' | 'schleierwaechter';
-export const OBJECTIVES: ObjectiveId[] = ['leviathan', 'schleierwaechter'];
+export type ObjectiveId = 'leviathan' | 'schleierwaechter' | 'kesselbrut';
+/** Camp data of an objective, if the sim spawns it (Kesselbrut is in the map data but not spawned yet). */
+const campOf = (o: ObjectiveId): { first: number; respawn: number; monsters: { hp: number }[] } | undefined => (CAMPS as Record<string, { first: number; respawn: number; monsters: { hp: number }[] }>)[o];
+export const OBJECTIVES: ObjectiveId[] = (['leviathan', 'schleierwaechter', 'kesselbrut'] as ObjectiveId[]).filter((o) => !!campOf(o));
+/** Kesselbrut (herald) leaves its pit to the Schleierwaechter at 20:00: not started after 19:45. */
+const HERALD_UNTIL_S = 19 * 60 + 45;
+/** Objective feasibility: the assigned group must kill the monster within this many seconds (rough DPS model). */
+const KILL_WITHIN_S: Record<ObjectiveId, number> = { leviathan: 25, kesselbrut: 30, schleierwaechter: 35 };
+/** No new start on the same objective for this long after a start (a failed take is not retried at once). */
+const OBJECTIVE_RETRY_S = 180;
+/** The group / siege decision is re-rolled at most this often (a desire lasts 90 s, then laners go back). */
+const GROUP_ROLL_S = 180;
 
 export interface Desire {
   kind: DesireKind;
@@ -74,7 +84,11 @@ export class TeamAI {
   desires: Desire[] = [];
   readonly members: Member[] = [];
   /** Tick from which each objective is believed alive. */
-  readonly aliveFrom: Record<ObjectiveId, number> = { leviathan: CAMPS.leviathan.first * 30, schleierwaechter: CAMPS.schleierwaechter.first * 30 };
+  readonly aliveFrom: Record<ObjectiveId, number> = {
+    leviathan: CAMPS.leviathan.first * 30,
+    schleierwaechter: CAMPS.schleierwaechter.first * 30,
+    kesselbrut: (campOf('kesselbrut')?.first ?? 1e9) * 30,
+  };
   private nextEval = 0;
   private lastTick = -1;
   private readonly deaths = new Map<number, number>();
@@ -86,8 +100,12 @@ export class TeamAI {
   groupPingUntil = 0;
   private readonly rng: Rng;
   private groupRoll: boolean | null = null;
+  private groupRollAt = -1e9;
+  private sideFarmers = new Set<number>();
+  /** Enemy towers/inhibitors seen destroyed (structure deaths are public events): position keys. */
+  private readonly enemyStructuresDown = new Set<string>();
   /** Tick before which an objective is not started again (a try ran out without the kill). */
-  private readonly retryAt: Record<ObjectiveId, number> = { leviathan: 0, schleierwaechter: 0 };
+  private readonly retryAt: Record<ObjectiveId, number> = { leviathan: 0, schleierwaechter: 0, kesselbrut: 0 };
 
   constructor(
     readonly team: number,
@@ -134,11 +152,12 @@ export class TeamAI {
     const tick = n.snap.tick;
     // announced epic monster deaths (fog-safe event): respawn timers
     n.snap.events.forEach((ev, i) => {
+      if (ev.e === 'death' && (ev.kind === Kind.Tower || ev.kind === Kind.Inhibitor) && ev.team !== this.team) this.enemyStructuresDown.add(`${Math.round(ev.x / 100)},${Math.round(ev.y / 100)}`);
       if (ev.e !== 'death' || ev.kind !== Kind.Monster) return;
       for (const o of OBJECTIVES) {
         if (dst(ev, this.map.objectives[o]) > 900 || !this.objectiveAlive(o, tick)) continue;
         const at = n.snap.eventTicks?.[i] ?? tick;
-        this.aliveFrom[o] = at + CAMPS[o].respawn * 30;
+        this.aliveFrom[o] = at + (campOf(o)?.respawn ?? 360) * 30;
         this.desires = this.desires.filter((d) => d.obj !== o);
         this.teamLog(tick, 'objective_down', `${o} killed`, { obj: o, byTeam: ev.killer >= 0 && n.snap.entities.some((e) => e.id === ev.killer && e.team === this.team) });
       }
@@ -180,7 +199,7 @@ export class TeamAI {
     let d: Desire;
     if (this.rng.chance(pct / 100)) {
       const time = tick / 30;
-      const objs = OBJECTIVES.filter((o) => this.aliveFrom[o] - tick < 20 * 30 && (o !== 'schleierwaechter' || time >= 20 * 60));
+      const objs = OBJECTIVES.filter((o) => this.aliveFrom[o] - tick < 20 * 30 && (o !== 'schleierwaechter' || time >= 20 * 60) && (o !== 'kesselbrut' || time < HERALD_UNTIL_S));
       if (objs.length) {
         const o = objs.sort((a, b) => (a === 'schleierwaechter' ? -1 : 0) - (b === 'schleierwaechter' ? -1 : 0))[0]!;
         const p = this.map.objectives[o];
@@ -211,6 +230,23 @@ export class TeamAI {
     this.desires.push(d);
     this.teamLog(tick, d.kind, d.reason, { obj: d.obj ?? '', alive: alive.length }, { conversionPct: pct });
     return d;
+  }
+
+  private structureDown(p: Pt): boolean {
+    return this.enemyStructuresDown.has(`${Math.round(p.x / 100)},${Math.round(p.y / 100)}`);
+  }
+
+  /** First enemy tower (then inhibitor area) of a lane not known destroyed: the siege point. */
+  siegeTarget(lane: LaneName): Pt {
+    const towers = this.map.sides[this.team === 1 ? 0 : 1].towers[lane];
+    return towers.find((t) => !this.structureDown(t)) ?? towers[towers.length - 1]!;
+  }
+
+  /** Lane to siege: the one whose next enemy tower is closest to the enemy base already (furthest pushed). */
+  private siegeLane(n: NodeCtx): LaneName {
+    const down = (l: LaneName): number => this.map.sides[this.team === 1 ? 0 : 1].towers[l].filter((t) => this.structureDown(t)).length;
+    const best = LANES.slice().sort((a, b) => down(b) - down(a) || (a === 'mid' ? -1 : b === 'mid' ? 1 : 0))[0]!;
+    return down(best) > 0 ? best : this.weakestEnemyLane(n);
   }
 
   private weakestEnemyLane(n: NodeCtx): LaneName {
@@ -280,16 +316,27 @@ export class TeamAI {
           if (sup.length) out.push({ kind: 'set_vision', obj: o, score: 0.5 + ping, x: p.x, y: p.y, slots: sup, reason: `${o} in ${Math.round(left)} s`, from: tick, until: tick + Math.round(left * 30) + 30 });
           continue;
         }
-        if (left > 0 || (o === 'schleierwaechter' && time < 20 * 60)) continue;
+        if (left > 0 || (o === 'schleierwaechter' && time < 20 * 60) || (o === 'kesselbrut' && time >= HERALD_UNTIL_S)) continue;
         const s = this.safety(n, o) + ping;
-        const thr = (o === 'leviathan' ? th.dragon : th.baron) + riskShift;
+        const thr = (o === 'schleierwaechter' ? th.baron : th.dragon) + riskShift;
         const jg0 = free.find((m) => m.role === 'jungle');
-        const team = [...(jg0 ? [jg0] : []), ...byDist(p).filter((m) => m !== jg0)].slice(0, o === 'schleierwaechter' ? 5 : 3).map((m) => m.slot);
-        // ponytail: feasibility = rough team DPS (level-based) must kill the monster within 20 s
+        // who goes: baron = the team; dragon = jungler + support + the nearest laner; Kesselbrut = jungler + support
+        // (laners keep farming: an objective is not a reason to empty the lanes)
+        const sup0 = free.find((m) => m.role === 'support');
+        const core = [...(jg0 ? [jg0] : []), ...(sup0 ? [sup0] : [])];
+        const extra = o === 'schleierwaechter' ? 5 : o === 'leviathan' ? 1 : 0;
+        const laners = byDist(p).filter((m) => !core.includes(m)).slice(0, o === 'schleierwaechter' ? 5 : extra);
+        const team = [...core, ...laners].slice(0, o === 'schleierwaechter' ? 5 : 3).map((m) => m.slot);
+        // feasibility: rough team DPS (level-based) must kill the monster within KILL_WITHIN_S; monster HP as the sim
+        // scales it (public game knowledge): Baron + BARON_HP_PER_MIN per minute after 20:00, others by the average
+        // champion level (scoreboard)
         const dps = team.reduce((a, sl) => a + 0.55 * (40 + 12 * (n.snap.players.find((r) => r.slot === sl)?.level ?? 1)), 0);
-        const killS = (CAMPS[o].monsters[0]!.hp * (1 + 0.08 * Math.floor(time / 60 / 5))) / Math.max(1, dps);
-        if (s >= thr && killS <= 20 && tick >= this.retryAt[o]) {
-          this.retryAt[o] = tick + 90 * 30;
+        const avgLevel = n.snap.players.reduce((a, r) => a + r.level, 0) / Math.max(1, n.snap.players.length);
+        const baseHp = campOf(o)?.monsters.reduce((a, m) => a + m.hp, 0) ?? 5000;
+        const hp = o === 'schleierwaechter' ? baseHp + BARON_HP_PER_MIN * Math.max(0, Math.floor(time / 60 - 20)) : baseHp * (1 + MONSTER_HP_PER_LEVEL * Math.max(0, avgLevel - 1));
+        const killS = hp / Math.max(1, dps);
+        if (s >= thr && killS <= KILL_WITHIN_S[o] && tick >= this.retryAt[o]) {
+          this.retryAt[o] = tick + OBJECTIVE_RETRY_S * 30;
           out.push({ kind: 'take_objective', obj: o, score: s, x: p.x, y: p.y, slots: team, reason: `safety ${s.toFixed(2)} >= ${thr.toFixed(2)}`, from: tick + Math.round(latency * 30 * 0.3), until: tick + 45 * 30 });
           team.forEach((x) => busy.add(x));
         } else {
@@ -344,12 +391,23 @@ export class TeamAI {
         busy.add(m.slot);
       }
     }
-    const outerDown = LANES.some((l) => !n.v.ownTowers.some((t) => dst(t, this.map.sides[this.team === 1 ? 1 : 0].towers[l][0]!) < 200));
-    if (time >= 15 * 60 && outerDown) this.groupRoll ??= this.rng.chance(this.mean((m) => m.profile.behavior.groupAfterFirstTowerPct) / 100);
-    if (this.groupRoll || this.groupPingUntil > tick) {
-      const g = free.filter((m) => !busy.has(m.slot)).map((m) => m.slot);
-      const p = this.map.sides[this.team === 1 ? 1 : 0].towers.mid[0]!;
-      if (g.length) out.push({ kind: 'group_mid', lane: 'mid', score: 0.5 * this.mean((m) => m.params.knobs.groupWeight) + (this.groupPingUntil > tick ? 0.3 : 0), x: p.x, y: p.y, slots: g, reason: this.groupPingUntil > tick ? 'group ping' : 'group after first tower', from: tick, until: tick + 90 * 30 });
+    // mid game: group and siege (spec §8 groupAfterFirstTowerPct). From 14:00 (LoL: plates fall, laning ends),
+    // re-rolled every macro evaluation (a failed roll is a delay, not "never group"); a fallen outer tower (either
+    // side) doubles the chance.
+    const ownOuterDown = LANES.some((l) => !n.v.ownTowers.some((t) => dst(t, this.map.sides[this.team === 1 ? 1 : 0].towers[l][0]!) < 200));
+    const enemyOuterDown = LANES.some((l) => this.structureDown(this.map.sides[this.team === 1 ? 0 : 1].towers[l][0]!));
+    const groupP = (this.mean((m) => m.profile.behavior.groupAfterFirstTowerPct) / 100) * (ownOuterDown || enemyOuterDown ? 2 : 1);
+    if (time >= 14 * 60 && tick - this.groupRollAt >= GROUP_ROLL_S * 30) {
+      this.groupRollAt = tick;
+      this.groupRoll = this.rng.chance(Math.min(1, groupP));
+      // side laners keep farming their lane with the profile's sideLaneFarmAfter15Pct (rolled per group episode)
+      this.sideFarmers = new Set(this.members.filter((m) => (m.role === 'top' || m.role === 'adc') && this.rng.chance(m.profile.behavior.sideLaneFarmAfter15Pct / 100)).map((m) => m.slot));
+    }
+    if ((this.groupRoll && tick - this.groupRollAt < 90 * 30) || this.groupPingUntil > tick) {
+      const g = free.filter((m) => !busy.has(m.slot) && (this.groupPingUntil > tick || !this.sideFarmers.has(m.slot))).map((m) => m.slot);
+      const lane = this.groupPingUntil > tick ? 'mid' : this.siegeLane(n);
+      const p = this.siegeTarget(lane);
+      if (g.length) out.push({ kind: 'group_mid', lane, score: 0.5 * this.mean((m) => m.params.knobs.groupWeight) + (this.groupPingUntil > tick ? 0.3 : 0), x: p.x, y: p.y, slots: g, reason: this.groupPingUntil > tick ? 'group ping' : `group and siege ${lane}`, from: tick, until: this.groupPingUntil > tick ? tick + 90 * 30 : this.groupRollAt + 90 * 30 });
     }
     const changed = JSON.stringify(out.map((d) => [d.kind, d.obj, d.lane, d.slots])) !== JSON.stringify(this.desires.map((d) => [d.kind, d.obj, d.lane, d.slots]));
     this.desires = out;

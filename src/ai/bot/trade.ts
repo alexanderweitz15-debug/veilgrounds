@@ -79,8 +79,13 @@ export function tradeWindow(n: NodeCtx): Window | null {
   if (c && c.tick === n.v.tick) return c.w;
   const w = evalWindow(n);
   windowCache.set(n.mem, { tick: n.v.tick, w });
+  if (w && w.score > 0) lastOpen.set(n.mem, { tick: n.v.tick, w });
   return w;
 }
+
+/** Last open window per bot: the gate opened on it; the reaction delay must not re-roll the decision away. */
+const lastOpen = new WeakMap<object, { tick: number; w: Window }>();
+const REACTION_HOLD_TICKS = 45;
 
 function evalWindow(n: NodeCtx): Window | null {
   const focus = tacticsFocus(n.mem, n.v.tick);
@@ -112,6 +117,7 @@ function evalWindow(n: NodeCtx): Window | null {
   else if (ri >= GOLD && (ext.enemyCastAt.get(t.serial) ?? -1e9) > n.v.tick - 7 * 30) trigger = 'punish';
   else if (ext.levelUpAt > n.v.tick - 150 && [2, 3, 6].includes(n.v.me.level) && n.v.me.level > t.level) trigger = 'power_spike';
   else if (hpPct(t) < 0.5 && ex.killProb > 0.3) trigger = 'low_hp';
+
   let injected: 'trade_on_cooldown' | 'fight_in_enemy_wave' | undefined = waveErr ? 'fight_in_enemy_wave' : undefined;
   if (!trigger) {
     const allReady = [0, 1, 2].every((s) => (n.v.me.abilities[s]?.rank ?? 0) === 0 || (n.v.me.abilities[s]?.cdLeft ?? 1) <= 0);
@@ -139,8 +145,14 @@ export const tradeWindowScore = (n: NodeCtx): number => (n.mem.ext.trade || n.v.
 /** Start a trade on the window's target. */
 export function tradeStart(n: NodeCtx): NodeResult {
   if (n.mem.ext.trade) return 'failure';
-  const w = tradeWindow(n);
-  if (!w || w.score <= 0) return 'failure';
+  let w = tradeWindow(n);
+  if (!w || w.score <= 0) {
+    // the decision was taken when the gate opened; the reaction delay only postpones it (target still in sight)
+    const o = lastOpen.get(n.mem);
+    const t = o && n.v.tick - o.tick <= REACTION_HOLD_TICKS ? n.v.enemies.find((e) => e.id === o.w.target.id) : undefined;
+    if (!o || !t || dst(t, n.v.self) > 1300) return 'failure';
+    w = { ...o.w, target: t };
+  }
   const allIn = isAllIn(n, w.ex);
   const kind = allIn ? 'allin' : 'trade';
   const combo = chooseCombo(n, kind, n.rng);
@@ -191,7 +203,13 @@ export function tradeRun(n: NodeCtx): NodeResult {
     // vanished: chase into fog by profile chaseIntoFogPct + aggression shift (rolled once)
     const last = n.mem.aware.get(tr.serial);
     const chance = (n.ctx.profile.behavior.chaseIntoFogPct + n.p.knobs.chaseChanceShift) / 100;
-    const chase = !!last && n.v.hpPct > 0.4 && n.rng.chance(Math.max(0, Math.min(1, chance)));
+    let chase = !!last && n.v.hpPct > 0.4 && n.rng.chance(Math.max(0, Math.min(1, chance)));
+    // §6 chase_third_kill (Gold): two kills just now -> runs after the next one into the fog, whatever the HP
+    const ext = n.mem.ext;
+    if (!chase && last && ext.killStreak >= 2 && n.v.tick - ext.lastKillAt < 20 * 30 && rollError('chase_third_kill', n.p, n.rng)) {
+      chase = true;
+      n.log('trade', 'chase', 'chases the third kill into the fog', { target: tr.id, kills: ext.killStreak }, { hp: n.v.hpPct }, 'chase_third_kill');
+    }
     endTrade(n, tr, chase ? 'target lost, chasing into fog' : 'target lost', false);
     if (chase && last) {
       n.out.push(moveCmd(last));
@@ -207,11 +225,21 @@ export function tradeRun(n: NodeCtx): NodeResult {
     n.log('trade', 'allin', 'kill window', { target: t.slot }, { kill: ex.killProb, death: ex.deathProb });
   }
   if (tr.kind === 'allin') {
-    if (ex.deathProb > 0.6 && ex.killProb < 0.5) return endTrade(n, tr, 'all-in lost', true), 'failure';
+    // §6 overcommit_after_kill (Iron): right after a kill the bot dives on, even at 20 % HP (rolled once per kill)
+    const ext = n.mem.ext;
+    if (ext.lastKillAt > ext.overcommitRolledFor && n.v.tick - ext.lastKillAt < 10 * 30) {
+      ext.overcommitRolledFor = ext.lastKillAt;
+      if (rollError('overcommit_after_kill', n.p, n.rng)) {
+        ext.overcommitUntil = n.v.tick + 10 * 30;
+        n.log('trade', 'overcommit', 'keeps diving after the kill', { target: t.slot }, { hp: n.v.hpPct }, 'overcommit_after_kill');
+      }
+    }
+    if (ex.deathProb > 0.6 && ex.killProb < 0.5 && n.v.tick >= ext.overcommitUntil) return endTrade(n, tr, 'all-in lost', true), 'failure';
     if (elapsed > 12) return endTrade(n, tr, 'all-in timeout', true), 'failure';
     // do not chase under the enemy tower unless the dive is allowed (aggression knob + profile tolerance)
     const tol = n.ctx.profile.behavior.diveHpTolerancePct + n.p.knobs.diveTolerancePctShift;
-    if (towerCovering(n.v, t) && !(n.p.knobs.towerDive && hpPct(t) * 100 <= tol)) return endTrade(n, tr, 'target under tower', true), 'failure';
+    const overcommit = n.v.tick < ext.overcommitUntil;
+    if (!overcommit && towerCovering(n.v, t) && !(n.p.knobs.towerDive && hpPct(t) * 100 <= tol)) return endTrade(n, tr, 'target under tower', true), 'failure';
   } else {
     tr.win = 0.6 * tr.win + 0.4 * ex.winProb;
     const why = shouldAbort(n.p.knobs, { elapsedS: elapsed, comboDone: tr.comboDone, myHp: n.v.hpPct, theirHp: hpPct(t), winProb: tr.win });

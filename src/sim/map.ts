@@ -110,7 +110,8 @@ export interface NavGrid {
   walk: Uint8Array;
 }
 
-const UNIT_CLEARANCE = 40;
+// wall clearance for unit centres: large enough that champion sprites (≈ 110-140 wide) do not visibly clip into walls
+const UNIT_CLEARANCE = 75;
 
 function buildNav(walls: Poly[]): NavGrid {
   const w = S / CELL;

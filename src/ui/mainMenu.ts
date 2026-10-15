@@ -1,87 +1,92 @@
-// Main menu screen: animated backdrop + entry list. Entries come from main.ts so new modes are one line each.
+// Main menu in the style of MOBA clients: top bar (wordmark, PLAY, nav), live map scene behind, mode list on the left,
+// build notes on the right. No decorative glow; typography carries the look (Spectral SC + Barlow Condensed).
 import './menu.css';
-import { startMenuBackground } from './menuBackground';
+import { startMenuScene } from './menuScene';
 
 export interface MenuEntry {
-  icon: string;
   name: string;
   desc?: string;
-  tag?: string;
+  /** Short meta line on the right, e.g. "1 Spieler · Mira Quell". */
+  meta?: string;
   kind?: 'primary' | 'dev';
   onSelect: () => void;
 }
 
-/** Renders into `screen` (already holding the language toggle). Returns a disposer for the animation. */
-export function renderMainMenu(screen: HTMLElement, title: string, subtitle: string, entries: MenuEntry[], foot: string[]): () => void {
-  screen.classList.add('menu-screen');
-  const canvas = document.createElement('canvas');
-  canvas.className = 'menu-bg';
+export interface MainMenuOpts {
+  title: string;
+  subtitle: string;
+  playLabel: string;
+  modesLabel: string;
+  modes: MenuEntry[];
+  nav: { label: string; onSelect: () => void }[];
+  notesTitle: string;
+  notes: string[];
+  footer: string;
+}
+
+const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, text?: string, parent?: HTMLElement): HTMLElementTagNameMap[K] => {
+  const e = document.createElement(tag);
+  e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  parent?.appendChild(e);
+  return e;
+};
+
+/** Renders into `screen` (already holding the language toggle). Returns a disposer. */
+export function renderMainMenu(screen: HTMLElement, o: MainMenuOpts): () => void {
+  screen.classList.add('menu-screen', 'client');
+  const canvas = el('canvas', 'menu-bg');
   screen.prepend(canvas);
+  el('div', 'menu-shade', undefined, screen);
 
-  const col = document.createElement('div');
-  col.className = 'main-menu';
-  col.innerHTML = '<div class="emblem"></div>';
-  const h1 = document.createElement('h1');
-  h1.className = 'menu-title';
-  h1.textContent = title;
-  const sub = document.createElement('div');
-  sub.className = 'menu-sub';
-  sub.textContent = subtitle;
-  col.append(h1, sub);
+  const bar = el('header', 'client-bar', undefined, screen);
+  const brand = el('div', 'brand', undefined, bar);
+  el('div', 'wordmark', o.title, brand);
+  el('div', 'brand-sub', o.subtitle, brand);
+  const play = el('button', 'play-btn', o.playLabel, bar);
+  const nav = el('nav', 'client-nav', undefined, bar);
+  for (const n of o.nav) el('button', 'nav-item', n.label, nav).addEventListener('click', n.onSelect);
+  // language toggle (created by main.ts) moves into the bar
+  const lang = screen.querySelector('.lang-toggle');
+  if (lang) bar.appendChild(lang);
 
-  const buttons: HTMLButtonElement[] = [];
-  entries.forEach((e, i) => {
-    const b = document.createElement('button');
-    b.className = `menu-entry ${e.kind ?? ''}`;
-    b.style.animationDelay = `${0.12 + i * 0.05}s`;
-    const ico = document.createElement('span');
-    ico.className = 'ico';
-    ico.textContent = e.icon;
-    const text = document.createElement('span');
-    const name = document.createElement('div');
-    name.className = 'name';
-    name.textContent = e.name;
-    text.appendChild(name);
-    if (e.desc) {
-      const d = document.createElement('div');
-      d.className = 'desc';
-      d.textContent = e.desc;
-      text.appendChild(d);
-    }
-    b.append(ico, text);
-    if (e.tag) {
-      const tag = document.createElement('span');
-      tag.className = 'tag';
-      tag.textContent = e.tag;
-      b.appendChild(tag);
-    }
-    b.addEventListener('click', e.onSelect);
-    buttons.push(b);
-    col.appendChild(b);
-  });
-  screen.appendChild(col);
-
-  const f = document.createElement('div');
-  f.className = 'menu-foot';
-  for (const line of foot) {
-    const s = document.createElement('span');
-    s.innerHTML = line; // static strings from i18n only
-    f.appendChild(s);
+  const modes = el('section', 'modes', undefined, screen);
+  el('div', 'section-label', o.modesLabel, modes);
+  const rows: HTMLButtonElement[] = [];
+  for (const m of o.modes) {
+    const r = el('button', `mode-row ${m.kind ?? ''}`, undefined, modes);
+    const left = el('span', 'mode-text', undefined, r);
+    el('span', 'mode-name', m.name, left);
+    if (m.desc) el('span', 'mode-desc', m.desc, left);
+    if (m.meta) el('span', 'mode-meta', m.meta, r);
+    r.addEventListener('click', m.onSelect);
+    rows.push(r);
   }
-  screen.appendChild(f);
+  play.addEventListener('click', () => (rows.find((r) => !r.classList.contains('dev')) ?? rows[0])?.click());
 
-  // keyboard: arrows move focus, Enter/Space activate (native button behaviour)
+  const notes = el('aside', 'notes', undefined, screen);
+  el('div', 'section-label', o.notesTitle, notes);
+  const ul = el('ul', '', undefined, notes);
+  for (const n of o.notes) el('li', '', n, ul);
+
+  el('footer', 'client-foot', o.footer, screen);
+
   const onKey = (ev: KeyboardEvent): void => {
     if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
-    const i = buttons.indexOf(document.activeElement as HTMLButtonElement);
-    const n = ev.key === 'ArrowDown' ? (i + 1) % buttons.length : (i - 1 + buttons.length) % buttons.length;
-    buttons[n]?.focus();
+    const i = rows.indexOf(document.activeElement as HTMLButtonElement);
+    const n = ev.key === 'ArrowDown' ? (i + 1) % rows.length : (i - 1 + rows.length) % rows.length;
+    rows[n]?.focus();
     ev.preventDefault();
   };
   window.addEventListener('keydown', onKey);
-  const stopBg = startMenuBackground(canvas);
+  let stopScene: () => void = () => {};
+  try {
+    stopScene = startMenuScene(canvas);
+  } catch {
+    canvas.remove(); // no WebGL: plain background
+  }
   return () => {
-    stopBg();
+    stopScene();
     window.removeEventListener('keydown', onKey);
   };
 }

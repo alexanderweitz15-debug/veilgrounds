@@ -43,16 +43,27 @@ function screen(): HTMLElement {
 function mainMenu(): void {
   const s = screen();
   // One line per mode; the classic 5v5 entry is added by the classic-lobby work.
-  const entries: MenuEntry[] = [
-    { icon: '⚔', name: t('menu.lane'), desc: t('menu.laneDesc'), tag: t('menu.tagTraining'), kind: 'primary', onSelect: () => lobby('lane') },
-    { icon: '◎', name: t('menu.sandbox'), desc: t('menu.sandboxDesc'), tag: t('menu.tagTraining'), onSelect: () => lobby('sandbox') },
-    { icon: '❖', name: t('menu.encyclopedia'), desc: t('menu.encyclopediaDesc'), onSelect: () => encyclopedia() },
-    { icon: '⚙', name: t('menu.settings'), onSelect: () => settingsScreen() },
-    { icon: '◇', name: t('menu.mock'), desc: t('menu.mockDesc'), kind: 'dev', onSelect: () => start(null) },
+  const modes: MenuEntry[] = [
+    { name: t('menu.lane'), desc: t('menu.laneDesc'), meta: t('menu.laneMeta'), onSelect: () => lobby('lane') },
+    { name: t('menu.sandbox'), desc: t('menu.sandboxDesc'), meta: t('menu.sandboxMeta'), onSelect: () => lobby('sandbox') },
+    { name: t('menu.mock'), desc: t('menu.mockDesc'), kind: 'dev', onSelect: () => start(null) },
   ];
-  s.style.background = 'none';
-  disposeMenu = renderMainMenu(s, t('title'), t('subtitle'), entries, [t('menu.footBots'), t('menu.footVersion')]);
+  disposeMenu = renderMainMenu(s, {
+    title: t('title'),
+    subtitle: t('subtitle'),
+    playLabel: t('menu.play'),
+    modesLabel: t('menu.modes'),
+    modes,
+    nav: [
+      { label: t('menu.encyclopedia'), onSelect: () => encyclopedia() },
+      { label: t('menu.settings'), onSelect: () => settingsScreen() },
+    ],
+    notesTitle: t('menu.notesTitle'),
+    notes: [t('menu.note1'), t('menu.note2'), t('menu.note3')],
+    footer: t('menu.footVersion'),
+  });
 }
+
 
 function encyclopedia(): void {
   const s = screen();

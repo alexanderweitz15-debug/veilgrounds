@@ -8,6 +8,7 @@ import { abilityHud, type AbilityHud } from './systems/abilities';
 import { inFountain, inventory, itemValue } from './items/inventory';
 import { champions, kda } from './systems/economy';
 import { buffs } from './buffs';
+import { groundObjects } from './summons';
 
 export interface SnapEntity {
   id: number;
@@ -69,12 +70,26 @@ export interface PlayerHud {
   stats: { ad: number; ap: number; armor: number; mr: number; as: number; ms: number; range: number; crit: number };
 }
 
+/** Ground objects from hooks (Renn blades, Nyx seeds, Grimald traps). Hidden ones only for the owner's team. */
+export interface SnapObject {
+  id: number;
+  tag: string;
+  team: number;
+  x: number;
+  y: number;
+  r: number;
+}
+
+/** Tags enemies never see (invisible traps/seeds); everything else follows normal vision. */
+const HIDDEN_OBJECT_TAGS = new Set(['grimald_trap', 'nyx_seed']);
+
 export interface Snapshot {
   tick: number;
   time: number;
   team: number;
   entities: SnapEntity[];
   projectiles: SnapProjectile[];
+  objects: SnapObject[];
   me: PlayerHud | null;
   events: SimEvent[];
   /** Scoreboard rows for all champions (Agent H). Fog-safe: enemies show item value, never gold or items. */
@@ -205,5 +220,10 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
         return true;
     }
   });
-  return { tick: sim.tick, time: sim.tick / 30, team, entities, projectiles, me: hud, events, players: scoreRows(sim, team) };
+  const objects: SnapObject[] = [];
+  for (const o of groundObjects(sim)) {
+    if (o.team !== team && (HIDDEN_OBJECT_TAGS.has(o.tag) || !pointVisible(sim, team, o.x, o.y))) continue;
+    objects.push({ id: o.id, tag: o.tag, team: o.team, x: o.x, y: o.y, r: o.r });
+  }
+  return { tick: sim.tick, time: sim.tick / 30, team, entities, projectiles, objects, me: hud, events, players: scoreRows(sim, team) };
 }

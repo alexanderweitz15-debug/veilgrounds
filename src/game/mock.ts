@@ -315,6 +315,7 @@ export function mockLink(): SimLink {
       tick,
       time: tick / 30,
       team: 0,
+      objects: [],
       entities: visible.map(({ tx: _tx, ty: _ty, speed: _s, path: _p, cd: _c, vision: _v, ...e }) => e),
       projectiles: projs.map(({ target: _t, speed: _s, life: _l, dmg: _d, src: _src, ...p }) => p),
       me: {

@@ -34,6 +34,7 @@ export function spriteKeyFor(e: SnapEntity): SpriteKey | null {
     case Kind.Dummy:
       return 'dummy';
     case Kind.Monster:
+    case Kind.Pet: // placeholder art: pets (Hark, Corvin's keg) reuse the monster sprite, scaled by hitbox
       return 'monster';
     default:
       return null;

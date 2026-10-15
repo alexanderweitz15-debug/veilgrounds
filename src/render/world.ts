@@ -1,4 +1,5 @@
 // Three.js scene root: renderer, morning sun with a camera-following shadow frustum, and all render layers.
+import { GroundObjects } from './groundObjects';
 import * as THREE from 'three';
 import type { MapData } from '../sim/map';
 import type { SnapEntity } from '../sim/snapshot';
@@ -23,6 +24,7 @@ export class World {
   readonly fog: FogOfWar;
   readonly fx = new Fx();
   readonly structures = new Structures();
+  readonly ground = new GroundObjects();
   private readonly units: Units;
   private readonly terrain: Terrain;
   private readonly sun: THREE.DirectionalLight;
@@ -54,7 +56,7 @@ export class World {
     this.fog = new FogOfWar(map);
     this.terrain = buildTerrain(map, this.renderer.capabilities.getMaxAnisotropy());
     this.units = new Units(buildAtlas(), SUN_DIR);
-    this.scene.add(this.terrain.group, this.structures.group, this.units.group, this.fx.group);
+    this.scene.add(this.terrain.group, this.structures.group, this.units.group, this.fx.group, this.ground.group);
   }
 
   resize(w: number, h: number): void {
@@ -90,6 +92,7 @@ export class World {
     if (state.snap) this.structures.update(state.snap.entities, now / 1000);
     this.units.update(state, now, hoverId);
     this.fx.update(state, now, showRange);
+    this.ground.update(state, now);
     this.fog.update(state, now);
     this.terrain.update(now / 1000);
     this.renderer.render(this.scene, rig.camera);

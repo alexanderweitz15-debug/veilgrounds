@@ -22,7 +22,7 @@ const minutes = Number(args.get('minutes') ?? 20);
 const seed0 = Number(args.get('seed') ?? 1);
 const outFile = args.get('out');
 
-const lines = ['game,seed,rank,team,role,champion,cs,csPerMin,kills,deaths,goldPerMin,dmgToChamps,gameMin,winner'];
+const lines = ['game,seed,rank,team,role,champion,cs,csPerMin,kills,deaths,goldPerMin,dmgToChamps,maxIdleS,gameMin,winner'];
 const r1 = (n: number): string => n.toFixed(1);
 for (let g = 0; g < games; g++) {
   const seed = seed0 + g;
@@ -30,7 +30,7 @@ for (let g = 0; g < games; g++) {
   const res = runBotGame(botGameConfig(seed, rank), Math.round(minutes * 60 * 30));
   for (const s of res.stats) {
     lines.push(
-      [g, seed, s.rank, s.team, s.role, s.champion, s.cs, r1(s.cs / res.minutes), s.kills, s.deaths, r1(s.goldEarned / res.minutes), Math.round(s.damageToChampions), r1(res.minutes), res.winner ?? ''].join(','),
+      [g, seed, s.rank, s.team, s.role, s.champion, s.cs, r1(s.cs / res.minutes), s.kills, s.deaths, r1(s.goldEarned / res.minutes), Math.round(s.damageToChampions), r1(s.maxIdleS), r1(res.minutes), res.winner ?? ''].join(','),
     );
   }
   process.stderr.write(`game ${g + 1}/${games} seed ${seed}: ${r1(res.minutes)} min in ${((Date.now() - t0) / 1000).toFixed(1)} s\n`);

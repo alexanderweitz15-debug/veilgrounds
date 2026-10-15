@@ -145,7 +145,15 @@ export function jungle(v: View, ctx: BotStatic, mem: BotMemory): BotAction | Pt 
   }
   if (mem.noMonsters) return 'roam';
   const m = v.monsters.filter((x) => dst(x, v.self) < 900).sort((a, b) => a.hp - b.hp)[0];
-  if (m) return v.self.atkTarget === m.id ? 'wait' : { cmd: { t: 'attack', target: m.id } };
+  if (m) {
+    // smite (true damage 450-900 by level) as a finisher
+    const smite = [4, 5].find((i) => v.me.abilities[i]?.id === 'bannen' && v.me.abilities[i]!.cdLeft <= 0);
+    const smiteDmg = 450 + (450 * (v.me.level - 1)) / 17;
+    if (smite !== undefined && m.hp <= smiteDmg && dst(v.self, m) <= 500 + m.radius + v.self.radius) {
+      return { cmd: { t: 'spell', slot: (smite - 4) as 0 | 1, x: m.x, y: m.y, target: m.id } };
+    }
+    return v.self.atkTarget === m.id ? 'wait' : { cmd: { t: 'attack', target: m.id } };
+  }
   const camps = ctx.map.sides[ctx.team].camps;
   for (let i = 0; i < camps.length; i++) {
     const c = camps[(mem.campIdx + i) % camps.length]!;

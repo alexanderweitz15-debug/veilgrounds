@@ -6,9 +6,12 @@ import { buildSnapshot } from './snapshot';
 import { Recorder } from '../replay/replay';
 import type { FromWorker, ToWorker } from './protocol';
 import type { TickInput } from './types';
+import { BotRunner, isBotSlot } from '../ai/runner';
 
 let sim: Sim | null = null;
 let rec: Recorder | null = null;
+/** Bot slots of the running game (null if there are none). Bot inputs are merged after the human's. */
+let bots: BotRunner | null = null;
 let slot = 0;
 let queued: TickInput[] = [];
 let paused = false;
@@ -25,6 +28,7 @@ onmessage = (ev: MessageEvent<ToWorker>) => {
     case 'start':
       sim = createSim(m.config);
       rec = new Recorder(m.config);
+      bots = m.config.players.some(isBotSlot) ? new BotRunner(m.config) : null;
       slot = m.slot;
       queued = [];
       acc = 0;
@@ -55,7 +59,8 @@ setInterval(() => {
   }
   while (acc >= TICK_MS) {
     acc -= TICK_MS;
-    const inputs = queued;
+    // human first, then bots: the merge order is part of the replay
+    const inputs = bots ? [...queued, ...bots.tick(sim)] : queued;
     queued = [];
     rec!.record(sim.tick, inputs);
     step(sim, inputs);

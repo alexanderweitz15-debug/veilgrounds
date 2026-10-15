@@ -4,7 +4,8 @@
 //   7. role: jungle route / support follows ADC / laning (last hit, light push, positioning), stuck recovery
 // Rank parameters come only from ctx.profile (src/data/bots/profiles/*.json).
 // ponytail: priority list instead of behavior trees / utility AI with desires (Phase 3: team AI, BTs as JSON,
-// influence map, wards); play-style axes (src/ai/profiles/style.ts) are not read yet.
+// influence map, wards). Play style (src/ai/profiles/style.ts) used roughly: aggression -> trade threshold,
+// risk -> retreat/home HP, roaming -> gank radius; tradeLength/kiting/farmVsFight etc. come with Phase 3.
 
 import type { LaneName, Pt } from '../../sim/map';
 import type { Rng } from '../../sim/rng';
@@ -135,7 +136,8 @@ function survive(v: View, ctx: BotStatic, mem: BotMemory, inFountain: boolean): 
   const foes = near(v.enemies, v.self, 1200);
   const friends = near(v.allies, v.self, 1200);
   const towerOnMe = v.enemyTowers.some((t) => t.atkTarget === v.me.eid);
-  const low = v.hpPct < 0.3 && foes.length > 0;
+  const lowHp = 0.3 - (ctx.style.risk - 0.5) * 0.16; // style: risky bots stay longer
+  const low = v.hpPct < lowHp && foes.length > 0;
   const outnumbered = v.hpPct < 0.55 && foes.length >= friends.length + 2;
   const stillUnsafe = mem.mode === 'retreat' && v.hpPct < 0.6 && foes.length > 0;
   if (!inFountain && (low || outnumbered || stillUnsafe || towerOnMe)) {
@@ -159,8 +161,8 @@ function survive(v: View, ctx: BotStatic, mem: BotMemory, inFountain: boolean): 
   }
   // go home: low HP (or after a retreat) walks/recalls to the fountain; enough gold for the next item recalls
   // when safe (profile recallGoldThreshold)
-  const safe = near([...v.enemies, ...v.unnoticed], v.self, 1600).length === 0;
-  const home = v.hpPct < 0.3 || (mem.mode === 'retreat' && v.hpPct < 0.6) || mem.mode === 'home';
+  const safe = near([...v.enemies, ...v.unnoticed], v.self, 1600).length === 0 && near(v.monsters, v.self, 800).length === 0;
+  const home = v.hpPct < 0.3 - (ctx.style.risk - 0.5) * 0.16 || (mem.mode === 'retreat' && v.hpPct < 0.6) || mem.mode === 'home';
   const thr = ctx.profile.behavior.recallGoldThreshold;
   const rich = thr !== null && spendable(v.me, mem) >= Math.max(thr, nextItemPrice(ctx, mem));
   if (!inFountain && (home || rich)) {
@@ -218,7 +220,8 @@ function fightStep(v: View, ctx: BotStatic, mem: BotMemory, rng: Rng): BotAction
   const b = ctx.profile.behavior;
   const engage = Math.max(v.reach + 350, 900);
   const fighting = mem.mode === 'fight';
-  const threshold = fighting ? -b.inertia * 0.3 : 0.05;
+  // style: aggressive bots take even trades, passive ones want a clear edge
+  const threshold = fighting ? -b.inertia * 0.3 : 0.22 + (0.5 - ctx.style.aggression) * 0.3;
   let best = null;
   let bestScore = -Infinity;
   for (const e of v.enemies) {
@@ -287,7 +290,7 @@ function roleStep(v: View, ctx: BotStatic, mem: BotMemory, rng: Rng): BotAction[
   let behind = melee ? 220 : Math.max(250, v.me.stats.range * 0.75);
   if (ctx.role === 'jungle') {
     // gank: a noticed, hurt enemy champion within reach of a short walk
-    const prey = v.enemies.find((e) => hpPct(e) < 0.45 && dst(e, v.self) < 3500 && !towerCovering(v, e));
+    const prey = v.enemies.find((e) => hpPct(e) < 0.45 && dst(e, v.self) < 2000 + 3000 * ctx.style.roaming && !towerCovering(v, e));
     if (prey) return go(prey);
     const j = jungle(v, ctx, mem);
     if (j === 'wait') return out;
@@ -338,7 +341,15 @@ function roleStep(v: View, ctx: BotStatic, mem: BotMemory, rng: Rng): BotAction[
     out.push(a ?? { cmd: { t: 'stop' } });
     return out;
   }
-  return go(spot);
+  const g = go(spot);
+  if (g.length || v.self.moving) return g;
+  // waiting at the spot: shuffle around a little every few seconds like a player does (no 10 s statues)
+  if (v.tick - (mem.lastMove?.tick ?? 0) > 90) {
+    const p = { x: spot.x + (rng.next() * 2 - 1) * 150, y: spot.y + (rng.next() * 2 - 1) * 150 };
+    mem.lastMove = { ...p, tick: v.tick };
+    return [{ cmd: { t: 'move', x: p.x, y: p.y } }];
+  }
+  return [];
 }
 
 /** No progress toward the move goal for 10 s: re-path via a random nearby point. */

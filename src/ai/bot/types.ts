@@ -6,6 +6,7 @@ import type { Command, PlayerSetup } from '../../sim/types';
 import type { MapData, LaneName, Pt } from '../../sim/map';
 import type { ChampionData } from '../../sim/champions/schema';
 import type { RankProfile } from '../profiles/schema';
+import type { BotStyle } from '../profiles/style';
 import type { Rng } from '../../sim/rng';
 import type { BuildData } from './builds';
 
@@ -21,6 +22,8 @@ export interface BotStatic {
   champ: ChampionData;
   build: BuildData | null;
   profile: RankProfile;
+  /** Play-style axes 0..1 (src/ai/profiles/style.ts); rough use: aggression, risk, roaming. */
+  style: BotStyle;
   map: MapData;
   /** Lobby: all players (champions/roles are public knowledge in pick phase). */
   players: readonly PlayerSetup[];

@@ -18,7 +18,8 @@ export interface ChampStats {
   damageToChampions: number;
   /** Total path length walked. */
   moved: number;
-  /** Longest stretch (s) alive, not recalling, not in fountain, not moving and not attacking. */
+  /** Longest stretch (s) alive, not recalling, not in fountain, not moving and not attacking (from 1:45 on, when the
+   *  first waves have met; before that waiting at the tower is expected). */
   maxIdleS: number;
 }
 
@@ -30,6 +31,8 @@ export interface GameResult {
   hash: string;
   stats: ChampStats[];
 }
+
+const IDLE_FROM = 105 * 30;
 
 export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: Sim, inputs: TickInput[]) => void): GameResult {
   const sim = createSim(config);
@@ -81,7 +84,7 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
       lastPos.set(s.slot, [Pos.x[eid]!, Pos.y[eid]!]);
       const f = sim.map.sides[s.team === 1 ? 1 : 0].fountain;
       const inFountain = (Pos.x[eid]! - f.x) ** 2 + (Pos.y[eid]! - f.y) ** 2 < f.r * f.r;
-      const busy = !Unit.alive[eid] || Champ.recallAt[eid]! > 0 || inFountain || step2 > 0.5 || Atk.target[eid]! >= 0 || Atk.phase[eid] !== 0;
+      const busy = sim.tick < IDLE_FROM || !Unit.alive[eid] || Champ.recallAt[eid]! > 0 || inFountain || step2 > 0.5 || Atk.target[eid]! >= 0 || Atk.phase[eid] !== 0;
       if (busy) idleSince.delete(s.slot);
       else {
         const since = idleSince.get(s.slot) ?? sim.tick;

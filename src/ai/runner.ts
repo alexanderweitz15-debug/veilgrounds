@@ -11,6 +11,7 @@ import type { PlayerSetup, SimConfig, TeamId, TickInput } from '../sim/types';
 import { CHAMPION_DATA, championData } from '../sim/champions';
 import { botRunes } from '../sim/items/runes';
 import { profileOf, rollBotProfile } from './profiles';
+import { rollStyle } from './profiles/style';
 import type { Rank } from './profiles/schema';
 import { BUILDS } from './bot/builds';
 import { newMemory, type BotAction, type BotMemory, type BotStatic, type Brain } from './bot/types';
@@ -44,14 +45,16 @@ export class BotRunner {
     for (const p of [...config.players].sort((a, b) => a.slot - b.slot)) {
       if (!isBotSlot(p)) continue;
       const profile = rollBotProfile(p.bot!.rank, p.bot!.variance, rng);
+      const champ = championData(p.champion);
       const ctx: BotStatic = {
         slot: p.slot,
         team: p.team,
         role: p.role,
         lane: LANE_OF[p.role],
-        champ: championData(p.champion),
+        champ,
         build: BUILDS[p.champion] ?? null,
         profile,
+        style: rollStyle(rng, champ.archetype),
         map: staticMap(),
         players: config.players,
       };
@@ -97,10 +100,10 @@ export class BotRunner {
 
 const ROLES: PlayerSetup['role'][] = ['top', 'jungle', 'mid', 'adc', 'support'];
 
-/** Summoners by role. ponytail: Smite (bannen) is not implemented yet, so junglers take Ghost. */
+/** Summoners by role. */
 const SUMMONERS: Record<PlayerSetup['role'], [string, string]> = {
   top: ['sprung', 'entflammen'],
-  jungle: ['sprung', 'geist'],
+  jungle: ['sprung', 'bannen'],
   mid: ['sprung', 'entflammen'],
   adc: ['sprung', 'heilen'],
   support: ['sprung', 'heilen'],

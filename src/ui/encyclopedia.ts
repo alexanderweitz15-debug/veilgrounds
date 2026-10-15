@@ -8,6 +8,7 @@ import { PROFILES } from '../ai/profiles';
 import { PLAYSTYLE_AXES, ARCHETYPES } from '../ai/contract';
 import { AXIS_LABELS, ARCHETYPE_NAMES, ARCHETYPE_PLAYSTYLES, signed } from '../ai/params';
 import { settings } from '../settings';
+import { setPortrait } from '../render/portraits';
 
 type Lang = 'de' | 'en';
 const L = (de: string, en: string): string => (settings.lang === 'de' ? de : en);
@@ -101,6 +102,9 @@ function championsTab(body: HTMLElement, lang: Lang): void {
     for (const b of list.querySelectorAll('button')) b.classList.toggle('on', b.dataset.id === id);
     const c = CHAMPION_DATA[id]!;
     detail.textContent = '';
+    const pic = el('div', 'enc-portrait', undefined, detail);
+    pic.style.cssText = 'float:right;width:96px;height:96px;margin:0 0 8px 12px;border:1px solid #6b5a35;background:#1c1824';
+    setPortrait(pic, id);
     el('h2', '', c.name, detail);
     el('div', 'enc-sub', `${c.title[lang]} · ${c.roles.join(' / ')} · ${c.attackType === 'melee' ? L('Nahkampf', 'melee') : L('Fernkampf', 'ranged')} ${c.base.range}`, detail);
     el('p', 'enc-desc', c.trainingPurpose[lang], detail);

@@ -13,6 +13,7 @@ import { FPS, FRAMES, LOOP, poseFor } from './anim';
 import { bodyOf, drawHumanoid, solveRig } from './humanoid';
 import { KITS } from './kits';
 import { drawWolf, HARK } from './wolf';
+import { MINION_DRAWERS, MINION_KITS } from './minions';
 import { ANIMS, DIRS, type Anim, type Dir, type Kit } from './types';
 
 /** Canvas in the page or (in a Worker) an OffscreenCanvas. */
@@ -35,10 +36,13 @@ export interface SpriteDrawer {
   frames: Record<Anim, number>;
   /** feet position as a fraction of the cell height */
   foot: number;
+  /** outer contour width multiplier (default 1) */
+  ink?: number;
   draw(st: Stage, p: Painter, anim: Anim, frame: number): void;
 }
-const EXTRA_KITS: Record<string, Kit> = {};
-const DRAWERS: Record<string, SpriteDrawer> = {};
+// minions are defined here (not registered from game code) so the bake workers know them too
+const EXTRA_KITS: Record<string, Kit> = Object.fromEntries(MINION_KITS.map((k) => [k.id, k]));
+const DRAWERS: Record<string, SpriteDrawer> = { ...MINION_DRAWERS };
 export function registerSpriteKit(kit: Kit): void {
   EXTRA_KITS[kit.id] = kit;
 }
@@ -192,13 +196,24 @@ export function renderMaster(id: string, anim: Anim, yaw: number, frame: number,
   ictx.globalCompositeOperation = 'source-over';
   const octx = ctx2d(out);
   octx.clearRect(0, 0, res, res);
-  const R = 2.3 * s;
+  const R = 2.3 * s * (drawer?.ink ?? kitOf(id)?.ink ?? 1);
   for (let i = 0; i < 12; i++) {
     const a = (i / 12) * TAU;
     octx.drawImage(ink, Math.cos(a) * R, Math.sin(a) * R);
   }
   octx.drawImage(fig, 0, 0);
   return out;
+}
+
+/** Head centre and radius (master px) of a humanoid's idle frame 0 as rendered by renderMaster (portrait crops). */
+export function headAnchor(id: string, yaw: number, res = 256): { x: number; y: number; r: number } | null {
+  const kit = kitOf(id);
+  if (!kit || DRAWERS[id] || id === 'hark') return null;
+  const s = res / 256;
+  const rig = solveRig(kit, poseFor(kit, 'idle', 0));
+  const view: View = { yaw, elev: 0.42, cx: res / 2, cy: res * 0.935, k: s * 1.1, fall: 0, lift: 0 };
+  const q = project(view, rig.head.o);
+  return { x: q.x, y: q.y, r: rig.body.headR * view.k };
 }
 
 /**

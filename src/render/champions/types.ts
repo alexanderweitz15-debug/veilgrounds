@@ -150,6 +150,8 @@ export interface Kit {
   world: number;
   /** per-anim frame count override (0 = anim not baked, e.g. minions have no cast) */
   frames?: Partial<Record<Anim, number>>;
+  /** outer contour width multiplier (smaller figures get a bolder contour so it matches the champions on screen) */
+  ink?: number;
   body: Partial<BodySpec>;
   outfit: Outfit;
   hold: Hold;

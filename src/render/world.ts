@@ -76,10 +76,15 @@ export class World {
     this.units.setChampionAtlas(atlas);
   }
 
+  /** Switch minions to the animated sprite atlas. */
+  setMinionAtlas(atlas: ChampionAtlas): void {
+    this.units.setMinionAtlas(atlas);
+  }
+
   onEvent(ev: SimEvent, state: ClientState, now: number): void {
     this.fx.onEvent(ev, state, now);
     if (ev.e === 'cast') this.units.champs?.onCast(ev.src, now);
-    else if (ev.e === 'death') this.units.champs?.onDeath(ev.eid, now);
+    else if (ev.e === 'death') this.units.onDeath(ev.eid, now);
     if (ev.e === 'damage') {
       const d = state.byId.get(ev.dst);
       if (d) this.units.flash(d.serial, now);
@@ -130,7 +135,7 @@ export class World {
   }
 
   unitHeight(e: SnapEntity): number {
-    const ch = this.units.championHeight(e);
+    const ch = this.units.spriteHeight(e);
     if (ch !== null) return ch;
     const key = spriteKeyFor(e);
     if (key) return SPRITE_SIZE[key] * 0.92;

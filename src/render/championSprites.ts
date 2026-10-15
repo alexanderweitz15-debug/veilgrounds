@@ -1,18 +1,42 @@
-// Animated champion sprites (procedural paper-doll atlas, src/render/champions): one InstancedMesh whose
-// per-instance UV rect (aUvRect) selects the frame. A second, colour-less upright quad facing the sun shares the
-// geometry (so the same frame) and only casts the shadow.
+// Animated sprites from a procedural paper-doll atlas (src/render/champions): one InstancedMesh whose per-instance
+// UV rect (aUvRect) selects the frame. A second, colour-less upright quad facing the sun shares the geometry (so
+// the same frame) and only casts the shadow. Used twice: champions (+ Hark) and minions (separate atlas).
 import * as THREE from 'three';
 import type { SnapEntity } from '../sim/snapshot';
 import { Kind } from '../sim/types';
 import { PITCH } from './camera';
 import { dirFromAngle, type Anim, type ChampionAtlas, type Dir } from './champions';
 
-const CAP = 24;
 const CAST_MS = 320;
-/** death anim + lying still, then the corpse disappears */
-const CORPSE_MS = 1800;
+/** forget animation state of entities not drawn for this long (fog, recall, despawn without a death event) */
+const STALE_MS = 6000;
+
+export interface SpriteBatchOptions {
+  /** max live sprites per frame */
+  cap: number;
+  /** max simultaneous corpses (death animation + lying still) */
+  ghosts: number;
+  /** death anim + lying still, then the corpse disappears */
+  corpseMs: number;
+  /** atlas id for an entity, or null if this batch does not draw it */
+  idFor: (e: SnapEntity, atlas: ChampionAtlas) => string | null;
+}
+
+/** Champions by champion id; Hark (Ottilie's wolf) for the big pet. Corvin's keg (hp 1) stays on the placeholder. */
+export const CHAMPION_BATCH: SpriteBatchOptions = {
+  cap: 24,
+  ghosts: 12,
+  corpseMs: 1800,
+  idFor: (e, atlas) => {
+    if (e.kind === Kind.Champion) return e.champ && atlas.frames[e.champ] ? e.champ : null;
+    if (e.kind === Kind.Pet && e.maxHp > 1 && atlas.frames.hark) return 'hark';
+    return null;
+  },
+};
 
 interface AnimState {
+  serial: number;
+  seen: number;
   id: string;
   anim: Anim;
   t0: number;
@@ -46,7 +70,9 @@ export class ChampionSprites {
   private readonly st = new Map<number, AnimState>(); // by serial
   private readonly byEid = new Map<number, AnimState>();
   private readonly castAt = new Map<number, number>(); // by eid
-  private readonly ghosts: Ghost[] = Array.from({ length: 12 }, () => ({ on: false, id: '', dir: 'S' as Dir, x: 0, y: 0, t0: 0 }));
+  private readonly ghosts: Ghost[];
+  private readonly cap: number;
+  private lastPrune = 0;
   private readonly up = new THREE.Vector3(0, Math.cos(PITCH), -Math.sin(PITCH));
   private readonly m = new THREE.Matrix4();
   private readonly p = new THREE.Vector3();
@@ -58,7 +84,10 @@ export class ChampionSprites {
     readonly atlas: ChampionAtlas,
     private readonly qVis: THREE.Quaternion,
     private readonly qCast: THREE.Quaternion,
+    private readonly opts: SpriteBatchOptions = CHAMPION_BATCH,
   ) {
+    this.ghosts = Array.from({ length: opts.ghosts }, () => ({ on: false, id: '', dir: 'S' as Dir, x: 0, y: 0, t0: 0 }));
+    const CAP = (this.cap = opts.cap + opts.ghosts);
     const tex = new THREE.CanvasTexture(atlas.canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.generateMipmaps = true;
@@ -91,10 +120,7 @@ export class ChampionSprites {
 
   /** Atlas id for an entity, or null if it is not drawn by this renderer. */
   idFor(e: SnapEntity): string | null {
-    if (e.kind === Kind.Champion) return e.champ && this.atlas.frames[e.champ] ? e.champ : null;
-    // Ottilie's wolf Hark; Corvin's keg (hp 1, owner-only) stays on the placeholder sprite
-    if (e.kind === Kind.Pet && e.maxHp > 1 && this.atlas.frames.hark) return 'hark';
-    return null;
+    return this.opts.idFor(e, this.atlas);
   }
 
   /** Height of the figure's top above the feet (health bars, picking). */
@@ -117,6 +143,7 @@ export class ChampionSprites {
     g.y = a.y;
     g.t0 = now;
     this.byEid.delete(eid);
+    this.st.delete(a.serial);
   }
 
   begin(): void {
@@ -125,12 +152,13 @@ export class ChampionSprites {
 
   /** Draws one living entity; `id` from idFor, (x, y) = interpolated feet incl. lunge, c = brightness. */
   push(e: SnapEntity, id: string, x: number, y: number, c: number, now: number): void {
-    if (this.n >= CAP) return;
+    if (this.n >= this.opts.cap) return;
     let a = this.st.get(e.serial);
     if (!a) {
-      a = { id, anim: 'idle', t0: now, dir: 'S', phase: 0, x, y };
-      this.st.set(e.serial, a); // ponytail: entries of dead serials are never pruned (≤ a few per match)
+      a = { serial: e.serial, seen: now, id, anim: 'idle', t0: now, dir: 'S', phase: 0, x, y };
+      this.st.set(e.serial, a);
     }
+    a.seen = now;
     this.byEid.set(e.id, a);
     a.x = x;
     a.y = y;
@@ -154,6 +182,7 @@ export class ChampionSprites {
     if (!list.length) return;
     const k = Math.floor((ms / 1000) * this.atlas.fps[anim]);
     const r = list[this.atlas.loop[anim] ? k % list.length : Math.min(k, list.length - 1)]!;
+    if (this.n >= this.cap) return;
     const i = this.n++;
     this.uv.setXYZW(i, r.u0, r.v0, r.u1, r.v1);
     const size = this.atlas.worldSize[id]!;
@@ -172,8 +201,14 @@ export class ChampionSprites {
   end(now: number): void {
     for (const g of this.ghosts) {
       if (!g.on) continue;
-      if (now - g.t0 > CORPSE_MS) g.on = false;
+      if (now - g.t0 > this.opts.corpseMs) g.on = false;
       else this.draw(g.id, this.atlas.frames[g.id]!.death.S.length ? 'death' : 'idle', g.dir, now - g.t0, g.x, g.y, 1);
+    }
+    if (now - this.lastPrune > STALE_MS) {
+      this.lastPrune = now;
+      for (const [serial, a] of this.st) if (now - a.seen > STALE_MS) this.st.delete(serial);
+      for (const [eid, a] of this.byEid) if (now - a.seen > STALE_MS) this.byEid.delete(eid);
+      for (const [eid, t] of this.castAt) if (now - t > STALE_MS) this.castAt.delete(eid);
     }
     this.vis.count = this.cast.count = this.n;
     this.vis.instanceMatrix.needsUpdate = true;

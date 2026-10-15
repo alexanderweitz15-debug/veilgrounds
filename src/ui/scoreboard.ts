@@ -7,6 +7,7 @@ import { itemAbbr, itemTooltip } from './shop';
 import { t } from '../i18n';
 import { resolvePlaystyle } from '../ai/params';
 import { renderMiniScales } from './playstyleView';
+import { setPortrait } from '../render/portraits';
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?: HTMLElement, text?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -49,7 +50,11 @@ export class Scoreboard {
       const body = el('tbody', '', tab);
       for (const p of rows.filter((x) => x.team === team).sort((a, b) => a.slot - b.slot)) {
         const tr = el('tr', `${p.dead ? 'dead' : ''}${snap.me && p.slot === this.players.find((x) => x.isHuman)?.slot ? ' me' : ''}`, body);
-        el('td', 'champ', tr, champName(p.champ));
+        const ct = el('td', 'champ', tr);
+        const pic = el('span', 'score-portrait', ct);
+        pic.style.cssText = 'display:inline-block;width:24px;height:24px;margin-right:6px;vertical-align:middle;border-radius:50%;border:1px solid #6b5a35;background:#1c1824';
+        if (p.champ) setPortrait(pic, p.champ);
+        ct.append(champName(p.champ));
         const setup = this.players.find((x) => x.slot === p.slot);
         el('td', 'name', tr, playerLabel(setup));
         const st = el('td', 'style-cell', tr);

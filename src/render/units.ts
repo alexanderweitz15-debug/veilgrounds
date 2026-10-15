@@ -8,8 +8,8 @@ import { PITCH } from './camera';
 import { REL } from './palette';
 import { SPRITE_KEYS, SPRITE_SIZE, type Atlas, type SpriteKey } from './sprites';
 import { MIRA_ID } from '../game/modes';
-import { ChampionSprites } from './championSprites';
-import type { ChampionAtlas } from './champions';
+import { ChampionSprites, type SpriteBatchOptions } from './championSprites';
+import { minionId, type ChampionAtlas, type MinionKind } from './champions';
 
 const CAPACITY: Record<SpriteKey, number> = { mira: 10, champ: 10, melee: 96, caster: 96, siege: 32, super: 32, dummy: 8, monster: 32 };
 const FLASH_MS = 140;
@@ -20,6 +20,25 @@ interface Group {
   cast: THREE.InstancedMesh;
   n: number;
 }
+
+const MINION_KIND: Partial<Record<number, MinionKind>> = {
+  [Kind.MinionMelee]: 'melee',
+  [Kind.MinionCaster]: 'caster',
+  [Kind.MinionSiege]: 'siege',
+  [Kind.MinionSuper]: 'super',
+};
+/** Minion sprites: kind + team baked into the minion atlas; ~60 on screen plus corpses. */
+const MINION_BATCH: SpriteBatchOptions = {
+  cap: 160,
+  ghosts: 48,
+  corpseMs: 1300,
+  idFor: (e, atlas) => {
+    const kind = MINION_KIND[e.kind];
+    if (!kind) return null;
+    const id = minionId(kind, e.team);
+    return atlas.frames[id] ? id : null;
+  },
+};
 
 export function spriteKeyFor(e: SnapEntity): SpriteKey | null {
   switch (e.kind) {
@@ -58,6 +77,8 @@ export class Units {
   private readonly qFlat = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
   /** Animated champion sprites once their atlas is baked; until then champions use the placeholder sprite. */
   champs: ChampionSprites | null = null;
+  /** Animated minion sprites (own atlas, same pipeline); placeholder sprites until baked. */
+  minions: ChampionSprites | null = null;
 
   constructor(atlas: Atlas, sunDir: THREE.Vector3) {
     this.qCast = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.atan2(sunDir.x, sunDir.z), 0));
@@ -103,10 +124,24 @@ export class Units {
     this.group.add(this.champs.group);
   }
 
-  /** Figure height above the feet for bars/picking, or null if not drawn by the champion sprites. */
-  championHeight(e: SnapEntity): number | null {
-    const id = this.champs?.idFor(e);
-    return id ? this.champs!.heightOf(id) : null;
+  setMinionAtlas(atlas: ChampionAtlas): void {
+    if (this.minions) this.group.remove(this.minions.group);
+    this.minions = new ChampionSprites(atlas, this.qVis, this.qCast, MINION_BATCH);
+    this.group.add(this.minions.group);
+  }
+
+  /** Figure height above the feet for bars/picking, or null if not drawn by the animated sprite batches. */
+  spriteHeight(e: SnapEntity): number | null {
+    for (const b of [this.champs, this.minions]) {
+      const id = b?.idFor(e);
+      if (id) return b!.heightOf(id);
+    }
+    return null;
+  }
+
+  onDeath(eid: number, now: number): void {
+    this.champs?.onDeath(eid, now);
+    this.minions?.onDeath(eid, now);
   }
 
   /** Hit flash on damage. */
@@ -127,13 +162,20 @@ export class Units {
     const myEid = snap?.me?.eid ?? -1;
     const tSec = now / 1000;
     const champs = this.champs;
+    const minions = this.minions;
     champs?.begin();
+    minions?.begin();
     if (snap) {
       for (const e of snap.entities) {
         if (!e.alive) continue;
         const key = spriteKeyFor(e);
         if (!key) continue;
-        const champId = champs ? champs.idFor(e) : null;
+        let batch = champs;
+        let champId = champs ? champs.idFor(e) : null;
+        if (!champId && minions) {
+          batch = minions;
+          champId = minions.idFor(e);
+        }
         const g = this.groups.get(`${key}:${Math.min(1, e.team)}`)!;
         if (!champId && g.n >= g.vis.instanceMatrix.count) continue;
         let x = state.x(e);
@@ -171,8 +213,8 @@ export class Units {
             else c = 1 + (1 - k) * 1.6;
           }
           if (e.id === hoverId) c *= 1.25;
-          champs!.push(e, champId, x, y, c, now);
-          if (e.kind === Kind.Champion && rings < 48) rings = this.ring(state, e, myEid, rings);
+          batch!.push(e, champId, x, y, c, now);
+          if ((e.kind === Kind.Champion || e.id === hoverId) && rings < 48) rings = this.ring(state, e, myEid, rings);
           continue;
         }
         const flip = e.fx < 0 ? -1 : 1;
@@ -200,6 +242,7 @@ export class Units {
       }
     }
     champs?.end(now);
+    minions?.end(now);
     for (const g of this.groups.values()) {
       g.vis.count = g.cast.count = g.n;
       g.vis.instanceMatrix.needsUpdate = true;

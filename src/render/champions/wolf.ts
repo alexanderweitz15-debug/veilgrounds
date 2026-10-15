@@ -2,7 +2,7 @@
 import { at, frameYZ, ik, INK, lerp3, m, madd, norm, ring, sub, TAU, hull2, shapeFrom, type Basis, type Painter, type Stage, type V3 } from './core';
 import type { Anim } from './types';
 
-export const HARK = { world: 260, frames: { idle: 4, run: 6, attack: 4, cast: 0, death: 3 } as Record<Anim, number> };
+export const HARK = { world: 300, frames: { idle: 4, run: 6, attack: 4, cast: 0, death: 3 } as Record<Anim, number> };
 
 const FUR = m('#8d8a86', 'fur');
 const FUR_LIGHT = m('#c9c2b4', 'fur');

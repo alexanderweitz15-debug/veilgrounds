@@ -14,6 +14,7 @@ import type { PlayerSetup } from '../sim/types';
 import { ShopPanel, itemAbbr, itemTooltip } from './shop';
 import { Scoreboard } from './scoreboard';
 import { BotDebugPanel } from './botDebug';
+import { setPortrait } from '../render/portraits';
 
 const KILLFEED_MS = 9000;
 
@@ -291,6 +292,7 @@ export class Hud {
       this.champ = me.champ;
       setText(this.portrait, champName(me.champ).charAt(0));
       this.portrait.title = champName(me.champ);
+      if (me.champ) setPortrait(this.portrait, me.champ);
     }
     setText(this.cs, `${t('hud.cs')} ${me.cs} (${(me.cs / Math.max(1, time / 60)).toFixed(1)}/min)`);
     setText(this.level, String(me.level));

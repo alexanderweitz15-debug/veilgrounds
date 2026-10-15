@@ -4,6 +4,7 @@ export {
   buildChampionAtlasAsync,
   drawChampionFrame,
   renderMaster,
+  headAnchor,
   dirFromAngle,
   championKit,
   framesOf,
@@ -34,3 +35,4 @@ export {
   type BakeRequest,
   type BakeResult,
 } from './atlas';
+export { MINION_IDS, MINION_KINDS, minionId, type MinionKind } from './minions';

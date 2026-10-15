@@ -16,6 +16,8 @@ import { Rng } from '../sim/rng';
 import { settings, updateSettings } from '../settings';
 import { champName, summonerName } from './names';
 import { t } from '../i18n';
+import { setPortrait } from '../render/portraits';
+import { getChampionAtlas, getMinionAtlas } from '../render/sheets';
 
 type Role = PlayerSetup['role'];
 type Variance = 'stable' | 'normal' | 'volatile';
@@ -159,7 +161,7 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
     for (const id of championsFor(pick.role)) {
       const d = CHAMPION_DATA[id]!;
       const c = el('button', `champ-card${id === pick.champ ? ' selected' : ''}`, grid);
-      el('div', 'champ-portrait', c, champName(id).charAt(0));
+      setPortrait(el('div', 'champ-portrait', c, champName(id).charAt(0)), id);
       el('div', 'champ-name', c, champName(id));
       el('div', 'champ-title', c, d.title[settings.lang]);
       c.title = `${d.title[settings.lang]}\n${d.roles.map((r) => t(`role.${r}`)).join(' / ')}`;
@@ -267,7 +269,10 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
   el('button', 'menu-btn', row, t('lobby.start')).addEventListener('click', () => onStart(buildClassicConfig()));
 }
 
-/** Loading screen: both teams with champion, bot name and rank. Calls onDone after a short delay or on click. */
+/**
+ * Loading screen: both teams with champion, bot name and rank. Bakes the match's sprite atlases meanwhile (the game
+ * picks them up from the cache) and calls onDone once they are ready and a short delay or a click has passed.
+ */
 export function renderLoading(root: HTMLElement, cfg: SimConfig, onDone: () => void): void {
   root.textContent = '';
   root.classList.add('menu-screen', 'loading-screen');
@@ -276,19 +281,46 @@ export function renderLoading(root: HTMLElement, cfg: SimConfig, onDone: () => v
     const row = el('div', `loading-row team${team}`, root);
     for (const p of cfg.players.filter((x) => x.team === team)) {
       const c = el('div', `loading-card${p.isHuman ? ' me' : ''}`, row);
-      el('div', 'champ-portrait', c, champName(p.champion).charAt(0));
+      setPortrait(el('div', 'champ-portrait', c, champName(p.champion).charAt(0)), p.champion);
       el('div', 'champ-name', c, champName(p.champion));
       el('div', 'bot-name', c, p.isHuman ? t('score.you') : (p.bot?.name ?? 'Bot'));
       el('div', 'bot-rank', c, p.isHuman ? t(`role.${p.role}`) : `${t(`rank.${p.bot?.rank ?? 'gold'}`)} · ${t(`role.${p.role}`)}`);
     }
     if (team === 0) el('div', 'loading-vs', root, 'VS');
   }
-  el('div', 'loading-hint', root, t('classic.clickToStart'));
+  const hint = el('div', 'loading-hint', root, t('classic.clickToStart'));
+  const bar = el('div', 'loading-bake', root);
+  bar.style.cssText = 'font-size:13px;letter-spacing:0.06em;color:#a09b8c;min-height:1.2em';
+  const paint = (k: number): void => {
+    bar.textContent = `${settings.lang === 'en' ? 'Painting sprites…' : 'Sprites werden gemalt…'} ${Math.round(k * 100)} %`;
+  };
+  paint(0);
+  // champions first, then the (session-cached) minions: one worker pool at a time. The game starts once they are
+  // baked (or after 20 s at most: it then shows placeholder sprites until the bake finishes).
+  let ready = false;
+  let wanted = false;
   let done = false;
+  const release = (): void => {
+    ready = true;
+    bar.textContent = '';
+    if (wanted) go();
+  };
+  void getChampionAtlas(cfg.players.map((p) => p.champion), (d, n) => paint((d / n) * 0.8))
+    .catch((e) => console.warn('champion atlas failed on the loading screen', e))
+    .then(() => getMinionAtlas((d, n) => paint(0.8 + (d / n) * 0.2)))
+    .catch((e) => console.warn('minion atlas failed on the loading screen', e))
+    .finally(release);
+  const cap = setTimeout(release, 20000);
   const go = (): void => {
+    wanted = true;
     if (done) return;
+    if (!ready) {
+      hint.textContent = settings.lang === 'en' ? 'Starting as soon as the sprites are ready…' : 'Startet, sobald die Sprites fertig sind…';
+      return;
+    }
     done = true;
     clearTimeout(timer);
+    clearTimeout(cap);
     onDone();
   };
   const timer = setTimeout(go, 2500);

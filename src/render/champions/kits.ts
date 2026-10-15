@@ -72,8 +72,8 @@ const MALE = { H: 180, shW: 22, hipW: 14.5, chestD: 11.5 };
 const FEMALE = { H: 172, shW: 18.5, hipW: 15, chestD: 10.5, bust: 0.55, girth: 0.98 };
 
 export const KITS: Record<string, Kit> = {};
-/** Champions vs. minions: ~1.6x a melee minion's height (LoL-like); scales every kit's world size. */
-export const WORLD_SCALE = 1.1;
+/** Scales every kit's world size: champions ~1/3 of a tower's height, ~1.8x a melee minion (LoL-like). */
+export const WORLD_SCALE = 1.265;
 function kit(k: Kit): void {
   KITS[k.id] = { ...k, world: Math.round(k.world * WORLD_SCALE) };
 }

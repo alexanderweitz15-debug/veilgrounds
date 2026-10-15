@@ -16,7 +16,7 @@ import { Minimap } from '../ui/minimap';
 import { buildSettingsPanel } from '../ui/settingsPanel';
 import { onSettingsChange, settings } from '../settings';
 import { t } from '../i18n';
-import { getChampionAtlas } from '../render/sheets';
+import { getChampionAtlas, getMinionAtlas } from '../render/sheets';
 
 export class Game {
   private readonly root: HTMLElement;
@@ -69,6 +69,10 @@ export class Game {
     })
       .then((atlas) => this.world.setChampionAtlas(atlas))
       .catch((e) => console.warn('champion atlas failed, keeping placeholder sprites', e))
+      // minions after the champions (one worker pool at a time); usually already baked on the loading screen
+      .then(() => getMinionAtlas())
+      .then((atlas) => this.world.setMinionAtlas(atlas))
+      .catch((e) => console.warn('minion atlas failed, keeping placeholder sprites', e))
       .finally(() => loading.remove());
     this.link = config ? workerLink(config, 0) : mockLink();
     this.link.onBotDebug = (rows, tick) => this.hud.botDebug.update(rows, tick);

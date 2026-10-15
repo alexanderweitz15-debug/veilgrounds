@@ -67,6 +67,9 @@ export interface BotExt {
   /** Pings to react to (newest last) and own ping bookkeeping. */
   pings: PingMemo[];
   pingAt: number;
+  /** Rage: recent deaths of the human ally (ticks) and the last rage burst tick. */
+  rageDeaths: number[];
+  rageAt: number;
   chatAt: number;
   /** Player engage follow-up until tick (and target id). */
   followUntil: number;
@@ -102,6 +105,8 @@ export const newExt = (): BotExt => ({
   joinSeenAt: -1,
   pings: [],
   pingAt: -1e9,
+  rageDeaths: [],
+  rageAt: -1e9,
   chatAt: -1e9,
   followUntil: 0,
   followTarget: -1,

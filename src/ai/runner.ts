@@ -70,6 +70,7 @@ export class BotRunner {
         profile,
         map: staticMap(),
         players: config.players,
+        toxic: config.botToxicity ?? true,
         params,
         log: this.log,
         teamAI: this.teams[p.team === 1 ? 1 : 0],

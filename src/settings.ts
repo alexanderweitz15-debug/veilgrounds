@@ -16,6 +16,8 @@ export interface Settings {
   cameraLocked: boolean;
   /** Enter fullscreen + Keyboard Lock on game start so Ctrl+W/Q reach the game (Chromium). */
   fullscreenLock: boolean;
+  /** Bots may flame in chat and spam '?' pings (spec-bots §9 Toxizität). */
+  botToxicity: boolean;
   /** Master volume 0..1 (procedural sound). */
   volume: number;
   /** Last picked rune preset id per champion id (lobby). */
@@ -33,6 +35,7 @@ const DEFAULTS: Settings = {
   cameraLocked: false,
   fullscreenLock: true,
   volume: 0.6,
+  botToxicity: true,
   runePresets: {},
 };
 

@@ -86,6 +86,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.edgeScroll'), check('edgeScroll'));
     row(t('set.cameraLocked'), check('cameraLocked'));
     row(t('set.fullscreenLock'), check('fullscreenLock'));
+    row(t('set.botToxicity'), check('botToxicity'));
     row(t('set.volume'), slider('volume', 0, 1, 0.05, (v) => `${Math.round(v * 100)} %`));
     const h = document.createElement('h3');
     h.textContent = t('set.keybinds');

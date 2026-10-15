@@ -58,6 +58,7 @@ export function botStatic(slot: number, params: BotParams, log: DecisionLogEntry
     team: p.team,
     role: p.role,
     lane: LANE[p.role]!,
+    toxic: true,
     champ: champ(p.champion),
     build: null,
     profile: profileOf(params.rank),

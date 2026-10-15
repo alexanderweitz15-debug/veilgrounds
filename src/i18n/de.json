@@ -215,5 +215,7 @@
   "ping.objective": "Objective",
   "ping.ok": "Alles OK",
   "act.pingWheel": "Ping-Rad",
-  "act.pingMissing": "Ping: Vermisst"
+  "act.pingMissing": "Ping: Vermisst",
+  "ping.question": "?",
+  "set.botToxicity": "Toxische Bots (Flame-Chat, „?“-Pings)"
 }

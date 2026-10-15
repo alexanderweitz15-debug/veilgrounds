@@ -27,6 +27,8 @@ export interface BotStatic {
   map: MapData;
   /** Lobby: all players (champions/roles are public knowledge in pick phase). */
   players: readonly PlayerSetup[];
+  /** Toxic chat lines and rage pings allowed (SimConfig.botToxicity). */
+  toxic: boolean;
   /** Agent M: playstyle knobs (spec §2/§10), shared decision log (§1), the team AI of this bot's team (§8). */
   params: BotParams;
   log: DecisionLog;

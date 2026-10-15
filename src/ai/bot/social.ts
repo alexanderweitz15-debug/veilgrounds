@@ -179,10 +179,38 @@ export function socialTick(n: NodeCtx, killed: boolean, died: boolean): void {
   const ri = rankIdx(n.ctx.profile.rank);
   if (killed) say(n, ri >= DIAMOND ? 'plan' : 'kill', 'kill');
   if (died) say(n, ri <= SILVER ? 'flame' : 'death', 'died');
+  ragePings(n);
   const jg = n.ctx.players.find((p) => p.team !== n.ctx.team && p.role === 'jungle');
   const e: SnapEntity | undefined = jg ? n.v.enemies.find((x) => x.slot === jg.slot) : undefined;
   if (e && n.ctx.lane && ri >= SILVER) {
     const lanePts = n.ctx.map.sides[n.ctx.team].lanes[n.ctx.lane];
     if (Math.min(...lanePts.map((q) => dst(q, e))) < 2000 && n.mem.ext.pingAt < n.v.tick - 15 * 30) emitPing(n, 'danger', e.x, e.y, e.id, 'enemy jungler near own lane', { src: 'seen', slot: e.slot });
+  }
+}
+
+/**
+ * Rage (user request): allies spam "?" on the human player's position when the player plays badly - dies,
+ * especially repeatedly. Low ranks rage more; high ranks rarely. Off when toxicity is disabled.
+ */
+function ragePings(n: NodeCtx): void {
+  if (!n.ctx.toxic) return;
+  const ext = n.mem.ext;
+  const humans = humanSlots(n);
+  for (const ev of n.snap.events) {
+    if (ev.e !== 'death' || ev.kind !== Kind.Champion || ev.team !== n.ctx.team) continue;
+    const victim = n.snap.entities.find((e) => e.id === ev.eid);
+    if (!victim || !humans.has(victim.slot)) continue;
+    ext.rageDeaths = ext.rageDeaths.filter((t) => n.v.tick - t < 300 * 30);
+    ext.rageDeaths.push(n.v.tick);
+    if (n.v.tick - ext.rageAt < 20 * 30) continue; // one burst per bot per 20 s
+    const ri = rankIdx(n.ctx.profile.rank);
+    // base chance by rank band, more after repeated deaths (feeding)
+    const base = ri <= SILVER ? 0.45 : ri < DIAMOND ? 0.25 : 0.1;
+    const chance = Math.min(0.95, base * ext.rageDeaths.length);
+    if (!n.rng.chance(chance)) continue;
+    ext.rageAt = n.v.tick;
+    const count = Math.min(4, 1 + Math.floor(n.rng.next() * ext.rageDeaths.length * (ri <= SILVER ? 2 : 1)));
+    for (let i = 0; i < count; i++) n.out.push({ cmd: { t: 'ping', kind: 'question', x: ev.x, y: ev.y }, delay: i * 6 + n.rng.int(4) });
+    n.log('rage', `?x${count}`, 'human ally died', { deaths: ext.rageDeaths.length, pingX: Math.round(ev.x), pingY: Math.round(ev.y), pingSrc: 'ally', pingSlot: victim.slot });
   }
 }

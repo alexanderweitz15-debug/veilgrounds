@@ -70,6 +70,7 @@ export function buildClassicConfig(): SimConfig {
     runes: runesFromPreset(champ, presetId),
     variance: pick.variance,
   });
+  cfg.botToxicity = settings.botToxicity;
   const bots = cfg.players.filter((p) => !p.isHuman && p.bot);
   const names = botNames(new Rng(pick.seed ^ 0x5eed), bots.length, 'realistic', Object.values(CHAMPION_DATA).map((c) => c.name));
   bots.forEach((p, i) => {

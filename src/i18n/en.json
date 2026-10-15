@@ -2,7 +2,7 @@
   "title": "Veilgrounds",
   "subtitle": "The Veilbreach",
   "menu.lane": "Lane Practice",
-  "menu.laneDesc": "Mira Quell, mid lane. Minions and towers only.",
+  "menu.laneDesc": "Any champion, mid. Minions and towers only.",
   "menu.sandbox": "Sandbox",
   "menu.sandboxDesc": "Practice dummy, cheats, free testing.",
   "menu.mock": "Render preview (mock)",
@@ -83,7 +83,7 @@
   "lobby.summoners": "Summoner spells",
   "lobby.role": "Role: mid",
   "lobby.start": "Start game",
-  "set.fullscreenLock": "Fullscreen + keyboard lock (Ctrl+W/Q usable in game, hold Esc to leave; Chrome/Edge)",
+  "set.fullscreenLock": "Fullscreen with keyboard lock (Ctrl+W usable in game)",
   "menu.tagTraining": "Training",
   "menu.footBots": "<b>Bots</b> from Iron to Challenger",
   "menu.footVersion": "Prototype · placeholder art",
@@ -95,9 +95,9 @@
   "menu.laneMeta": "1 player · mid",
   "menu.sandboxMeta": "Practice dummy",
   "menu.notesTitle": "New in this build",
-  "menu.note1": "Minions no longer stick to champions.",
-  "menu.note2": "Structures now block movement.",
-  "menu.note3": "Fullscreen keyboard lock: Ctrl+W levels W.",
+  "menu.note1": "All 26 champions playable, also in lane practice and sandbox.",
+  "menu.note2": "Jungle, shop and 5v5 lobby against bots.",
+  "menu.note3": "Traps, blades and pets are now visible.",
   "menu.classic": "Classic 5v5",
   "menu.classicDesc": "Full match vs bots: pick role, champion, bot rank.",
   "menu.classicMeta": "5v5 · Bots",
@@ -178,5 +178,6 @@
   "buff.glutwaechter": "Ember Warden",
   "buff.glutwaechter.desc": "Hits on your attack target burn and slow",
   "buff.schleierwaechter": "Veil Warden",
-  "buff.schleierwaechter.desc": "+40 attack damage, +60 ability power"
+  "buff.schleierwaechter.desc": "+40 attack damage, +60 ability power",
+  "practice.all": "All"
 }

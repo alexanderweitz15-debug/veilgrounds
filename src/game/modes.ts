@@ -10,13 +10,13 @@ export const SANDBOX_DUMMY = { x: 1700, y: 1000 } as const;
 
 export type ModeId = 'lane' | 'sandbox' | 'mock';
 
-export function configFor(mode: 'lane' | 'sandbox', runes?: RuneChoice): SimConfig {
+export function configFor(mode: 'lane' | 'sandbox', runes?: RuneChoice, champion = MIRA_ID, summoners: [string, string] = ['sprung', 'heilen']): SimConfig {
   const player = {
     slot: 0,
     team: 0 as const,
-    champion: MIRA_ID,
+    champion,
     role: 'mid' as const,
-    summoners: ['sprung', 'heilen'] as [string, string],
+    summoners,
     isHuman: true,
     ...(runes ? { runes } : {}),
   };

@@ -2,7 +2,7 @@
   "title": "Veilgrounds",
   "subtitle": "Der Schleierbruch",
   "menu.lane": "Lane-Übung",
-  "menu.laneDesc": "Mira Quell, Mitte. Nur Vasallen und Türme.",
+  "menu.laneDesc": "Beliebiger Champion, Mitte. Nur Vasallen und Türme.",
   "menu.sandbox": "Sandbox",
   "menu.sandboxDesc": "Übungspuppe, Cheats, freies Testen.",
   "menu.mock": "Render-Vorschau (Mock)",
@@ -83,7 +83,7 @@
   "lobby.summoners": "Beschwörerzauber",
   "lobby.role": "Rolle: Mitte",
   "lobby.start": "Spiel starten",
-  "set.fullscreenLock": "Vollbild + Tastensperre (Strg+W/Q im Spiel nutzbar, Esc halten zum Verlassen; Chrome/Edge)",
+  "set.fullscreenLock": "Vollbild mit Tastensperre (Strg+W im Spiel nutzbar)",
   "menu.tagTraining": "Training",
   "menu.footBots": "<b>Bots</b> von Eisen bis Challenger",
   "menu.footVersion": "Prototyp · Platzhalter-Grafik",
@@ -95,9 +95,9 @@
   "menu.laneMeta": "1 Spieler · Mitte",
   "menu.sandboxMeta": "Übungspuppe",
   "menu.notesTitle": "Neu in diesem Build",
-  "menu.note1": "Minions bleiben nicht mehr an Champions hängen.",
-  "menu.note2": "Gebäude blockieren jetzt Bewegung.",
-  "menu.note3": "Vollbild mit Tastensperre: Strg+W levelt W.",
+  "menu.note1": "Alle 26 Champions spielbar, auch in Lane-Übung und Sandbox.",
+  "menu.note2": "Jungle, Shop und 5v5-Lobby gegen Bots.",
+  "menu.note3": "Fallen, Klingen und Begleiter sind jetzt sichtbar.",
   "menu.classic": "Klassisch 5v5",
   "menu.classicDesc": "Volles Spiel gegen Bots: Rolle, Champion, Bot-Rang wählen.",
   "menu.classicMeta": "5v5 · Bots",
@@ -178,5 +178,6 @@
   "buff.glutwaechter": "Glutwächter",
   "buff.glutwaechter.desc": "Treffer auf dein Angriffsziel brennen und verlangsamen",
   "buff.schleierwaechter": "Schleierwächter",
-  "buff.schleierwaechter.desc": "+40 Angriffsschaden, +60 Fähigkeitsstärke"
+  "buff.schleierwaechter.desc": "+40 Angriffsschaden, +60 Fähigkeitsstärke",
+  "practice.all": "Alle"
 }

@@ -122,3 +122,23 @@ body { font-family: var(--font-body); }
 .enc-table td.k { text-align: left; color: var(--text-dim); }
 .enc-table tr.sec td { text-align: left; color: var(--gold); font-family: var(--font-label); letter-spacing: 0.16em; text-transform: uppercase; padding-top: 14px; }
 .enc-style { font-family: var(--font-label); font-size: 16px; letter-spacing: 0.04em; padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+
+/* settings (shared panel look) */
+.settings-panel { width: min(720px, 100%); }
+.settings-panel .settings { gap: 0; }
+.settings-panel .settings .row { padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); font-size: 14.5px; }
+.settings-panel h3, .settings-panel .settings h3 { font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin: 18px 0 6px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.settings-panel select { background: #121417; color: var(--gold-hi); border: 1px solid #3c3c41; border-radius: 0; padding: 4px 8px; font-family: var(--font-body); }
+.settings-panel input[type='checkbox'], .settings-panel input[type='range'] { accent-color: var(--gold); }
+.settings-panel input[type='checkbox'] { width: 16px; height: 16px; }
+.settings-panel .binds { grid-template-columns: 1fr 140px; gap: 0 16px; font-size: 14px; }
+.settings-panel .binds > span { padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); color: #cfc8b6; }
+.settings-panel .btn { background: none; border: 1px solid #3c3c41; border-radius: 0; color: var(--gold-hi); font-family: var(--font-label); letter-spacing: 0.08em; font-weight: 600; }
+.settings-panel .btn:hover { border-color: var(--gold); background: rgba(200, 170, 110, 0.08); }
+.settings-panel .btn.key { margin: 3px 0; }
+
+/* sub-screens: neutral dark backdrop instead of the old violet radial, flat language toggle */
+.screen.menu.menu-screen { background: radial-gradient(ellipse at 50% 0%, #1a1d21 0%, #0b0d0f 60%, #08090a 100%); }
+.screen.menu .lang-toggle .btn { background: none; border: 1px solid #3c3c41; border-radius: 0; color: var(--text-dim); font-family: var(--font-label); letter-spacing: 0.1em; }
+.screen.menu .lang-toggle .btn.on { border-color: var(--gold); color: var(--gold-hi); }
+.ingame-menu .ingame-panel { max-height: calc(100vh - 48px); overflow-y: auto; }

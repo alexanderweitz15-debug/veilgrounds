@@ -6,11 +6,10 @@ import { t } from './i18n';
 import { Game } from './game/game';
 import { configFor, MIRA_ID } from './game/modes';
 import { buildSettingsPanel } from './ui/settingsPanel';
-import { champName, summonerName } from './ui/names';
-import { RUNES, runePresets, runesFromPreset } from './sim/items/runes';
-import { CHAMPION_DATA } from './sim/champions';
+import { runesFromPreset } from './sim/items/runes';
 import { renderMainMenu, type MenuEntry } from './ui/mainMenu';
 import { renderEncyclopedia } from './ui/encyclopedia';
+import { renderPracticeLobby } from './ui/practiceLobby';
 import { buildClassicConfig, renderClassicLobby, renderLoading } from './ui/classicLobby';
 
 const app = document.getElementById('app')!;
@@ -48,7 +47,7 @@ function mainMenu(): void {
     { name: t('menu.classic'), desc: t('menu.classicDesc'), meta: t('menu.classicMeta'), onSelect: () => classicLobby() },
     { name: t('menu.lane'), desc: t('menu.laneDesc'), meta: t('menu.laneMeta'), onSelect: () => lobby('lane') },
     { name: t('menu.sandbox'), desc: t('menu.sandboxDesc'), meta: t('menu.sandboxMeta'), onSelect: () => lobby('sandbox') },
-    { name: t('menu.mock'), desc: t('menu.mockDesc'), kind: 'dev', onSelect: () => start(null) },
+    ...(new URLSearchParams(location.search).has('dev') ? [{ name: t('menu.mock'), desc: t('menu.mockDesc'), kind: 'dev' as const, onSelect: () => start(null) }] : []),
   ];
   disposeMenu = renderMainMenu(s, {
     title: t('title'),
@@ -80,60 +79,20 @@ function encyclopedia(): void {
 
 function settingsScreen(): void {
   const s = screen();
-  const box = h('div', 'menu-box wide', undefined, s);
-  h('h2', '', t('menu.settings'), box);
+  s.classList.add('menu-screen', 'classic-lobby');
+  const box = h('div', 'menu-panel classic-panel settings-panel', undefined, s);
+  h('h2', 'menu-title', t('menu.settings'), box);
   box.appendChild(buildSettingsPanel(() => settingsScreen()));
-  h('button', 'btn', t('menu.back'), box).addEventListener('click', mainMenu);
+  const row = h('div', 'row-buttons', undefined, box);
+  h('button', 'menu-btn', t('menu.back'), row).addEventListener('click', mainMenu);
 }
 
-/** Pre-game: champion card + rune preset picker (last pick remembered per champion). */
+/** Pre-game for the practice modes: any champion, summoners, rune preset (same look as the 5v5 lobby). */
 function lobby(mode: 'lane' | 'sandbox'): void {
   const s = screen();
-  const box = h('div', 'menu-box wide lobby', undefined, s);
-  h('h2', '', `${t('lobby.title')} – ${mode === 'lane' ? t('menu.lane') : t('menu.sandbox')}`, box);
-  const champ = MIRA_ID;
-  const data = CHAMPION_DATA[champ];
-  const card = h('div', 'champ-card', undefined, box);
-  h('div', 'champ-portrait', champName(champ).charAt(0), card);
-  const info = h('div', 'champ-info', undefined, card);
-  h('div', 'champ-name', champName(champ), info);
-  if (data) h('div', 'champ-title', data.title[settings.lang], info);
-  h('div', 'champ-meta', `${t('lobby.role')} · ${t('lobby.summoners')}: ${summonerName('sprung')}, ${summonerName('heilen')}`, info);
-
-  h('h3', '', t('lobby.runes'), box);
-  const presets = runePresets(champ);
-  let picked = presets.find((p) => p.id === settings.runePresets[champ])?.id ?? presets[0]?.id;
-  const grid = h('div', 'presets', undefined, box);
-  const runeName = (id: string): { name: string; desc: string } => {
-    const r = RUNES.find((x) => x.id === id) as { name?: { de: string; en: string }; desc?: { de: string; en: string } } | undefined;
-    return { name: r?.name?.[settings.lang] ?? id, desc: r?.desc?.[settings.lang] ?? '' };
-  };
-  const renderPresets = (): void => {
-    grid.textContent = '';
-    for (const p of presets) {
-      const c = h('button', `preset${p.id === picked ? ' on' : ''}`, undefined, grid);
-      h('div', 'preset-name', p.name[settings.lang], c);
-      h('div', 'preset-desc', p.desc[settings.lang], c);
-      const runes = h('div', 'runes', undefined, c);
-      const ks = runeName(p.keystone);
-      const kEl = h('span', 'rune keystone', ks.name, runes);
-      kEl.title = `${t('lobby.keystone')}: ${ks.name}\n${ks.desc}`;
-      for (const m of p.minor) {
-        const r = runeName(m);
-        h('span', 'rune', r.name, runes).title = `${r.name}\n${r.desc}`;
-      }
-      c.addEventListener('click', () => {
-        picked = p.id;
-        updateSettings({ runePresets: { ...settings.runePresets, [champ]: p.id } });
-        renderPresets();
-      });
-    }
-  };
-  renderPresets();
-
-  const row = h('div', 'row-buttons', undefined, box);
-  h('button', 'btn', t('menu.back'), row).addEventListener('click', mainMenu);
-  h('button', 'btn primary', t('lobby.start'), row).addEventListener('click', () => start(configFor(mode, runesFromPreset(champ, picked))));
+  renderPracticeLobby(s, `${t('lobby.title')} – ${mode === 'lane' ? t('menu.lane') : t('menu.sandbox')}`, mainMenu, (p) =>
+    start(configFor(mode, p.runes, p.champion, p.summoners)),
+  );
 }
 
 function start(config: ReturnType<typeof configFor> | null): void {

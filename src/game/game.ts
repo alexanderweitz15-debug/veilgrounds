@@ -138,13 +138,18 @@ export class Game {
   private openMenu(): void {
     this.menu.textContent = '';
     const box = document.createElement('div');
-    box.className = 'menu-box';
+    box.className = 'menu-panel classic-panel settings-panel ingame-panel';
+    const title = document.createElement('h2');
+    title.className = 'menu-title';
+    title.textContent = t('menu.settings');
+    const row = document.createElement('div');
+    row.className = 'row-buttons';
     const resume = document.createElement('button');
-    resume.className = 'btn';
+    resume.className = 'menu-btn';
     resume.textContent = t('menu.resume');
     resume.addEventListener('click', () => this.menu.classList.remove('open'));
     const quit = document.createElement('button');
-    quit.className = 'btn';
+    quit.className = 'menu-btn secondary';
     quit.textContent = t('menu.quit');
     quit.addEventListener('click', () => this.exit());
     // (key capture in the settings panel stops propagation, so Escape there does not close the menu)
@@ -156,7 +161,8 @@ export class Game {
       }
     };
     window.addEventListener('keydown', close);
-    box.append(resume, buildSettingsPanel(() => this.openMenu()), quit);
+    row.append(quit, resume);
+    box.append(title, buildSettingsPanel(() => this.openMenu()), row);
     this.menu.appendChild(box);
     this.menu.classList.add('open');
   }

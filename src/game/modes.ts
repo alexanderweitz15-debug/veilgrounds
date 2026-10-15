@@ -20,8 +20,13 @@ export type ModeId = 'lane' | 'sandbox' | 'mock';
  * Client settings that every mode's config carries (not only the classic lobby): bot toxicity applies to the bots of
  * trainers and duels too. A value the config already has (classic lobby, replays) wins.
  */
-export function withClientSettings(config: SimConfig, s: { botToxicity: boolean }): SimConfig {
-  return config.botToxicity === undefined ? { ...config, botToxicity: s.botToxicity } : config;
+export function withClientSettings(config: SimConfig, s: { botToxicity: boolean; lang: 'de' | 'en' }): SimConfig {
+  return {
+    ...config,
+    ...(config.botToxicity === undefined ? { botToxicity: s.botToxicity } : {}),
+    // bot chat follows the UI language (output only, not part of the sim state)
+    botLang: s.lang,
+  };
 }
 
 export function configFor(mode: 'lane' | 'sandbox', runes?: RuneChoice, champion = MIRA_ID, summoners: [string, string] = ['sprung', 'heilen']): SimConfig {

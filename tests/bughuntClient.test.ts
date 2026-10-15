@@ -92,8 +92,12 @@ describe('bot toxicity setting applies to every mode', () => {
   it('trainer / duel configs get the client setting; an explicit config value wins', () => {
     const cfg = trainerConfig({ mode: 'laneDuel', opts: {} }, { champion: 'mira', summoners: ['sprung', 'heilen'] }, 1);
     expect(cfg.botToxicity).toBeUndefined(); // the runner would default to toxic
-    expect(withClientSettings(cfg, { botToxicity: false }).botToxicity).toBe(false);
-    expect(withClientSettings({ ...cfg, botToxicity: true }, { botToxicity: false }).botToxicity).toBe(true);
+    expect(withClientSettings(cfg, { botToxicity: false, lang: 'de' }).botToxicity).toBe(false);
+    expect(withClientSettings({ ...cfg, botToxicity: true }, { botToxicity: false, lang: 'de' }).botToxicity).toBe(true);
+  });
+  it('bot chat follows the UI language', () => {
+    const cfg = trainerConfig({ mode: 'laneDuel', opts: {} }, { champion: 'mira', summoners: ['sprung', 'heilen'] }, 1);
+    expect(withClientSettings(cfg, { botToxicity: true, lang: 'en' }).botLang).toBe('en');
   });
 });
 

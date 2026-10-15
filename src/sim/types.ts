@@ -211,6 +211,8 @@ export interface SimConfig {
   players: PlayerSetup[];
   /** Bot toxicity (spec-bots §9: flame chat + rage '?' pings), default on; lobby/settings switch. */
   botToxicity?: boolean;
+  /** Language of bot chat lines (client UI language); default German. */
+  botLang?: 'de' | 'en';
   /** Lanes that spawn minions. Default: all three. */
   minionLanes?: LaneId[];
   minionsEnabled?: boolean;

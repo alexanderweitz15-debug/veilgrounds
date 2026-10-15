@@ -34,7 +34,7 @@ export function emitPing(n: NodeCtx, kind: PingKind, x: number, y: number, targe
 /** Team chat line of a category (rank band), at most one per 45 s; refers to the log entry it explains. */
 export function say(n: NodeCtx, cat: string, reason: string, vars: Record<string, string> = {}): void {
   if (n.v.tick - n.mem.ext.chatAt < 45 * 30) return;
-  const text = chatLine(n.rng, cat, n.ctx.profile.rank, n.ctx.toxic, vars);
+  const text = chatLine(n.rng, cat, n.ctx.profile.rank, n.ctx.toxic, vars, n.ctx.lang ?? 'de');
   if (!text) return;
   n.mem.ext.chatAt = n.v.tick;
   const ref = n.log('chat', cat, reason, { text });

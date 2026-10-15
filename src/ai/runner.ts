@@ -74,6 +74,7 @@ export class BotRunner {
         map: staticMap(),
         players: config.players,
         toxic: config.botToxicity ?? true,
+        lang: config.botLang ?? 'de',
         params,
         log: this.log,
         teamAI: this.teams[p.team === 1 ? 1 : 0],

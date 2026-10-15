@@ -1,14 +1,14 @@
 # Roadmap (Stand 2026-10-15)
 
-## Status pro Phase (2026-10-15, Abend)
+## Status pro Phase (2026-10-16)
 | Phase | Stand | Erledigt | Offen |
 |---|---|---|---|
 | 1 Simulation + 1 Champion | abgeschlossen | Map, Grid-Pathing, Wellen/Aggro, Türme/Platten, Gold/XP, Kamera/Steuerung/HUD, Mira, Puppe; Abnahme: 107 Minions bis 10:00, Turmschüsse exakt, Replay bit-identisch | – |
-| 2 Champions, Items, Prägungen, Zauber | ~95 % | 26 Champions inkl. Hooks, Engine, Shop (rekursive Rezepte), Item-Passiva/Aktive, Prägungs-Effekte + Presets, alle 8 Beschwörerzauber, Wards/Trinkets, Champion-Sprites | Combo-Abnahme, Telegraph-Audit |
-| 3 Bots Gold | ~70 % → **läuft (Agent Bots)** | Behavior Tree als JSON, Wahrnehmung ohne Allwissen, Team-KI, Ganks/Roams/Trades/Kiten, F9-Overlay, Entscheidungs-Log, bot-sim | CS-Kalibrierung (2,9 statt 6,8 CS/min), Wards/Kontrollwards, Baron/Kesselbrut, Log-Drosselung |
-| 4 Ränge + Humanisierung | ~50 % → **läuft (Agent Bots)** | Rangprofile, 10 Spielstil-Achsen, Reaktionszeiten, Varianz, Pings, Rage-„?“-Pings + Toxizitäts-Schalter | Kalibrierung je Rang, fehlende Fehlerarten, Siegquoten |
-| 5 Trainer | ~85 % | Last-Hit- (auch Turm), Ausweich-, Kiting-/Combo-Trainer, Lane-Duell 1v1, Jungle-Duell, Teamkampf-Arena, Post-Game-Analyse, Sandbox+ (Level, keine CDs, Godmode, Welle, Camps) | Arena-Bots greifen sich nicht gegenseitig an (src/ai), Trainingsplan, Verlauf über mehrere Matches |
-| 6 Politur | ~45 % | Menüs, Enzyklopädie, prozeduraler Sound, Vollbild, Stil C, PWA, gemalte Minion-Sprites, Porträts, Champions 1,15×, Team-Chat | Audit läuft (Jungle-Optik, Todes-Bildschirm, Ansagen), Barrierefreiheit, Performance, Szenario-Trainer, Challenger-Geist |
+| 2 Champions, Items, Prägungen, Zauber | ~95 % | 26 Champions inkl. Hooks, Engine, Shop (rekursive Rezepte, Basisstiefel, Legendäre einzigartig), Item-Passiva/Aktive, Prägungs-Effekte + Presets, alle 8 Beschwörerzauber, Wards/Trinkets, LoL-Tooltips | Combo-Abnahme, Telegraph-Audit |
+| 3 Bots Gold | ~85 % | Behavior Tree als JSON, Wahrnehmung ohne Allwissen, Team-KI, Ganks/Roams/Trades/Kiten, F9-Overlay, gedrosseltes Entscheidungs-Log, bot-sim (--vs), vorhersagendes Last-Hitting, Ward-Spots/Kontrollwards/Suchfeuer, Drache/Kesselbrut/Baron + Bannen, Belagern ab 14:00 | CS ~50 % von Tabelle A, Spieldauer 40–45 min → **läuft (Agent Tempo/Balance)** |
+| 4 Ränge + Humanisierung | ~70 % | Rangprofile, 10 Spielstil-Achsen, Reaktionszeiten, Varianz, Pings, Rage-„?“-Pings, Flame-Chat gegen Spieler, Toxizitäts-Schalter, Tilt, alle Fehlerarten injiziert, Bot-Chat in UI-Sprache, eine Schwierigkeit für alle Bots | Siegquoten je Rang (noch 50 %) → **läuft (Agent Tempo/Balance)** |
+| 5 Trainer | ~90 % | Last-Hit- (auch Turm), Ausweich-, Kiting-/Combo-Trainer, Lane-Duell 1v1, Jungle-Duell, Teamkampf-Arena (Bots kämpfen untereinander), Post-Game-Analyse, Sandbox+ | Trainingsplan, Verlauf über mehrere Matches |
+| 6 Politur | ~75 % | Menüs, Enzyklopädie (Splash, Icons), prozeduraler Sound, Vollbild, PWA, gemalte Minions/Monster, Porträts + Splash-Art, Karte komplett überarbeitet (Gouache), Ansagen, Todes-Zusammenfassung, Team-Chat, Barrierefreiheit, Grafikqualität, Code-Splitting, Icons überall, Kesselbrut-Anzeige | Champion-Animationen/Einzigartigkeit → **läuft (Agent Champions)**, Szenario-Trainer, Challenger-Geist |
 
 Nutzer-Entscheidung 2026-10-15: zuerst **Phase 2 abschließen**.
 

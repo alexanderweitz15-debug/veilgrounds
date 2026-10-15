@@ -1,0 +1,44 @@
+{
+  "champion": "kiran",
+  "template": "poke_support",
+  "starter": [
+    "spenderlampe",
+    "trank"
+  ],
+  "standard": {
+    "boots": "stiefel_hast",
+    "core": [
+      "brandglas",
+      "frostkern",
+      "hueterstab",
+      "zeitglas"
+    ]
+  },
+  "vsAD": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "brandglas",
+      "zeitglas",
+      "frostkern",
+      "hueterstab"
+    ]
+  },
+  "vsAP": {
+    "boots": "stiefel_mr",
+    "core": [
+      "brandglas",
+      "sturmgewand",
+      "frostkern",
+      "hueterstab"
+    ]
+  },
+  "runes": {
+    "keystone": "dauerhafter_schaden",
+    "minor": [
+      "manafluss",
+      "wachsamkeit",
+      "hast"
+    ]
+  },
+  "note": "Component order follows items.json \"from\"; Diamond+ bots reorder components situationally (spec §5)."
+}

@@ -1,0 +1,143 @@
+{
+  "id": "wren",
+  "name": "Wren Aschenflug",
+  "title": { "de": "die Köhlerin", "en": "the Charcoal Burner" },
+  "roles": ["adc"],
+  "archetype": "zone_marksman",
+  "trainingPurpose": { "de": "Zonen-ADC, DoT-Trades.", "en": "Zone marksman, DoT trades." },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 600,
+    "hpGrowth": 98,
+    "hpRegen": 3.75,
+    "hpRegenGrowth": 0.55,
+    "mana": 330,
+    "manaGrowth": 38,
+    "manaRegen": 7.2,
+    "manaRegenGrowth": 0.65,
+    "ad": 59,
+    "adGrowth": 3.2,
+    "armor": 26,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.658,
+    "asGrowth": 3.2,
+    "range": 550,
+    "ms": 335,
+    "windup": 0.3,
+    "projectileSpeed": 1900,
+    "radius": 55
+  },
+  "passive": {
+    "name": { "de": "Glut", "en": "Embers" },
+    "desc": {
+      "de": "Fähigkeitstreffer brennen 3 s (8–40 +15 % AP pro Sekunde). Autos auf brennende Ziele +10 % Schaden.",
+      "en": "Ability hits burn for 3 s (8-40 +15% AP per second). Basic attacks on burning targets deal +10% damage."
+    },
+    "hooks": ["wren_embers"]
+  },
+  "abilities": [
+    {
+      "id": "wren_q",
+      "name": { "de": "Brandpfeil", "en": "Fire Arrow" },
+      "desc": {
+        "de": "Nächster Auto +40/60/80/100/120 (+40 % AP) und entzündet.",
+        "en": "Next basic attack deals +40/60/80/100/120 (+40% AP) and ignites."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": 6,
+      "cost": 30,
+      "costType": "mana",
+      "duration": 4,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [40, 60, 80, 100, 120], "ap": 0.4 } },
+        { "kind": "hook", "id": "wren_q_next_auto" }
+      ]
+    },
+    {
+      "id": "wren_w",
+      "name": { "de": "Ascheteppich", "en": "Ash Carpet" },
+      "desc": { "de": "Linie 900 × 200 brennt 4 s, 25 % Slow.", "en": "A 900 × 200 strip burns for 4 s with a 25% slow." },
+      "type": "zone",
+      "castTime": 0.25,
+      "range": 900,
+      "cooldown": [16, 15, 14, 13, 12],
+      "cost": 60,
+      "costType": "mana",
+      "width": 200,
+      "radius": 450,
+      "duration": 4,
+      "effects": [
+        { "kind": "slow", "pct": 25, "duration": 0.5 },
+        { "kind": "hook", "id": "wren_w_ash_carpet" }
+      ]
+    },
+    {
+      "id": "wren_e",
+      "name": { "de": "Rauchsprung", "en": "Smoke Hop" },
+      "desc": {
+        "de": "Hop 300 rückwärts, hinterlässt 2 s eine Rauchwolke (Radius 250), die Sicht blockt.",
+        "en": "Hops 300 backward and leaves a smoke cloud (radius 250) that blocks vision for 2 s."
+      },
+      "type": "dash",
+      "castTime": 0.2,
+      "range": 300,
+      "cooldown": [18, 17, 16, 15, 14],
+      "cost": 50,
+      "costType": "mana",
+      "speed": 1300,
+      "radius": 250,
+      "duration": 2,
+      "distance": 300,
+      "effects": [
+        { "kind": "hook", "id": "wren_e_smoke_hop" }
+      ]
+    },
+    {
+      "id": "wren_r",
+      "name": { "de": "Feuersturm", "en": "Firestorm" },
+      "desc": {
+        "de": "5 Pfeile über 2 s auf einen Bereich (Radius 450, Reichweite 1.400).",
+        "en": "5 arrows over 2 s onto an area (radius 450, range 1400)."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.3,
+      "range": 1400,
+      "cooldown": [100, 80, 60],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 450,
+      "duration": 2,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [80, 120, 160], "ad": 0.4, "ap": 0.3 } },
+        { "kind": "hook", "id": "wren_r_firestorm" }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": {
+    "de": "Level 6 und zweites Item: Ascheteppich + Feuersturm kontrollieren jeden Engpass.",
+    "en": "Level 6 and second item: Ash Carpet + Firestorm control every choke."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Brand und Teppich", "en": "Burn and carpet" }, "sequence": ["Q", "AA", "W"] },
+    { "name": { "de": "Rauch-Trade", "en": "Smoke trade" }, "sequence": ["E", "Q", "AA"] },
+    { "name": { "de": "Flächenbrand", "en": "Wildfire" }, "sequence": ["W", "R"] }
+  ],
+  "scores": { "engage": 1, "peel": 2, "range": 4, "scaling": 3, "waveclear": 4, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Ich mache Kohle. Manchmal aus Leuten.", "en": "I make charcoal. Sometimes out of people." },
+    "firstBlood": { "de": "Angezündet. Brennt gut.", "en": "Lit. Burns nicely." },
+    "kill": { "de": "Asche zu Asche. Ordnung muss sein.", "en": "Ashes to ashes. Tidy." },
+    "death": { "de": "Zu viel Rauch.", "en": "Too much smoke." },
+    "recall": { "de": "Meiler prüfen.", "en": "Checking the kiln." },
+    "taunt": { "de": "Du riechst schon angesengt.", "en": "You already smell singed." }
+  },
+  "silhouette": "ash-grey archer with a smouldering quiver, long scarf trailing like smoke"
+}

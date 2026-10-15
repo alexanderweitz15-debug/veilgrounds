@@ -1,0 +1,142 @@
+{
+  "id": "renn",
+  "name": "Renn Sieben",
+  "title": { "de": "der Siebenklingen-Deserteur", "en": "the Seven-Blade Deserter" },
+  "roles": ["mid"],
+  "archetype": "reset_assassin",
+  "trainingPurpose": { "de": "Reset-Assassinen überleben, Klingen lesen.", "en": "Survive reset assassins, read the blades." },
+  "attackType": "melee",
+  "resource": "none",
+  "base": {
+    "hp": 660,
+    "hpGrowth": 104,
+    "hpRegen": 7.5,
+    "hpRegenGrowth": 0.7,
+    "mana": 0,
+    "manaGrowth": 0,
+    "manaRegen": 0,
+    "manaRegenGrowth": 0,
+    "ad": 64,
+    "adGrowth": 3.2,
+    "armor": 32,
+    "armorGrowth": 4.6,
+    "mr": 32,
+    "mrGrowth": 2.05,
+    "as": 0.651,
+    "asGrowth": 2.5,
+    "range": 150,
+    "ms": 340,
+    "windup": 0.3,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Klingen sammeln", "en": "Blade Collector" },
+    "desc": {
+      "de": "Geworfene Klingen liegen 4 s am Boden. Aufheben löst einen Rundumhieb aus (Radius 320, 50–200 +60 % Bonus-AD +40 % AP). Takedowns senken Q/W/E-Abklingzeiten um 12 s.",
+      "en": "Thrown blades lie on the ground for 4 s. Picking one up triggers a spin slash (radius 320, 50-200 +60% bonus AD +40% AP). Takedowns reduce Q/W/E cooldowns by 12 s."
+    },
+    "hooks": ["renn_blade_pickup", "renn_takedown_reset"]
+  },
+  "abilities": [
+    {
+      "id": "renn_q",
+      "name": { "de": "Klingenwurf", "en": "Blade Throw" },
+      "desc": {
+        "de": "Zielgerichtet 625, springt auf bis zu zwei weitere Gegner und landet hinter dem letzten Ziel als Klinge.",
+        "en": "Targeted 625; bounces to up to two more enemies and lands behind the last one as a blade."
+      },
+      "type": "targeted",
+      "castTime": 0.25,
+      "range": 625,
+      "cooldown": 9,
+      "cost": 0,
+      "costType": "none",
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [70, 105, 140, 175, 210], "ap": 0.4 } },
+        { "kind": "hook", "id": "renn_q_bounce" }
+      ]
+    },
+    {
+      "id": "renn_w",
+      "name": { "de": "Klinge in die Luft", "en": "Blade Aloft" },
+      "desc": {
+        "de": "Wirft eine Klinge hoch, die nach 1,25 s an seiner Position landet. +50 % Bewegung, abklingend über 1,25 s.",
+        "en": "Tosses a blade that lands at his position after 1.25 s. +50% move speed decaying over 1.25 s."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": [15, 14, 13, 12, 11],
+      "cost": 0,
+      "costType": "none",
+      "duration": 1.25,
+      "effects": [
+        { "kind": "buff", "stat": "ms", "pct": 50, "duration": 1.25, "target": "self" },
+        { "kind": "hook", "id": "renn_w_blade_drop" }
+      ]
+    },
+    {
+      "id": "renn_e",
+      "name": { "de": "Sprung zur Klinge", "en": "Blade Leap" },
+      "desc": {
+        "de": "Blink 725 zu einer Klinge, einem Gegner oder Verbündeten; Klinge wird sofort aufgehoben. Aufheben setzt die E-Abklingzeit auf 1,5 s.",
+        "en": "Blink 725 to a blade, enemy or ally; the blade is picked up instantly. A pickup sets E cooldown to 1.5 s."
+      },
+      "type": "blink",
+      "castTime": 0.2,
+      "range": 725,
+      "cooldown": 12,
+      "cost": 0,
+      "costType": "none",
+      "distance": 725,
+      "effects": [
+        { "kind": "hook", "id": "renn_e_blade_jump" }
+      ]
+    },
+    {
+      "id": "renn_r",
+      "name": { "de": "Siebenfacher Schnitt", "en": "Sevenfold Cut" },
+      "desc": {
+        "de": "2,5 s Kanal: alle 0,15 s fliegt eine Klinge auf bis zu drei nächste Gegner, verursacht schwere Wunden. CC unterbricht.",
+        "en": "2.5 s channel: every 0.15 s a blade flies at up to three nearest enemies, applying grievous wounds. CC interrupts."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": [90, 60, 45],
+      "cost": 0,
+      "costType": "none",
+      "radius": 550,
+      "duration": 2.5,
+      "flags": ["channel"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [25, 37, 50], "bonusAd": 0.22, "ap": 0.19 } },
+        { "kind": "hook", "id": "renn_r_blade_storm" }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": {
+    "de": "Level 6: Siebenfacher Schnitt plus Takedown-Resets – ein Kill wird schnell drei.",
+    "en": "Level 6: Sevenfold Cut plus takedown resets - one kill quickly becomes three."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Klingentanz", "en": "Blade dance" }, "sequence": ["Q", "E", "AA", "W", "E"] },
+    { "name": { "de": "Luftklinge", "en": "Aerial blade" }, "sequence": ["W", "E", "Q"] },
+    { "name": { "de": "Sieben Schnitte", "en": "Seven cuts" }, "sequence": ["E", "R"] }
+  ],
+  "scores": { "engage": 3, "peel": 0, "range": 2, "scaling": 3, "waveclear": 2, "mobility": 4 },
+  "voiceLines": {
+    "pick": {
+      "de": "Sieben Klingen. Eine pro Jahr Dienst. Dann bin ich gegangen.",
+      "en": "Seven blades. One per year of service. Then I left."
+    },
+    "firstBlood": { "de": "Der Hauptmann hätte das gelobt. Ärgerlich.", "en": "The captain would have praised that. Annoying." },
+    "kill": { "de": "Eine weniger.", "en": "One fewer." },
+    "death": { "de": "Hätte ich zählen sollen.", "en": "Should have counted." },
+    "recall": { "de": "Klingen einsammeln.", "en": "Collecting blades." },
+    "taunt": { "de": "Ich hab mehr Klingen als du Ausreden.", "en": "I have more blades than you have excuses." }
+  },
+  "silhouette": "seven katanas fanned on his back, deserter's torn tabard"
+}

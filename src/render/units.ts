@@ -1,0 +1,187 @@
+// Unit sprites: one InstancedMesh per (sprite, team) sharing one atlas + material. Visible quads lean back to
+// face the camera; a second, colour-less instanced quad stands upright facing the sun and only casts the shadow.
+import * as THREE from 'three';
+import type { SnapEntity } from '../sim/snapshot';
+import { Kind } from '../sim/types';
+import type { ClientState } from '../game/state';
+import { PITCH } from './camera';
+import { REL } from './palette';
+import { SPRITE_KEYS, SPRITE_SIZE, type Atlas, type SpriteKey } from './sprites';
+import { MIRA_ID } from '../game/modes';
+
+const CAPACITY: Record<SpriteKey, number> = { mira: 10, champ: 10, melee: 96, caster: 96, siege: 32, super: 32, dummy: 8, monster: 32 };
+const FLASH_MS = 140;
+const LUNGE_MS = 220;
+
+interface Group {
+  vis: THREE.InstancedMesh;
+  cast: THREE.InstancedMesh;
+  n: number;
+}
+
+export function spriteKeyFor(e: SnapEntity): SpriteKey | null {
+  switch (e.kind) {
+    case Kind.Champion:
+      return e.champ === MIRA_ID ? 'mira' : 'champ';
+    case Kind.MinionMelee:
+      return 'melee';
+    case Kind.MinionCaster:
+      return 'caster';
+    case Kind.MinionSiege:
+      return 'siege';
+    case Kind.MinionSuper:
+      return 'super';
+    case Kind.Dummy:
+      return 'dummy';
+    case Kind.Monster:
+      return 'monster';
+    default:
+      return null;
+  }
+}
+
+export class Units {
+  readonly group = new THREE.Group();
+  private readonly groups = new Map<string, Group>();
+  private readonly flashAt = new Map<number, number>();
+  private readonly lungeAt = new Map<number, { t: number; dx: number; dy: number }>();
+  private readonly rings: THREE.InstancedMesh;
+  private readonly qVis = new THREE.Quaternion().setFromEuler(new THREE.Euler(-PITCH, 0, 0));
+  private readonly qCast: THREE.Quaternion;
+  private readonly m = new THREE.Matrix4();
+  private readonly p = new THREE.Vector3();
+  private readonly s = new THREE.Vector3();
+  private readonly col = new THREE.Color();
+  private readonly qFlat = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+
+  constructor(atlas: Atlas, sunDir: THREE.Vector3) {
+    this.qCast = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.atan2(sunDir.x, sunDir.z), 0));
+    const mat = new THREE.MeshBasicMaterial({ map: atlas.texture, alphaTest: 0.5, side: THREE.DoubleSide });
+    // invisible in the colour pass; the shadow pass copies map + alphaTest from this material into its depth material
+    const castMat = new THREE.MeshBasicMaterial({ map: atlas.texture, alphaTest: 0.5, colorWrite: false, depthWrite: false, side: THREE.DoubleSide });
+    for (const key of SPRITE_KEYS) {
+      for (const team of [0, 1]) {
+        const [u0, v0, u1, v1] = atlas.uv(key, team);
+        const geo = new THREE.PlaneGeometry(1, 1);
+        geo.translate(0, 0.5, 0);
+        const uv = geo.getAttribute('uv') as THREE.BufferAttribute;
+        for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) ? u1 : u0, uv.getY(i) ? v1 : v0);
+        const vis = new THREE.InstancedMesh(geo, mat, CAPACITY[key]);
+        vis.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        vis.setColorAt(0, new THREE.Color(1, 1, 1));
+        vis.frustumCulled = false;
+        vis.count = 0;
+        const cast = new THREE.InstancedMesh(geo, castMat, CAPACITY[key]);
+        cast.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        cast.castShadow = true;
+        cast.frustumCulled = false;
+        cast.count = 0;
+        this.group.add(vis, cast);
+        this.groups.set(`${key}:${team}`, { vis, cast, n: 0 });
+      }
+    }
+    const ringGeo = new THREE.RingGeometry(0.86, 1, 40);
+    this.rings = new THREE.InstancedMesh(
+      ringGeo,
+      new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.85, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }),
+      48,
+    );
+    this.rings.setColorAt(0, this.col);
+    this.rings.frustumCulled = false;
+    this.rings.renderOrder = 1;
+    this.group.add(this.rings);
+  }
+
+  /** Hit flash on damage. */
+  flash(serial: number, now: number): void {
+    this.flashAt.set(serial, now);
+  }
+
+  /** Small lunge toward the target when an attack starts. */
+  lunge(serial: number, dx: number, dy: number, now: number): void {
+    const d = Math.hypot(dx, dy) || 1;
+    this.lungeAt.set(serial, { t: now, dx: dx / d, dy: dy / d });
+  }
+
+  update(state: ClientState, now: number, hoverId: number): void {
+    for (const g of this.groups.values()) g.n = 0;
+    let rings = 0;
+    const snap = state.snap;
+    const myEid = snap?.me?.eid ?? -1;
+    const tSec = now / 1000;
+    if (snap) {
+      for (const e of snap.entities) {
+        if (!e.alive) continue;
+        const key = spriteKeyFor(e);
+        if (!key) continue;
+        const g = this.groups.get(`${key}:${Math.min(1, e.team)}`)!;
+        if (g.n >= g.vis.instanceMatrix.count) continue;
+        let x = state.x(e);
+        let y = state.y(e);
+        const size = SPRITE_SIZE[key];
+        let bob = 0;
+        let sx = 1;
+        let sy = 1;
+        if (e.moving) {
+          bob = Math.abs(Math.sin(tSec * 9 + e.id)) * size * 0.04;
+        } else {
+          sy = 1 + Math.sin(tSec * 2.2 + e.id) * 0.012;
+        }
+        const l = this.lungeAt.get(e.serial);
+        if (l) {
+          const k = (now - l.t) / LUNGE_MS;
+          if (k >= 1) this.lungeAt.delete(e.serial);
+          else {
+            const amt = Math.sin(k * Math.PI) * 28;
+            x += l.dx * amt;
+            y += l.dy * amt;
+          }
+        }
+        if (e.atkPhase === 1) {
+          sx = 1.06;
+          sy *= 0.97;
+        }
+        const flip = e.fx < 0 ? -1 : 1;
+        this.p.set(x, bob, -y);
+        this.s.set(flip * size * sx, size * sy, 1);
+        this.m.compose(this.p, this.qVis, this.s);
+        g.vis.setMatrixAt(g.n, this.m);
+        this.p.y = 0;
+        this.s.set(flip * size * 0.8, size, 1);
+        this.m.compose(this.p, this.qCast, this.s);
+        g.cast.setMatrixAt(g.n, this.m);
+        const f = this.flashAt.get(e.serial);
+        let c = 1;
+        if (f !== undefined) {
+          const k = (now - f) / FLASH_MS;
+          if (k >= 1) this.flashAt.delete(e.serial);
+          else c = 1 + (1 - k) * 1.6;
+        }
+        if (e.id === hoverId) c *= 1.25;
+        this.col.setRGB(c, c, c);
+        g.vis.setColorAt(g.n, this.col);
+        g.n++;
+        // ground ring: champions, the dummy and whatever is hovered
+        if ((e.kind === Kind.Champion || e.kind === Kind.Dummy || e.id === hoverId) && rings < 48) {
+          const r = Math.max(e.radius, 40) * 1.5;
+          this.p.set(state.x(e), 2, -state.y(e));
+          this.s.set(r, r, r);
+          this.m.compose(this.p, this.qFlat, this.s);
+          this.rings.setMatrixAt(rings, this.m);
+          this.col.set(e.id === myEid ? REL.me : e.team === state.myTeam ? REL.ally : REL.enemy);
+          this.rings.setColorAt(rings, this.col);
+          rings++;
+        }
+      }
+    }
+    for (const g of this.groups.values()) {
+      g.vis.count = g.cast.count = g.n;
+      g.vis.instanceMatrix.needsUpdate = true;
+      g.cast.instanceMatrix.needsUpdate = true;
+      if (g.vis.instanceColor) g.vis.instanceColor.needsUpdate = true;
+    }
+    this.rings.count = rings;
+    this.rings.instanceMatrix.needsUpdate = true;
+    if (this.rings.instanceColor) this.rings.instanceColor.needsUpdate = true;
+  }
+}

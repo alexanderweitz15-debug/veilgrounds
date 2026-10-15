@@ -1,0 +1,148 @@
+{
+  "id": "kiran",
+  "name": "Kiran Fadenleser",
+  "title": { "de": "der Garndeuter", "en": "the Yarn Reader" },
+  "roles": ["support"],
+  "archetype": "mage_support",
+  "trainingPurpose": { "de": "Poke-Supports, Wurzeln dodgen.", "en": "Poke supports, dodging roots." },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 575,
+    "hpGrowth": 95,
+    "hpRegen": 5.5,
+    "hpRegenGrowth": 0.55,
+    "mana": 420,
+    "manaGrowth": 40,
+    "manaRegen": 11,
+    "manaRegenGrowth": 0.8,
+    "ad": 55,
+    "adGrowth": 2.5,
+    "armor": 26,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.625,
+    "asGrowth": 1.5,
+    "range": 575,
+    "ms": 335,
+    "windup": 0.3,
+    "projectileSpeed": 1600,
+    "radius": 55
+  },
+  "passive": {
+    "name": { "de": "Vorahnung", "en": "Foresight" },
+    "desc": {
+      "de": "Alle 15 s zeigt ein Faden 1 s lang die Richtung zum nächsten unsichtbaren Gegner in 1.800.",
+      "en": "Every 15 s a thread shows the direction to the nearest invisible enemy within 1800 for 1 s."
+    },
+    "hooks": ["kiran_foresight"]
+  },
+  "abilities": [
+    {
+      "id": "kiran_q",
+      "name": { "de": "Fadenschuss", "en": "Thread Shot" },
+      "desc": {
+        "de": "Linie 1.000; wurzelt 0,75/0,85/0,95/1,05/1,15 s nur auf den letzten 300.",
+        "en": "Line 1000; roots for 0.75/0.85/0.95/1.05/1.15 s only in the last 300."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "range": 1000,
+      "cooldown": [10, 9.5, 9, 8.5, 8],
+      "cost": [55, 60, 65, 70, 75],
+      "costType": "mana",
+      "width": 60,
+      "speed": 1600,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [60, 100, 140, 180, 220], "ap": 0.55 } },
+        { "kind": "hook", "id": "kiran_q_sweetspot_root" }
+      ]
+    },
+    {
+      "id": "kiran_w",
+      "name": { "de": "Knoten", "en": "Knot" },
+      "desc": {
+        "de": "Kreis 250 auf 700, nach 1 s: Schaden und 40 % Slow 1,5 s.",
+        "en": "Circle 250 at 700; after 1 s: damage and 40% slow for 1.5 s."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.25,
+      "range": 700,
+      "cooldown": 12,
+      "cost": 70,
+      "costType": "mana",
+      "radius": 250,
+      "delay": 1,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [50, 80, 110, 140, 170], "ap": 0.45 } },
+        { "kind": "slow", "pct": 40, "duration": 1.5 }
+      ]
+    },
+    {
+      "id": "kiran_e",
+      "name": { "de": "Schicksalsfaden", "en": "Fate Thread" },
+      "desc": {
+        "de": "3 s Verbindung zu einem Verbündeten (800): beide +15 % Bewegung, 20 % des Schadens am Verbündeten trägt Kiran.",
+        "en": "3 s link to an ally (800): both gain +15% move speed; Kiran takes 20% of the damage dealt to the ally."
+      },
+      "type": "targeted",
+      "castTime": 0.2,
+      "range": 800,
+      "cooldown": 16,
+      "cost": 50,
+      "costType": "mana",
+      "duration": 3,
+      "flags": ["ally_target"],
+      "effects": [
+        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 3, "target": "ally" },
+        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 3, "target": "self" },
+        { "kind": "hook", "id": "kiran_e_fate_link" }
+      ]
+    },
+    {
+      "id": "kiran_r",
+      "name": { "de": "Garnnetz", "en": "Yarn Net" },
+      "desc": {
+        "de": "Kreis 500 auf 900, nach 0,75 s: 1,5 s Wurzel und Schaden.",
+        "en": "Circle 500 at 900; after 0.75 s: 1.5 s root and damage."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.3,
+      "range": 900,
+      "cooldown": [120, 100, 80],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 500,
+      "delay": 0.75,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [150, 250, 350], "ap": 0.6 } },
+        { "kind": "root", "duration": 1.5 }
+      ]
+    }
+  ],
+  "spikeLevels": [1, 6],
+  "spikeNote": {
+    "de": "Level 1 (Q-Wurzel auf Maximalreichweite) und Level 6 (Garnnetz).",
+    "en": "Level 1 (Q root at max range) and level 6 (Yarn Net)."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Knoten und Faden", "en": "Knot and thread" }, "sequence": ["W", "Q"] },
+    { "name": { "de": "Netz, Faden, Knoten", "en": "Net, thread, knot" }, "sequence": ["R", "Q", "W"] },
+    { "name": { "de": "Schicksalsfaden (Peel)", "en": "Fate thread (peel)" }, "sequence": ["E"] }
+  ],
+  "scores": { "engage": 3, "peel": 4, "range": 4, "scaling": 2, "waveclear": 2, "mobility": 0 },
+  "voiceLines": {
+    "pick": { "de": "Ich lese Garn. Deins ist kurz.", "en": "I read yarn. Yours is short." },
+    "firstBlood": { "de": "Stand so im Knäuel.", "en": "It was in the skein." },
+    "kill": { "de": "Abgeschnitten.", "en": "Snipped." },
+    "death": { "de": "Das hab ich nicht kommen sehen. Peinlich.", "en": "Didn't see that coming. Embarrassing." },
+    "recall": { "de": "Neues Knäuel holen.", "en": "Fetching a new skein." },
+    "taunt": { "de": "Dein Faden hat Knoten. Viele.", "en": "Your thread has knots. Lots." }
+  },
+  "silhouette": "blindfolded seer with a spindle, loose red threads wound around both arms"
+}

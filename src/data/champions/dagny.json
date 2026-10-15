@@ -1,0 +1,142 @@
+{
+  "id": "dagny",
+  "name": "Dagny Kessel",
+  "title": { "de": "die Kesselschmiedin", "en": "the Kettlesmith" },
+  "roles": ["top"],
+  "archetype": "tank_bruiser",
+  "trainingPurpose": { "de": "Gegen Tanks traden, Minion-Aggro.", "en": "Trade against tanks, minion aggro." },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 690,
+    "hpGrowth": 115,
+    "hpRegen": 9,
+    "hpRegenGrowth": 0.85,
+    "mana": 360,
+    "manaGrowth": 50,
+    "manaRegen": 7.5,
+    "manaRegenGrowth": 0.7,
+    "ad": 62,
+    "adGrowth": 3.4,
+    "armor": 36,
+    "armorGrowth": 5,
+    "mr": 32,
+    "mrGrowth": 2.05,
+    "as": 0.625,
+    "asGrowth": 2,
+    "range": 150,
+    "ms": 340,
+    "windup": 0.35,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Glühender Schild", "en": "Glowing Shield" },
+    "desc": {
+      "de": "Jeder dritte Auto verursacht 4 % ihrer Max-HP als magischen Schaden an Gegnern in 200 um das Ziel.",
+      "en": "Every third basic attack deals 4% of her max HP as magic damage to enemies within 200 of the target."
+    },
+    "hooks": ["dagny_glowing_shield"]
+  },
+  "abilities": [
+    {
+      "id": "dagny_q",
+      "name": { "de": "Kesselschlag", "en": "Kettle Slam" },
+      "desc": {
+        "de": "Auto-Reset: nächster Auto verursacht Bonusschaden; 15 % Schadensreduktion für 2 s.",
+        "en": "Auto reset: next basic attack deals bonus damage; 15% damage reduction for 2 s."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": 7,
+      "cost": 30,
+      "costType": "mana",
+      "duration": 4,
+      "flags": ["auto_reset"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [60, 95, 130, 165, 200], "maxHp": 0.06 } },
+        { "kind": "buff", "stat": "dmgReduction", "pct": 15, "duration": 2, "target": "self" },
+        { "kind": "hook", "id": "dagny_q_next_auto" }
+      ]
+    },
+    {
+      "id": "dagny_w",
+      "name": { "de": "Dampfstoß", "en": "Steam Blast" },
+      "desc": { "de": "Kegel 450: 50 % Slow 1 s, −10 % Rüstung für 4 s.", "en": "Cone 450: 50% slow for 1 s, -10% armor for 4 s." },
+      "type": "cone",
+      "castTime": 0.25,
+      "range": 450,
+      "cooldown": 12,
+      "cost": 60,
+      "costType": "mana",
+      "angle": 60,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [50, 80, 110, 140, 170], "maxHp": 0.05 } },
+        { "kind": "slow", "pct": 50, "duration": 1 },
+        { "kind": "hook", "id": "dagny_w_armor_shred" }
+      ]
+    },
+    {
+      "id": "dagny_e",
+      "name": { "de": "Schildwall", "en": "Shield Wall" },
+      "desc": {
+        "de": "2 s: blockt Projektile von vorn, +30 % Bewegung in Blickrichtung.",
+        "en": "2 s: blocks projectiles from the front, +30% move speed in her facing direction."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": [18, 17, 16, 15, 14],
+      "cost": 50,
+      "costType": "mana",
+      "duration": 2,
+      "effects": [
+        { "kind": "hook", "id": "dagny_e_shield_wall" }
+      ]
+    },
+    {
+      "id": "dagny_r",
+      "name": { "de": "Kesselbruch", "en": "Kettle Burst" },
+      "desc": {
+        "de": "Sprung 500, Kreis 400: Zentrum (150) betäubt 1 s, der Rest wird 1 s um 50 % verlangsamt.",
+        "en": "Leap 500, circle 400: the centre (150) is stunned for 1 s, the rest slowed by 50% for 1 s."
+      },
+      "type": "dash",
+      "castTime": 0.25,
+      "range": 500,
+      "cooldown": [120, 100, 80],
+      "cost": 100,
+      "costType": "mana",
+      "speed": 1200,
+      "radius": 400,
+      "distance": 500,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [200, 300, 400], "maxHp": 0.1 } },
+        { "kind": "slow", "pct": 50, "duration": 1 },
+        { "kind": "hook", "id": "dagny_r_center_stun" }
+      ]
+    }
+  ],
+  "spikeLevels": [9],
+  "spikeNote": {
+    "de": "Level 9 (Q maximiert): Kesselschlag skaliert mit ihren HP – sie gewinnt lange Trades.",
+    "en": "Level 9 (Q maxed): Kettle Slam scales with her HP - she wins long trades."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Wall und Schlag", "en": "Wall and slam" }, "sequence": ["E", "Q", "AA", "W"] },
+    { "name": { "de": "Kesselsprung", "en": "Kettle leap" }, "sequence": ["R", "Q", "AA"] },
+    { "name": { "de": "Dampf-Trade", "en": "Steam trade" }, "sequence": ["W", "AA", "Q"] }
+  ],
+  "scores": { "engage": 3, "peel": 3, "range": 1, "scaling": 3, "waveclear": 2, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Kessel geflickt. Kopf auch, beinahe.", "en": "Kettle patched. Head too, almost." },
+    "firstBlood": { "de": "Erster Guss sitzt.", "en": "First casting holds." },
+    "kill": { "de": "Durchgekocht.", "en": "Boiled through." },
+    "death": { "de": "Druck zu hoch. Wusste ich.", "en": "Pressure too high. Knew it." },
+    "recall": { "de": "Zurück an die Esse.", "en": "Back to the forge." },
+    "taunt": { "de": "Ich hab dickeres Blech als du Ideen.", "en": "My sheet metal is thicker than your ideas." }
+  },
+  "silhouette": "stout smith with an iron kettle as a shield, steam vents on the pauldrons"
+}

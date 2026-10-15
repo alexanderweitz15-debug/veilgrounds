@@ -1,0 +1,138 @@
+{
+  "id": "mira",
+  "name": "Mira Quell",
+  "title": { "de": "Die Bogenmacherin", "en": "The Bowyer" },
+  "roles": ["adc"],
+  "archetype": "marksman",
+  "trainingPurpose": { "de": "Orbwalking, Positionierung, Last-Hitting", "en": "Orbwalking, positioning, last-hitting" },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 630,
+    "hpGrowth": 104,
+    "hpRegen": 3.75,
+    "hpRegenGrowth": 0.55,
+    "mana": 320,
+    "manaGrowth": 40,
+    "manaRegen": 7.2,
+    "manaRegenGrowth": 0.6,
+    "ad": 60,
+    "adGrowth": 2.6,
+    "armor": 26,
+    "armorGrowth": 4.4,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.658,
+    "asGrowth": 3,
+    "range": 550,
+    "ms": 340,
+    "windup": 0.3,
+    "projectileSpeed": 2000,
+    "radius": 55
+  },
+  "passive": {
+    "name": { "de": "Doppelzug", "en": "Double Draw" },
+    "desc": {
+      "de": "Jeder dritte Auto-Angriff verschießt zwei Pfeile; der zweite verursacht 50 % Schaden.",
+      "en": "Every third basic attack fires two arrows; the second deals 50% damage."
+    },
+    "hooks": ["doppelzug", "bogenspannungExtend"]
+  },
+  "abilities": [
+    {
+      "id": "mira_q",
+      "name": { "de": "Bogenspannung", "en": "Bowstring" },
+      "desc": {
+        "de": "5 s +40/50/60/70/80 % Angriffstempo. Jeder Auto verlängert um 0,5 s (max. 8 s gesamt).",
+        "en": "5 s +40/50/60/70/80% attack speed. Each basic attack extends it by 0.5 s (max 8 s total)."
+      },
+      "type": "self",
+      "castTime": 0,
+      "range": 0,
+      "cooldown": 14,
+      "cost": 40,
+      "costType": "mana",
+      "effects": [{ "kind": "buff", "stat": "as", "pct": [40, 50, 60, 70, 80], "duration": 5, "target": "self" }]
+    },
+    {
+      "id": "mira_w",
+      "name": { "de": "Nebelpfeil", "en": "Mist Arrow" },
+      "desc": {
+        "de": "Pfeil (1.400) trifft das erste Ziel: 80/125/170/215/260 (+100 % AD) und enthüllt es 3 s.",
+        "en": "Arrow (1,400) hits the first unit: 80/125/170/215/260 (+100% AD) and reveals it for 3 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "range": 1400,
+      "cooldown": 12,
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "width": 60,
+      "speed": 1600,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [80, 125, 170, 215, 260], "ad": 1.0 } },
+        { "kind": "reveal", "duration": 3 }
+      ]
+    },
+    {
+      "id": "mira_e",
+      "name": { "de": "Rolle", "en": "Roll" },
+      "desc": {
+        "de": "Rolle 300 Richtung Cursor. Der nächste Auto ist der dritte Schuss (Doppelzug).",
+        "en": "Roll 300 toward the cursor. The next basic attack is the third shot (Double Draw)."
+      },
+      "type": "dash",
+      "castTime": 0,
+      "range": 300,
+      "distance": 300,
+      "speed": 1200,
+      "cooldown": [20, 18, 16, 14, 12],
+      "cost": 30,
+      "costType": "mana",
+      "effects": [{ "kind": "hook", "id": "rolleArm" }]
+    },
+    {
+      "id": "mira_r",
+      "name": { "de": "Pfeilregen", "en": "Arrow Rain" },
+      "desc": {
+        "de": "Nach 1 s Pfeilregen (Radius 400, Reichweite 1.300): 200/325/450 (+125 % AD), 40 % Slow 2 s.",
+        "en": "After 1 s arrows rain down (radius 400, range 1,300): 200/325/450 (+125% AD), 40% slow for 2 s."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.25,
+      "range": 1300,
+      "radius": 400,
+      "delay": 1,
+      "cooldown": 100,
+      "cost": 100,
+      "costType": "mana",
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [200, 325, 450], "ad": 1.25 } },
+        { "kind": "slow", "pct": 40, "duration": 2 }
+      ]
+    }
+  ],
+  "spikeLevels": [2],
+  "spikeNote": {
+    "de": "Level 2 (Q Bogenspannung + Doppelzug gewinnt Auto-Trades) und zweites Item.",
+    "en": "Level 2 (Q Bowstring + Double Draw wins auto trades) and second item."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Spannung", "en": "Draw" }, "sequence": ["Q", "AA", "AA"] },
+    { "name": { "de": "Rollschuss", "en": "Roll Shot" }, "sequence": ["E", "AA", "W"] },
+    { "name": { "de": "Markieren und Regnen", "en": "Mark and Rain" }, "sequence": ["W", "R"] }
+  ],
+  "scores": { "engage": 1, "peel": 1, "range": 4, "scaling": 4, "waveclear": 2, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Sehne neu, Pfeile gezählt. Fast.", "en": "New string, arrows counted. Almost." },
+    "firstBlood": { "de": "Der erste ist immer der teuerste.", "en": "The first one is always the most expensive." },
+    "kill": { "de": "Zwei Pfeile. Einer hätte gereicht.", "en": "Two arrows. One would have done." },
+    "death": { "de": "Das war ... nicht eingeplant.", "en": "That was ... not in the plan." },
+    "recall": { "de": "Kurz zur Werkbank.", "en": "Back to the workbench." },
+    "taunt": { "de": "Du läufst wie eine Zielscheibe. Nur langsamer.", "en": "You move like a target. Only slower." }
+  },
+  "silhouette": "slim archer, recurve bow taller than her, quiver with paired arrows"
+}

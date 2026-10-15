@@ -1,0 +1,138 @@
+{
+  "id": "kaelen",
+  "name": "Kaelen Rasch",
+  "title": { "de": "der Kurier", "en": "the Courier" },
+  "roles": ["mid", "jungle"],
+  "archetype": "dash_assassin",
+  "trainingPurpose": { "de": "Dash-Combos.", "en": "Dash combos." },
+  "attackType": "melee",
+  "resource": "energy",
+  "base": {
+    "hp": 650,
+    "hpGrowth": 104,
+    "hpRegen": 7.5,
+    "hpRegenGrowth": 0.7,
+    "mana": 200,
+    "manaGrowth": 0,
+    "manaRegen": 50,
+    "manaRegenGrowth": 0,
+    "ad": 64,
+    "adGrowth": 3.2,
+    "armor": 32,
+    "armorGrowth": 4.6,
+    "mr": 32,
+    "mrGrowth": 2.05,
+    "as": 0.651,
+    "asGrowth": 2.5,
+    "range": 150,
+    "ms": 345,
+    "windup": 0.3,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Nachlauf", "en": "Follow-Through" },
+    "desc": {
+      "de": "Nach einem Dash verursacht sein nächster Auto innerhalb 2 s 30–120 (+40 % Bonus-AD) Bonusschaden.",
+      "en": "After a dash his next basic attack within 2 s deals 30-120 (+40% bonus AD) bonus damage."
+    },
+    "hooks": ["kaelen_follow_through"]
+  },
+  "abilities": [
+    {
+      "id": "kaelen_q",
+      "name": { "de": "Klingenwurf", "en": "Blade Toss" },
+      "desc": { "de": "Linie 850, markiert das erste Ziel 3 s.", "en": "Line 850, marks the first target for 3 s." },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "range": 850,
+      "cooldown": 8,
+      "cost": 50,
+      "costType": "energy",
+      "width": 70,
+      "speed": 1600,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [60, 95, 130, 165, 200], "bonusAd": 0.7 } },
+        { "kind": "mark", "id": "kaelen_mark", "duration": 3 }
+      ]
+    },
+    {
+      "id": "kaelen_w",
+      "name": { "de": "Schattenschritt", "en": "Shadow Step" },
+      "desc": {
+        "de": "Dash 450 zu einer Position oder 900 zu einem markierten Ziel.",
+        "en": "Dash 450 to a location, or 900 to a marked target."
+      },
+      "type": "dash",
+      "castTime": 0.2,
+      "range": 450,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": 40,
+      "costType": "energy",
+      "speed": 1600,
+      "distance": 450,
+      "effects": [
+        { "kind": "hook", "id": "kaelen_w_dash_to_mark" }
+      ]
+    },
+    {
+      "id": "kaelen_e",
+      "name": { "de": "Fächerhieb", "en": "Fan Slash" },
+      "desc": {
+        "de": "Kreis 300 um ihn. Champion-Treffer senkt die W-Abklingzeit um 2 s.",
+        "en": "Circle 300 around him. Hitting a champion reduces W cooldown by 2 s."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": 9,
+      "cost": 50,
+      "costType": "energy",
+      "radius": 300,
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [70, 105, 140, 175, 210], "bonusAd": 0.6 } },
+        { "kind": "hook", "id": "kaelen_e_w_refund" }
+      ]
+    },
+    {
+      "id": "kaelen_r",
+      "name": { "de": "Hinrichtung", "en": "Execution" },
+      "desc": {
+        "de": "Zielgerichtet 600, unaufhaltbar, +15 % der fehlenden HP. Kill: 10 s unsichtbar beim Verlassen des Kampfes.",
+        "en": "Targeted 600, unstoppable, +15% of missing HP. On kill: 10 s invisibility once out of combat."
+      },
+      "type": "targeted",
+      "castTime": 0.25,
+      "range": 600,
+      "cooldown": 90,
+      "cost": 0,
+      "costType": "none",
+      "flags": ["unstoppable"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [150, 250, 350], "bonusAd": 1, "targetMissingHp": 0.15 } },
+        { "kind": "hook", "id": "kaelen_r_vanish" }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3: Q→W→Auto→E ist ein voller Trade. Level 6: Hinrichtung beendet ihn.",
+    "en": "Level 3: Q→W→auto→E is a full trade. Level 6: Execution finishes it."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Markieren und Folgen", "en": "Mark and follow" }, "sequence": ["Q", "W", "AA", "E"] },
+    { "name": { "de": "Volle Hinrichtung", "en": "Full execution" }, "sequence": ["Q", "W", "E", "R"] },
+    { "name": { "de": "Fächer-Reset", "en": "Fan reset" }, "sequence": ["E", "W"] }
+  ],
+  "scores": { "engage": 3, "peel": 0, "range": 1, "scaling": 2, "waveclear": 2, "mobility": 4 },
+  "voiceLines": {
+    "pick": { "de": "Lieferung kommt. Schneller als gewünscht.", "en": "Delivery incoming. Sooner than you'd like." },
+    "firstBlood": { "de": "Zugestellt. Unterschrift nicht nötig.", "en": "Delivered. No signature needed." },
+    "kill": { "de": "Zustellung erfolgt.", "en": "Package delivered." },
+    "death": { "de": "Falsche Adresse. Meine eigene.", "en": "Wrong address. My own." },
+    "recall": { "de": "Zurück ins Depot.", "en": "Back to the depot." },
+    "taunt": { "de": "Ich bin zweimal da, bevor du einmal schaust.", "en": "I'm there twice before you look once." }
+  },
+  "silhouette": "hooded runner in low crouch, throwing knives on a chest bandolier"
+}

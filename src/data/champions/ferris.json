@@ -1,0 +1,136 @@
+{
+  "id": "ferris",
+  "name": "Ferris Lampenhand",
+  "title": { "de": "der Laternenträger", "en": "the Lamplighter" },
+  "roles": ["support"],
+  "archetype": "enchanter",
+  "trainingPurpose": { "de": "Laning als Support, Heal-/Schild-Timing.", "en": "Laning as support, heal and shield timing." },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 570,
+    "hpGrowth": 95,
+    "hpRegen": 5.5,
+    "hpRegenGrowth": 0.55,
+    "mana": 420,
+    "manaGrowth": 40,
+    "manaRegen": 11,
+    "manaRegenGrowth": 0.8,
+    "ad": 55,
+    "adGrowth": 2.5,
+    "armor": 26,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.625,
+    "asGrowth": 1.5,
+    "range": 550,
+    "ms": 335,
+    "windup": 0.3,
+    "projectileSpeed": 1500,
+    "radius": 55
+  },
+  "passive": {
+    "name": { "de": "Gefährte", "en": "Companion" },
+    "desc": {
+      "de": "Steht ein verbündeter Champion innerhalb 800, sind seine Heilungen und Schilde 10 % stärker.",
+      "en": "While an allied champion is within 800, his heals and shields are 10% stronger."
+    },
+    "hooks": ["ferris_companion"]
+  },
+  "abilities": [
+    {
+      "id": "ferris_q",
+      "name": { "de": "Lichtstoß", "en": "Light Burst" },
+      "desc": { "de": "Skillshot 850, erstes Ziel, 30 % Slow 1,5 s.", "en": "Skillshot 850, first target, 30% slow for 1.5 s." },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "range": 850,
+      "cooldown": 8,
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "width": 70,
+      "speed": 1500,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [60, 95, 130, 165, 200], "ap": 0.5 } },
+        { "kind": "slow", "pct": 30, "duration": 1.5 }
+      ]
+    },
+    {
+      "id": "ferris_w",
+      "name": { "de": "Laterne", "en": "Lantern" },
+      "desc": { "de": "Schild auf Verbündeten (700) für 2,5 s.", "en": "Shields an ally (700) for 2.5 s." },
+      "type": "targeted",
+      "castTime": 0.2,
+      "range": 700,
+      "cooldown": 11,
+      "cost": 70,
+      "costType": "mana",
+      "flags": ["ally_target"],
+      "effects": [
+        { "kind": "shield", "amount": { "base": [70, 110, 150, 190, 230], "ap": 0.5 }, "duration": 2.5, "target": "ally" }
+      ]
+    },
+    {
+      "id": "ferris_e",
+      "name": { "de": "Wegweiser", "en": "Waymark" },
+      "desc": {
+        "de": "Verbündeter (700) und er +25 % Bewegung 2 s, entfernt Slows.",
+        "en": "Ally (700) and himself gain +25% move speed for 2 s; removes slows."
+      },
+      "type": "targeted",
+      "castTime": 0.2,
+      "range": 700,
+      "cooldown": 14,
+      "cost": 50,
+      "costType": "mana",
+      "flags": ["ally_target"],
+      "effects": [
+        { "kind": "buff", "stat": "ms", "pct": 25, "duration": 2, "target": "ally" },
+        { "kind": "buff", "stat": "ms", "pct": 25, "duration": 2, "target": "self" },
+        { "kind": "hook", "id": "ferris_e_cleanse_slows" }
+      ]
+    },
+    {
+      "id": "ferris_r",
+      "name": { "de": "Dämmerung", "en": "Dusk" },
+      "desc": {
+        "de": "Umkreis 650: heilt Verbündete, blendet Gegner 1 s.",
+        "en": "Radius 650 around him: heals allies, blinds enemies for 1 s."
+      },
+      "type": "self",
+      "castTime": 0.3,
+      "range": 0,
+      "cooldown": 110,
+      "cost": 100,
+      "costType": "mana",
+      "radius": 650,
+      "effects": [
+        { "kind": "heal", "amount": { "base": [150, 250, 350], "ap": 0.6 }, "target": "allies" },
+        { "kind": "blind", "duration": 1 }
+      ]
+    }
+  ],
+  "spikeLevels": [1, 6],
+  "spikeNote": {
+    "de": "Level 1: Lichtstoß + Laterne gewinnen frühe Trades. Level 6: Dämmerung dreht Teamfights.",
+    "en": "Level 1: Light Burst + Lantern win early trades. Level 6: Dusk turns teamfights."
+  },
+  "maxOrder": ["W", "Q", "E"],
+  "combos": [
+    { "name": { "de": "Stoß und Schild", "en": "Burst and shield" }, "sequence": ["Q", "AA", "W"] },
+    { "name": { "de": "Rettungsweg", "en": "Escape route" }, "sequence": ["E", "W"] },
+    { "name": { "de": "Dämmerschild", "en": "Dusk shield" }, "sequence": ["R", "W"] }
+  ],
+  "scores": { "engage": 1, "peel": 4, "range": 3, "scaling": 3, "waveclear": 1, "mobility": 1 },
+  "voiceLines": {
+    "pick": { "de": "Einer muss ja das Licht halten.", "en": "Someone has to hold the light." },
+    "firstBlood": { "de": "Oh. Das war mein Licht? Gut gezielt.", "en": "Oh. That was my light? Nicely aimed." },
+    "kill": { "de": "Dunkel bei dir, was?", "en": "Dark over there, isn't it?" },
+    "death": { "de": "Docht abgebrannt.", "en": "Wick burned down." },
+    "recall": { "de": "Öl nachfüllen.", "en": "Refilling the oil." },
+    "taunt": { "de": "Ich leuchte nur. Was du siehst, ist deine Sache.", "en": "I just shine. What you see is your problem." }
+  },
+  "silhouette": "lamplighter holding a long pole with a lantern high above his head, shoulder satchel"
+}

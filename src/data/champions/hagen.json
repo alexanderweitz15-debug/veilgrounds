@@ -1,0 +1,131 @@
+{
+  "id": "hagen",
+  "name": "Mutter Hagen",
+  "title": { "de": "die Glöcknerin", "en": "the Bell Ringer" },
+  "roles": ["support"],
+  "archetype": "engage_support",
+  "trainingPurpose": { "de": "Engage-Supports lesen, Flash-Engage.", "en": "Read engage supports, Flash engages." },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 680,
+    "hpGrowth": 112,
+    "hpRegen": 9,
+    "hpRegenGrowth": 0.85,
+    "mana": 360,
+    "manaGrowth": 50,
+    "manaRegen": 7.5,
+    "manaRegenGrowth": 0.7,
+    "ad": 58,
+    "adGrowth": 3.4,
+    "armor": 36,
+    "armorGrowth": 5,
+    "mr": 32,
+    "mrGrowth": 2.05,
+    "as": 0.625,
+    "asGrowth": 2,
+    "range": 150,
+    "ms": 335,
+    "windup": 0.35,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Glockenschlag", "en": "Bell Toll" },
+    "desc": {
+      "de": "Jede Fähigkeit gibt 1 Schlag. Bei 3 Schlägen betäubt ihr nächster Auto 0,5 s (Abklingzeit 10 s).",
+      "en": "Every ability adds 1 toll. At 3 tolls her next basic attack stuns for 0.5 s (10 s cooldown)."
+    },
+    "hooks": ["hagen_bell_toll"]
+  },
+  "abilities": [
+    {
+      "id": "hagen_q",
+      "name": { "de": "Läuten", "en": "Ring" },
+      "desc": { "de": "Kreis 350 um sie, 35 % Slow 1,5 s.", "en": "Circle 350 around her, 35% slow for 1.5 s." },
+      "type": "self",
+      "castTime": 0.25,
+      "range": 0,
+      "cooldown": 9,
+      "cost": 50,
+      "costType": "mana",
+      "radius": 350,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [50, 80, 110, 140, 170], "maxHp": 0.05 } },
+        { "kind": "slow", "pct": 35, "duration": 1.5 }
+      ]
+    },
+    {
+      "id": "hagen_w",
+      "name": { "de": "Schutzglocke", "en": "Guardian Bell" },
+      "desc": { "de": "Schild auf Verbündeten (700) für 3 s.", "en": "Shields an ally (700) for 3 s." },
+      "type": "targeted",
+      "castTime": 0.2,
+      "range": 700,
+      "cooldown": 14,
+      "cost": 60,
+      "costType": "mana",
+      "flags": ["ally_target"],
+      "effects": [
+        { "kind": "shield", "amount": { "base": [60, 100, 140, 180, 220], "maxHp": 0.08 }, "duration": 3, "target": "ally" }
+      ]
+    },
+    {
+      "id": "hagen_e",
+      "name": { "de": "Glockenstoß", "en": "Bell Charge" },
+      "desc": { "de": "Dash 550 zu einem Gegner, Hochwurf 0,75 s.", "en": "Dash 550 to an enemy, airborne 0.75 s." },
+      "type": "dash",
+      "castTime": 0.2,
+      "range": 550,
+      "cooldown": [18, 17, 16, 15, 14],
+      "cost": 60,
+      "costType": "mana",
+      "speed": 1500,
+      "distance": 550,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [70, 110, 150, 190, 230], "maxHp": 0.04 } },
+        { "kind": "airborne", "duration": 0.75 }
+      ]
+    },
+    {
+      "id": "hagen_r",
+      "name": { "de": "Sturmgeläut", "en": "Storm Peal" },
+      "desc": {
+        "de": "4 s Aura 500: Gegner verlieren pro Sekunde 15 % Bewegung (bis 60 %), Verbündete +20 % Tenacity.",
+        "en": "4 s aura of 500: enemies lose 15% move speed per second (up to 60%), allies gain +20% tenacity."
+      },
+      "type": "self",
+      "castTime": 0.25,
+      "range": 0,
+      "cooldown": [120, 100, 80],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 500,
+      "duration": 4,
+      "effects": [
+        { "kind": "buff", "stat": "tenacity", "pct": 20, "duration": 4, "target": "allies" },
+        { "kind": "hook", "id": "hagen_r_storm_peal" }
+      ]
+    }
+  ],
+  "spikeLevels": [2, 6],
+  "spikeNote": {
+    "de": "Level 2: Glockenstoß + Läuten. Level 6: Flash-Engage mit Sturmgeläut.",
+    "en": "Level 2: Bell Charge + Ring. Level 6: Flash engage with Storm Peal."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Stoß und Läuten", "en": "Charge and ring" }, "sequence": ["E", "Q", "AA"] },
+    { "name": { "de": "Flash-Geläut", "en": "Flash peal" }, "sequence": ["FLASH", "E", "R"] },
+    { "name": { "de": "Schutz und Stoß", "en": "Guard and charge" }, "sequence": ["W", "E"] }
+  ],
+  "scores": { "engage": 5, "peel": 4, "range": 1, "scaling": 2, "waveclear": 1, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Die Glocke wiegt mehr als ihr alle zusammen.", "en": "The bell weighs more than all of you together." },
+    "firstBlood": { "de": "Erste Stunde geschlagen.", "en": "First hour struck." },
+    "kill": { "de": "Ausgeläutet.", "en": "Rung out." },
+    "death": { "de": "Wer hat am Seil gezogen?", "en": "Who pulled the rope?" },
+    "recall": { "de": "Zurück in den Turm.", "en": "Back to the belfry." },
+    "taunt": { "de": "Hörst du das? Das bist du, gleich.", "en": "Hear that? That's you, in a moment." }
+  },
+  "silhouette": "large bell on a yoke, stout old woman in a woollen shawl"
+}

@@ -1,0 +1,138 @@
+{
+  "id": "gorvam",
+  "name": "Gorvam Kettenmund",
+  "title": { "de": "der Hafenschlepper", "en": "the Dock Hauler" },
+  "roles": ["support"],
+  "archetype": "hook_support",
+  "trainingPurpose": { "de": "Hooks dodgen und landen.", "en": "Dodge and land hooks." },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 690,
+    "hpGrowth": 115,
+    "hpRegen": 9,
+    "hpRegenGrowth": 0.85,
+    "mana": 360,
+    "manaGrowth": 50,
+    "manaRegen": 7.5,
+    "manaRegenGrowth": 0.7,
+    "ad": 60,
+    "adGrowth": 3.4,
+    "armor": 36,
+    "armorGrowth": 5,
+    "mr": 32,
+    "mrGrowth": 2.05,
+    "as": 0.625,
+    "asGrowth": 2,
+    "range": 125,
+    "ms": 335,
+    "windup": 0.35,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Schwere Ketten", "en": "Heavy Chains" },
+    "desc": {
+      "de": "Jeder vierte Auto verlangsamt das Ziel 1 s um 40 %.",
+      "en": "Every fourth basic attack slows the target by 40% for 1 s."
+    },
+    "hooks": ["gorvam_heavy_chains"]
+  },
+  "abilities": [
+    {
+      "id": "gorvam_q",
+      "name": { "de": "Kettenhaken", "en": "Chain Hook" },
+      "desc": {
+        "de": "Linie 1.050 nach 0,5 s Wind-up. Zieht das erste Ziel über 1,5 s zu sich. Re-Cast bricht ab (Fake-Hook).",
+        "en": "Line 1050 after a 0.5 s wind-up. Drags the first target to him over 1.5 s. Recast cancels (fake hook)."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.5,
+      "range": 1050,
+      "cooldown": [18, 17, 16, 15, 14],
+      "cost": 100,
+      "costType": "mana",
+      "width": 70,
+      "speed": 1900,
+      "flags": ["blocked_by_minions", "recast"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [80, 120, 160, 200, 240], "ap": 1 } },
+        { "kind": "hook", "id": "gorvam_q_drag" },
+        { "kind": "hook", "id": "gorvam_q_fake_cancel" }
+      ]
+    },
+    {
+      "id": "gorvam_w",
+      "name": { "de": "Kettenschlag", "en": "Chain Slam" },
+      "desc": { "de": "Nächster Auto wirft das Ziel 0,5 s hoch.", "en": "Next basic attack knocks the target airborne for 0.5 s." },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": 9,
+      "cost": 25,
+      "costType": "mana",
+      "duration": 4,
+      "effects": [
+        { "kind": "airborne", "duration": 0.5 },
+        { "kind": "hook", "id": "gorvam_w_next_auto" }
+      ]
+    },
+    {
+      "id": "gorvam_e",
+      "name": { "de": "Ankerwurf", "en": "Anchor Toss" },
+      "desc": { "de": "Kreis 300 auf 650, nach 1 s 1 s Wurzel.", "en": "Circle 300 at 650; after 1 s roots for 1 s." },
+      "type": "skillshot_circle",
+      "castTime": 0.25,
+      "range": 650,
+      "cooldown": 14,
+      "cost": 50,
+      "costType": "mana",
+      "radius": 300,
+      "delay": 1,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "root", "duration": 1 }
+      ]
+    },
+    {
+      "id": "gorvam_r",
+      "name": { "de": "Kettenzug", "en": "Reel In" },
+      "desc": {
+        "de": "Zieht alle Gegner in 500 über 1,5 s zu sich, 60 % Slow.",
+        "en": "Drags all enemies within 500 toward him over 1.5 s with a 60% slow."
+      },
+      "type": "self",
+      "castTime": 0.3,
+      "range": 0,
+      "cooldown": 120,
+      "cost": 100,
+      "costType": "mana",
+      "radius": 500,
+      "duration": 1.5,
+      "effects": [
+        { "kind": "slow", "pct": 60, "duration": 1.5 },
+        { "kind": "hook", "id": "gorvam_r_reel_in" }
+      ]
+    }
+  ],
+  "spikeLevels": [2, 3],
+  "spikeNote": {
+    "de": "Level 2/3: Haken + Kettenschlag + Anker ist garantierter Kill-Setup.",
+    "en": "Level 2/3: Hook + Chain Slam + Anchor is a guaranteed kill setup."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Haken, Schlag, Anker", "en": "Hook, slam, anchor" }, "sequence": ["Q", "W", "E"] },
+    { "name": { "de": "Flash-Schlag", "en": "Flash slam" }, "sequence": ["FLASH", "W", "Q"] },
+    { "name": { "de": "Anker und Haken", "en": "Anchor and hook" }, "sequence": ["E", "Q"] }
+  ],
+  "scores": { "engage": 5, "peel": 3, "range": 2, "scaling": 1, "waveclear": 0, "mobility": 1 },
+  "voiceLines": {
+    "pick": { "de": "Kette ist geölt. Ich nicht.", "en": "The chain is oiled. I'm not." },
+    "firstBlood": { "de": "Fang des Tages.", "en": "Catch of the day." },
+    "kill": { "de": "Ladung gelöscht.", "en": "Cargo unloaded." },
+    "death": { "de": "Kette gerissen. Passiert.", "en": "Chain snapped. Happens." },
+    "recall": { "de": "Feierabend. Für fünf Minuten.", "en": "Clocking off. For five minutes." },
+    "taunt": { "de": "Komm her. Oder ich hol dich.", "en": "Come here. Or I'll fetch you." }
+  },
+  "silhouette": "hulking chain-wrapped dockworker, giant cargo hook on a chain over one shoulder, iron jaw"
+}

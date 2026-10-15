@@ -1,0 +1,146 @@
+{
+  "id": "aurel",
+  "name": "Aurel Stundenwerk",
+  "title": { "de": "der Uhrmacher", "en": "the Clockmaker" },
+  "roles": ["mid"],
+  "archetype": "control_mage",
+  "trainingPurpose": { "de": "Zonen umlaufen, lange Abklingzeiten tracken.", "en": "Walk around zones, track long cooldowns." },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 590,
+    "hpGrowth": 102,
+    "hpRegen": 5.5,
+    "hpRegenGrowth": 0.55,
+    "mana": 450,
+    "manaGrowth": 28,
+    "manaRegen": 8,
+    "manaRegenGrowth": 0.8,
+    "ad": 55,
+    "adGrowth": 3,
+    "armor": 26,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.625,
+    "asGrowth": 1.6,
+    "range": 550,
+    "ms": 335,
+    "windup": 0.3,
+    "projectileSpeed": 1600,
+    "radius": 55
+  },
+  "passive": {
+    "name": { "de": "Unruh", "en": "Balance Wheel" },
+    "desc": {
+      "de": "Alle 8 s wird seine nächste Fähigkeit 30 % schneller gewirkt.",
+      "en": "Every 8 s his next ability casts 30% faster."
+    },
+    "hooks": ["aurel_balance_wheel"]
+  },
+  "abilities": [
+    {
+      "id": "aurel_q",
+      "name": { "de": "Zeiger", "en": "Clock Hand" },
+      "desc": {
+        "de": "Linie 1.000, durchdringt Minions und trifft bis zu 2 Champions.",
+        "en": "Line 1000; passes through minions and hits up to 2 champions."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "range": 1000,
+      "cooldown": 7,
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "width": 70,
+      "speed": 1600,
+      "flags": ["pierce"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [70, 110, 150, 190, 230], "ap": 0.7 } },
+        { "kind": "hook", "id": "aurel_q_two_champions" }
+      ]
+    },
+    {
+      "id": "aurel_w",
+      "name": { "de": "Unruhefeld", "en": "Restless Field" },
+      "desc": {
+        "de": "Kreis 320 auf 800 für 3 s: 35 % Slow, gegnerische Projektile darin 40 % langsamer.",
+        "en": "Circle 320 at 800 for 3 s: 35% slow; enemy projectiles inside are 40% slower."
+      },
+      "type": "zone",
+      "castTime": 0.25,
+      "range": 800,
+      "cooldown": 15,
+      "cost": 70,
+      "costType": "mana",
+      "radius": 320,
+      "duration": 3,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "slow", "pct": 35, "duration": 0.5 },
+        { "kind": "hook", "id": "aurel_w_projectile_drag" }
+      ]
+    },
+    {
+      "id": "aurel_e",
+      "name": { "de": "Zurückspulen", "en": "Rewind" },
+      "desc": {
+        "de": "Nach 0,5 s Teleport an die Position von vor 3 s; heilt 15 % des seitdem erlittenen Schadens.",
+        "en": "After 0.5 s teleports to where he was 3 s ago; heals 15% of the damage taken since."
+      },
+      "type": "blink",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": [22, 20, 18, 16, 14],
+      "cost": 60,
+      "costType": "mana",
+      "delay": 0.5,
+      "effects": [
+        { "kind": "hook", "id": "aurel_e_rewind" }
+      ]
+    },
+    {
+      "id": "aurel_r",
+      "name": { "de": "Stillstand", "en": "Standstill" },
+      "desc": {
+        "de": "Kreis 450 auf 900, nach 1 s: Stasis 1,2 s, danach Schaden.",
+        "en": "Circle 450 at 900; after 1 s: stasis for 1.2 s, then damage."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.3,
+      "range": 900,
+      "cooldown": [120, 100, 80],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 450,
+      "delay": 1,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "stasis", "duration": 1.2 },
+        { "kind": "damage", "type": "magic", "amount": { "base": [250, 400, 550], "ap": 0.8 } },
+        { "kind": "hook", "id": "aurel_r_damage_after_stasis" }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": {
+    "de": "Level 6: Stillstand setzt ganze Teams fest – danach trifft alles.",
+    "en": "Level 6: Standstill freezes whole teams - everything lands afterwards."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Feld und Zeiger", "en": "Field and hand" }, "sequence": ["W", "Q", "AA"] },
+    { "name": { "de": "Stillstand-Kette", "en": "Standstill chain" }, "sequence": ["R", "W", "Q"] },
+    { "name": { "de": "Zurückspulen (Dodge)", "en": "Rewind (dodge)" }, "sequence": ["E"] }
+  ],
+  "scores": { "engage": 2, "peel": 3, "range": 4, "scaling": 4, "waveclear": 3, "mobility": 1 },
+  "voiceLines": {
+    "pick": { "de": "Ich bin pünktlich. Ihr seid zu früh.", "en": "I'm punctual. You're early." },
+    "firstBlood": { "de": "Genau nach Plan. Auf die Sekunde.", "en": "Right on schedule. To the second." },
+    "kill": { "de": "Abgelaufen.", "en": "Expired." },
+    "death": { "de": "Die Uhr ging nach.", "en": "The clock was slow." },
+    "recall": { "de": "Aufziehen.", "en": "Winding up." },
+    "taunt": { "de": "Deine Zeit ist knapp. Ich hab nachgezählt.", "en": "Your time is short. I counted." }
+  },
+  "silhouette": "clockmaker with a brass clock-face backpack and a pendulum staff"
+}

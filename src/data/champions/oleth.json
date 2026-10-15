@@ -1,0 +1,143 @@
+{
+  "id": "oleth",
+  "name": "Sister Oleth",
+  "title": { "de": "die Mauer des Ordens", "en": "the Wall of the Order" },
+  "roles": ["top", "jungle"],
+  "archetype": "engage_tank",
+  "trainingPurpose": { "de": "Engage antizipieren, Peel.", "en": "Anticipate engages, peel." },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 685,
+    "hpGrowth": 115,
+    "hpRegen": 9,
+    "hpRegenGrowth": 0.85,
+    "mana": 360,
+    "manaGrowth": 50,
+    "manaRegen": 7.5,
+    "manaRegenGrowth": 0.7,
+    "ad": 60,
+    "adGrowth": 3.4,
+    "armor": 36,
+    "armorGrowth": 5,
+    "mr": 32,
+    "mrGrowth": 2.05,
+    "as": 0.625,
+    "asGrowth": 2,
+    "range": 125,
+    "ms": 340,
+    "windup": 0.35,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Glaubensmauer", "en": "Wall of Faith" },
+    "desc": {
+      "de": "Erleidet sie innerhalb von 2 s Schaden von mindestens 15 % Max-HP, erhält sie einen Schild von 8 % Max-HP (Abklingzeit 10 s).",
+      "en": "If she takes damage of at least 15% max HP within 2 s, she gains a shield of 8% max HP (10 s cooldown)."
+    },
+    "hooks": ["oleth_faith_wall"]
+  },
+  "abilities": [
+    {
+      "id": "oleth_q",
+      "name": { "de": "Banner", "en": "Banner" },
+      "desc": {
+        "de": "Zielgerichteter Bannerschlag 450. Betäubt 0,5 s, wenn sie in den letzten 2 s gedasht ist.",
+        "en": "Targeted banner strike, 450. Stuns for 0.5 s if she dashed in the last 2 s."
+      },
+      "type": "targeted",
+      "castTime": 0.25,
+      "range": 450,
+      "cooldown": 10,
+      "cost": 40,
+      "costType": "mana",
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [60, 95, 130, 165, 200], "ad": 0.8 } },
+        { "kind": "hook", "id": "oleth_q_dash_stun" }
+      ]
+    },
+    {
+      "id": "oleth_w",
+      "name": { "de": "Ruf", "en": "Call" },
+      "desc": {
+        "de": "Verbündete in 600 +20 % Bewegung 2 s; sie selbst nimmt 3 s 20 % weniger Schaden.",
+        "en": "Allies within 600 gain +20% move speed for 2 s; she takes 20% less damage for 3 s."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": 16,
+      "cost": 50,
+      "costType": "mana",
+      "radius": 600,
+      "effects": [
+        { "kind": "buff", "stat": "ms", "pct": 20, "duration": 2, "target": "allies" },
+        { "kind": "buff", "stat": "dmgReduction", "pct": 20, "duration": 3, "target": "self" }
+      ]
+    },
+    {
+      "id": "oleth_e",
+      "name": { "de": "Sturmschritt", "en": "Storm Stride" },
+      "desc": {
+        "de": "Dash 600, stoppt am ersten Gegner und wirft ihn 0,75 s hoch.",
+        "en": "Dash 600; stops at the first enemy and knocks it airborne for 0.75 s."
+      },
+      "type": "dash",
+      "castTime": 0.2,
+      "range": 600,
+      "cooldown": [18, 17, 16, 15, 14],
+      "cost": 60,
+      "costType": "mana",
+      "width": 100,
+      "speed": 1500,
+      "distance": 600,
+      "effects": [
+        { "kind": "hook", "id": "oleth_e_stop_on_enemy" },
+        { "kind": "airborne", "duration": 0.75 }
+      ]
+    },
+    {
+      "id": "oleth_r",
+      "name": { "de": "Mahnmal", "en": "Monument" },
+      "desc": {
+        "de": "Nach 0,7 s erscheint eine Steinwand (Länge 800) 350 vor ihr. Gegner auf der Linie 1,5 s betäubt, die Wand blockt 4 s.",
+        "en": "After 0.7 s a stone wall (length 800) rises 350 in front of her. Enemies on the line are stunned 1.5 s; the wall blocks for 4 s."
+      },
+      "type": "zone",
+      "castTime": 0.3,
+      "range": 350,
+      "cooldown": 120,
+      "cost": 100,
+      "costType": "mana",
+      "width": 100,
+      "radius": 400,
+      "delay": 0.7,
+      "duration": 4,
+      "effects": [
+        { "kind": "stun", "duration": 1.5 },
+        { "kind": "hook", "id": "oleth_r_wall" }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": {
+    "de": "Level 6: Mahnmal schneidet Rückzüge ab – jeder Gank wird zum Kill.",
+    "en": "Level 6: Monument cuts off retreats - every gank becomes a kill."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Sturm und Banner", "en": "Storm and banner" }, "sequence": ["E", "Q", "R"] },
+    { "name": { "de": "Ruf zum Angriff", "en": "Call to charge" }, "sequence": ["W", "E"] },
+    { "name": { "de": "Mauer, dann Sturm", "en": "Wall, then storm" }, "sequence": ["R", "E"] }
+  ],
+  "scores": { "engage": 5, "peel": 4, "range": 1, "scaling": 2, "waveclear": 1, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Der Orden schickt mich. Der Orden schickt immer mich.", "en": "The order sends me. The order always sends me." },
+    "firstBlood": { "de": "Steht im Regelwerk. Seite eins.", "en": "It's in the rulebook. Page one." },
+    "kill": { "de": "Ermahnt.", "en": "Admonished." },
+    "death": { "de": "Ich melde das dem Konvent.", "en": "I'll report this to the convent." },
+    "recall": { "de": "Zurück zur Andacht. Kurz.", "en": "Back to prayers. Briefly." },
+    "taunt": { "de": "Ich bin keine Wand. Ich baue nur welche.", "en": "I'm not a wall. I just build them." }
+  },
+  "silhouette": "armored nun with a tall banner pole and a stone tablet strapped to her back"
+}

@@ -1,0 +1,139 @@
+{
+  "id": "nyx",
+  "name": "Nyx Hohlschatten",
+  "title": { "de": "der Lampenlöscher", "en": "the Lamp Snuffer" },
+  "roles": ["jungle"],
+  "archetype": "stealth_assassin",
+  "trainingPurpose": { "de": "Unsichtbare Ganks lesen.", "en": "Read invisible ganks." },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 600,
+    "hpGrowth": 100,
+    "hpRegen": 5.5,
+    "hpRegenGrowth": 0.55,
+    "mana": 420,
+    "manaGrowth": 28,
+    "manaRegen": 8,
+    "manaRegenGrowth": 0.8,
+    "ad": 56,
+    "adGrowth": 3,
+    "armor": 26,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.625,
+    "asGrowth": 1.6,
+    "range": 450,
+    "ms": 340,
+    "windup": 0.3,
+    "projectileSpeed": 1800,
+    "radius": 55
+  },
+  "passive": {
+    "name": { "de": "Dunkelsaat", "en": "Dark Seed" },
+    "desc": {
+      "de": "Jedes getötete Lager hinterlässt 90 s eine unsichtbare Saat. Gegner, die darüber laufen, sind 3 s aufgedeckt.",
+      "en": "Every cleared camp leaves an invisible seed for 90 s. Enemies who walk over it are revealed for 3 s."
+    },
+    "hooks": ["nyx_dark_seed"]
+  },
+  "abilities": [
+    {
+      "id": "nyx_q",
+      "name": { "de": "Schattendolch", "en": "Shadow Dagger" },
+      "desc": {
+        "de": "Linie 800, kehrt zu ihm zurück und kann jedes Ziel zweimal treffen.",
+        "en": "Line 800 that returns to him and can hit each target twice."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "range": 800,
+      "cooldown": 7,
+      "cost": 55,
+      "costType": "mana",
+      "width": 50,
+      "speed": 1500,
+      "flags": ["pierce"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [70, 110, 150, 190, 230], "ap": 0.7 } },
+        { "kind": "hook", "id": "nyx_q_return" }
+      ]
+    },
+    {
+      "id": "nyx_w",
+      "name": { "de": "Verhüllen", "en": "Shroud" },
+      "desc": {
+        "de": "2 s unsichtbar, +20 % Bewegung. Ein Auto aus der Unsichtbarkeit wurzelt 0,75 s.",
+        "en": "2 s invisible, +20% move speed. A basic attack out of invisibility roots for 0.75 s."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": [22, 20, 18, 16, 14],
+      "cost": 70,
+      "costType": "mana",
+      "duration": 2,
+      "effects": [
+        { "kind": "buff", "stat": "invisible", "duration": 2, "target": "self" },
+        { "kind": "buff", "stat": "ms", "pct": 20, "duration": 2, "target": "self" },
+        { "kind": "hook", "id": "nyx_w_ambush_root" }
+      ]
+    },
+    {
+      "id": "nyx_e",
+      "name": { "de": "Hohlsprung", "en": "Hollow Leap" },
+      "desc": { "de": "Dash 500.", "en": "Dash 500." },
+      "type": "dash",
+      "castTime": 0.2,
+      "range": 500,
+      "cooldown": 16,
+      "cost": 50,
+      "costType": "mana",
+      "speed": 1500,
+      "distance": 500,
+      "effects": []
+    },
+    {
+      "id": "nyx_r",
+      "name": { "de": "Schleiernacht", "en": "Veil Night" },
+      "desc": {
+        "de": "6 s sind alle Gegner in 1.200 für ihr Team sichtbar. +15 % Schaden an Zielen, die sonst niemand sieht.",
+        "en": "For 6 s all enemies within 1200 are visible to her team. +15% damage to targets nobody else can see."
+      },
+      "type": "self",
+      "castTime": 0.3,
+      "range": 0,
+      "cooldown": 100,
+      "cost": 100,
+      "costType": "mana",
+      "radius": 1200,
+      "duration": 6,
+      "effects": [
+        { "kind": "reveal", "duration": 6 },
+        { "kind": "hook", "id": "nyx_r_lonely_prey" }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": {
+    "de": "Level 6: Schleiernacht – Ganks kommen ohne Vorwarnung und ohne Fluchtweg.",
+    "en": "Level 6: Veil Night - ganks arrive without warning and without escape."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Hinterhalt", "en": "Ambush" }, "sequence": ["W", "AA", "Q", "E"] },
+    { "name": { "de": "Nachtsprung", "en": "Night leap" }, "sequence": ["E", "Q", "R"] },
+    { "name": { "de": "Schleier-Gank", "en": "Veil gank" }, "sequence": ["R", "W", "AA", "Q"] }
+  ],
+  "scores": { "engage": 3, "peel": 1, "range": 2, "scaling": 3, "waveclear": 2, "mobility": 3 },
+  "voiceLines": {
+    "pick": { "de": "Mach das Licht aus. Danke.", "en": "Turn off the light. Thanks." },
+    "firstBlood": { "de": "Niemand hat was gesehen. Wie geplant.", "en": "Nobody saw anything. As planned." },
+    "kill": { "de": "Ausgeknipst.", "en": "Snuffed." },
+    "death": { "de": "Wer hat hier Licht gemacht?", "en": "Who turned the light on?" },
+    "recall": { "de": "Kurz im Schrank warten.", "en": "Waiting in the cupboard for a bit." },
+    "taunt": { "de": "Du siehst mich nicht. Das ist der Punkt.", "en": "You can't see me. That's the point." }
+  },
+  "silhouette": "faceless figure in a tattered shadow cloak, two thin daggers, hunched"
+}

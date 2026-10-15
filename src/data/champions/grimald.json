@@ -1,0 +1,137 @@
+{
+  "id": "grimald",
+  "name": "Grimald Fell",
+  "title": { "de": "der Fallensteller", "en": "the Trapper" },
+  "roles": ["jungle"],
+  "archetype": "tank_engage_jungler",
+  "trainingPurpose": { "de": "CC-Ganks lesen, Dive-Druck.", "en": "Read CC ganks, dive pressure." },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 680,
+    "hpGrowth": 115,
+    "hpRegen": 9,
+    "hpRegenGrowth": 0.85,
+    "mana": 360,
+    "manaGrowth": 50,
+    "manaRegen": 7.5,
+    "manaRegenGrowth": 0.7,
+    "ad": 63,
+    "adGrowth": 3.4,
+    "armor": 36,
+    "armorGrowth": 5,
+    "mr": 32,
+    "mrGrowth": 2.05,
+    "as": 0.625,
+    "asGrowth": 2,
+    "range": 175,
+    "ms": 340,
+    "windup": 0.35,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Fallensteller", "en": "Trapper" },
+    "desc": {
+      "de": "Monster-Kills hinterlassen 60 s eine unsichtbare Falle (0,5 s Wurzel, max. 3).",
+      "en": "Monster kills leave an invisible trap for 60 s (0.5 s root, max 3)."
+    },
+    "hooks": ["grimald_traps"]
+  },
+  "abilities": [
+    {
+      "id": "grimald_q",
+      "name": { "de": "Fangeisen", "en": "Jaw Trap" },
+      "desc": { "de": "Zielgerichtet 450, 60 % Slow 1,25 s.", "en": "Targeted 450, 60% slow for 1.25 s." },
+      "type": "targeted",
+      "castTime": 0.25,
+      "range": 450,
+      "cooldown": 8,
+      "cost": 40,
+      "costType": "mana",
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [70, 110, 150, 190, 230], "ad": 0.8 } },
+        { "kind": "slow", "pct": 60, "duration": 1.25 }
+      ]
+    },
+    {
+      "id": "grimald_w",
+      "name": { "de": "Dickes Fell", "en": "Thick Hide" },
+      "desc": {
+        "de": "4 s +20/25/30/35/40 % Rüstung und MR; heilt 2 % Max-HP pro Sekunde, solange er Monster angreift.",
+        "en": "4 s of +20/25/30/35/40% armor and MR; heals 2% max HP per second while fighting monsters."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": 16,
+      "cost": 50,
+      "costType": "mana",
+      "duration": 4,
+      "effects": [
+        { "kind": "buff", "stat": "armor", "pct": [20, 25, 30, 35, 40], "duration": 4, "target": "self" },
+        { "kind": "buff", "stat": "mr", "pct": [20, 25, 30, 35, 40], "duration": 4, "target": "self" },
+        { "kind": "hook", "id": "grimald_w_monster_regen" }
+      ]
+    },
+    {
+      "id": "grimald_e",
+      "name": { "de": "Netzwurf", "en": "Net Throw" },
+      "desc": { "de": "Kreis 250 auf 900, nach 1 s 1,5 s Wurzel.", "en": "Circle 250 at 900; after 1 s roots for 1.5 s." },
+      "type": "skillshot_circle",
+      "castTime": 0.25,
+      "range": 900,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": 60,
+      "costType": "mana",
+      "radius": 250,
+      "delay": 1,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "root", "duration": 1.5 }
+      ]
+    },
+    {
+      "id": "grimald_r",
+      "name": { "de": "Bärensprung", "en": "Bear Leap" },
+      "desc": {
+        "de": "Sprung 650 auf einen Zielbereich: Gegner in 300 1 s hochgeworfen, danach 3 s Aura −20 % Angriffstempo.",
+        "en": "Leaps 650 to a target area: enemies within 300 are airborne for 1 s, then a 3 s aura of -20% attack speed."
+      },
+      "type": "dash",
+      "castTime": 0.25,
+      "range": 650,
+      "cooldown": [110, 90, 70],
+      "cost": 100,
+      "costType": "mana",
+      "speed": 1200,
+      "radius": 300,
+      "distance": 650,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "airborne", "duration": 1 },
+        { "kind": "hook", "id": "grimald_r_aura" }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3: Netz + Fangeisen ist ein sicherer Gank. Level 6: Bärensprung-Dive.",
+    "en": "Level 3: Net + Jaw Trap is a safe gank. Level 6: Bear Leap dive."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Netz und Sprung", "en": "Net and leap" }, "sequence": ["E", "R", "Q", "AA"] },
+    { "name": { "de": "Sprung ins Netz", "en": "Leap into net" }, "sequence": ["R", "E"] },
+    { "name": { "de": "Fell-Duell", "en": "Hide duel" }, "sequence": ["Q", "AA", "W"] }
+  ],
+  "scores": { "engage": 5, "peel": 3, "range": 1, "scaling": 2, "waveclear": 1, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Fallen sind gestellt. Wo, verrate ich nicht.", "en": "Traps are set. Where, I won't say." },
+    "firstBlood": { "de": "Zugeschnappt.", "en": "Snapped shut." },
+    "kill": { "de": "Ins Netz gegangen.", "en": "Netted." },
+    "death": { "de": "In die eigene Falle. Klassiker.", "en": "Into my own trap. Classic." },
+    "recall": { "de": "Fallen kontrollieren.", "en": "Checking the traps." },
+    "taunt": { "de": "Lauf ruhig weiter. Genau da lang.", "en": "Keep walking. Right that way." }
+  },
+  "silhouette": "heavy trapper in bear hide with bear-head hood, steel jaw trap on his belt"
+}

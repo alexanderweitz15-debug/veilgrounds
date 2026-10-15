@@ -1,0 +1,44 @@
+{
+  "champion": "mira",
+  "template": "marksman",
+  "starter": [
+    "kurzschwert",
+    "trank"
+  ],
+  "standard": {
+    "boots": "stiefel_schnelligkeit",
+    "core": [
+      "sturmbogen",
+      "blutkrone",
+      "scharfrichterbeil",
+      "schwarze_kette"
+    ]
+  },
+  "vsAD": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "sturmbogen",
+      "blutkrone",
+      "wallherz",
+      "scharfrichterbeil"
+    ]
+  },
+  "vsAP": {
+    "boots": "stiefel_mr",
+    "core": [
+      "sturmbogen",
+      "blutkrone",
+      "sturmgewand",
+      "scharfrichterbeil"
+    ]
+  },
+  "runes": {
+    "keystone": "praezision",
+    "minor": [
+      "angriffstempo",
+      "blutdurst",
+      "gnadenstoss"
+    ]
+  },
+  "note": "Component order follows items.json \"from\"; Diamond+ bots reorder components situationally (spec §5)."
+}

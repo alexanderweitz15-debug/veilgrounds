@@ -1,0 +1,310 @@
+{
+  "note": "Spec §5 Prägungen: 1 keystone + 3 minor from a pool of 12.",
+  "runes": [
+    {
+      "id": "dauerhafter_schaden",
+      "name": {
+        "de": "Dauerhafter Schaden",
+        "en": "Lasting Harm"
+      },
+      "desc": {
+        "de": "3 verschiedene Angriffe/Fähigkeiten auf einen Champion in 3 s: Bonusschaden 30–180 (+40 % Bonus-AD, +25 % AP). CD 25 s.",
+        "en": "3 separate attacks/abilities on a champion within 3 s: bonus damage 30-180 (+40% bonus AD, +25% AP). CD 25 s."
+      },
+      "kind": "keystone",
+      "fits": [
+        "assassin",
+        "burst_mage",
+        "skillshot_mage",
+        "jungle_assassin"
+      ],
+      "hook": "rune_lasting_harm"
+    },
+    {
+      "id": "praezision",
+      "name": {
+        "de": "Präzision",
+        "en": "Precision"
+      },
+      "desc": {
+        "de": "Autoangriffe auf Champions stapeln +8 % AS (max 6 Stacks, 6 s).",
+        "en": "Basic attacks on champions stack +8% AS (max 6, 6 s)."
+      },
+      "kind": "keystone",
+      "fits": [
+        "marksman",
+        "splitpusher",
+        "duelist",
+        "jungle_bruiser"
+      ],
+      "hook": "rune_precision"
+    },
+    {
+      "id": "zaehigkeit",
+      "name": {
+        "de": "Zähigkeit",
+        "en": "Grit"
+      },
+      "desc": {
+        "de": "Nach 4 s im Kampf: nächster Auto auf einen Champion heilt 2 % Max-HP und macht 3 % Max-HP Bonusschaden.",
+        "en": "After 4 s in combat: next basic attack on a champion heals 2% max HP and deals 3% max HP bonus damage."
+      },
+      "kind": "keystone",
+      "fits": [
+        "juggernaut",
+        "tank_engage",
+        "tank_bruiser",
+        "hook_support",
+        "tank_jungle"
+      ],
+      "hook": "rune_grit"
+    },
+    {
+      "id": "inspiration",
+      "name": {
+        "de": "Inspiration",
+        "en": "Inspiration"
+      },
+      "desc": {
+        "de": "Kostenlose Stiefel bei 12:00 (−10 % Kosten der Stiefel davor), +10 Fähigkeitshast.",
+        "en": "Free boots at 12:00 (boots cost -10% before), +10 ability haste."
+      },
+      "kind": "keystone",
+      "fits": [
+        "enchanter",
+        "battlemage",
+        "control_mage",
+        "healer"
+      ],
+      "stats": {
+        "haste": 10
+      },
+      "hook": "rune_inspiration"
+    },
+    {
+      "id": "adaptiv",
+      "name": {
+        "de": "+9 Adaptiv",
+        "en": "+9 Adaptive"
+      },
+      "desc": {
+        "de": "+9 AD oder +15 AP (je nachdem, was höher ist).",
+        "en": "+9 AD or +15 AP, whichever is higher."
+      },
+      "kind": "minor",
+      "fits": [
+        "*"
+      ],
+      "stats": {
+        "adaptive": 9
+      }
+    },
+    {
+      "id": "ruestung",
+      "name": {
+        "de": "+6 Rüstung",
+        "en": "+6 Armor"
+      },
+      "desc": {
+        "de": "+6 Rüstung.",
+        "en": "+6 armor."
+      },
+      "kind": "minor",
+      "fits": [
+        "*"
+      ],
+      "stats": {
+        "armor": 6
+      }
+    },
+    {
+      "id": "magieresistenz",
+      "name": {
+        "de": "+8 MR",
+        "en": "+8 MR"
+      },
+      "desc": {
+        "de": "+8 Magieresistenz.",
+        "en": "+8 magic resist."
+      },
+      "kind": "minor",
+      "fits": [
+        "*"
+      ],
+      "stats": {
+        "mr": 8
+      }
+    },
+    {
+      "id": "angriffstempo",
+      "name": {
+        "de": "+8 % AS",
+        "en": "+8% AS"
+      },
+      "desc": {
+        "de": "+8 % Angriffstempo.",
+        "en": "+8% attack speed."
+      },
+      "kind": "minor",
+      "fits": [
+        "marksman",
+        "duelist",
+        "splitpusher"
+      ],
+      "stats": {
+        "asPct": 8
+      }
+    },
+    {
+      "id": "hast",
+      "name": {
+        "de": "+8 Hast",
+        "en": "+8 Haste"
+      },
+      "desc": {
+        "de": "+8 Fähigkeitshast.",
+        "en": "+8 ability haste."
+      },
+      "kind": "minor",
+      "fits": [
+        "*"
+      ],
+      "stats": {
+        "haste": 8
+      }
+    },
+    {
+      "id": "lebenskraft",
+      "name": {
+        "de": "+65 HP",
+        "en": "+65 HP"
+      },
+      "desc": {
+        "de": "+65 Leben.",
+        "en": "+65 health."
+      },
+      "kind": "minor",
+      "fits": [
+        "*"
+      ],
+      "stats": {
+        "hp": 65
+      }
+    },
+    {
+      "id": "manafluss",
+      "name": {
+        "de": "Mana-Flow",
+        "en": "Mana Flow"
+      },
+      "desc": {
+        "de": "Fähigkeitstreffer auf Champions: +25 Max-Mana (max 250).",
+        "en": "Ability hits on champions: +25 max mana (max 250)."
+      },
+      "kind": "minor",
+      "fits": [
+        "skillshot_mage",
+        "burst_mage",
+        "battlemage",
+        "control_mage"
+      ],
+      "hook": "rune_mana_flow"
+    },
+    {
+      "id": "zweiter_wind",
+      "name": {
+        "de": "Zweiter Wind",
+        "en": "Second Wind"
+      },
+      "desc": {
+        "de": "Nach Schaden durch Champions: 6 % fehlende HP über 10 s.",
+        "en": "After champion damage: regenerate 6% missing HP over 10 s."
+      },
+      "kind": "minor",
+      "fits": [
+        "juggernaut",
+        "tank_bruiser",
+        "duelist",
+        "splitpusher"
+      ],
+      "hook": "rune_second_wind"
+    },
+    {
+      "id": "schnellfuss",
+      "name": {
+        "de": "Schnellfuß",
+        "en": "Fleetfoot"
+      },
+      "desc": {
+        "de": "+2 % Bewegungstempo.",
+        "en": "+2% movement speed."
+      },
+      "kind": "minor",
+      "fits": [
+        "*"
+      ],
+      "stats": {
+        "msPct": 2
+      }
+    },
+    {
+      "id": "gnadenstoss",
+      "name": {
+        "de": "Gnadenstoß",
+        "en": "Coup de Grace"
+      },
+      "desc": {
+        "de": "+8 % Schaden an Champions unter 40 % HP.",
+        "en": "+8% damage to champions below 40% HP."
+      },
+      "kind": "minor",
+      "fits": [
+        "assassin",
+        "marksman",
+        "burst_mage"
+      ],
+      "hook": "rune_coup"
+    },
+    {
+      "id": "blutdurst",
+      "name": {
+        "de": "Blutdurst",
+        "en": "Bloodthirst"
+      },
+      "desc": {
+        "de": "+4 % Lebensraub.",
+        "en": "+4% life steal."
+      },
+      "kind": "minor",
+      "fits": [
+        "marksman",
+        "jungle_bruiser"
+      ],
+      "stats": {
+        "lifestealPct": 4
+      }
+    },
+    {
+      "id": "wachsamkeit",
+      "name": {
+        "de": "Wachsamkeit",
+        "en": "Vigilance"
+      },
+      "desc": {
+        "de": "Wards halten 10 % länger, +5 Hast.",
+        "en": "Wards last 10% longer, +5 haste."
+      },
+      "kind": "minor",
+      "fits": [
+        "enchanter",
+        "hook_support",
+        "healer",
+        "tank_engage"
+      ],
+      "stats": {
+        "haste": 5
+      },
+      "hook": "rune_vigilance"
+    }
+  ]
+}

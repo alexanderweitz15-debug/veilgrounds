@@ -1,0 +1,149 @@
+{
+  "id": "oda",
+  "name": "Oda Brunnen",
+  "title": { "de": "die Wasserträgerin", "en": "the Water Carrier" },
+  "roles": ["support"],
+  "archetype": "healer_enchanter",
+  "trainingPurpose": { "de": "Sustain-Lanes, Heilung timen.", "en": "Sustain lanes, time your heals." },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 565,
+    "hpGrowth": 95,
+    "hpRegen": 5.5,
+    "hpRegenGrowth": 0.55,
+    "mana": 420,
+    "manaGrowth": 40,
+    "manaRegen": 11,
+    "manaRegenGrowth": 0.8,
+    "ad": 55,
+    "adGrowth": 2.5,
+    "armor": 26,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.625,
+    "asGrowth": 1.5,
+    "range": 550,
+    "ms": 335,
+    "windup": 0.3,
+    "projectileSpeed": 1500,
+    "radius": 55
+  },
+  "passive": {
+    "name": { "de": "Quellwasser", "en": "Spring Water" },
+    "desc": {
+      "de": "Verbündete in 800 regenerieren zusätzlich 1 % Max-HP pro 5 s.",
+      "en": "Allies within 800 regenerate an extra 1% max HP per 5 s."
+    },
+    "hooks": ["oda_spring_water"]
+  },
+  "abilities": [
+    {
+      "id": "oda_q",
+      "name": { "de": "Wasserstrahl", "en": "Water Jet" },
+      "desc": {
+        "de": "Linie 850. Erster Gegner: Schaden und 25 % Slow 1 s. Erster Verbündeter: Heilung.",
+        "en": "Line 850. First enemy: damage and 25% slow for 1 s. First ally: heal."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "range": 850,
+      "cooldown": 7,
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "width": 60,
+      "speed": 1500,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [60, 95, 130, 165, 200], "ap": 0.5 } },
+        { "kind": "slow", "pct": 25, "duration": 1 },
+        { "kind": "heal", "amount": { "base": [40, 70, 100, 130, 160], "ap": 0.3 }, "target": "ally" },
+        { "kind": "hook", "id": "oda_q_ally_collision" }
+      ]
+    },
+    {
+      "id": "oda_w",
+      "name": { "de": "Quellkreis", "en": "Spring Circle" },
+      "desc": {
+        "de": "Kreis 300 auf 650 für 3 s: heilt Verbündete pro Sekunde.",
+        "en": "Circle 300 at 650 for 3 s: heals allies every second."
+      },
+      "type": "zone",
+      "castTime": 0.25,
+      "range": 650,
+      "cooldown": [16, 15, 14, 13, 12],
+      "cost": 80,
+      "costType": "mana",
+      "radius": 300,
+      "duration": 3,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "heal", "amount": { "base": [20, 30, 40, 50, 60], "ap": 0.15 }, "target": "allies" }
+      ]
+    },
+    {
+      "id": "oda_e",
+      "name": { "de": "Strömung", "en": "Current" },
+      "desc": {
+        "de": "Verbündeter (700) +30 % Bewegung 2 s, entfernt Slows; sie selbst +15 %.",
+        "en": "Ally (700) gains +30% move speed for 2 s and loses slows; she gains +15%."
+      },
+      "type": "targeted",
+      "castTime": 0.2,
+      "range": 700,
+      "cooldown": 13,
+      "cost": 50,
+      "costType": "mana",
+      "flags": ["ally_target"],
+      "effects": [
+        { "kind": "buff", "stat": "ms", "pct": 30, "duration": 2, "target": "ally" },
+        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 2, "target": "self" },
+        { "kind": "hook", "id": "oda_e_cleanse_slows" }
+      ]
+    },
+    {
+      "id": "oda_r",
+      "name": { "de": "Flut", "en": "Flood" },
+      "desc": {
+        "de": "Welle 1.000 × 500 in Zielrichtung: Gegner 300 zurückgedrängt, Verbündete geheilt und 2 s +40 % Bewegung.",
+        "en": "Wave 1000 × 500 in the target direction: enemies are pushed back 300, allies are healed and gain +40% move speed for 2 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.3,
+      "range": 1000,
+      "cooldown": [110, 90, 70],
+      "cost": 100,
+      "costType": "mana",
+      "width": 500,
+      "speed": 1400,
+      "flags": ["pierce"],
+      "effects": [
+        { "kind": "knockback", "distance": 300 },
+        { "kind": "heal", "amount": { "base": [150, 250, 350], "ap": 0.5 }, "target": "allies" },
+        { "kind": "buff", "stat": "ms", "pct": 40, "duration": 2, "target": "allies" }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": {
+    "de": "Level 6: Flut trennt Engages und heilt das ganze Team.",
+    "en": "Level 6: Flood breaks engages and heals the whole team."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Heilstrahl und Quelle", "en": "Healing jet and spring" }, "sequence": ["Q", "W"] },
+    { "name": { "de": "Strömung und Strahl", "en": "Current and jet" }, "sequence": ["E", "Q"] },
+    { "name": { "de": "Flut und Quelle", "en": "Flood and spring" }, "sequence": ["R", "W"] }
+  ],
+  "scores": { "engage": 1, "peel": 4, "range": 3, "scaling": 3, "waveclear": 2, "mobility": 1 },
+  "voiceLines": {
+    "pick": { "de": "Zwei Eimer. Einer für euch, einer für die anderen.", "en": "Two buckets. One for you, one for them." },
+    "firstBlood": { "de": "Kaltes Wasser hilft. Meistens.", "en": "Cold water helps. Mostly." },
+    "kill": { "de": "Weggespült.", "en": "Washed away." },
+    "death": { "de": "Eimer leer.", "en": "Bucket's empty." },
+    "recall": { "de": "Zum Brunnen.", "en": "To the well." },
+    "taunt": { "de": "Trink was. Du siehst trocken aus.", "en": "Drink something. You look parched." }
+  },
+  "silhouette": "water carrier with two buckets on a shoulder yoke and a wide-brimmed hat"
+}

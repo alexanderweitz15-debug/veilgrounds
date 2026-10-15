@@ -1,0 +1,44 @@
+{
+  "champion": "hagen",
+  "template": "tank_support",
+  "starter": [
+    "spenderlampe",
+    "trank"
+  ],
+  "standard": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "kettenrelais",
+      "lebenswurzel",
+      "wallherz",
+      "sturmgewand"
+    ]
+  },
+  "vsAD": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "kettenrelais",
+      "wallherz",
+      "lebenswurzel",
+      "sturmgewand"
+    ]
+  },
+  "vsAP": {
+    "boots": "stiefel_mr",
+    "core": [
+      "kettenrelais",
+      "sturmgewand",
+      "lebenswurzel",
+      "wallherz"
+    ]
+  },
+  "runes": {
+    "keystone": "zaehigkeit",
+    "minor": [
+      "wachsamkeit",
+      "zweiter_wind",
+      "lebenskraft"
+    ]
+  },
+  "note": "Component order follows items.json \"from\"; Diamond+ bots reorder components situationally (spec §5)."
+}

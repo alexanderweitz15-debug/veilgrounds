@@ -1,0 +1,43 @@
+{
+  "champion": "ottilie",
+  "template": "jg_marksman",
+  "starter": [
+    "jaegerzahn"
+  ],
+  "standard": {
+    "boots": "stiefel_schnelligkeit",
+    "core": [
+      "sturmbogen",
+      "blutkrone",
+      "scharfrichterbeil",
+      "wallherz"
+    ]
+  },
+  "vsAD": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "sturmbogen",
+      "wallherz",
+      "blutkrone",
+      "scharfrichterbeil"
+    ]
+  },
+  "vsAP": {
+    "boots": "stiefel_mr",
+    "core": [
+      "sturmbogen",
+      "sturmgewand",
+      "blutkrone",
+      "scharfrichterbeil"
+    ]
+  },
+  "runes": {
+    "keystone": "praezision",
+    "minor": [
+      "angriffstempo",
+      "blutdurst",
+      "schnellfuss"
+    ]
+  },
+  "note": "Component order follows items.json \"from\"; Diamond+ bots reorder components situationally (spec §5)."
+}

@@ -1,0 +1,145 @@
+{
+  "id": "ilvane",
+  "name": "Ilvane",
+  "title": { "de": "die Schleierweberin", "en": "the Veilweaver" },
+  "roles": ["mid"],
+  "archetype": "skillshot_mage",
+  "trainingPurpose": { "de": "Skillshots landen, Abstand halten.", "en": "Land skillshots, keep your distance." },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 600,
+    "hpGrowth": 102,
+    "hpRegen": 5.5,
+    "hpRegenGrowth": 0.55,
+    "mana": 420,
+    "manaGrowth": 28,
+    "manaRegen": 8,
+    "manaRegenGrowth": 0.8,
+    "ad": 55,
+    "adGrowth": 3,
+    "armor": 26,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.625,
+    "asGrowth": 1.6,
+    "range": 550,
+    "ms": 335,
+    "windup": 0.3,
+    "projectileSpeed": 1600,
+    "radius": 55
+  },
+  "passive": {
+    "name": { "de": "Fadenmarke", "en": "Thread Mark" },
+    "desc": {
+      "de": "Fähigkeitstreffer markieren Gegner 4 s. Ihr nächster Auto auf ein markiertes Ziel verbraucht die Marke: 10–40 (+20 % AP) magischer Bonusschaden und +20 % Bewegung für 1 s.",
+      "en": "Ability hits mark enemies for 4 s. Her next basic attack on a marked target consumes the mark: 10-40 (+20% AP) bonus magic damage and +20% move speed for 1 s."
+    },
+    "hooks": ["ilvane_thread_mark"]
+  },
+  "abilities": [
+    {
+      "id": "ilvane_q",
+      "name": { "de": "Fadenriss", "en": "Thread Rip" },
+      "desc": { "de": "Linien-Skillshot, trifft nur das erste Ziel.", "en": "Line skillshot that hits only the first target." },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "range": 950,
+      "cooldown": 7,
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "width": 60,
+      "speed": 1700,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [70, 110, 150, 190, 230], "ap": 0.6 } },
+        { "kind": "mark", "id": "ilvane_thread", "duration": 4 }
+      ]
+    },
+    {
+      "id": "ilvane_w",
+      "name": { "de": "Spinnwirbel", "en": "Spinning Whorl" },
+      "desc": {
+        "de": "Kreis auf Zielposition, nach 0,6 s 40 % Slow für 1,5 s.",
+        "en": "Circle at target location; after 0.6 s slows by 40% for 1.5 s."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.25,
+      "range": 800,
+      "cooldown": 12,
+      "cost": 70,
+      "costType": "mana",
+      "radius": 250,
+      "delay": 0.6,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "slow", "pct": 40, "duration": 1.5 },
+        { "kind": "mark", "id": "ilvane_thread", "duration": 4 }
+      ]
+    },
+    {
+      "id": "ilvane_e",
+      "name": { "de": "Fadenrückzug", "en": "Thread Retreat" },
+      "desc": {
+        "de": "Rückwärts-Hop 350, danach 0,4 s unverwundbar gegen Projektile.",
+        "en": "Backward hop of 350; immune to projectiles for 0.4 s."
+      },
+      "type": "dash",
+      "castTime": 0.2,
+      "range": 350,
+      "cooldown": 16,
+      "cost": 60,
+      "costType": "mana",
+      "speed": 1300,
+      "distance": 350,
+      "effects": [
+        { "kind": "hook", "id": "ilvane_e_backstep" }
+      ]
+    },
+    {
+      "id": "ilvane_r",
+      "name": { "de": "Netz des Schleiers", "en": "Web of the Veil" },
+      "desc": {
+        "de": "Kegel 1.100 / 40°. Ziele mit Fadenmarke werden 1,2 s gewurzelt.",
+        "en": "Cone 1100 / 40°. Targets carrying a Thread Mark are rooted for 1.2 s."
+      },
+      "type": "cone",
+      "castTime": 0.35,
+      "range": 1100,
+      "cooldown": 100,
+      "cost": 100,
+      "costType": "mana",
+      "angle": 40,
+      "effects": [
+        { "kind": "hook", "id": "ilvane_r_root_marked" },
+        { "kind": "damage", "type": "magic", "amount": { "base": [250, 400, 550], "ap": 0.8 } },
+        { "kind": "mark", "id": "ilvane_thread", "duration": 4 }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": {
+    "de": "Level 6: R wurzelt jedes markierte Ziel – erst ab hier echte Kill-Drohung.",
+    "en": "Level 6: R roots every marked target - the first real kill threat."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Wirbel und Riss", "en": "Whorl and Rip" }, "sequence": ["W", "Q"] },
+    { "name": { "de": "Rückzug-Kite", "en": "Retreat kite" }, "sequence": ["E", "Q"] },
+    { "name": { "de": "Ganzes Netz", "en": "Full web" }, "sequence": ["Q", "AA", "R", "W"] }
+  ],
+  "scores": { "engage": 1, "peel": 2, "range": 4, "scaling": 3, "waveclear": 2, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Ich webe. Ihr stolpert. So ist die Arbeitsteilung.", "en": "I weave. You trip. That is the division of labour." },
+    "firstBlood": {
+      "de": "Der erste Faden hält immer am schlechtesten. Außer heute.",
+      "en": "The first thread always holds the worst. Except today."
+    },
+    "kill": { "de": "Sauber vernäht.", "en": "Neatly stitched." },
+    "death": { "de": "Na gut. Da war ein Knoten drin.", "en": "Fine. There was a knot in it." },
+    "recall": { "de": "Ich hole neues Garn.", "en": "Fetching more yarn." },
+    "taunt": { "de": "Lauf ruhig. Der Faden ist lang genug.", "en": "Run, by all means. The thread is long enough." }
+  },
+  "silhouette": "tall slender weaver, spindle staff, loose threads trailing from both hands"
+}

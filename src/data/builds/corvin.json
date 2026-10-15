@@ -1,0 +1,44 @@
+{
+  "champion": "corvin",
+  "template": "lethality_adc",
+  "starter": [
+    "kurzschwert",
+    "trank"
+  ],
+  "standard": {
+    "boots": "stiefel_schnelligkeit",
+    "core": [
+      "scharfrichterbeil",
+      "sturmbogen",
+      "blutkrone",
+      "schwarze_kette"
+    ]
+  },
+  "vsAD": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "scharfrichterbeil",
+      "sturmbogen",
+      "wallherz",
+      "blutkrone"
+    ]
+  },
+  "vsAP": {
+    "boots": "stiefel_mr",
+    "core": [
+      "scharfrichterbeil",
+      "sturmbogen",
+      "sturmgewand",
+      "blutkrone"
+    ]
+  },
+  "runes": {
+    "keystone": "dauerhafter_schaden",
+    "minor": [
+      "adaptiv",
+      "gnadenstoss",
+      "schnellfuss"
+    ]
+  },
+  "note": "Component order follows items.json \"from\"; Diamond+ bots reorder components situationally (spec §5)."
+}

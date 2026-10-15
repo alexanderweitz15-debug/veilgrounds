@@ -1,0 +1,136 @@
+{
+  "id": "corvin",
+  "name": "Corvin Pulver",
+  "title": { "de": "der Büchsenmacher", "en": "the Gunsmith" },
+  "roles": ["adc"],
+  "archetype": "short_range_marksman",
+  "trainingPurpose": { "de": "Aggressive Kurz-Range-Lane, Nachlade-Fenster.", "en": "Aggressive short-range lane, reload windows." },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 630,
+    "hpGrowth": 100,
+    "hpRegen": 3.75,
+    "hpRegenGrowth": 0.55,
+    "mana": 330,
+    "manaGrowth": 38,
+    "manaRegen": 7.2,
+    "manaRegenGrowth": 0.65,
+    "ad": 64,
+    "adGrowth": 3.4,
+    "armor": 28,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.65,
+    "asGrowth": 2.8,
+    "range": 500,
+    "ms": 340,
+    "windup": 0.3,
+    "projectileSpeed": 2400,
+    "radius": 55
+  },
+  "passive": {
+    "name": { "de": "Trommel", "en": "Drum" },
+    "desc": {
+      "de": "6 Schuss, danach 1,5 s Nachladen; der letzte Schuss verursacht +50 % Schaden.",
+      "en": "6 shots, then a 1.5 s reload; the last shot deals +50% damage."
+    },
+    "hooks": ["corvin_drum"]
+  },
+  "abilities": [
+    {
+      "id": "corvin_q",
+      "name": { "de": "Doppelschuss", "en": "Double Shot" },
+      "desc": {
+        "de": "Zwei Autos in 0,3 s auf ein Ziel in 650, je 60 % AD + Grundschaden. Verbraucht 2 Schuss.",
+        "en": "Two basic attacks within 0.3 s on a target within 650, each 60% AD + base damage. Uses 2 shots."
+      },
+      "type": "targeted",
+      "castTime": 0.2,
+      "range": 650,
+      "cooldown": 8,
+      "cost": 40,
+      "costType": "mana",
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [20, 35, 50, 65, 80], "ad": 0.6 } },
+        { "kind": "hook", "id": "corvin_q_double_shot" }
+      ]
+    },
+    {
+      "id": "corvin_w",
+      "name": { "de": "Pulverfass", "en": "Powder Keg" },
+      "desc": {
+        "de": "Stellt ein Fass (750, 3 s). Ein Auto darauf lässt es explodieren: Kreis 300, 40 % Slow 1,5 s.",
+        "en": "Places a keg (750, 3 s). A basic attack on it detonates it: circle 300, 40% slow for 1.5 s."
+      },
+      "type": "summon",
+      "castTime": 0.25,
+      "range": 750,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": 50,
+      "costType": "mana",
+      "radius": 300,
+      "duration": 3,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [70, 110, 150, 190, 230], "ad": 0.7 } },
+        { "kind": "slow", "pct": 40, "duration": 1.5 },
+        { "kind": "hook", "id": "corvin_w_powder_keg" }
+      ]
+    },
+    {
+      "id": "corvin_e",
+      "name": { "de": "Abrollen", "en": "Roll Out" },
+      "desc": { "de": "Dash 350, lädt 3 Schuss nach.", "en": "Dash 350, reloads 3 shots." },
+      "type": "dash",
+      "castTime": 0.2,
+      "range": 350,
+      "cooldown": [18, 16, 14, 12, 10],
+      "cost": 40,
+      "costType": "mana",
+      "speed": 1300,
+      "distance": 350,
+      "effects": [
+        { "kind": "hook", "id": "corvin_e_reload" }
+      ]
+    },
+    {
+      "id": "corvin_r",
+      "name": { "de": "Salve", "en": "Volley" },
+      "desc": { "de": "Kegel 1.200 (25°), 6 Kugeln; Minions blocken.", "en": "Cone 1200 (25°), 6 bullets; minions block." },
+      "type": "cone",
+      "castTime": 0.3,
+      "range": 1200,
+      "cooldown": [100, 80, 60],
+      "cost": 100,
+      "costType": "mana",
+      "width": 50,
+      "speed": 2400,
+      "angle": 25,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [60, 90, 120], "ad": 0.4 } },
+        { "kind": "hook", "id": "corvin_r_volley" }
+      ]
+    }
+  ],
+  "spikeLevels": [2],
+  "spikeNote": { "de": "Level 2 (Fass + Doppelschuss) und erstes Item.", "en": "Level 2 (keg + double shot) and first item." },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Fass zünden", "en": "Light the keg" }, "sequence": ["W", "AA", "Q"] },
+    { "name": { "de": "Rollen und Feuern", "en": "Roll and fire" }, "sequence": ["E", "Q", "AA"] },
+    { "name": { "de": "Salve aus der Rolle", "en": "Rolling volley" }, "sequence": ["E", "R"] }
+  ],
+  "scores": { "engage": 1, "peel": 1, "range": 2, "scaling": 2, "waveclear": 3, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Sechs Schuss. Reicht meistens.", "en": "Six shots. Usually enough." },
+    "firstBlood": { "de": "Erste Patrone, erster Treffer.", "en": "First cartridge, first hit." },
+    "kill": { "de": "Abgerechnet.", "en": "Settled." },
+    "death": { "de": "Ladehemmung. Natürlich jetzt.", "en": "Jammed. Of course, now." },
+    "recall": { "de": "Pulver trocknen.", "en": "Drying the powder." },
+    "taunt": { "de": "Zähl mit. Ich tu's auch.", "en": "Count along. I do." }
+  },
+  "silhouette": "gunslinger in a long coat, revolver with an oversized drum, powder horn on the hip"
+}

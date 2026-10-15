@@ -1,0 +1,140 @@
+{
+  "id": "brom",
+  "name": "Brom Eisenwurz",
+  "title": { "de": "der Holzfäller", "en": "the Woodcutter" },
+  "roles": ["top"],
+  "archetype": "juggernaut",
+  "trainingPurpose": { "de": "Gegen Juggernauts kiten.", "en": "Kite juggernauts." },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 680,
+    "hpGrowth": 112,
+    "hpRegen": 9,
+    "hpRegenGrowth": 0.85,
+    "mana": 330,
+    "manaGrowth": 45,
+    "manaRegen": 7,
+    "manaRegenGrowth": 0.7,
+    "ad": 66,
+    "adGrowth": 3.8,
+    "armor": 37,
+    "armorGrowth": 4.8,
+    "mr": 32,
+    "mrGrowth": 2.05,
+    "as": 0.625,
+    "asGrowth": 1.8,
+    "range": 175,
+    "ms": 340,
+    "windup": 0.35,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Blutsaft", "en": "Bloodsap" },
+    "desc": {
+      "de": "Fähigkeitstreffer stapeln Blutungen (max. 5, je 8 Schaden/s über 5 s). Bei 5 Stacks heilt jeder Blutungs-Tick ihn um 2 % Max-HP pro Stack.",
+      "en": "Ability hits stack bleeds (max 5, each 8 damage/s over 5 s). At 5 stacks every bleed tick heals him for 2% max HP per stack."
+    },
+    "hooks": ["brom_bleed"]
+  },
+  "abilities": [
+    {
+      "id": "brom_q",
+      "name": { "de": "Eisenwirbel", "en": "Iron Whirl" },
+      "desc": {
+        "de": "Nach 0,5 s Kreis 400 um ihn. Außenring (250–400) +50 % Schaden und +1 Blutung.",
+        "en": "After 0.5 s hits a 400 circle around him. Outer ring (250-400) deals +50% damage and adds +1 bleed."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": 9,
+      "cost": 30,
+      "costType": "mana",
+      "radius": 400,
+      "delay": 0.5,
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [50, 80, 110, 140, 170], "ad": 1 } },
+        { "kind": "hook", "id": "brom_q_outer_ring" }
+      ]
+    },
+    {
+      "id": "brom_w",
+      "name": { "de": "Wurzelgriff", "en": "Root Grip" },
+      "desc": {
+        "de": "Nächster Auto innerhalb 4 s: +30 % Schaden, 60 % Slow 1 s.",
+        "en": "Next basic attack within 4 s: +30% damage, 60% slow for 1 s."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": 7,
+      "cost": 30,
+      "costType": "mana",
+      "duration": 4,
+      "effects": [
+        { "kind": "slow", "pct": 60, "duration": 1 },
+        { "kind": "hook", "id": "brom_w_next_auto" }
+      ]
+    },
+    {
+      "id": "brom_e",
+      "name": { "de": "Anziehen", "en": "Haul In" },
+      "desc": {
+        "de": "Kegel 500, zieht Gegner 300 zu sich. Passiv: 25 % Rüstungsdurchdringung.",
+        "en": "Cone 500, pulls enemies 300 toward him. Passive: 25% armor penetration."
+      },
+      "type": "cone",
+      "castTime": 0.3,
+      "range": 500,
+      "cooldown": [20, 18, 16, 14, 12],
+      "cost": 45,
+      "costType": "mana",
+      "angle": 50,
+      "effects": [
+        { "kind": "pull", "distance": 300 },
+        { "kind": "hook", "id": "brom_e_armor_pen" }
+      ]
+    },
+    {
+      "id": "brom_r",
+      "name": { "de": "Fällen", "en": "Fell" },
+      "desc": {
+        "de": "Zielgerichtet 450, wahrer Schaden, +20 % pro Blutungsstack. Kill setzt die Abklingzeit zurück.",
+        "en": "Targeted 450, true damage, +20% per bleed stack. A kill resets the cooldown."
+      },
+      "type": "targeted",
+      "castTime": 0.3,
+      "range": 450,
+      "cooldown": [120, 100, 80],
+      "cost": 100,
+      "costType": "mana",
+      "effects": [
+        { "kind": "damage", "type": "true", "amount": { "base": [100, 200, 300], "bonusAd": 0.75 } },
+        { "kind": "hook", "id": "brom_r_stack_bonus" },
+        { "kind": "hook", "id": "brom_r_reset" }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": {
+    "de": "Level 6: Fällen mit Reset – mit 5 Blutungen gewinnt er fast jeden Schlagabtausch.",
+    "en": "Level 6: Fell with reset - at 5 bleeds he wins almost every trade."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Heranziehen", "en": "Reel and chop" }, "sequence": ["E", "W", "AA", "Q"] },
+    { "name": { "de": "Kantenwirbel", "en": "Edge whirl" }, "sequence": ["AA", "Q"] },
+    { "name": { "de": "Fällen", "en": "Timber" }, "sequence": ["E", "Q", "R"] }
+  ],
+  "scores": { "engage": 2, "peel": 1, "range": 1, "scaling": 3, "waveclear": 3, "mobility": 0 },
+  "voiceLines": {
+    "pick": { "de": "Brom. Ich fälle Bäume. Heute eben andere.", "en": "Brom. I fell trees. Today, other things." },
+    "firstBlood": { "de": "Erster Stamm des Tages.", "en": "First log of the day." },
+    "kill": { "de": "Liegt.", "en": "Down it goes." },
+    "death": { "de": "Hm. Morsch war ich wohl selber.", "en": "Hm. Seems I was the rotten one." },
+    "recall": { "de": "Axt schärfen. Dauert.", "en": "Sharpening the axe. Takes a while." },
+    "taunt": { "de": "Du wirkst dünn. Wie Birke.", "en": "You look thin. Like birch." }
+  },
+  "silhouette": "broad woodcutter, huge two-handed axe with root-wrapped haft over shoulder"
+}

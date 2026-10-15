@@ -1,0 +1,148 @@
+{
+  "id": "lysa",
+  "name": "Lysa Nadel",
+  "title": { "de": "die Näherin", "en": "the Seamstress" },
+  "roles": ["adc"],
+  "archetype": "hypercarry",
+  "trainingPurpose": { "de": "Positionierung ohne Escape.", "en": "Positioning without an escape." },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 580,
+    "hpGrowth": 96,
+    "hpRegen": 3.75,
+    "hpRegenGrowth": 0.55,
+    "mana": 330,
+    "manaGrowth": 38,
+    "manaRegen": 7.2,
+    "manaRegenGrowth": 0.65,
+    "ad": 58,
+    "adGrowth": 3,
+    "armor": 25,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.64,
+    "asGrowth": 3.5,
+    "range": 600,
+    "ms": 335,
+    "windup": 0.3,
+    "projectileSpeed": 2200,
+    "radius": 55
+  },
+  "passive": {
+    "name": { "de": "Fadenlauf", "en": "Thread Run" },
+    "desc": {
+      "de": "Jeder Auto auf dasselbe Ziel: +4 % Angriffstempo (max. 8 Stacks); je 2 Stacks +25 Reichweite (max. +100).",
+      "en": "Each basic attack on the same target: +4% attack speed (max 8 stacks); +25 range per 2 stacks (max +100)."
+    },
+    "hooks": ["lysa_thread_run"]
+  },
+  "abilities": [
+    {
+      "id": "lysa_q",
+      "name": { "de": "Nadelsalve", "en": "Needle Flurry" },
+      "desc": {
+        "de": "3 s +30/40/50/60/70 % Angriffstempo und +20 Reichweite.",
+        "en": "3 s of +30/40/50/60/70% attack speed and +20 range."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": 12,
+      "cost": 40,
+      "costType": "mana",
+      "duration": 3,
+      "effects": [
+        { "kind": "buff", "stat": "as", "pct": [30, 40, 50, 60, 70], "duration": 3, "target": "self" },
+        { "kind": "hook", "id": "lysa_q_range" }
+      ]
+    },
+    {
+      "id": "lysa_w",
+      "name": { "de": "Fadenpfeil", "en": "Thread Arrow" },
+      "desc": {
+        "de": "Linie 1.500, trifft den ersten Champion: 30 % Slow 2 s.",
+        "en": "Line 1500, hits the first champion: 30% slow for 2 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.3,
+      "range": 1500,
+      "cooldown": 14,
+      "cost": 60,
+      "costType": "mana",
+      "width": 50,
+      "speed": 2000,
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [70, 115, 160, 205, 250], "ad": 0.9 } },
+        { "kind": "slow", "pct": 30, "duration": 2 },
+        { "kind": "hook", "id": "lysa_w_first_champion" }
+      ]
+    },
+    {
+      "id": "lysa_e",
+      "name": { "de": "Stolperdraht", "en": "Tripwire" },
+      "desc": {
+        "de": "Draht (Linie 500) auf 700 für 4 s; wer ihn kreuzt, wird 0,75 s gewurzelt.",
+        "en": "Wire (line 500) at 700 for 4 s; whoever crosses it is rooted for 0.75 s."
+      },
+      "type": "zone",
+      "castTime": 0.25,
+      "range": 700,
+      "cooldown": [18, 17, 16, 15, 14],
+      "cost": 50,
+      "costType": "mana",
+      "width": 40,
+      "radius": 250,
+      "duration": 4,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "root", "duration": 0.75 },
+        { "kind": "hook", "id": "lysa_e_tripwire" }
+      ]
+    },
+    {
+      "id": "lysa_r",
+      "name": { "de": "Durchschuss", "en": "Through-Shot" },
+      "desc": {
+        "de": "Globale Linie (Breite 120) nach 1 s; −10 % Schaden pro durchdrungenem Champion.",
+        "en": "Global line (width 120) after 1 s; -10% damage per champion pierced."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.3,
+      "range": 25000,
+      "cooldown": [120, 100, 80],
+      "cost": 100,
+      "costType": "mana",
+      "width": 120,
+      "speed": 3000,
+      "delay": 1,
+      "flags": ["pierce"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [250, 400, 550], "ad": 1.2 } },
+        { "kind": "hook", "id": "lysa_r_falloff" }
+      ]
+    }
+  ],
+  "spikeLevels": [11],
+  "spikeNote": {
+    "de": "Drittes Item und Level 11 – vorher schwach, danach die längste Reichweite im Spiel.",
+    "en": "Third item and level 11 - weak before, the longest range in the game after."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Draht und Salve", "en": "Wire and flurry" }, "sequence": ["E", "Q", "AA"] },
+    { "name": { "de": "Fadenpfeil-Trade", "en": "Thread arrow trade" }, "sequence": ["W", "AA", "AA"] },
+    { "name": { "de": "Durchschuss (Finish)", "en": "Through-shot (finish)" }, "sequence": ["R"] }
+  ],
+  "scores": { "engage": 0, "peel": 1, "range": 5, "scaling": 5, "waveclear": 2, "mobility": 0 },
+  "voiceLines": {
+    "pick": { "de": "Ich nähe. Mit Abstand.", "en": "I sew. From a distance." },
+    "firstBlood": { "de": "Erster Stich sitzt.", "en": "First stitch holds." },
+    "kill": { "de": "Abgenäht.", "en": "Sewn shut." },
+    "death": { "de": "Faden gerissen.", "en": "Thread snapped." },
+    "recall": { "de": "Nadeln nachfüllen.", "en": "Restocking needles." },
+    "taunt": { "de": "Komm näher. Nein, doch nicht.", "en": "Come closer. No, actually, don't." }
+  },
+  "silhouette": "slim seamstress with an enormous needle-shaped bow and a thread spool on her hip"
+}

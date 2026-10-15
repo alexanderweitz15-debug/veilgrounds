@@ -1,0 +1,40 @@
+// System order is part of determinism. Change only deliberately.
+
+import type { Sim } from '../sim';
+import { inputSystem } from './input';
+import { statsSystem } from './stats';
+import { wavesSystem } from './waves';
+import { towersSystem } from './towers';
+import { championsSystem } from './champions';
+import { minionsSystem } from './minions';
+import { attackSystem } from './attack';
+import { abilitiesSystem } from './abilities';
+import { projectilesSystem } from './projectiles';
+import { movementSystem } from './movement';
+import { economySystem } from './economy';
+import { computeVision } from '../vision';
+
+export interface System {
+  name: string;
+  /** Called once from createSim, in list order. */
+  init?(sim: Sim): void;
+  update(sim: Sim): void;
+}
+
+// Built lazily: system modules import sim.ts, so an eager array hits TDZ when a test imports a system first.
+let cache: System[] | null = null;
+export const systems = (): System[] =>
+  (cache ??= [
+  towersSystem, // init spawns structures; update picks tower targets
+  championsSystem, // init spawns champions + dummies; update: respawn bookkeeping hooks
+  inputSystem, // player-equivalent commands -> intents
+  statsSystem, // buffs + level -> final stats
+  wavesSystem, // minion spawning
+  minionsSystem, // minion aggro + lane following intents
+  abilitiesSystem, // cast timers, ability effects
+  attackSystem, // auto-attack state machine for every unit with a target
+  projectilesSystem,
+  movementSystem,
+  economySystem, // passive gold, regen, recall, respawn, fountain
+  { name: 'vision', update: computeVision },
+]);

@@ -1,0 +1,1084 @@
+{
+  "note": "Spec §5. 12 basic (5 starters + 7) + 14 components + 14 legendary (12 + 2 active) = 40; plus 4 boots and consumables. See docs/DECISIONS.md.",
+  "items": [
+    {
+      "id": "trank",
+      "name": {
+        "de": "Trank",
+        "en": "Potion"
+      },
+      "tier": "consumable",
+      "cost": 50,
+      "from": [],
+      "stats": {},
+      "tags": [],
+      "passive": {
+        "name": {
+          "de": "Heilung",
+          "en": "Heal"
+        },
+        "desc": {
+          "de": "Heilt 120 HP über 15 s.",
+          "en": "Restores 120 HP over 15 s."
+        },
+        "hook": "potion"
+      }
+    },
+    {
+      "id": "siegelward",
+      "name": {
+        "de": "Siegelward",
+        "en": "Seal Ward"
+      },
+      "tier": "consumable",
+      "cost": 75,
+      "from": [],
+      "stats": {},
+      "tags": [
+        "support"
+      ],
+      "passive": {
+        "name": {
+          "de": "Siegel",
+          "en": "Seal"
+        },
+        "desc": {
+          "de": "Permanenter sichtbarer Ward, enthüllt und blockt gegnerische Schleierwards im Radius. 1 pro Spieler.",
+          "en": "Permanent visible ward; reveals and disables enemy veil wards nearby. 1 per player."
+        },
+        "hook": "seal_ward"
+      }
+    },
+    {
+      "id": "kurzschwert",
+      "name": {
+        "de": "Kurzschwert",
+        "en": "Short Blade"
+      },
+      "tier": "starter",
+      "cost": 350,
+      "from": [],
+      "stats": {
+        "ad": 10,
+        "lifestealPct": 3
+      },
+      "tags": [
+        "ad"
+      ],
+      "unique": "starter"
+    },
+    {
+      "id": "zauberring",
+      "name": {
+        "de": "Zauberring",
+        "en": "Spell Ring"
+      },
+      "tier": "starter",
+      "cost": 350,
+      "from": [],
+      "stats": {
+        "ap": 15
+      },
+      "tags": [
+        "ap"
+      ],
+      "passive": {
+        "name": {
+          "de": "Ladung",
+          "en": "Charge"
+        },
+        "desc": {
+          "de": "Last-Hits stellen 6 Mana wieder her.",
+          "en": "Last hits restore 6 mana."
+        },
+        "hook": "spell_ring"
+      },
+      "unique": "starter"
+    },
+    {
+      "id": "dornenklinge",
+      "name": {
+        "de": "Dornenklinge",
+        "en": "Thorn Blade"
+      },
+      "tier": "starter",
+      "cost": 400,
+      "from": [],
+      "stats": {
+        "ad": 9,
+        "hp": 40
+      },
+      "tags": [
+        "ad",
+        "tank"
+      ],
+      "passive": {
+        "name": {
+          "de": "Dornen",
+          "en": "Thorns"
+        },
+        "desc": {
+          "de": "Nahkampftreffer auf Champions heilen 3 HP.",
+          "en": "Melee hits on champions heal 3 HP."
+        },
+        "hook": "thorn_blade"
+      },
+      "unique": "starter"
+    },
+    {
+      "id": "jaegerzahn",
+      "name": {
+        "de": "Jägerzahn",
+        "en": "Hunter Fang"
+      },
+      "tier": "starter",
+      "cost": 450,
+      "from": [],
+      "stats": {},
+      "tags": [
+        "jungle"
+      ],
+      "passive": {
+        "name": {
+          "de": "Jagd",
+          "en": "Hunt"
+        },
+        "desc": {
+          "de": "+30 % Schaden an Monstern, schaltet Bannen frei. Bis 14:00 nur 50 % Gold von Lane-Minions.",
+          "en": "+30% damage to monsters, unlocks Banish. Until 14:00 only 50% gold from lane minions."
+        },
+        "hook": "hunter_fang"
+      },
+      "unique": "starter"
+    },
+    {
+      "id": "spenderlampe",
+      "name": {
+        "de": "Spenderlampe",
+        "en": "Giving Lamp"
+      },
+      "tier": "starter",
+      "cost": 400,
+      "from": [],
+      "stats": {
+        "hp": 30,
+        "manaRegenPct": 25
+      },
+      "tags": [
+        "support"
+      ],
+      "passive": {
+        "name": {
+          "de": "Teilen",
+          "en": "Share"
+        },
+        "desc": {
+          "de": "Bis 3 Ladungen: Treffer auf Champions geben dir und dem nächsten Verbündeten Gold. Keine Minion-Gold-Strafe. Quest 500 Gold: +1 Ward-Ladung.",
+          "en": "Up to 3 charges: hits on champions grant gold to you and the nearest ally. No minion gold penalty. Quest 500 gold: +1 ward charge."
+        },
+        "hook": "giving_lamp"
+      },
+      "unique": "starter"
+    },
+    {
+      "id": "langschwert",
+      "name": {
+        "de": "Langschwert",
+        "en": "Long Sword"
+      },
+      "tier": "basic",
+      "cost": 350,
+      "from": [],
+      "stats": {
+        "ad": 10
+      },
+      "tags": [
+        "ad"
+      ]
+    },
+    {
+      "id": "verstaerkerbuch",
+      "name": {
+        "de": "Verstärkerbuch",
+        "en": "Amplifying Tome"
+      },
+      "tier": "basic",
+      "cost": 435,
+      "from": [],
+      "stats": {
+        "ap": 20
+      },
+      "tags": [
+        "ap"
+      ]
+    },
+    {
+      "id": "rubinsplitter",
+      "name": {
+        "de": "Rubinsplitter",
+        "en": "Ruby Shard"
+      },
+      "tier": "basic",
+      "cost": 400,
+      "from": [],
+      "stats": {
+        "hp": 150
+      },
+      "tags": [
+        "tank"
+      ]
+    },
+    {
+      "id": "lederweste",
+      "name": {
+        "de": "Lederweste",
+        "en": "Leather Vest"
+      },
+      "tier": "basic",
+      "cost": 300,
+      "from": [],
+      "stats": {
+        "armor": 15
+      },
+      "tags": [
+        "tank"
+      ]
+    },
+    {
+      "id": "wollmantel",
+      "name": {
+        "de": "Wollmantel",
+        "en": "Wool Cloak"
+      },
+      "tier": "basic",
+      "cost": 400,
+      "from": [],
+      "stats": {
+        "mr": 25
+      },
+      "tags": [
+        "tank"
+      ]
+    },
+    {
+      "id": "wetzdolch",
+      "name": {
+        "de": "Wetzdolch",
+        "en": "Whetted Dagger"
+      },
+      "tier": "basic",
+      "cost": 300,
+      "from": [],
+      "stats": {
+        "asPct": 12
+      },
+      "tags": [
+        "ad",
+        "onhit"
+      ]
+    },
+    {
+      "id": "saphirkristall",
+      "name": {
+        "de": "Saphirkristall",
+        "en": "Sapphire Crystal"
+      },
+      "tier": "basic",
+      "cost": 350,
+      "from": [],
+      "stats": {
+        "mana": 250
+      },
+      "tags": [
+        "ap",
+        "support"
+      ]
+    },
+    {
+      "id": "spitzhacke",
+      "name": {
+        "de": "Spitzhacke",
+        "en": "Pickaxe"
+      },
+      "tier": "component",
+      "cost": 875,
+      "from": [
+        "langschwert"
+      ],
+      "stats": {
+        "ad": 25
+      },
+      "tags": [
+        "ad"
+      ]
+    },
+    {
+      "id": "eiferschwert",
+      "name": {
+        "de": "Eiferschwert",
+        "en": "Zeal Sword"
+      },
+      "tier": "component",
+      "cost": 1050,
+      "from": [
+        "wetzdolch"
+      ],
+      "stats": {
+        "asPct": 18,
+        "critPct": 15,
+        "msPct": 7
+      },
+      "tags": [
+        "ad",
+        "crit"
+      ]
+    },
+    {
+      "id": "blutdolch",
+      "name": {
+        "de": "Blutdolch",
+        "en": "Blood Dagger"
+      },
+      "tier": "component",
+      "cost": 900,
+      "from": [
+        "langschwert"
+      ],
+      "stats": {
+        "ad": 15,
+        "lifestealPct": 7
+      },
+      "tags": [
+        "ad"
+      ]
+    },
+    {
+      "id": "klingenbrecher",
+      "name": {
+        "de": "Klingenbrecher",
+        "en": "Bladebreaker"
+      },
+      "tier": "component",
+      "cost": 1100,
+      "from": [
+        "langschwert",
+        "langschwert"
+      ],
+      "stats": {
+        "ad": 20,
+        "lethality": 10
+      },
+      "tags": [
+        "ad",
+        "lethality"
+      ]
+    },
+    {
+      "id": "kaltstahl",
+      "name": {
+        "de": "Kaltstahl",
+        "en": "Cold Steel"
+      },
+      "tier": "component",
+      "cost": 1100,
+      "from": [
+        "langschwert",
+        "saphirkristall"
+      ],
+      "stats": {
+        "ad": 20,
+        "haste": 10
+      },
+      "tags": [
+        "ad"
+      ]
+    },
+    {
+      "id": "riesenguertel",
+      "name": {
+        "de": "Riesengürtel",
+        "en": "Giant Belt"
+      },
+      "tier": "component",
+      "cost": 900,
+      "from": [
+        "rubinsplitter"
+      ],
+      "stats": {
+        "hp": 350
+      },
+      "tags": [
+        "tank"
+      ]
+    },
+    {
+      "id": "grosser_stab",
+      "name": {
+        "de": "Großer Stab",
+        "en": "Great Staff"
+      },
+      "tier": "component",
+      "cost": 1250,
+      "from": [],
+      "stats": {
+        "ap": 65
+      },
+      "tags": [
+        "ap"
+      ]
+    },
+    {
+      "id": "kristallschale",
+      "name": {
+        "de": "Kristallschale",
+        "en": "Crystal Bowl"
+      },
+      "tier": "component",
+      "cost": 1100,
+      "from": [
+        "verstaerkerbuch",
+        "saphirkristall"
+      ],
+      "stats": {
+        "ap": 40,
+        "mana": 300,
+        "haste": 10
+      },
+      "tags": [
+        "ap"
+      ]
+    },
+    {
+      "id": "lehrlingsstab",
+      "name": {
+        "de": "Lehrlingsstab",
+        "en": "Apprentice Rod"
+      },
+      "tier": "component",
+      "cost": 850,
+      "from": [
+        "verstaerkerbuch"
+      ],
+      "stats": {
+        "ap": 40
+      },
+      "tags": [
+        "ap"
+      ]
+    },
+    {
+      "id": "uhrwerk",
+      "name": {
+        "de": "Uhrwerk",
+        "en": "Clockwork"
+      },
+      "tier": "component",
+      "cost": 900,
+      "from": [
+        "verstaerkerbuch"
+      ],
+      "stats": {
+        "ap": 25,
+        "haste": 10
+      },
+      "tags": [
+        "ap",
+        "support"
+      ]
+    },
+    {
+      "id": "kettenhemd",
+      "name": {
+        "de": "Kettenhemd",
+        "en": "Chain Shirt"
+      },
+      "tier": "component",
+      "cost": 800,
+      "from": [
+        "lederweste"
+      ],
+      "stats": {
+        "armor": 40
+      },
+      "tags": [
+        "tank"
+      ]
+    },
+    {
+      "id": "zauberschutzmantel",
+      "name": {
+        "de": "Zauberschutzmantel",
+        "en": "Warding Cloak"
+      },
+      "tier": "component",
+      "cost": 900,
+      "from": [
+        "wollmantel"
+      ],
+      "stats": {
+        "mr": 50
+      },
+      "tags": [
+        "tank"
+      ]
+    },
+    {
+      "id": "wetterhorn",
+      "name": {
+        "de": "Wetterhorn",
+        "en": "Weather Horn"
+      },
+      "tier": "component",
+      "cost": 800,
+      "from": [
+        "rubinsplitter"
+      ],
+      "stats": {
+        "hp": 200,
+        "haste": 10
+      },
+      "tags": [
+        "tank",
+        "support"
+      ]
+    },
+    {
+      "id": "hueterlampe",
+      "name": {
+        "de": "Hüterlampe",
+        "en": "Warden Lamp"
+      },
+      "tier": "component",
+      "cost": 800,
+      "from": [
+        "saphirkristall"
+      ],
+      "stats": {
+        "healShieldPowerPct": 8,
+        "manaRegenPct": 50
+      },
+      "tags": [
+        "support"
+      ]
+    },
+    {
+      "id": "sturmbogen",
+      "name": {
+        "de": "Sturmbogen",
+        "en": "Stormbow"
+      },
+      "tier": "legendary",
+      "cost": 3100,
+      "from": [
+        "spitzhacke",
+        "eiferschwert"
+      ],
+      "stats": {
+        "ad": 60,
+        "critPct": 20,
+        "msPct": 7
+      },
+      "tags": [
+        "ad",
+        "crit"
+      ],
+      "passive": {
+        "name": {
+          "de": "Böe",
+          "en": "Gust"
+        },
+        "desc": {
+          "de": "Krit-Treffer verlangsamen 1 s.",
+          "en": "Critical strikes slow for 1 s."
+        },
+        "hook": "stormbow"
+      }
+    },
+    {
+      "id": "blutkrone",
+      "name": {
+        "de": "Blutkrone",
+        "en": "Blood Crown"
+      },
+      "tier": "legendary",
+      "cost": 3300,
+      "from": [
+        "blutdolch",
+        "spitzhacke",
+        "eiferschwert"
+      ],
+      "stats": {
+        "ad": 55,
+        "critPct": 20,
+        "lifestealPct": 12
+      },
+      "tags": [
+        "ad",
+        "crit"
+      ],
+      "passive": {
+        "name": {
+          "de": "Überfluss",
+          "en": "Overflow"
+        },
+        "desc": {
+          "de": "Lebensraub über volle HP wird zu Schild.",
+          "en": "Lifesteal beyond full HP becomes a shield."
+        },
+        "hook": "blood_crown"
+      }
+    },
+    {
+      "id": "scharfrichterbeil",
+      "name": {
+        "de": "Scharfrichterbeil",
+        "en": "Executioner's Axe"
+      },
+      "tier": "legendary",
+      "cost": 3000,
+      "from": [
+        "klingenbrecher",
+        "spitzhacke"
+      ],
+      "stats": {
+        "ad": 60,
+        "lethality": 18
+      },
+      "tags": [
+        "ad",
+        "lethality"
+      ],
+      "passive": {
+        "name": {
+          "de": "Richtspruch",
+          "en": "Verdict"
+        },
+        "desc": {
+          "de": "+15 % Schaden an Zielen unter 40 % HP.",
+          "en": "+15% damage to targets below 40% HP."
+        },
+        "hook": "executioner"
+      }
+    },
+    {
+      "id": "schwarze_kette",
+      "name": {
+        "de": "Schwarze Kette",
+        "en": "Black Chain"
+      },
+      "tier": "legendary",
+      "cost": 3000,
+      "from": [
+        "kaltstahl",
+        "riesenguertel"
+      ],
+      "stats": {
+        "ad": 45,
+        "hp": 350,
+        "haste": 20
+      },
+      "tags": [
+        "ad",
+        "tank"
+      ],
+      "passive": {
+        "name": {
+          "de": "Zermalmen",
+          "en": "Crush"
+        },
+        "desc": {
+          "de": "Treffer stapeln Rüstungsreduktion 5 × 6 %.",
+          "en": "Hits stack armor reduction 5 x 6%."
+        },
+        "hook": "black_chain"
+      }
+    },
+    {
+      "id": "schleierstab",
+      "name": {
+        "de": "Schleierstab",
+        "en": "Veil Staff"
+      },
+      "tier": "legendary",
+      "cost": 3200,
+      "from": [
+        "grosser_stab",
+        "kristallschale"
+      ],
+      "stats": {
+        "ap": 120,
+        "haste": 20
+      },
+      "tags": [
+        "ap"
+      ],
+      "passive": {
+        "name": {
+          "de": "Verdichtung",
+          "en": "Condense"
+        },
+        "desc": {
+          "de": "+35 % AP (multiplikativ).",
+          "en": "+35% AP (multiplicative)."
+        },
+        "hook": "veil_staff"
+      }
+    },
+    {
+      "id": "frostkern",
+      "name": {
+        "de": "Frostkern",
+        "en": "Frost Core"
+      },
+      "tier": "legendary",
+      "cost": 2900,
+      "from": [
+        "riesenguertel",
+        "lehrlingsstab"
+      ],
+      "stats": {
+        "ap": 80,
+        "hp": 400
+      },
+      "tags": [
+        "ap",
+        "tank"
+      ],
+      "passive": {
+        "name": {
+          "de": "Raureif",
+          "en": "Rime"
+        },
+        "desc": {
+          "de": "Fähigkeitstreffer verlangsamen 25 %.",
+          "en": "Ability hits slow 25%."
+        },
+        "hook": "frost_core"
+      }
+    },
+    {
+      "id": "brandglas",
+      "name": {
+        "de": "Brandglas",
+        "en": "Burning Glass"
+      },
+      "tier": "legendary",
+      "cost": 2800,
+      "from": [
+        "kristallschale",
+        "lehrlingsstab"
+      ],
+      "stats": {
+        "ap": 90,
+        "mana": 600
+      },
+      "tags": [
+        "ap"
+      ],
+      "passive": {
+        "name": {
+          "de": "Glut",
+          "en": "Embers"
+        },
+        "desc": {
+          "de": "Fähigkeitstreffer brennen 3 s.",
+          "en": "Ability hits burn for 3 s."
+        },
+        "hook": "burning_glass"
+      }
+    },
+    {
+      "id": "funkenkelch",
+      "name": {
+        "de": "Funkenkelch",
+        "en": "Spark Chalice"
+      },
+      "tier": "legendary",
+      "cost": 3000,
+      "from": [
+        "grosser_stab",
+        "uhrwerk"
+      ],
+      "stats": {
+        "ap": 100,
+        "haste": 15
+      },
+      "tags": [
+        "ap"
+      ],
+      "passive": {
+        "name": {
+          "de": "Überschlag",
+          "en": "Arc"
+        },
+        "desc": {
+          "de": "Alle 1,5 s: nächste Fähigkeit macht Bonus-Blitzschaden.",
+          "en": "Every 1.5 s: next ability deals bonus lightning damage."
+        },
+        "hook": "spark_chalice"
+      }
+    },
+    {
+      "id": "wallherz",
+      "name": {
+        "de": "Wallherz",
+        "en": "Rampart Heart"
+      },
+      "tier": "legendary",
+      "cost": 2900,
+      "from": [
+        "kettenhemd",
+        "riesenguertel"
+      ],
+      "stats": {
+        "hp": 450,
+        "armor": 50
+      },
+      "tags": [
+        "tank"
+      ],
+      "passive": {
+        "name": {
+          "de": "Bollwerk",
+          "en": "Bulwark"
+        },
+        "desc": {
+          "de": "Aura: nahe Gegner −10 % AS.",
+          "en": "Aura: nearby enemies -10% AS."
+        },
+        "hook": "rampart_heart"
+      }
+    },
+    {
+      "id": "sturmgewand",
+      "name": {
+        "de": "Sturmgewand",
+        "en": "Storm Mantle"
+      },
+      "tier": "legendary",
+      "cost": 2900,
+      "from": [
+        "zauberschutzmantel",
+        "riesenguertel"
+      ],
+      "stats": {
+        "hp": 450,
+        "mr": 50
+      },
+      "tags": [
+        "tank"
+      ],
+      "passive": {
+        "name": {
+          "de": "Ableiter",
+          "en": "Grounding"
+        },
+        "desc": {
+          "de": "Schild gegen Magieschaden, lädt alle 40 s.",
+          "en": "Magic damage shield, recharges every 40 s."
+        },
+        "hook": "storm_mantle"
+      }
+    },
+    {
+      "id": "lebenswurzel",
+      "name": {
+        "de": "Lebenswurzel",
+        "en": "Life Root"
+      },
+      "tier": "legendary",
+      "cost": 3000,
+      "from": [
+        "riesenguertel",
+        "wetterhorn"
+      ],
+      "stats": {
+        "hp": 800,
+        "haste": 15
+      },
+      "tags": [
+        "tank"
+      ],
+      "passive": {
+        "name": {
+          "de": "Wurzelkraft",
+          "en": "Rootstrength"
+        },
+        "desc": {
+          "de": "Heilt 1,5 % Max-HP pro 5 s im Kampf.",
+          "en": "Heals 1.5% max HP per 5 s in combat."
+        },
+        "hook": "life_root"
+      }
+    },
+    {
+      "id": "hueterstab",
+      "name": {
+        "de": "Hüterstab",
+        "en": "Warden Staff"
+      },
+      "tier": "legendary",
+      "cost": 2500,
+      "from": [
+        "hueterlampe",
+        "uhrwerk"
+      ],
+      "stats": {
+        "ap": 50,
+        "haste": 20,
+        "hp": 125
+      },
+      "tags": [
+        "support",
+        "ap"
+      ],
+      "passive": {
+        "name": {
+          "de": "Obhut",
+          "en": "Care"
+        },
+        "desc": {
+          "de": "Heilung und Schilde +12 %.",
+          "en": "Heals and shields +12%."
+        },
+        "hook": "warden_staff"
+      }
+    },
+    {
+      "id": "zeitglas",
+      "name": {
+        "de": "Zeitglas",
+        "en": "Hourglass"
+      },
+      "tier": "legendary",
+      "cost": 2800,
+      "from": [
+        "uhrwerk",
+        "kettenhemd"
+      ],
+      "stats": {
+        "ap": 70,
+        "armor": 45
+      },
+      "tags": [
+        "ap",
+        "tank"
+      ],
+      "active": {
+        "name": {
+          "de": "Stillstand",
+          "en": "Stillness"
+        },
+        "desc": {
+          "de": "2,5 s Stasis: unverwundbar, unbeweglich.",
+          "en": "2.5 s stasis: invulnerable, unable to act."
+        },
+        "hook": "hourglass",
+        "cooldown": 120
+      }
+    },
+    {
+      "id": "kettenrelais",
+      "name": {
+        "de": "Kettenrelais",
+        "en": "Chain Relay"
+      },
+      "tier": "legendary",
+      "cost": 2600,
+      "from": [
+        "kettenhemd",
+        "wetterhorn"
+      ],
+      "stats": {
+        "hp": 250,
+        "armor": 40
+      },
+      "tags": [
+        "tank",
+        "support"
+      ],
+      "active": {
+        "name": {
+          "de": "Verbund",
+          "en": "Link"
+        },
+        "desc": {
+          "de": "Verbündete in 500 erhalten einen Schild.",
+          "en": "Allies within 500 gain a shield."
+        },
+        "hook": "chain_relay",
+        "cooldown": 90
+      }
+    },
+    {
+      "id": "stiefel_schnelligkeit",
+      "name": {
+        "de": "Stiefel der Schnelligkeit",
+        "en": "Boots of Swiftness"
+      },
+      "tier": "boots",
+      "cost": 1100,
+      "from": [],
+      "stats": {
+        "msFlat": 60
+      },
+      "tags": [],
+      "unique": "boots"
+    },
+    {
+      "id": "stiefel_ruestung",
+      "name": {
+        "de": "Panzerstiefel",
+        "en": "Plated Boots"
+      },
+      "tier": "boots",
+      "cost": 1100,
+      "from": [],
+      "stats": {
+        "msFlat": 45,
+        "armor": 20
+      },
+      "tags": [
+        "tank"
+      ],
+      "unique": "boots"
+    },
+    {
+      "id": "stiefel_mr",
+      "name": {
+        "de": "Filzstiefel",
+        "en": "Felt Boots"
+      },
+      "tier": "boots",
+      "cost": 1100,
+      "from": [],
+      "stats": {
+        "msFlat": 45,
+        "mr": 25
+      },
+      "tags": [
+        "tank"
+      ],
+      "unique": "boots"
+    },
+    {
+      "id": "stiefel_hast",
+      "name": {
+        "de": "Uhrmacherstiefel",
+        "en": "Clockmaker's Boots"
+      },
+      "tier": "boots",
+      "cost": 1100,
+      "from": [],
+      "stats": {
+        "msFlat": 45,
+        "haste": 15
+      },
+      "tags": [
+        "ap",
+        "support"
+      ],
+      "unique": "boots"
+    }
+  ]
+}

@@ -1,0 +1,153 @@
+{
+  "id": "lio",
+  "name": "Lio Funkenkind",
+  "title": { "de": "der Feuersteinlehrling", "en": "the Flint Apprentice" },
+  "roles": ["jungle"],
+  "archetype": "burst_mage_jungler",
+  "trainingPurpose": { "de": "Burst-Ganks aus dem Fog.", "en": "Burst ganks out of the fog." },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 590,
+    "hpGrowth": 102,
+    "hpRegen": 5.5,
+    "hpRegenGrowth": 0.55,
+    "mana": 420,
+    "manaGrowth": 28,
+    "manaRegen": 8,
+    "manaRegenGrowth": 0.8,
+    "ad": 56,
+    "adGrowth": 3,
+    "armor": 26,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.625,
+    "asGrowth": 1.6,
+    "range": 500,
+    "ms": 340,
+    "windup": 0.3,
+    "projectileSpeed": 1800,
+    "radius": 55
+  },
+  "passive": {
+    "name": { "de": "Funkenlast", "en": "Spark Load" },
+    "desc": {
+      "de": "Fähigkeitstreffer laden 3 Funken auf ein Ziel; der dritte explodiert (40–180 +30 % AP), an Monstern +50 %.",
+      "en": "Ability hits load sparks on a target; the third explodes (40-180 +30% AP), +50% against monsters."
+    },
+    "hooks": ["lio_spark_load"]
+  },
+  "abilities": [
+    {
+      "id": "lio_q",
+      "name": { "de": "Funkenstein", "en": "Spark Stone" },
+      "desc": {
+        "de": "Linie 850; explodiert beim ersten Treffer oder am Ende in 200.",
+        "en": "Line 850; explodes on the first hit or at the end in a 200 radius."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "range": 850,
+      "cooldown": 6,
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "width": 60,
+      "speed": 1500,
+      "radius": 200,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [60, 95, 130, 165, 200], "ap": 0.65 } },
+        { "kind": "hook", "id": "lio_q_end_burst" }
+      ]
+    },
+    {
+      "id": "lio_w",
+      "name": { "de": "Funkensprung", "en": "Spark Jump" },
+      "desc": {
+        "de": "Dash 450; nächster Auto innerhalb 3 s +40 (+30 % AP). Reset bei Champion-Takedown.",
+        "en": "Dash 450; next basic attack within 3 s deals +40 (+30% AP). Resets on champion takedown."
+      },
+      "type": "dash",
+      "castTime": 0.2,
+      "range": 450,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": 50,
+      "costType": "mana",
+      "speed": 1500,
+      "duration": 3,
+      "distance": 450,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": 40, "ap": 0.3 } },
+        { "kind": "hook", "id": "lio_w_next_auto" },
+        { "kind": "hook", "id": "lio_w_reset" }
+      ]
+    },
+    {
+      "id": "lio_e",
+      "name": { "de": "Blendfunken", "en": "Flash Sparks" },
+      "desc": {
+        "de": "Kreis 300 auf 700, nach 0,5 s: Schaden und Blind 1 s.",
+        "en": "Circle 300 at 700; after 0.5 s deals damage and blinds for 1 s."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.25,
+      "range": 700,
+      "cooldown": 12,
+      "cost": 60,
+      "costType": "mana",
+      "radius": 300,
+      "delay": 0.5,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [50, 80, 110, 140, 170], "ap": 0.4 } },
+        { "kind": "blind", "duration": 1 }
+      ]
+    },
+    {
+      "id": "lio_r",
+      "name": { "de": "Funkenregen", "en": "Spark Rain" },
+      "desc": {
+        "de": "5 Steine über 1 s auf einen Bereich (Radius 400, Reichweite 1.000). Ab dem dritten Treffer am selben Ziel 1 s Stun.",
+        "en": "5 stones over 1 s onto an area (radius 400, range 1000). From the third hit on the same target: 1 s stun."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.3,
+      "range": 1000,
+      "cooldown": [100, 80, 60],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 400,
+      "duration": 1,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [80, 130, 180], "ap": 0.35 } },
+        { "kind": "hook", "id": "lio_r_spark_rain" }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": {
+    "de": "Level 6: Funkenregen + Funkenlast löschen ein Ziel aus dem Fog heraus.",
+    "en": "Level 6: Spark Rain + Spark Load delete a target out of the fog."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Voller Funkenflug", "en": "Full spark flight" }, "sequence": ["W", "AA", "E", "Q", "R"] },
+    { "name": { "de": "Stein und Sprung", "en": "Stone and jump" }, "sequence": ["Q", "W", "AA"] },
+    { "name": { "de": "Blendstein", "en": "Blinding stone" }, "sequence": ["E", "Q"] }
+  ],
+  "scores": { "engage": 2, "peel": 1, "range": 3, "scaling": 3, "waveclear": 3, "mobility": 3 },
+  "voiceLines": {
+    "pick": {
+      "de": "Der Meister sagt, ich soll weniger zünden. Der Meister ist nicht hier.",
+      "en": "The master says I should light fewer fires. The master isn't here."
+    },
+    "firstBlood": { "de": "Hat gefunkt!", "en": "It sparked!" },
+    "kill": { "de": "Puff.", "en": "Poof." },
+    "death": { "de": "Feuchter Zunder.", "en": "Damp tinder." },
+    "recall": { "de": "Feuersteine nachkaufen.", "en": "Buying more flint." },
+    "taunt": { "de": "Ich hab noch drei Funken. Für dich.", "en": "I've got three sparks left. For you." }
+  },
+  "silhouette": "short apprentice with oversized flint gauntlets and a glowing spark pouch"
+}

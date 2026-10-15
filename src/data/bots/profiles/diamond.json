@@ -1,0 +1,74 @@
+{
+  "rank": "diamond",
+  "skill": 80,
+  "targets": {
+    "csPerMin": 7.7,
+    "csAt10": 94,
+    "goldPerMin": 495,
+    "deathsPerGame": 6.6,
+    "killsPerGame": 7.5,
+    "killParticipationJgSup": 55,
+    "wardsPerMinSupport": 0.82,
+    "wardsPerMinJungle": 0.29,
+    "wardsPerMinAdc": 0.16,
+    "controlWardsSupport": 4.0,
+    "controlWardsLaner": 1.5,
+    "visionScoreSupport": 58,
+    "visionScoreLaner": 22,
+    "gameLengthMin": 29
+  },
+  "behavior": {
+    "reactionMedianMs": 250,
+    "reactionSigmaMs": 60,
+    "microHz": 5,
+    "macroIntervalS": 20,
+    "minimapIntervalS": 4,
+    "predictiveDodgePct": 55,
+    "dodgeRateLine900Pct": 65,
+    "skillshotHitPct": 68,
+    "aimErrorDeg": 3,
+    "lastHitJitterMs": 60,
+    "errorInjectionPct": 9,
+    "cooldownTracking": "flash",
+    "jungleTracking": "ahead60",
+    "waveStateDeliberatePct": 80,
+    "shoveAndRecallPct": 85,
+    "recallGoldThreshold": 1250,
+    "objectiveConversionPct": 80,
+    "chaseIntoFogPct": 15,
+    "diveHpTolerancePct": 45,
+    "objectiveLatencyS": 4,
+    "baronWithoutVisionPct": 25,
+    "groupAfterFirstTowerPct": 75,
+    "sideLaneFarmAfter15Pct": 80,
+    "buildQuality": "adaptive",
+    "adaptiveBuildPct": 90,
+    "standardBuildPct": 100,
+    "optimalRunesPct": 95,
+    "abilityOrder": "situational",
+    "situationalAbilityPct": 100,
+    "rotationGroupSize": 5,
+    "tiltPerformanceDropPct": 15,
+    "varianceRanks": 0.8,
+    "pingsPerMin": 1.5,
+    "surrenderAtMinus8kPct": 35,
+    "apmCap": 200,
+    "inertia": 0.3,
+    "engageHesitationS": 0.52
+  },
+  "notes": {
+    "de": "Bestraft CS-Fenster, sneakt Baron und wardet Drache, tracked Flash, contestet Nebelschleicher, Shove-and-Recall, 2–3 feste Kernitems, schnelle Skirmish-Reaktion. Jungle-Pathing noch nicht optimal; Objective-Entscheidungen brauchen 4 s. Erster Baron wird korrekt genutzt.",
+    "en": "Punishes CS windows, sneaks baron while warding dragon, tracks Flash, contests scuttlers, shove-and-recall, 2-3 fixed core items, fast skirmish reaction. Jungle pathing not optimal; objective decisions take 4 s. Uses the first baron correctly."
+  },
+  "archetypes": [
+    {
+      "id": "microNoMacro",
+      "desc": "Starkes Mikro, schwaches Makro: gewinnt Lane, verliert Spiel"
+    },
+    {
+      "id": "planAbort",
+      "desc": "Kennt den Plan, verliert ihn im Kampf",
+      "planAbortInFightPct": 30
+    }
+  ]
+}

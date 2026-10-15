@@ -1,0 +1,146 @@
+{
+  "id": "seraphyne",
+  "name": "Seraphyne Sturm",
+  "title": { "de": "die Blitzableiterin", "en": "the Lightning Rod" },
+  "roles": ["top", "mid"],
+  "archetype": "battlemage",
+  "trainingPurpose": { "de": "Zonen, DoT-Trades, Mana-Management.", "en": "Zones, DoT trades, mana management." },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 620,
+    "hpGrowth": 105,
+    "hpRegen": 5.5,
+    "hpRegenGrowth": 0.55,
+    "mana": 450,
+    "manaGrowth": 28,
+    "manaRegen": 8,
+    "manaRegenGrowth": 0.8,
+    "ad": 55,
+    "adGrowth": 3,
+    "armor": 28,
+    "armorGrowth": 4.5,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.625,
+    "asGrowth": 1.6,
+    "range": 475,
+    "ms": 340,
+    "windup": 0.3,
+    "projectileSpeed": 1700,
+    "radius": 55
+  },
+  "passive": {
+    "name": { "de": "Elektrisiert", "en": "Electrified" },
+    "desc": {
+      "de": "Jede Fähigkeit gibt ihr 3 s +15 % Bewegung (als Buff-Effekt in jeder Fähigkeit hinterlegt).",
+      "en": "Every ability grants her +15% move speed for 3 s (stored as a buff effect on each ability)."
+    },
+    "hooks": []
+  },
+  "abilities": [
+    {
+      "id": "seraphyne_q",
+      "name": { "de": "Blitzspeer", "en": "Lightning Spear" },
+      "desc": { "de": "Linie 900, trifft alle Gegner auf der Linie.", "en": "Line 900 that hits every enemy along it." },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "range": 900,
+      "cooldown": 6,
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "width": 60,
+      "speed": 1800,
+      "flags": ["pierce"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [60, 95, 130, 165, 200], "ap": 0.65 } },
+        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 3, "target": "self" }
+      ]
+    },
+    {
+      "id": "seraphyne_w",
+      "name": { "de": "Wetterfeld", "en": "Weather Field" },
+      "desc": {
+        "de": "Kreiszone 350 auf 750 für 4 s: Schaden pro Sekunde und 20 % Slow.",
+        "en": "Circular zone 350 at 750 for 4 s: damage per second and a 20% slow."
+      },
+      "type": "zone",
+      "castTime": 0.25,
+      "range": 750,
+      "cooldown": 14,
+      "cost": 80,
+      "costType": "mana",
+      "radius": 350,
+      "duration": 4,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [20, 35, 50, 65, 80], "ap": 0.2 } },
+        { "kind": "slow", "pct": 20, "duration": 0.5 },
+        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 3, "target": "self" }
+      ]
+    },
+    {
+      "id": "seraphyne_e",
+      "name": { "de": "Donnerschritt", "en": "Thunder Step" },
+      "desc": {
+        "de": "Teleport 350 nach 0,3 s; danach 1 s 10 % weniger Schaden. Nicht durch Wände dicker als 350.",
+        "en": "Teleports 350 after 0.3 s, then takes 10% less damage for 1 s. Cannot cross walls thicker than 350."
+      },
+      "type": "blink",
+      "castTime": 0.2,
+      "range": 350,
+      "cooldown": [20, 18, 16, 14, 12],
+      "cost": 60,
+      "costType": "mana",
+      "delay": 0.3,
+      "distance": 350,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "buff", "stat": "dmgReduction", "pct": 10, "duration": 1, "target": "self" },
+        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 3, "target": "self" }
+      ]
+    },
+    {
+      "id": "seraphyne_r",
+      "name": { "de": "Gewitterfront", "en": "Storm Front" },
+      "desc": {
+        "de": "3 Einschläge im Abstand von 0,8 s (Radius 220, Reichweite 1.000); der dritte betäubt 1 s.",
+        "en": "3 strikes 0.8 s apart (radius 220, range 1000); the third stuns for 1 s."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.3,
+      "range": 1000,
+      "cooldown": 90,
+      "cost": 100,
+      "costType": "mana",
+      "radius": 220,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [120, 200, 280], "ap": 0.5 } },
+        { "kind": "hook", "id": "seraphyne_r_three_strikes" },
+        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 3, "target": "self" }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": {
+    "de": "Level 6: Gewitterfront zwingt Gegner aus der Zone oder in den Stun.",
+    "en": "Level 6: Storm Front forces enemies out of the zone or into the stun."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Feld und Speer", "en": "Field and spear" }, "sequence": ["W", "Q", "AA"] },
+    { "name": { "de": "Schritt-Trade", "en": "Step trade" }, "sequence": ["E", "Q", "W"] },
+    { "name": { "de": "Unwetter", "en": "Tempest" }, "sequence": ["W", "R", "Q"] }
+  ],
+  "scores": { "engage": 2, "peel": 2, "range": 3, "scaling": 3, "waveclear": 4, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Ich leite nur weiter. Wohin, entscheide ich.", "en": "I just conduct it. Where to is my call." },
+    "firstBlood": { "de": "Einschlag bestätigt.", "en": "Strike confirmed." },
+    "kill": { "de": "Geerdet.", "en": "Grounded." },
+    "death": { "de": "Kurzschluss.", "en": "Short circuit." },
+    "recall": { "de": "Aufladen.", "en": "Recharging." },
+    "taunt": { "de": "Stell dich ruhig unter einen Baum.", "en": "Go on, stand under a tree." }
+  },
+  "silhouette": "storm-caller with a lightning-rod spear, crackling short cape, wide stance"
+}

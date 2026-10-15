@@ -1,0 +1,140 @@
+{
+  "id": "ottilie",
+  "name": "Ottilie Wolfsrufer",
+  "title": { "de": "die Rudelführerin", "en": "the Pack Leader" },
+  "roles": ["jungle"],
+  "archetype": "pet_hunter",
+  "trainingPurpose": { "de": "Begleiter, Slow-Ganks, Jungle-Tracking.", "en": "Companions, slow ganks, jungle tracking." },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 620,
+    "hpGrowth": 102,
+    "hpRegen": 3.75,
+    "hpRegenGrowth": 0.55,
+    "mana": 330,
+    "manaGrowth": 38,
+    "manaRegen": 7.2,
+    "manaRegenGrowth": 0.65,
+    "ad": 62,
+    "adGrowth": 3.2,
+    "armor": 26,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.658,
+    "asGrowth": 3.2,
+    "range": 525,
+    "ms": 340,
+    "windup": 0.3,
+    "projectileSpeed": 2000,
+    "radius": 55
+  },
+  "passive": {
+    "name": { "de": "Rudel", "en": "Pack" },
+    "desc": {
+      "de": "Der Wolf Hark kämpft mit (HP skaliert mit ihrem Level, Schaden 50 % ihres AD). Respawn 30 s; Monster-Kills heilen Hark.",
+      "en": "The wolf Hark fights alongside her (HP scales with her level, damage 50% of her AD). Respawns after 30 s; monster kills heal Hark."
+    },
+    "hooks": ["ottilie_pack_hark"]
+  },
+  "abilities": [
+    {
+      "id": "ottilie_q",
+      "name": { "de": "Hetzpfeil", "en": "Chase Arrow" },
+      "desc": {
+        "de": "Linie 1.000, markiert; Hark springt das Ziel an (300, 50 % Slow 0,75 s).",
+        "en": "Line 1000, marks the target; Hark leaps at it (300, 50% slow for 0.75 s)."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "range": 1000,
+      "cooldown": 8,
+      "cost": 50,
+      "costType": "mana",
+      "width": 60,
+      "speed": 2000,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [60, 95, 130, 165, 200], "ad": 0.9 } },
+        { "kind": "mark", "id": "ottilie_hunt", "duration": 4 },
+        { "kind": "hook", "id": "ottilie_q_hark_leap" }
+      ]
+    },
+    {
+      "id": "ottilie_w",
+      "name": { "de": "Spürnase", "en": "Keen Nose" },
+      "desc": {
+        "de": "Hark läuft 6 s zur Zielposition (bis 2.000) und gibt dort Sicht.",
+        "en": "Hark runs to the target location (up to 2000) for 6 s and grants vision there."
+      },
+      "type": "summon",
+      "castTime": 0.2,
+      "range": 2000,
+      "cooldown": [20, 18, 16, 14, 12],
+      "cost": 40,
+      "costType": "mana",
+      "duration": 6,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "hook", "id": "ottilie_w_scout" }
+      ]
+    },
+    {
+      "id": "ottilie_e",
+      "name": { "de": "Rückzugsschuss", "en": "Retreat Shot" },
+      "desc": {
+        "de": "Hop 300 rückwärts, Pfeil nach vorn (Auto mit +30 % Schaden).",
+        "en": "Hops 300 backward and fires an arrow forward (basic attack with +30% damage)."
+      },
+      "type": "dash",
+      "castTime": 0.2,
+      "range": 300,
+      "cooldown": 16,
+      "cost": 40,
+      "costType": "mana",
+      "speed": 1300,
+      "distance": 300,
+      "effects": [
+        { "kind": "hook", "id": "ottilie_e_retreat_shot" }
+      ]
+    },
+    {
+      "id": "ottilie_r",
+      "name": { "de": "Jagdruf", "en": "Hunting Call" },
+      "desc": {
+        "de": "8 s: Hark wird groß (+100 % Schaden, +300 HP), Ottilie +30 % Angriffstempo, Harks Ziele 30 % verlangsamt.",
+        "en": "8 s: Hark grows (+100% damage, +300 HP), Ottilie gains +30% attack speed, Hark's targets are slowed by 30%."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": [100, 85, 70],
+      "cost": 100,
+      "costType": "mana",
+      "duration": 8,
+      "effects": [
+        { "kind": "buff", "stat": "as", "pct": 30, "duration": 8, "target": "self" },
+        { "kind": "hook", "id": "ottilie_r_hunting_call" }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": { "de": "Level 6: Jagdruf macht Hark zur zweiten Bedrohung.", "en": "Level 6: Hunting Call turns Hark into a second threat." },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Hetzen und Weichen", "en": "Chase and step back" }, "sequence": ["Q", "AA", "E", "AA"] },
+    { "name": { "de": "Spur und Ruf", "en": "Scent and call" }, "sequence": ["W", "Q", "R"] },
+    { "name": { "de": "Rudelangriff", "en": "Pack strike" }, "sequence": ["R", "Q", "AA", "E"] }
+  ],
+  "scores": { "engage": 2, "peel": 2, "range": 4, "scaling": 3, "waveclear": 2, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Hark und ich. Er macht die Arbeit, ich die Ansagen.", "en": "Hark and me. He does the work, I give the orders." },
+    "firstBlood": { "de": "Guter Junge.", "en": "Good boy." },
+    "kill": { "de": "Apportiert.", "en": "Fetched." },
+    "death": { "de": "Hark, hol Hilfe. Nicht den Stock.", "en": "Hark, get help. Not the stick." },
+    "recall": { "de": "Futterpause.", "en": "Feeding break." },
+    "taunt": { "de": "Er beißt. Ich auch.", "en": "He bites. So do I." }
+  },
+  "silhouette": "hooded archer with a longbow, a large grey wolf at her side"
+}

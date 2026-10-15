@@ -1,0 +1,142 @@
+{
+  "id": "tobin",
+  "name": "Tobin Sturmkiel",
+  "title": { "de": "der Harpunier", "en": "the Harpooner" },
+  "roles": ["adc"],
+  "archetype": "harpoon_marksman",
+  "trainingPurpose": { "de": "Hook-ähnlicher Skillshot, Kiting mit Slow.", "en": "Hook-like skillshot, kiting with slows." },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 620,
+    "hpGrowth": 98,
+    "hpRegen": 3.75,
+    "hpRegenGrowth": 0.55,
+    "mana": 330,
+    "manaGrowth": 38,
+    "manaRegen": 7.2,
+    "manaRegenGrowth": 0.65,
+    "ad": 61,
+    "adGrowth": 3.2,
+    "armor": 26,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.658,
+    "asGrowth": 3.2,
+    "range": 550,
+    "ms": 335,
+    "windup": 0.3,
+    "projectileSpeed": 2000,
+    "radius": 55
+  },
+  "passive": {
+    "name": { "de": "Seemannsbeine", "en": "Sea Legs" },
+    "desc": { "de": "Nach einem Dash oder Blink 3 s +20 % Angriffstempo.", "en": "After a dash or blink: +20% attack speed for 3 s." },
+    "hooks": ["tobin_sea_legs"]
+  },
+  "abilities": [
+    {
+      "id": "tobin_q",
+      "name": { "de": "Harpune", "en": "Harpoon" },
+      "desc": {
+        "de": "Linie 1.100; das Ziel ist 2,5 s angeleint. Ist es dann über 650 entfernt, wird es 1 s gewurzelt.",
+        "en": "Line 1100; the target is tethered for 2.5 s. If it is more than 650 away, it is rooted for 1 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "range": 1100,
+      "cooldown": [13, 12, 11, 10, 9],
+      "cost": 50,
+      "costType": "mana",
+      "width": 60,
+      "speed": 1800,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [80, 120, 160, 200, 240], "ad": 1 } },
+        { "kind": "hook", "id": "tobin_q_tether" }
+      ]
+    },
+    {
+      "id": "tobin_w",
+      "name": { "de": "Beidrehen", "en": "Heave To" },
+      "desc": { "de": "Dash 300; nächster Auto verlangsamt 1,5 s um 50 %.", "en": "Dash 300; next basic attack slows by 50% for 1.5 s." },
+      "type": "dash",
+      "castTime": 0.2,
+      "range": 300,
+      "cooldown": [16, 15, 14, 13, 12],
+      "cost": 40,
+      "costType": "mana",
+      "speed": 1300,
+      "duration": 4,
+      "distance": 300,
+      "effects": [
+        { "kind": "slow", "pct": 50, "duration": 1.5 },
+        { "kind": "hook", "id": "tobin_w_next_auto" }
+      ]
+    },
+    {
+      "id": "tobin_e",
+      "name": { "de": "Netz auswerfen", "en": "Cast Net" },
+      "desc": {
+        "de": "Kreis 350 auf 700, nach 0,75 s: 40 % Slow 2 s, enthüllt 2 s.",
+        "en": "Circle 350 at 700; after 0.75 s: 40% slow for 2 s, reveals for 2 s."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.25,
+      "range": 700,
+      "cooldown": 14,
+      "cost": 50,
+      "costType": "mana",
+      "radius": 350,
+      "delay": 0.75,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "slow", "pct": 40, "duration": 2 },
+        { "kind": "reveal", "duration": 2 }
+      ]
+    },
+    {
+      "id": "tobin_r",
+      "name": { "de": "Sturmflut", "en": "Storm Surge" },
+      "desc": {
+        "de": "Welle 1.300 lang, Breite 400; schiebt Gegner 300 zurück.",
+        "en": "Wave 1300 long, width 400; pushes enemies back 300."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.3,
+      "range": 1300,
+      "cooldown": [110, 90, 70],
+      "cost": 100,
+      "costType": "mana",
+      "width": 400,
+      "speed": 1200,
+      "flags": ["pierce"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [200, 300, 400], "ad": 0.9 } },
+        { "kind": "knockback", "distance": 300 }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": {
+    "de": "Level 6: Sturmflut trennt Diver von seiner Backline.",
+    "en": "Level 6: Storm Surge separates divers from his backline."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Harpune und Netz", "en": "Harpoon and net" }, "sequence": ["Q", "E", "AA", "W", "AA"] },
+    { "name": { "de": "Flut und Harpune", "en": "Surge and harpoon" }, "sequence": ["R", "Q"] },
+    { "name": { "de": "Kite-Wende", "en": "Kiting turn" }, "sequence": ["E", "W", "AA"] }
+  ],
+  "scores": { "engage": 2, "peel": 3, "range": 4, "scaling": 3, "waveclear": 3, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Leine los. Oder fest. Kommt drauf an.", "en": "Line loose. Or tight. Depends." },
+    "firstBlood": { "de": "Erster Fang, noch zappelt nichts.", "en": "First catch, nothing wriggling yet." },
+    "kill": { "de": "Eingeholt.", "en": "Reeled in." },
+    "death": { "de": "Über Bord.", "en": "Overboard." },
+    "recall": { "de": "Zurück in den Hafen.", "en": "Back to harbour." },
+    "taunt": { "de": "Ich hab schon größere Fische gesehen. Und klügere.", "en": "I've seen bigger fish. And smarter ones." }
+  },
+  "silhouette": "sailor in an oilskin coat with a harpoon gun and coiled rope, tricorn hat"
+}

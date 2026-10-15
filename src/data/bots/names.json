@@ -1,0 +1,20 @@
+{
+  "note": "Spec §11: generated summoner-style names from a pool of first and second parts plus numbers/decorations. realistic style uses patterns; neutral style uses 'Bot <first>'.",
+  "first": [
+    "Nebel", "Schatten", "Glut", "Asche", "Kupfer", "Messing", "Riss", "Schleier", "Eisen", "Funken",
+    "Stern", "Mond", "Wolfs", "Raben", "Krähen", "Fuchs", "Dachs", "Eulen", "Sturm", "Frost",
+    "Moos", "Dorn", "Rost", "Kohle", "Schiefer", "Glas", "Draht", "Glocken", "Faden", "Nadel",
+    "Pulver", "Lampen", "Brunnen", "Quell", "Kessel", "Anker", "Ketten", "Silber", "Blitz", "Donner",
+    "Tilted", "Lucky", "Sleepy", "Salty", "Silent", "Lost", "Cozy", "Spicy", "Tiny", "Grumpy",
+    "Mid", "Jungle", "Top", "Supp", "ADC", "Flash", "Ward", "Baron", "Drache", "Tower"
+  ],
+  "second": [
+    "krähe", "fuchs", "wolf", "bär", "falke", "schmied", "weber", "gräber", "läufer", "jäger",
+    "hand", "herz", "zahn", "klinge", "pfeil", "bogen", "schild", "stab", "horn", "flügel",
+    "wanderer", "wächter", "flüsterer", "brecher", "sammler", "träumer", "springer", "heuler", "spinner", "zünder",
+    "Tobi", "Lena", "Max", "Mia", "Jonas", "Emma", "Paul", "Lea", "Finn", "Nora",
+    "Gamer", "Main", "Enjoyer", "Diff", "Andy", "Goblin", "Gremlin", "Potato", "Panda", "Otter"
+  ],
+  "patterns": ["{F}{s}", "{F}{s}{n2}", "xX{F}{S}Xx", "{F} {S}", "{F}{S}{n4}", "{s}{n2}", "The{F}{S}", "{F}_{s}", "{F}{s}EUW", "{C}Main{n2}"],
+  "championMainPrefix": true
+}

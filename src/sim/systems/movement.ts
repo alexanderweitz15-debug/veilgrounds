@@ -1,0 +1,113 @@
+// Movement: path following (mode 1), chasing the attack target (mode 2), minion separation.
+// Units do not move during attack windup (phase 1) or while rooted/stunned (Stats.ms === 0).
+
+import { query } from 'bitecs';
+import type { Sim } from '../sim';
+import type { System } from './index';
+import { DT, isMinion } from '../types';
+import { findPath, lineWalkable, walkable } from '../map';
+import { isRef } from '../sim';
+
+const REPATH_TICKS = 15;
+
+export const movementSystem: System = {
+  name: 'movement',
+  update(sim) {
+    const { Move, Pos, Unit, Stats, Atk, Face } = sim.c;
+    const ents = query(sim.world, [Move]);
+    for (let i = 0; i < ents.length; i++) {
+      const eid = ents[i]!;
+      if (!Unit.alive[eid] || Move.mode[eid] === 0 || Atk.phase[eid] === 1) continue;
+      let step = Stats.ms[eid]! * DT;
+      if (step <= 0) continue;
+
+      if (Move.mode[eid] === 2) {
+        const t = Atk.target[eid]!;
+        if (!isRef(sim, t, Atk.targetSerial[eid]!)) {
+          Move.mode[eid] = 0;
+          continue;
+        }
+        const reach = Stats.range[eid]! + Unit.radius[eid]! + Unit.radius[t]!;
+        const dx = Pos.x[t]! - Pos.x[eid]!;
+        const dy = Pos.y[t]! - Pos.y[eid]!;
+        if (dx * dx + dy * dy <= reach * reach) continue; // in range: attack system takes over
+        // chase: straight if clear, otherwise path (refreshed periodically)
+        if (lineWalkable(sim.map.nav, Pos.x[eid]!, Pos.y[eid]!, Pos.x[t]!, Pos.y[t]!)) {
+          sim.paths.set(eid, [{ x: Pos.x[t]!, y: Pos.y[t]! }]);
+        } else if (!sim.paths.has(eid) || (sim.tick + eid) % REPATH_TICKS === 0) {
+          sim.paths.set(eid, findPath(sim.map.nav, Pos.x[eid]!, Pos.y[eid]!, Pos.x[t]!, Pos.y[t]!));
+        }
+        // never walk past the point where the target enters range
+        step = Math.min(step, Math.sqrt(dx * dx + dy * dy) - reach + 1);
+      }
+
+      const path = sim.paths.get(eid);
+      if (!path || path.length === 0) {
+        Move.mode[eid] = 0;
+        continue;
+      }
+      // walk along waypoints, consuming `step` distance
+      while (step > 0 && path.length > 0) {
+        const wp = path[0]!;
+        const dx = wp.x - Pos.x[eid]!;
+        const dy = wp.y - Pos.y[eid]!;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d > 0) {
+          Face.x[eid] = dx / d;
+          Face.y[eid] = dy / d;
+        }
+        if (d <= step) {
+          Pos.x[eid] = wp.x;
+          Pos.y[eid] = wp.y;
+          step -= d;
+          path.shift();
+        } else {
+          const nx = Pos.x[eid]! + (dx / d) * step;
+          const ny = Pos.y[eid]! + (dy / d) * step;
+          if (!walkable(sim.map.nav, nx, ny) && walkable(sim.map.nav, Pos.x[eid]!, Pos.y[eid]!)) {
+            path.length = 0; // blocked (e.g. chasing into a wall edge); repath next tick
+            break;
+          }
+          Pos.x[eid] = nx;
+          Pos.y[eid] = ny;
+          step = 0;
+        }
+      }
+      if (path.length === 0 && Move.mode[eid] === 1) Move.mode[eid] = 0;
+    }
+    separateMinions(sim, ents);
+  },
+};
+
+/**
+ * Soft separation so minion waves do not stack on one point. Champions pass through units.
+ * ponytail: O(n^2) over minions (~90 max); spatial hash if bot-sim profiling shows it.
+ */
+function separateMinions(sim: Sim, ents: ArrayLike<number>): void {
+  const { Pos, Unit } = sim.c;
+  const ms: number[] = [];
+  for (let i = 0; i < ents.length; i++) {
+    const e = ents[i]!;
+    if (Unit.alive[e] && isMinion(Unit.kind[e]!)) ms.push(e);
+  }
+  for (let i = 0; i < ms.length; i++) {
+    const a = ms[i]!;
+    for (let j = i + 1; j < ms.length; j++) {
+      const b = ms[j]!;
+      const dx = Pos.x[b]! - Pos.x[a]!;
+      const dy = Pos.y[b]! - Pos.y[a]!;
+      const min = Unit.radius[a]! + Unit.radius[b]!;
+      const d2 = dx * dx + dy * dy;
+      if (d2 >= min * min) continue;
+      const d = Math.sqrt(d2);
+      // coincident: push apart along a fixed axis derived from eid order (deterministic)
+      const ux = d > 0 ? dx / d : 1;
+      const uy = d > 0 ? dy / d : 0;
+      const push = (min - d) * 0.25;
+      Pos.x[a] = Pos.x[a]! - ux * push;
+      Pos.y[a] = Pos.y[a]! - uy * push;
+      Pos.x[b] = Pos.x[b]! + ux * push;
+      Pos.y[b] = Pos.y[b]! + uy * push;
+    }
+  }
+}

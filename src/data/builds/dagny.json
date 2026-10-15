@@ -1,0 +1,44 @@
+{
+  "champion": "dagny",
+  "template": "tank",
+  "starter": [
+    "dornenklinge",
+    "trank"
+  ],
+  "standard": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "lebenswurzel",
+      "wallherz",
+      "sturmgewand",
+      "kettenrelais"
+    ]
+  },
+  "vsAD": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "wallherz",
+      "lebenswurzel",
+      "kettenrelais",
+      "sturmgewand"
+    ]
+  },
+  "vsAP": {
+    "boots": "stiefel_mr",
+    "core": [
+      "sturmgewand",
+      "lebenswurzel",
+      "wallherz",
+      "kettenrelais"
+    ]
+  },
+  "runes": {
+    "keystone": "zaehigkeit",
+    "minor": [
+      "zweiter_wind",
+      "lebenskraft",
+      "ruestung"
+    ]
+  },
+  "note": "Component order follows items.json \"from\"; Diamond+ bots reorder components situationally (spec §5)."
+}

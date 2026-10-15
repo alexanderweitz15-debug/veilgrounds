@@ -1,0 +1,143 @@
+{
+  "id": "isolde",
+  "name": "Isolde Glasmacherin",
+  "title": { "de": "die Glasbläserin", "en": "the Glassblower" },
+  "roles": ["top"],
+  "archetype": "duelist",
+  "trainingPurpose": { "de": "Wand-Engages, 1v1, Splitpush.", "en": "Wall engages, 1v1, split-push." },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 650,
+    "hpGrowth": 108,
+    "hpRegen": 8,
+    "hpRegenGrowth": 0.8,
+    "mana": 330,
+    "manaGrowth": 40,
+    "manaRegen": 7.5,
+    "manaRegenGrowth": 0.7,
+    "ad": 66,
+    "adGrowth": 3.5,
+    "armor": 33,
+    "armorGrowth": 4.6,
+    "mr": 32,
+    "mrGrowth": 2.05,
+    "as": 0.69,
+    "asGrowth": 3.2,
+    "range": 125,
+    "ms": 345,
+    "windup": 0.3,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Temperglas", "en": "Tempered Glass" },
+    "desc": {
+      "de": "Nach 2 s ohne Schaden gibt der nächste gegnerische Treffer einen Schild von 20 % Max-HP gegen dessen Schadensart für 2 s. Abklingzeit 16 s (Level 1) bis 8 s (Level 18).",
+      "en": "After 2 s without taking damage, the next enemy hit grants a shield of 20% max HP against that damage type for 2 s. Cooldown 16 s (level 1) to 8 s (level 18)."
+    },
+    "hooks": ["isolde_tempered_glass"]
+  },
+  "abilities": [
+    {
+      "id": "isolde_q",
+      "name": { "de": "Schliff/Bruch", "en": "Cut/Break" },
+      "desc": {
+        "de": "Nächster Auto +20/40/60/80/100 % AD. Re-Cast nach 1,5 s (bis 3,5 s): +40 % mehr, davon 40–100 % wahrer Schaden (nach Level), 25 % Slow 1 s.",
+        "en": "Next basic attack +20/40/60/80/100% AD. Recast after 1.5 s (until 3.5 s): 40% more, 40-100% of it true damage (by level), 25% slow for 1 s."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": 9,
+      "cost": 25,
+      "costType": "mana",
+      "duration": 3.5,
+      "flags": ["recast"],
+      "effects": [
+        { "kind": "hook", "id": "isolde_q_cut_break" }
+      ]
+    },
+    {
+      "id": "isolde_w",
+      "name": { "de": "Glasbogen", "en": "Glass Arc" },
+      "desc": {
+        "de": "Nach 0,5 s Kegel 650. Äußere Hälfte: 80 % Slow 1 s und Heilung um 50 % des Schadens an Champions.",
+        "en": "After 0.5 s a 650 cone. Outer half: 80% slow for 1 s and heals for 50% of damage dealt to champions."
+      },
+      "type": "cone",
+      "castTime": 0.2,
+      "range": 650,
+      "cooldown": [17, 16, 15, 14, 13],
+      "cost": 50,
+      "costType": "mana",
+      "angle": 60,
+      "delay": 0.5,
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [70, 100, 130, 160, 190], "bonusAd": 0.6 } },
+        { "kind": "hook", "id": "isolde_w_outer_half" }
+      ]
+    },
+    {
+      "id": "isolde_e",
+      "name": { "de": "Drahtzug", "en": "Wire Pull" },
+      "desc": {
+        "de": "Draht 800 an Terrain, zieht sich hin. Re-Cast innerhalb 1 s: Dash 400, erster Champion 0,75 s betäubt, +30 % Angriffstempo 5 s.",
+        "en": "Wire 800 to terrain, pulls herself there. Recast within 1 s: dash 400, first champion stunned 0.75 s, +30% attack speed for 5 s."
+      },
+      "type": "dash",
+      "castTime": 0.2,
+      "range": 800,
+      "cooldown": [16, 15, 14, 13, 12],
+      "cost": 40,
+      "costType": "mana",
+      "speed": 1600,
+      "distance": 400,
+      "flags": ["recast"],
+      "effects": [
+        { "kind": "hook", "id": "isolde_e_wire" },
+        { "kind": "stun", "duration": 0.75 },
+        { "kind": "buff", "stat": "as", "pct": 30, "duration": 5, "target": "self" }
+      ]
+    },
+    {
+      "id": "isolde_r",
+      "name": { "de": "Glaskuppel", "en": "Glass Dome" },
+      "desc": {
+        "de": "Sprung auf einen Champion (400), Kuppel Radius 450 für 3,5 s. Niemand sonst kommt hinein, Projektile von außen zerbrechen. Autos in der Kuppel: +4 % der aktuellen HP als wahrer Schaden.",
+        "en": "Leaps onto a champion (400) and raises a dome of radius 450 for 3.5 s. Nobody else can enter; outside projectiles shatter. Basic attacks inside deal +4% current HP true damage."
+      },
+      "type": "targeted",
+      "castTime": 0.25,
+      "range": 400,
+      "cooldown": [140, 115, 90],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 450,
+      "duration": 3.5,
+      "effects": [
+        { "kind": "hook", "id": "isolde_r_glass_dome" }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3: Drahtzug-Engage mit Stun. Level 6: Glaskuppel erzwingt das 1v1.",
+    "en": "Level 3: Wire Pull engage with stun. Level 6: Glass Dome forces the 1v1."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Draht und Bruch", "en": "Wire and break" }, "sequence": ["E", "Q", "AA", "W", "Q"] },
+    { "name": { "de": "Kuppel-Duell", "en": "Dome duel" }, "sequence": ["R", "Q", "W", "Q"] },
+    { "name": { "de": "Flucht über die Wand", "en": "Over the wall" }, "sequence": ["E"] }
+  ],
+  "scores": { "engage": 3, "peel": 1, "range": 1, "scaling": 4, "waveclear": 2, "mobility": 3 },
+  "voiceLines": {
+    "pick": { "de": "Glas ist geduldig. Ich nicht.", "en": "Glass is patient. I'm not." },
+    "firstBlood": { "de": "Feiner Sprung. Im Glas, meine ich.", "en": "Fine crack. In the glass, I mean." },
+    "kill": { "de": "Zerbrochen. Kommt in den Scherbeneimer.", "en": "Shattered. Into the shard bin." },
+    "death": { "de": "Zu heiß abgekühlt.", "en": "Cooled too fast." },
+    "recall": { "de": "Zurück an den Ofen.", "en": "Back to the furnace." },
+    "taunt": { "de": "Du bist durchsichtig. Wörtlich.", "en": "You're transparent. Literally." }
+  },
+  "silhouette": "glassblower in leather apron, long blowpipe-rapier, coils of wire on both hips"
+}

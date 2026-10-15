@@ -1,0 +1,135 @@
+{
+  "id": "vessa",
+  "name": "Vessa Wildherz",
+  "title": { "de": "die Fährtenleserin", "en": "the Tracker" },
+  "roles": ["jungle"],
+  "archetype": "bruiser_jungler",
+  "trainingPurpose": { "de": "Pathing, Gank-Timing.", "en": "Pathing, gank timing." },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 660,
+    "hpGrowth": 108,
+    "hpRegen": 8,
+    "hpRegenGrowth": 0.8,
+    "mana": 330,
+    "manaGrowth": 40,
+    "manaRegen": 7.5,
+    "manaRegenGrowth": 0.7,
+    "ad": 64,
+    "adGrowth": 3.5,
+    "armor": 34,
+    "armorGrowth": 4.6,
+    "mr": 32,
+    "mrGrowth": 2.05,
+    "as": 0.65,
+    "asGrowth": 2.5,
+    "range": 150,
+    "ms": 345,
+    "windup": 0.3,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Fährte", "en": "Trail" },
+    "desc": {
+      "de": "Monster-Kills geben 1 Stack (max. 10), je +1 % Angriffstempo und +1 Bewegung.",
+      "en": "Monster kills grant 1 stack (max 10), each +1% attack speed and +1 move speed."
+    },
+    "hooks": ["vessa_trail"]
+  },
+  "abilities": [
+    {
+      "id": "vessa_q",
+      "name": { "de": "Pranke", "en": "Claw" },
+      "desc": { "de": "Zielgerichtet 300. +30 % Schaden an Monstern.", "en": "Targeted 300. +30% damage to monsters." },
+      "type": "targeted",
+      "castTime": 0.2,
+      "range": 300,
+      "cooldown": 5,
+      "cost": 30,
+      "costType": "mana",
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [60, 90, 120, 150, 180], "ad": 0.9 } },
+        { "kind": "hook", "id": "vessa_q_monster_bonus" }
+      ]
+    },
+    {
+      "id": "vessa_w",
+      "name": { "de": "Reißzahn", "en": "Fang" },
+      "desc": {
+        "de": "Nächster Auto heilt sie um 30/45/60/75/90 (+10 % fehlende HP).",
+        "en": "Next basic attack heals her for 30/45/60/75/90 (+10% missing HP)."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": 10,
+      "cost": 40,
+      "costType": "mana",
+      "duration": 4,
+      "effects": [
+        { "kind": "hook", "id": "vessa_w_next_auto" }
+      ]
+    },
+    {
+      "id": "vessa_e",
+      "name": { "de": "Anpirschen", "en": "Stalk" },
+      "desc": {
+        "de": "3 s +30 % Bewegung in Büschen und im Jungle. Nächster Auto aus Busch oder Fog: 50 % Slow 2 s.",
+        "en": "3 s of +30% move speed in brush and jungle. Next basic attack from brush or fog: 50% slow for 2 s."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": 15,
+      "cost": 50,
+      "costType": "mana",
+      "duration": 3,
+      "effects": [
+        { "kind": "hook", "id": "vessa_e_stalk" }
+      ]
+    },
+    {
+      "id": "vessa_r",
+      "name": { "de": "Sprungangriff", "en": "Pounce" },
+      "desc": {
+        "de": "Sprung 700 auf einen Champion, Hochwurf 0,5 s. Verbündete in 500 +20 % Angriffstempo 4 s.",
+        "en": "Leaps 700 onto a champion, airborne 0.5 s. Allies within 500 gain +20% attack speed for 4 s."
+      },
+      "type": "dash",
+      "castTime": 0.25,
+      "range": 700,
+      "cooldown": 90,
+      "cost": 100,
+      "costType": "mana",
+      "speed": 1400,
+      "distance": 700,
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [150, 250, 350], "bonusAd": 1 } },
+        { "kind": "airborne", "duration": 0.5 },
+        { "kind": "hook", "id": "vessa_r_ally_frenzy" }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3: Anpirschen-Gank mit Slow. Level 6: Sprungangriff aus dem Fog.",
+    "en": "Level 3: Stalk gank with slow. Level 6: Pounce out of the fog."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Pirsch und Sprung", "en": "Stalk and pounce" }, "sequence": ["E", "R", "Q", "AA", "W"] },
+    { "name": { "de": "Busch-Gank", "en": "Brush gank" }, "sequence": ["E", "AA", "Q"] },
+    { "name": { "de": "Zähes Duell", "en": "Stubborn duel" }, "sequence": ["Q", "AA", "W"] }
+  ],
+  "scores": { "engage": 4, "peel": 1, "range": 1, "scaling": 2, "waveclear": 2, "mobility": 3 },
+  "voiceLines": {
+    "pick": { "de": "Spuren lesen ist leicht. Leute lesen auch.", "en": "Reading tracks is easy. So is reading people." },
+    "firstBlood": { "de": "Frische Spur. War kurz.", "en": "Fresh trail. Was short." },
+    "kill": { "de": "Erlegt.", "en": "Bagged." },
+    "death": { "de": "Falsche Fährte.", "en": "Wrong trail." },
+    "recall": { "de": "Zurück zum Lager. Fell trocknen.", "en": "Back to camp. Drying the pelt." },
+    "taunt": { "de": "Ich rieche Angst. Oder deine Rüstung.", "en": "I smell fear. Or your armor." }
+  },
+  "silhouette": "feral huntress in wolf-pelt hood with ears, two curved claw blades, crouched"
+}

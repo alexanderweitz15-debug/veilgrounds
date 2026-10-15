@@ -1,0 +1,137 @@
+{
+  "id": "harrow",
+  "name": "Old Harrow",
+  "title": { "de": "der Torbrecher", "en": "the Gatebreaker" },
+  "roles": ["top"],
+  "archetype": "splitpusher",
+  "trainingPurpose": { "de": "Splitpush-Makro.", "en": "Split-push macro." },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 670,
+    "hpGrowth": 108,
+    "hpRegen": 8,
+    "hpRegenGrowth": 0.8,
+    "mana": 330,
+    "manaGrowth": 40,
+    "manaRegen": 7.5,
+    "manaRegenGrowth": 0.7,
+    "ad": 66,
+    "adGrowth": 3.5,
+    "armor": 35,
+    "armorGrowth": 4.6,
+    "mr": 32,
+    "mrGrowth": 2.05,
+    "as": 0.65,
+    "asGrowth": 2.5,
+    "range": 150,
+    "ms": 345,
+    "windup": 0.3,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Belagerer", "en": "Besieger" },
+    "desc": {
+      "de": "+25 % Schaden an Türmen. Jede vierte vollständig gesicherte Welle gibt +40 Gold.",
+      "en": "+25% damage to towers. Every fourth fully secured wave grants +40 gold."
+    },
+    "hooks": ["harrow_besieger"]
+  },
+  "abilities": [
+    {
+      "id": "harrow_q",
+      "name": { "de": "Rammstoß", "en": "Ram Strike" },
+      "desc": {
+        "de": "Zielgerichtet 250. Gegen Minions trifft er alle in 200 um das Ziel.",
+        "en": "Targeted 250. Against minions it hits everything within 200 of the target."
+      },
+      "type": "targeted",
+      "castTime": 0.2,
+      "range": 250,
+      "cooldown": 6,
+      "cost": 30,
+      "costType": "mana",
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [70, 105, 140, 175, 210], "ad": 1 } },
+        { "kind": "hook", "id": "harrow_q_minion_splash" }
+      ]
+    },
+    {
+      "id": "harrow_w",
+      "name": { "de": "Schildpflicht", "en": "Shield Duty" },
+      "desc": {
+        "de": "3 s 25 % Schadensreduktion; nächster Auto betäubt 0,5 s.",
+        "en": "3 s of 25% damage reduction; next basic attack stuns for 0.5 s."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": 13,
+      "cost": 40,
+      "costType": "mana",
+      "duration": 3,
+      "effects": [
+        { "kind": "buff", "stat": "dmgReduction", "pct": 25, "duration": 3, "target": "self" },
+        { "kind": "stun", "duration": 0.5 },
+        { "kind": "hook", "id": "harrow_w_next_auto" }
+      ]
+    },
+    {
+      "id": "harrow_e",
+      "name": { "de": "Anmarsch", "en": "March" },
+      "desc": {
+        "de": "4 s +40 % Bewegung, solange er sich auf den nächsten gegnerischen Turm zubewegt.",
+        "en": "4 s of +40% move speed while moving toward the nearest enemy tower."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "range": 0,
+      "cooldown": 18,
+      "cost": 40,
+      "costType": "mana",
+      "duration": 4,
+      "effects": [
+        { "kind": "hook", "id": "harrow_e_march" }
+      ]
+    },
+    {
+      "id": "harrow_r",
+      "name": { "de": "Beschworene Mauer", "en": "Sworn Wall" },
+      "desc": {
+        "de": "Ruft 3 Belagerungsminions auf seiner Lane-Seite (12 s, greifen bevorzugt Türme an).",
+        "en": "Calls 3 siege minions on his side of the lane (12 s, prefer attacking towers)."
+      },
+      "type": "summon",
+      "castTime": 0.3,
+      "range": 400,
+      "cooldown": 110,
+      "cost": 100,
+      "costType": "mana",
+      "duration": 12,
+      "effects": [
+        { "kind": "hook", "id": "harrow_r_siege_minions" }
+      ]
+    }
+  ],
+  "spikeLevels": [9],
+  "spikeNote": {
+    "de": "Level 9 (Q maximiert): Rammstoß räumt Wellen mit einem Schlag – ab jetzt splitpushen.",
+    "en": "Level 9 (Q maxed): Ram Strike clears waves in one hit - start split-pushing."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Anmarsch und Stoß", "en": "March and ram" }, "sequence": ["E", "Q", "W", "AA"] },
+    { "name": { "de": "Belagerungszug", "en": "Siege train" }, "sequence": ["R", "E"] },
+    { "name": { "de": "Schild-Trade", "en": "Shield trade" }, "sequence": ["W", "AA", "Q"] }
+  ],
+  "scores": { "engage": 1, "peel": 1, "range": 1, "scaling": 3, "waveclear": 4, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Dreißig Jahre Belagerung. Ich kenne jedes Tor.", "en": "Thirty years of sieges. I know every gate." },
+    "firstBlood": { "de": "Früher hat das länger gedauert.", "en": "Used to take longer." },
+    "kill": { "de": "Tor offen.", "en": "Gate open." },
+    "death": { "de": "Meine Knie. Schon wieder.", "en": "My knees. Again." },
+    "recall": { "de": "Zurück ins Lager. Suppe.", "en": "Back to camp. Soup." },
+    "taunt": { "de": "Ich hab schon dickere Mauern umgelegt als dich.", "en": "I've knocked down thicker walls than you." }
+  },
+  "silhouette": "grizzled old soldier with a ram-head maul, tower shield slung on his back"
+}

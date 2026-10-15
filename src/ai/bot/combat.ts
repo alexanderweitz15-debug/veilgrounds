@@ -63,51 +63,68 @@ function blocked(v: View, to: { x: number; y: number }, width: number): boolean 
 
 /** One offensive cast against `t` if any slot fits; null otherwise. Order: Q W E, R last with a kill/teamfight gate. */
 export function offensiveCast(v: View, ctx: BotStatic, rng: Rng, t: SnapEntity): BotAction | null {
-  const d = dst(v.self, t);
   for (const slot of [0, 1, 2, 3] as const) {
-    if (!ready(v, ctx, slot)) continue;
-    const ab = ctx.champ.abilities[slot];
-    if (!offensive(ab) && !(ab.type === 'self' && !supportive(ab))) continue;
     if (slot === 3 && hpPct(t) > 0.65 && near(v.enemies, t, 800).length < 2) continue;
-    const range = rangeOf(v, ab, slot);
-    const reachT = range + t.radius + v.self.radius;
-    const cast = (x: number, y: number, target?: number): BotAction => ({ cmd: { t: 'cast', slot, x, y, ...(target !== undefined ? { target } : {}) } });
-    switch (ab.type) {
-      case 'skillshot_line': {
-        if (d > Math.min(range, 1500) + t.radius) break;
-        const p = predict(t, ab.castTime + d / (ab.speed ?? 1500));
-        if (ab.flags?.includes('blocked_by_minions') && blocked(v, p, ab.width ?? 60)) break;
-        const a = aimed(v, ctx, rng, p, range);
-        return cast(a.x, a.y);
-      }
-      case 'skillshot_circle':
-      case 'zone':
-      case 'summon': {
-        if (d > Math.min(range, 1500) + (ab.radius ?? 0) * 0.5) break;
-        const p = aimed(v, ctx, rng, predict(t, ab.castTime + (ab.delay ?? 0)), range);
-        return cast(p.x, p.y);
-      }
-      case 'cone':
-        if (d <= range + t.radius) return cast(t.x, t.y);
-        break;
-      case 'targeted':
-        if (!ab.flags?.includes('ally_target') && d <= reachT) return cast(t.x, t.y, t.id);
-        break;
-      case 'self': {
-        const r = ab.radius ? ab.radius : v.reach + 150;
-        if (d <= r + t.radius) return cast(t.x, t.y);
-        break;
-      }
-      case 'dash':
-      case 'blink': {
-        const dist = ab.distance ?? range;
-        if (dist <= 0 || d <= v.reach + t.radius + 50 || d > dist + v.reach) break;
-        if (towerCovering(v, t) || (!offensive(ab) && hpPct(t) > 0.4)) break;
-        return cast(t.x, t.y);
-      }
+    const a = castSlot(v, ctx, rng, t, slot);
+    if (a) return a;
+  }
+  return null;
+}
+
+/** Cast `slot` at `t` if it is ready, offensive and `t` is in its reach (combo execution, Agent M); null otherwise. */
+export function castSlot(v: View, ctx: BotStatic, rng: Rng, t: SnapEntity, slot: 0 | 1 | 2 | 3): BotAction | null {
+  const d = dst(v.self, t);
+  if (!ready(v, ctx, slot)) return null;
+  const ab = ctx.champ.abilities[slot];
+  if (!offensive(ab) && !(ab.type === 'self' && !supportive(ab))) return null;
+  const range = rangeOf(v, ab, slot);
+  const reachT = range + t.radius + v.self.radius;
+  const cast = (x: number, y: number, target?: number): BotAction => ({ cmd: { t: 'cast', slot, x, y, ...(target !== undefined ? { target } : {}) } });
+  switch (ab.type) {
+    case 'skillshot_line': {
+      if (d > Math.min(range, 1500) + t.radius) break;
+      const p = predict(t, ab.castTime + d / (ab.speed ?? 1500));
+      if (ab.flags?.includes('blocked_by_minions') && blocked(v, p, ab.width ?? 60)) break;
+      const a = aimed(v, ctx, rng, p, range);
+      return cast(a.x, a.y);
+    }
+    case 'skillshot_circle':
+    case 'zone':
+    case 'summon': {
+      if (d > Math.min(range, 1500) + (ab.radius ?? 0) * 0.5) break;
+      const p = aimed(v, ctx, rng, predict(t, ab.castTime + (ab.delay ?? 0)), range);
+      return cast(p.x, p.y);
+    }
+    case 'cone':
+      if (d <= range + t.radius) return cast(t.x, t.y);
+      break;
+    case 'targeted':
+      if (!ab.flags?.includes('ally_target') && d <= reachT) return cast(t.x, t.y, t.id);
+      break;
+    case 'self': {
+      const r = ab.radius ? ab.radius : v.reach + 150;
+      if (d <= r + t.radius) return cast(t.x, t.y);
+      break;
+    }
+    case 'dash':
+    case 'blink': {
+      const dist = ab.distance ?? range;
+      if (dist <= 0 || d <= v.reach + t.radius + 50 || d > dist + v.reach) break;
+      if (towerCovering(v, t) || (!offensive(ab) && hpPct(t) > 0.4)) break;
+      return cast(t.x, t.y);
     }
   }
   return null;
+}
+
+/** Effective cast reach of an ability slot against a unit (combo range checks). */
+export function slotReach(v: View, ctx: BotStatic, slot: number): number {
+  const ab = ctx.champ.abilities[slot];
+  if (!ab) return 0;
+  const r = rangeOf(v, ab, slot);
+  if (ab.type === 'dash' || ab.type === 'blink') return (ab.distance ?? r) + v.reach;
+  if (ab.type === 'self') return ab.radius ? ab.radius : v.reach + 150;
+  return Math.min(r, 1500);
 }
 
 /** Heal / shield / buff an ally (or self-centred group heal). Supports first, everyone may use it. */

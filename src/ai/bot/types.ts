@@ -6,9 +6,11 @@ import type { Command, PlayerSetup } from '../../sim/types';
 import type { MapData, LaneName, Pt } from '../../sim/map';
 import type { ChampionData } from '../../sim/champions/schema';
 import type { RankProfile } from '../profiles/schema';
-import type { BotStyle } from '../profiles/style';
 import type { Rng } from '../../sim/rng';
 import type { BuildData } from './builds';
+import type { BotParams, DecisionLog } from '../contract';
+import type { NodeState } from '../bt/types';
+import { newExt, type BotExt, type TeamAI } from '../bt/state';
 
 export type { Snapshot, SnapEntity, SnapProjectile, PlayerHud } from '../../sim/snapshot';
 
@@ -22,17 +24,21 @@ export interface BotStatic {
   champ: ChampionData;
   build: BuildData | null;
   profile: RankProfile;
-  /** Play-style axes 0..1 (src/ai/profiles/style.ts); rough use: aggression, risk, roaming. */
-  style: BotStyle;
   map: MapData;
   /** Lobby: all players (champions/roles are public knowledge in pick phase). */
   players: readonly PlayerSetup[];
+  /** Agent M: playstyle knobs (spec §2/§10), shared decision log (§1), the team AI of this bot's team (§8). */
+  params: BotParams;
+  log: DecisionLog;
+  teamAI: TeamAI;
 }
 
 /** A command plus how many ticks from now it should be issued (reaction delay, last-hit timing). */
 export interface BotAction {
   cmd: Command;
   delay?: number;
+  /** Queued (delayed) commands with a tag can be cancelled via BotMemory.cancelTags (orbwalk plans). */
+  tag?: string;
 }
 
 /** Mutable per-bot memory, owned by the brain. */
@@ -69,6 +75,15 @@ export interface BotMemory {
   busyUntil: number;
   busyFrom: number;
   busySlot: number;
+  /** Tick of the last potion (Trank heals over 15 s; one at a time). */
+  potionAt: number;
+  /** Wards (src/ai/bot/spells.ts): tick of the last ward placed / given up, start tick of a walk to a ward spot (-1). */
+  wardAt: number;
+  wardTrip: number;
+  /** Agent M: behaviour tree node state, tags of queued commands to drop, per-bot behaviour state. */
+  bt: Map<string, NodeState>;
+  cancelTags: Set<string>;
+  ext: BotExt;
 }
 
 export const newMemory = (): BotMemory => ({
@@ -95,6 +110,12 @@ export const newMemory = (): BotMemory => ({
   busyUntil: 0,
   busyFrom: 0,
   busySlot: -1,
+  potionAt: -1e9,
+  wardAt: -1e9,
+  wardTrip: -1,
+  bt: new Map(),
+  cancelTags: new Set(),
+  ext: newExt(),
 });
 
 /** Brain signature: snapshot + static data + own memory + own RNG. Never the Sim. */

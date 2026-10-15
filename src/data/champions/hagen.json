@@ -4,6 +4,7 @@
   "title": { "de": "die Glöcknerin", "en": "the Bell Ringer" },
   "roles": ["support"],
   "archetype": "engage_support",
+  "botBias": { "aggression": 1, "vision": 1, "teamplay": 2 },
   "trainingPurpose": { "de": "Engage-Supports lesen, Flash-Engage.", "en": "Read engage supports, Flash engages." },
   "attackType": "melee",
   "resource": "mana",

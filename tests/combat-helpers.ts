@@ -5,14 +5,18 @@ import type { Command, SimConfig } from '../src/sim/types';
 export const CX = 6000;
 export const CY = 8750;
 
+/** Empty rune page (unknown rune ids are ignored): kit/engine tests run without Prägungen unless they pass a page. */
+export const NO_RUNES = { keystone: 'none', minor: ['none', 'none', 'none'] as [string, string, string] };
+
 export function makeSim(extra: Partial<SimConfig> = {}, summonerCd?: Record<string, number>): Sim {
-  return createSim({
+  const cfg: SimConfig = {
     seed: 1,
     mode: 'sandbox',
     minionsEnabled: false,
     players: [{ slot: 0, team: 0, champion: 'mira', role: 'adc', summoners: ['sprung', 'heilen'], isHuman: true, summonerCd }],
     ...extra,
-  });
+  };
+  return createSim({ ...cfg, players: cfg.players.map((p) => (p.runes ? p : { ...p, runes: NO_RUNES })) });
 }
 
 export const mira = (sim: Sim): number => sim.slots[0]!;

@@ -20,6 +20,7 @@ import { onMoveCommand } from './attack';
 import { MINION_STATS, recordCombat } from './minions';
 import { onStructureDeath } from './towers';
 import { onMonsterDeath } from './jungle';
+import { minionGoldMult } from '../items/itemHooks';
 
 export const START_GOLD = 500;
 export const PASSIVE_START_TICK = 1950;
@@ -163,7 +164,7 @@ function minionDeath(sim: Sim, victim: number, killer: number): void {
   const team = Unit.team[victim]!;
   if (killer >= 0 && Unit.kind[killer] === Kind.Champion && Unit.team[killer] !== team) {
     Champ.cs[killer] = Champ.cs[killer]! + 1;
-    reward(sim, killer, s.gold);
+    reward(sim, killer, s.gold * minionGoldMult(sim, killer)); // Jägerzahn malus (src/sim/items/itemHooks.ts)
   }
   const x = Pos.x[victim]!;
   const y = Pos.y[victim]!;

@@ -35,6 +35,7 @@ import { hooks as wrenHooks } from './wren';
 import { hooks as hagenHooks } from './hagen';
 import { hooks as kiranHooks } from './kiran';
 import { hooks as odaHooks } from './oda';
+import { extraHooksOf } from '../items/itemHooks';
 
 export const CHAMPION_DATA: Record<string, ChampionData> = {
   ...roster,
@@ -96,7 +97,7 @@ export const champIdOf = (sim: Sim, eid: number): string => sim.championIds[sim.
 // Resolved passive hook lists per champion id (pure data, safe to cache across sims).
 const passiveCache = new Map<string, PassiveHook[]>();
 
-/** Passive hooks of a champion entity, in data order (empty for non-champions). */
+/** Passive hooks of a champion entity, in data order, then its item and rune hooks (empty for non-champions). */
 export function passiveHooksOf(sim: Sim, eid: number): PassiveHook[] {
   if (sim.c.Unit.champ[eid]! < 0) return [];
   const id = champIdOf(sim, eid);
@@ -106,5 +107,6 @@ export function passiveHooksOf(sim: Sim, eid: number): PassiveHook[] {
     list = championData(id).passive.hooks.flatMap((k) => (h[k] ? [h[k]!] : []));
     passiveCache.set(id, list);
   }
-  return list;
+  const extra = extraHooksOf(sim, eid); // item + rune hooks (src/sim/items/itemHooks.ts)
+  return extra.length ? list.concat(extra) : list;
 }

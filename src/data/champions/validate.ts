@@ -2,6 +2,7 @@
 // tsc only sees widened JSON types (string literals become string, tuples become arrays), so enum values,
 // tuple lengths, rank-array lengths and unknown keys are checked here. Used by the loader (index.ts) and tests.
 import type { ChampionData, Role } from '../../sim/champions/schema';
+import { PLAYSTYLE_AXES } from '../../ai/contract';
 
 /** Deep-widened view of a schema type, matching what resolveJsonModule infers for a JSON file. */
 export type Json<T> = T extends string
@@ -41,6 +42,8 @@ const TOP_KEYS = [
   'id', 'name', 'title', 'roles', 'archetype', 'trainingPurpose', 'attackType', 'resource', 'base', 'passive',
   'abilities', 'spikeLevels', 'spikeNote', 'maxOrder', 'combos', 'scores', 'voiceLines', 'silhouette',
 ];
+/** Optional top-level keys (spec-bots §2 champion bias for rolled bot playstyles). */
+const OPTIONAL_TOP_KEYS = ['botBias'];
 const BASE_KEYS = [
   'hp', 'hpGrowth', 'hpRegen', 'hpRegenGrowth', 'mana', 'manaGrowth', 'manaRegen', 'manaRegenGrowth', 'ad', 'adGrowth',
   'armor', 'armorGrowth', 'mr', 'mrGrowth', 'as', 'asGrowth', 'range', 'ms', 'windup', 'radius',
@@ -95,7 +98,8 @@ export function validateChampion(raw: unknown, where = 'champion'): string[] {
     } else if (Array.isArray(v)) v.forEach((x, i) => walk(x, `${path}[${i}]`));
     else if (isObj(v)) for (const [k, x] of Object.entries(v)) walk(x, path ? `${path}.${k}` : k);
   };
-  walk(c, '');
+  // botBias holds signed playstyle offsets (-5..+5), checked below
+  for (const [k, x] of Object.entries(c)) if (k !== 'botBias') walk(x, k);
 
   const keys = (o: Obj, path: string, required: string[], optional: string[] = []) => {
     for (const k of required) if (!(k in o)) err(path, `missing "${k}"`);
@@ -113,7 +117,15 @@ export function validateChampion(raw: unknown, where = 'champion'): string[] {
     else if (v.length !== len) err(path, `rank array length ${v.length}, expected ${len}`);
   };
 
-  keys(c, '', TOP_KEYS);
+  keys(c, '', TOP_KEYS, OPTIONAL_TOP_KEYS);
+  if (c.botBias !== undefined) {
+    if (!isObj(c.botBias)) err('botBias', 'expected object');
+    else
+      for (const [k, v] of Object.entries(c.botBias)) {
+        if (!(PLAYSTYLE_AXES as readonly string[]).includes(k)) err(`botBias.${k}`, 'unknown playstyle axis');
+        if (typeof v !== 'number' || !Number.isInteger(v) || v < -5 || v > 5) err(`botBias.${k}`, 'expected integer -5..+5');
+      }
+  }
   if (!isStr(c.id) || !/^[a-z]+$/.test(c.id)) err('id', 'expected lowercase ascii id');
   const id = String(c.id);
   if (!isStr(c.name)) err('name', 'expected string');

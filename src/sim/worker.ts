@@ -44,7 +44,10 @@ onmessage = (ev: MessageEvent<ToWorker>) => {
       speed = m.speed;
       break;
     case 'getReplay':
-      if (sim && rec) post({ type: 'replay', replay: rec.finish(sim) });
+      if (sim && rec) post({ type: 'replay', replay: rec.finish(sim, bots?.log.toNDJSON()) });
+      break;
+    case 'getBotDebug':
+      post({ type: 'botDebug', tick: sim?.tick ?? 0, rows: bots?.debugRows() ?? [] });
       break;
   }
 };

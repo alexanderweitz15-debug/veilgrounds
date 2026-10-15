@@ -51,7 +51,7 @@ export class FogOfWar {
     hole(f.x, f.y, f.r + 900);
     for (const e of state.snap.entities) {
       if (e.team !== state.myTeam || !e.alive) continue;
-      const r = visionRadius(e.kind);
+      const r = e.vision ?? visionRadius(e.kind); // player wards carry their live radius (0 = disabled)
       if (r > 0) hole(state.x(e), state.y(e), r);
     }
     ctx.globalCompositeOperation = 'source-over';

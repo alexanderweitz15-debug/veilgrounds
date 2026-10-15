@@ -4,6 +4,7 @@
   "title": { "de": "der Torbrecher", "en": "the Gatebreaker" },
   "roles": ["top"],
   "archetype": "splitpusher",
+  "botBias": { "teamplay": -3, "tempo": 1 },
   "trainingPurpose": { "de": "Splitpush-Makro.", "en": "Split-push macro." },
   "attackType": "melee",
   "resource": "mana",

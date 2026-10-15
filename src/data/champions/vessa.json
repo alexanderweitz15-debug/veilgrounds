@@ -4,6 +4,7 @@
   "title": { "de": "die Fährtenleserin", "en": "the Tracker" },
   "roles": ["jungle"],
   "archetype": "bruiser_jungler",
+  "botBias": { "aggression": 1, "objectiveRisk": 1, "tempo": 1 },
   "trainingPurpose": { "de": "Pathing, Gank-Timing.", "en": "Pathing, gank timing." },
   "attackType": "melee",
   "resource": "mana",

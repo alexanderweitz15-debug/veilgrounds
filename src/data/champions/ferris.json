@@ -4,6 +4,7 @@
   "title": { "de": "der Laternenträger", "en": "the Lamplighter" },
   "roles": ["support"],
   "archetype": "enchanter",
+  "botBias": { "aggression": -2, "vision": 2, "teamplay": 2 },
   "trainingPurpose": { "de": "Laning als Support, Heal-/Schild-Timing.", "en": "Laning as support, heal and shield timing." },
   "attackType": "ranged",
   "resource": "mana",

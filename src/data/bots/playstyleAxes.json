@@ -1,0 +1,66 @@
+{
+  "note": "Spec-bots §2/§10: every behaviour knob derives from the playstyle axes (integers -5..+5, 0 = neutral rank default). Linear knob: value = base + sum(from[i].perStep * (axis - startAt)), then clamp. Extensions to the spec's base/perStep/clamp: (1) a knob may take several axes ('from' list); (2) perStep may be [below, above] for asymmetric endpoints around the neutral value (e.g. fightWeight 0.6 / 1.0 / 1.6); (3) startAt shifts where an axis starts to count, a term with perStep [0, x] and startAt 2 only counts above +2. Bool knobs: 1 if the axis is >= gte (or <= lte), else 0. Kiting: -5 = Profi (orbwalks every auto), +5 = none (docs/DECISIONS.md).",
+  "axes": {
+    "tradeLength": { "name": { "de": "Trades", "en": "Trades" }, "left": { "de": "kurz", "en": "short" }, "right": { "de": "lang", "en": "long" } },
+    "kiting": { "name": { "de": "Kiting", "en": "Kiting" }, "left": { "de": "Profi", "en": "pro" }, "right": { "de": "keins", "en": "none" } },
+    "aggression": { "name": { "de": "Aggression", "en": "Aggression" }, "left": { "de": "passiv", "en": "passive" }, "right": { "de": "all-in", "en": "all-in" } },
+    "roam": { "name": { "de": "Roaming", "en": "Roaming" }, "left": { "de": "Lane", "en": "lane" }, "right": { "de": "roamt", "en": "roams" } },
+    "objectiveRisk": { "name": { "de": "Objective-Risiko", "en": "Objective risk" }, "left": { "de": "wartet", "en": "waits" }, "right": { "de": "stiehlt", "en": "steals" } },
+    "farmPriority": { "name": { "de": "Farm", "en": "Farm" }, "left": { "de": "Kills", "en": "kills" }, "right": { "de": "CS", "en": "CS" } },
+    "vision": { "name": { "de": "Vision", "en": "Vision" }, "left": { "de": "erzwungen", "en": "forced" }, "right": { "de": "fleißig", "en": "diligent" } },
+    "resourceUse": { "name": { "de": "Ressourcen", "en": "Resources" }, "left": { "de": "spart", "en": "saves" }, "right": { "de": "offensiv", "en": "offensive" } },
+    "teamplay": { "name": { "de": "Team", "en": "Team" }, "left": { "de": "solo", "en": "solo" }, "right": { "de": "team", "en": "team" } },
+    "tempo": { "name": { "de": "Tempo", "en": "Tempo" }, "left": { "de": "langsam", "en": "slow" }, "right": { "de": "schnell", "en": "fast" } }
+  },
+  "knobs": {
+    "tradeAbortS": { "base": 4.5, "from": [{ "axis": "tradeLength", "perStep": 0.5 }], "clamp": [2, 7], "note": "§2/§6: -5 leaves after 2 s (or combo end), +5 stays 7 s" },
+    "tradeAbortHpRatio": { "base": 1.0, "from": [{ "axis": "tradeLength", "perStep": -0.04 }], "clamp": [0.8, 1.2], "note": "§6: own/enemy HP ratio to abort; +5 only below 0.8" },
+    "tradeWindowMult": { "base": 1.0, "from": [{ "axis": "tradeLength", "perStep": [0.04, 0] }], "clamp": [0.8, 1.0], "note": "§2: short trades trade more often (window threshold -20 % at -5)" },
+    "tradeWinThreshold": { "base": 0.55, "from": [{ "axis": "aggression", "perStep": -0.03 }, { "axis": "tradeLength", "perStep": [0.02, 0] }], "clamp": [0.3, 0.7], "note": "§6: winProb > 0.55, aggression +-0.15, short trades (-5) lower to 0.45" },
+    "allInKillProb": { "base": 0.6, "from": [{ "axis": "aggression", "perStep": -0.1 }, { "axis": "tradeLength", "perStep": [0, -0.02] }], "clamp": [0.1, 0.98], "note": "§6: all-in at killProb > 0.6, aggression +-0.1 per step; +5 trades prefer all-in at 0.5" },
+    "allInDeathProb": { "base": 0.25, "from": [{ "axis": "aggression", "perStep": 0.1 }], "clamp": [0.02, 0.75], "note": "§6: deathProb < 0.25, aggression +-0.1 per step" },
+
+    "orbwalkChance": { "base": 0.5, "from": [{ "axis": "kiting", "perStep": -0.1 }], "clamp": [0, 1], "note": "§2/§7: 100 % at -5 (Profi), 0 % at +5" },
+    "spacingBuffer": { "base": 150, "from": [{ "axis": "kiting", "perStep": 20 }], "clamp": [50, 250], "note": "§2/§7: target distance = own range - buffer (-5: 50, +5: 250)" },
+    "kiteBack": { "bool": { "axis": "kiting", "lte": 0 }, "note": "§2: kite back against melee yes/no" },
+
+    "fightWeight": { "base": 1.0, "from": [{ "axis": "aggression", "perStep": [0.08, 0.12] }], "clamp": [0.6, 1.6], "note": "§2: fight subtree weight x0.6 .. x1.6" },
+    "diveTolerancePctShift": { "base": 0, "from": [{ "axis": "aggression", "perStep": 3 }], "clamp": [-15, 15], "note": "§2: dive tolerance +-15 points" },
+    "towerDive": { "bool": { "axis": "aggression", "gte": 2 }, "note": "§2: tower dive permission" },
+    "chaseChanceShift": { "base": 0, "from": [{ "axis": "aggression", "perStep": 5 }], "clamp": [-25, 25], "note": "§2: chase probability +-25 points" },
+    "escapeFightThreshold": { "base": 0.6, "from": [{ "axis": "aggression", "perStep": [-0.05, -0.04] }], "clamp": [0.4, 0.85], "note": "§4.2: fight instead of escape above 0.6; -5: 0.85, +5: 0.4" },
+    "gankRiskShift": { "base": 0, "from": [{ "axis": "aggression", "perStep": 0.03 }], "clamp": [-0.15, 0.15], "note": "§4.1: aggression +5 raises every gank-risk threshold by 0.15, cautious lowers" },
+
+    "roamDesireBase": { "base": 0.4, "from": [{ "axis": "roam", "perStep": 0.06 }], "clamp": [0.1, 0.7], "note": "§2: roam desire 0.1 .. 0.7" },
+    "roamThreshold": { "base": 0.5, "from": [{ "axis": "roam", "perStep": -0.04 }, { "axis": "tempo", "perStep": -0.02 }], "clamp": [0.2, 0.8], "note": "§5.1: roam at score > 0.5, roam +-0.2, tempo +-0.1" },
+    "supportAdcBinding": { "base": 0.65, "from": [{ "axis": "roam", "perStep": -0.05 }], "clamp": [0.4, 0.9], "note": "§2/§5.1: support stays with ADC 90 % (-5) .. 40 % (+5)" },
+
+    "objectiveSafetyThreshold": { "base": 0.55, "from": [{ "axis": "objectiveRisk", "perStep": -0.05 }], "clamp": [0.3, 0.8], "note": "§2: objective start safety 0.8 .. 0.3 (§8: shift around the rank threshold = value - 0.55)" },
+    "stealAttempts": { "bool": { "axis": "objectiveRisk", "gte": 3 }, "note": "§8: steal at objective risk >= +3 (rank >= Platinum checked in behaviour)" },
+
+    "farmWeight": { "base": 1.0, "from": [{ "axis": "farmPriority", "perStep": 0.1 }], "clamp": [0.5, 1.5], "note": "§2: weight laning/clear vs skirmish help" },
+    "pingFollowThreshold": { "base": 0.5, "from": [{ "axis": "farmPriority", "perStep": 0.06 }], "clamp": [0.2, 0.8], "note": "§2: score needed to answer 'on my way' pings; +5 comes only after the wave" },
+
+    "wardIntervalMult": { "base": 1.0, "from": [{ "axis": "vision", "perStep": [-0.2, -0.1] }], "clamp": [0.5, 2.0], "note": "§2: ward interval x2 (-5) .. x0.5 (+5)" },
+    "controlWardBuyGold": { "base": 400, "from": [{ "axis": "vision", "perStep": -40 }], "clamp": [200, 600], "note": "§2: spare gold at which a control ward (Siegelward) is bought" },
+    "useSweeper": { "bool": { "axis": "vision", "gte": 1 }, "note": "§2: sweeper (Suchfeuer) use" },
+
+    "flashOffensive": { "bool": { "axis": "resourceUse", "gte": 0 }, "note": "§6: offensive flash only with resources >= 0 (rank >= Gold checked in behaviour)" },
+    "flashDangerThreshold": { "base": 0.75, "from": [{ "axis": "resourceUse", "perStep": -0.05 }], "clamp": [0.5, 1.0], "note": "§4.2: escape flash by danger alone; -5: never (1.0, CC-cast only), +5: at 0.5" },
+    "dashEngageWeight": { "base": 1.0, "from": [{ "axis": "resourceUse", "perStep": 0.1 }], "clamp": [0.5, 1.5], "note": "§2: dash as engage weight" },
+    "ultKillThreshold": { "base": 0.65, "from": [{ "axis": "resourceUse", "perStep": -0.05 }], "clamp": [0.4, 0.9], "note": "§2: ult threshold (kill value) 0.9 .. 0.4" },
+
+    "groupWeight": { "base": 1.0, "from": [{ "axis": "teamplay", "perStep": 0.1 }], "clamp": [0.5, 1.5], "note": "§2: group_mid weight" },
+    "splitWeight": { "base": 1.0, "from": [{ "axis": "teamplay", "perStep": -0.1 }], "clamp": [0.5, 1.5], "note": "§2: split_push weight" },
+    "pingObedience": { "base": 0.625, "from": [{ "axis": "teamplay", "perStep": 0.065 }], "clamp": [0.3, 0.95], "note": "§2/§9: ping obedience 30 % .. 95 %" },
+    "fightJoinThreshold": { "base": 0.45, "from": [{ "axis": "teamplay", "perStep": -0.03 }], "clamp": [0.3, 0.6], "note": "§8/§9: join/follow-up at ExchangeEstimate > 0.45, team +-0.15" },
+    "fightJoinLatencyMult": { "base": 1.0, "from": [{ "axis": "teamplay", "perStep": -0.1 }], "clamp": [0.5, 1.5], "note": "§2: teamfight join latency" },
+
+    "recallThresholdShift": { "base": 0, "from": [{ "axis": "tempo", "perStep": 0.02 }, { "axis": "farmPriority", "perStep": [0, 0.1], "startAt": 2 }], "clamp": [-0.1, 0.4], "note": "§8: shift on recall score threshold 0.6: tempo +-0.1 (slow recalls more), farm -0.1 score per step above +2" },
+    "macroIntervalMult": { "base": 1.0, "from": [{ "axis": "tempo", "perStep": [-0.1, -0.06] }], "clamp": [0.7, 1.5], "note": "§2: macro re-evaluation x1.5 (-5) .. x0.7 (+5)" },
+    "waveSacrifice": { "base": 0.5, "from": [{ "axis": "tempo", "perStep": 0.1 }], "clamp": [0, 1], "note": "§2: give up a wave for an objective" },
+
+    "gankThreshold": { "base": 0.55, "from": [{ "axis": "aggression", "perStep": -0.03 }], "clamp": [0.4, 0.7], "note": "§4.3: gank at score > 0.55, aggression +-0.15 (rank: Iron 0.3, Challenger 0.6 in behaviour)" },
+    "gankEvalIntervalS": { "base": 5, "from": [{ "axis": "tempo", "perStep": [-0.5, -0.3] }], "clamp": [3.5, 7.5], "note": "§4.3: every 5 s, tempo scales" }
+  }
+}

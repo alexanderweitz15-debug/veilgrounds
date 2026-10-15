@@ -4,6 +4,7 @@
   "title": { "de": "der Siebenklingen-Deserteur", "en": "the Seven-Blade Deserter" },
   "roles": ["mid"],
   "archetype": "reset_assassin",
+  "botBias": { "aggression": 2, "roam": 2 },
   "trainingPurpose": { "de": "Reset-Assassinen überleben, Klingen lesen.", "en": "Survive reset assassins, read the blades." },
   "attackType": "melee",
   "resource": "none",

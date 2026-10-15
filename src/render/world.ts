@@ -1,5 +1,6 @@
 // Three.js scene root: renderer, morning sun with a camera-following shadow frustum, and all render layers.
 import { GroundObjects } from './groundObjects';
+import { PingMarkers } from './pings';
 import * as THREE from 'three';
 import type { MapData } from '../sim/map';
 import type { SnapEntity } from '../sim/snapshot';
@@ -12,6 +13,7 @@ import { Units, spriteKeyFor } from './units';
 import { buildAtlas, SPRITE_SIZE } from './sprites';
 import { Fx } from './fx';
 import { FogOfWar } from './fog';
+import { WardMarkers } from './wards';
 
 /** Direction toward the sun: low morning light from the east-south-east. */
 const SUN_DIR = new THREE.Vector3(0.62, 0.62, 0.48).normalize();
@@ -25,6 +27,8 @@ export class World {
   readonly fx = new Fx();
   readonly structures = new Structures();
   readonly ground = new GroundObjects();
+  readonly wards = new WardMarkers();
+  readonly pings = new PingMarkers();
   private readonly units: Units;
   private readonly terrain: Terrain;
   private readonly sun: THREE.DirectionalLight;
@@ -56,7 +60,7 @@ export class World {
     this.fog = new FogOfWar(map);
     this.terrain = buildTerrain(map, this.renderer.capabilities.getMaxAnisotropy());
     this.units = new Units(buildAtlas(), SUN_DIR);
-    this.scene.add(this.terrain.group, this.structures.group, this.units.group, this.fx.group, this.ground.group);
+    this.scene.add(this.terrain.group, this.structures.group, this.units.group, this.fx.group, this.ground.group, this.pings.group, this.wards.group);
   }
 
   resize(w: number, h: number): void {
@@ -93,6 +97,8 @@ export class World {
     this.units.update(state, now, hoverId);
     this.fx.update(state, now, showRange);
     this.ground.update(state, now);
+    this.wards.update(state, now);
+    this.pings.update(state, now);
     this.fog.update(state, now);
     this.terrain.update(now / 1000);
     this.renderer.render(this.scene, rig.camera);
@@ -118,6 +124,7 @@ export class World {
   unitHeight(e: SnapEntity): number {
     const key = spriteKeyFor(e);
     if (key) return SPRITE_SIZE[key] * 0.92;
+    if (e.kind === Kind.Ward) return 90; // ward markers (render/wards.ts): bars + picking
     return this.structures.heightOf(e.kind);
   }
 

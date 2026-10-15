@@ -1,21 +1,25 @@
-// Rough bot brain (Bot-Prototyp): a fixed priority selector, evaluated at the profile's decision rate.
-//   1. level up      2. recall in progress / fountain (shop, heal)      3. survive (retreat, summoners, recall)
-//   4. dodge line skillshots      5. heal/shield allies      6. fight (trade evaluator + generic casts)
-//   7. role: jungle route / support follows ADC / laning (last hit, light push, positioning), stuck recovery
-// Rank parameters come only from ctx.profile (src/data/bots/profiles/*.json).
-// ponytail: priority list instead of behavior trees / utility AI with desires (Phase 3: team AI, BTs as JSON,
-// influence map, wards). Play style (src/ai/profiles/style.ts) used roughly: aggression -> trade threshold,
-// risk -> retreat/home HP, roaming -> gank radius; tradeLength/kiting/farmVsFight etc. come with Phase 3.
+// Bot brain: the behaviour tree in src/data/bots/tree.json (runtime src/ai/bt), evaluated at the profile's decision
+// rate. This module keeps the brain entry (cast busy guard) and the prototype leaves that the tree reuses:
+// level-ups, recall channel / fountain (shop, heal, teleport), retreat, line-skillshot dodge, ally heals, jungle
+// route, laning (last hits, wave state, positioning), unstick. New behaviour (trades, kiting, macro, team AI,
+// player interaction) lives in trade.ts, kite.ts, teamfight.ts, macro.ts, teamai.ts, social.ts.
+// Rank parameters come only from ctx.profile (src/data/bots/profiles/*.json), style only from ctx.params.
 
 import type { LaneName, Pt } from '../../sim/map';
 import type { Rng } from '../../sim/rng';
 import { sampleReactionMs } from '../profiles';
-import type { BotAction, BotMemory, BotStatic, Brain, PlayerHud } from './types';
-import { perceive, near, ticksOfMs, towerCovering, type View } from './perception';
-import { escapeCast, hpPct, offensiveCast, supportCast, tradeScore } from './combat';
-import { jungle, lastHit, laneSpot, pushTarget } from './laning';
-import { nextItemPrice, settleBuys, shop, spendable } from './shop';
+import type { BotAction, BotMemory, BotStatic, Brain, PlayerHud, SnapEntity } from './types';
+import { near, ticksOfMs, type View } from './perception';
+import { escapeCast, hpPct, supportCast } from './combat';
+import { jungle, lastHit, laneSpot, pushTarget, incomingDps } from './laning';
+import { shop } from './shop';
 import { dst, laneProgress, lanePoint } from './geo';
+import { cleanseStep, exhaustStep, teleportStep } from './spells';
+import { runTree } from '../bt/leaves';
+import type { NodeCtx, NodeResult } from '../bt/types';
+import { cancelOrbwalk, attackTicks } from './kite';
+import { chooseWave, laneOf } from './macro';
+import { laningSafety, rankIdx } from '../bt/deps';
 
 /** Decision interval in ticks for this bot (profile microHz). */
 export const decisionTicks = (ctx: BotStatic): number => Math.max(1, Math.round(30 / ctx.profile.behavior.microHz));
@@ -28,7 +32,7 @@ export const think: Brain = (snap, ctx, mem, rng) => {
     const lv = snap.me && !snap.me.dead ? levelUp(snap.me, ctx) : null;
     return lv ? [lv] : [];
   }
-  const out = decide(snap, ctx, mem, rng);
+  const out = runTree(snap, ctx, mem, rng);
   for (const a of out) {
     if (a.cmd.t !== 'cast') continue;
     const ab = ctx.champ.abilities[a.cmd.slot];
@@ -42,87 +46,25 @@ export const think: Brain = (snap, ctx, mem, rng) => {
   return out;
 };
 
-const decide: Brain = (snap, ctx, mem, rng) => {
-  const out: BotAction[] = [];
-  const me = snap.me;
-  if (!me) return out;
-  const lv = levelUp(me, ctx);
-  if (lv) out.push(lv);
-  if (me.dead) {
-    mem.wasDead = true;
-    mem.mode = 'dead';
-    mem.lastMove = null;
-    mem.trail = [];
-    return out;
-  }
-  const v = perceive(snap, ctx, mem, rng);
-  if (!v) return out;
-  settleBuys(me, mem);
-  // own attack timer bookkeeping (start of the current/last auto)
-  if (v.self.atkPhase === 1 && v.tick - mem.atkStart > 30 / Math.max(0.1, me.stats.as) - 3) mem.atkStart = v.tick;
-  else if (v.self.atkPhase === 2 && v.tick - mem.atkStart > 30 / Math.max(0.1, me.stats.as)) mem.atkStart = v.tick - Math.round((30 * ctx.champ.base.windup) / Math.max(0.1, me.stats.as));
-  const fountain = ctx.map.sides[ctx.team].fountain;
-  const inFountain = dst(v.self, fountain) < fountain.r;
-  if (!inFountain) mem.shopVisitDone = false;
-  const go = (p: Pt): void => {
-    const a = moveTo(v, mem, p);
-    if (a) out.push(a);
-  };
-
-  // 2. recall channel: keep still unless an enemy shows up
-  if (me.recallLeft > 0) {
-    if (near(v.enemies, v.self, 1100).length === 0) return out;
-    mem.lastMove = null;
-    go(fountain);
-    return out;
-  }
-  if (inFountain) {
-    out.push(...shop(me, ctx, mem));
-    const manaOk = v.self.maxMana <= 0 || v.self.mana / v.self.maxMana > 0.6;
-    if (v.hpPct < 0.9 || !manaOk) {
-      mem.mode = 'heal';
-      return out;
-    }
-  }
-
-  // 3. survive
-  const surv = survive(v, ctx, mem, inFountain);
-  if (surv) return [...out, ...surv];
-
-  // 4. dodge
-  const dodge = dodgeLine(v, ctx, mem, rng);
-  if (dodge) return [...out, dodge];
-
-  // 5. heal / shield allies (supports mostly; anyone with such a spell)
-  if (v.self.atkPhase !== 1) {
-    const sup = supportCast(v, ctx, mem.mode === 'fight');
-    if (sup) return [...out, sup];
-  }
-
-  // 6. fight
-  const fight = fightStep(v, ctx, mem, rng);
-  if (fight) return [...out, ...fight];
-
-  // 7. role
-  out.push(...roleStep(v, ctx, mem, rng));
-  stuckCheck(v, mem, rng, out);
-  return out;
-};
-
 // ------------------------------------------------------------------ helpers
 
 /** Move with throttling: every move runs A* in the sim, so only re-issue for a new goal or when stopped. */
-function moveTo(v: View, mem: BotMemory, p: Pt): BotAction | null {
+export function moveTo(v: View, mem: BotMemory, p: Pt): BotAction | null {
   if (dst(v.self, p) < 80 || v.tick < mem.holdUntil) return null;
   if (mem.lastMove && dst(mem.lastMove, p) < 200 && v.self.moving && v.tick - mem.lastMove.tick < 300) return null;
   mem.lastMove = { x: p.x, y: p.y, tick: v.tick };
   return { cmd: { t: 'move', x: p.x, y: p.y } };
 }
 
+const push = (n: NodeCtx, a: BotAction | null): boolean => {
+  if (a) n.out.push(a);
+  return !!a;
+};
+
 /** Error injection: skip a correct but non-critical action (profile errorInjectionPct). */
 const fumble = (ctx: BotStatic, rng: Rng): boolean => rng.chance(ctx.profile.behavior.errorInjectionPct / 100);
 
-function levelUp(me: PlayerHud, ctx: BotStatic): BotAction | null {
+export function levelUp(me: PlayerHud, ctx: BotStatic): BotAction | null {
   const can = (s: number): boolean => !!me.abilities[s]?.canLevel;
   const order = ctx.champ.maxOrder.map((k) => 'QWE'.indexOf(k)) as (0 | 1 | 2)[];
   let slot: 0 | 1 | 2 | 3 | -1 = -1;
@@ -131,58 +73,118 @@ function levelUp(me: PlayerHud, ctx: BotStatic): BotAction | null {
   return slot === -1 ? null : { cmd: { t: 'levelUp', slot } };
 }
 
-function survive(v: View, ctx: BotStatic, mem: BotMemory, inFountain: boolean): BotAction[] | null {
-  const fountain = ctx.map.sides[ctx.team].fountain;
+/** Drink a Trank below 50 % HP outside the fountain, one at a time (it heals over 15 s). */
+function drinkPotion(v: View, me: PlayerHud, mem: BotMemory): BotAction | null {
+  if (v.hpPct > 0.5 || v.tick - mem.potionAt < 450) return null;
+  const slot = me.items.findIndex((id, i) => i < 6 && id === 'trank');
+  if (slot < 0) return null;
+  mem.potionAt = v.tick;
+  return { cmd: { t: 'item', slot } };
+}
+
+const fountainOf = (n: NodeCtx): { x: number; y: number; r: number } => n.ctx.map.sides[n.ctx.team].fountain;
+const inFountain = (n: NodeCtx): boolean => dst(n.v.self, fountainOf(n)) < fountainOf(n).r;
+
+// ------------------------------------------------------------------ leaves (registered in src/ai/bt/leaves.ts)
+
+/** Summoners/items that do not replace the rest of the decision (Agent J: spells.ts) + potions. */
+export function utilitySpells(n: NodeCtx): NodeResult {
+  if (n.v.me.dead || n.v.me.recallLeft > 0) return 'success';
+  push(n, cleanseStep(n.v, n.ctx, n.rng));
+  push(n, exhaustStep(n.v));
+  if (!inFountain(n)) push(n, drinkPotion(n.v, n.v.me, n.mem));
+  return 'success';
+}
+
+export function dead(n: NodeCtx): NodeResult {
+  if (!n.v.me.dead) return 'failure';
+  n.mem.wasDead = true;
+  n.mem.mode = 'dead';
+  n.mem.lastMove = null;
+  n.mem.trail = [];
+  return 'success';
+}
+
+/** Recall channel: keep still unless an enemy shows up. */
+export function recallChannel(n: NodeCtx): NodeResult {
+  if (n.v.me.recallLeft <= 0) return 'failure';
+  if (near(n.v.enemies, n.v.self, 1100).length === 0) return 'running';
+  n.mem.lastMove = null;
+  push(n, moveTo(n.v, n.mem, fountainOf(n)));
+  n.log('recall', 'cancel', 'enemy near during recall', {});
+  return 'running';
+}
+
+/** Fountain: shop once per visit, heal up, teleport back to lane. */
+export function fountain(n: NodeCtx): NodeResult {
+  if (!inFountain(n)) {
+    n.mem.shopVisitDone = false;
+    return 'failure';
+  }
+  n.out.push(...shop(n.v.me, n.ctx, n.mem));
+  const manaOk = n.v.self.maxMana <= 0 || n.v.self.mana / n.v.self.maxMana > 0.6;
+  if (n.v.hpPct < 0.9 || !manaOk) {
+    n.mem.mode = 'heal';
+    return 'running';
+  }
+  return push(n, teleportStep(n.v, n.ctx, n.mem)) ? 'running' : 'failure';
+}
+
+/** Retreat (prototype survive): low HP / outnumbered / tower aggro -> run home with summoners and escape casts. */
+export function retreat(n: NodeCtx): NodeResult {
+  const { v, ctx, mem } = n;
+  if (inFountain(n)) return 'failure';
+  const home = fountainOf(n);
   const foes = near(v.enemies, v.self, 1200);
   const friends = near(v.allies, v.self, 1200);
   const towerOnMe = v.enemyTowers.some((t) => t.atkTarget === v.me.eid);
-  const lowHp = 0.3 - (ctx.style.risk - 0.5) * 0.16; // style: risky bots stay longer
+  const lowHp = 0.3 - n.p.playstyle.aggression * 0.016; // aggressive bots stay longer
   const low = v.hpPct < lowHp && foes.length > 0;
   const outnumbered = v.hpPct < 0.55 && foes.length >= friends.length + 2;
   const stillUnsafe = mem.mode === 'retreat' && v.hpPct < 0.6 && foes.length > 0;
-  if (!inFountain && (low || outnumbered || stillUnsafe || towerOnMe)) {
+  if (low || outnumbered || stillUnsafe || towerOnMe) {
+    if (mem.mode !== 'retreat') n.log('retreat', 'retreat', towerOnMe ? 'tower aggro' : low ? 'low hp' : outnumbered ? 'outnumbered' : 'still unsafe', { foes: foes.length, friends: friends.length }, { hp: v.hpPct });
     mem.mode = 'retreat';
-    const out: BotAction[] = [];
+    if (mem.ext.trade) mem.ext.trade = null;
+    cancelOrbwalk(n);
     const closest = Math.min(...foes.map((e) => dst(e, v.self)), Infinity);
     const sums = [4, 5].map((i) => v.me.abilities[i]);
     if (v.hpPct < 0.18 && closest < 650) {
       const heal = sums.findIndex((s) => s?.id === 'heilen' && s.rank > 0 && s.cdLeft <= 0);
       const flash = sums.findIndex((s) => s?.id === 'sprung' && s.rank > 0 && s.cdLeft <= 0);
-      if (heal >= 0) out.push({ cmd: { t: 'spell', slot: heal as 0 | 1, x: v.self.x, y: v.self.y } });
-      else if (flash >= 0 && closest < 450) out.push({ cmd: { t: 'spell', slot: flash as 0 | 1, x: fountain.x, y: fountain.y } });
+      if (heal >= 0) n.out.push({ cmd: { t: 'spell', slot: heal as 0 | 1, x: v.self.x, y: v.self.y } });
+      else if (flash >= 0 && closest < 450) n.out.push({ cmd: { t: 'spell', slot: flash as 0 | 1, x: home.x, y: home.y } });
     }
-    if (closest < 500) {
-      const esc = escapeCast(v, ctx, fountain);
-      if (esc) out.push(esc);
-    }
-    const a = moveTo(v, mem, fountain);
-    if (a) out.push(a);
-    return out;
+    if (closest < 500) push(n, escapeCast(v, ctx, home));
+    push(n, moveTo(v, mem, home));
+    return 'running';
   }
-  // go home: low HP (or after a retreat) walks/recalls to the fountain; enough gold for the next item recalls
-  // when safe (profile recallGoldThreshold)
+  // low HP (or after a retreat): walk / recall home. Gold-driven recalls are the macro recall score's job.
   const safe = near([...v.enemies, ...v.unnoticed], v.self, 1600).length === 0 && near(v.monsters, v.self, 800).length === 0;
-  const home = v.hpPct < 0.3 - (ctx.style.risk - 0.5) * 0.16 || (mem.mode === 'retreat' && v.hpPct < 0.6) || mem.mode === 'home';
-  const thr = ctx.profile.behavior.recallGoldThreshold;
-  const rich = thr !== null && spendable(v.me, mem) >= Math.max(thr, nextItemPrice(ctx, mem));
-  if (!inFountain && (home || rich)) {
-    if (safe && dst(v.self, fountain) > 2500 && near(v.enemyMinions, v.self, 650).length === 0) {
+  const goHome = v.hpPct < lowHp || (mem.mode === 'retreat' && v.hpPct < 0.6) || mem.mode === 'home';
+  if (goHome) {
+    if (safe && dst(v.self, home) > 2500 && near(v.enemyMinions, v.self, 650).length === 0) {
       mem.mode = 'recall';
       mem.lastMove = null;
-      return [{ cmd: { t: 'recall' } }];
+      n.out.push({ cmd: { t: 'recall' } });
+      n.log('recall', 'recall', 'low hp', {}, { hp: v.hpPct });
+      return 'success';
     }
-    if (home) {
-      mem.mode = 'home';
-      const a = moveTo(v, mem, fountain);
-      return a ? [a] : [];
-    }
+    mem.mode = 'home';
+    push(n, moveTo(v, mem, home));
+    return 'running';
   }
   if (mem.mode === 'retreat' || mem.mode === 'home') mem.mode = 'lane';
-  return null;
+  return 'failure';
 }
 
-/** Step out of a visible enemy line skillshot heading at the bot (profile dodge rate + reaction delay). */
-function dodgeLine(v: View, ctx: BotStatic, mem: BotMemory, rng: Rng): BotAction | null {
+/**
+ * Step out of a visible enemy line skillshot heading at the bot (profile dodge rate + reaction delay). Dodge beats
+ * orbwalk (§7): queued orbwalk orders are dropped; an own auto wind-up is only cancelled when the projectile hits
+ * in < 0.4 s, otherwise the dodge waits for the hit point.
+ */
+export function dodge(n: NodeCtx): NodeResult {
+  const { v, ctx, mem, rng } = n;
   const live = new Set<number>();
   let res: BotAction | null = null;
   for (const p of v.snap.projectiles) {
@@ -201,8 +203,10 @@ function dodgeLine(v: View, ctx: BotStatic, mem: BotMemory, rng: Rng): BotAction
     const vy = (p.y - p.py) * 30;
     const speed = Math.sqrt(vx * vx + vy * vy) || 1500;
     const react = ticksOfMs(sampleReactionMs(ctx.profile.behavior, rng));
-    if (react >= (along / speed) * 30 - 2) continue; // too late to react
-    // perpendicular unit vector from the projectile line toward the bot
+    const impact = (along / speed) * 30;
+    if (react >= impact - 2) continue; // too late to react
+    let delay = react;
+    if (v.self.atkPhase === 1 && impact - react > 12) delay = Math.max(react, Math.min(impact - 6, attackTicks(n).windup)); // finish the auto first
     let nx = rx - along * p.dx;
     let ny = ry - along * p.dy;
     const nl = Math.sqrt(nx * nx + ny * ny);
@@ -210,150 +214,159 @@ function dodgeLine(v: View, ctx: BotStatic, mem: BotMemory, rng: Rng): BotAction
     else (nx = -p.dy), (ny = p.dx);
     const step = half + 60 - Math.abs(perp) + 40;
     mem.lastMove = null;
-    res = { cmd: { t: 'move', x: v.self.x + nx * step, y: v.self.y + ny * step }, delay: react };
+    res = { cmd: { t: 'move', x: v.self.x + nx * step, y: v.self.y + ny * step }, delay };
   }
   for (const id of mem.projSeen.keys()) if (!live.has(id)) mem.projSeen.delete(id);
-  return res;
+  if (!res) return 'failure';
+  cancelOrbwalk(n);
+  n.out.push(res);
+  n.log('dodge', 'dodge', 'line skillshot', { delay: res.delay ?? 0 });
+  return 'success';
 }
 
-function fightStep(v: View, ctx: BotStatic, mem: BotMemory, rng: Rng): BotAction[] | null {
-  const b = ctx.profile.behavior;
-  const engage = Math.max(v.reach + 350, 900);
-  const fighting = mem.mode === 'fight';
-  // style: aggressive bots take even trades, passive ones want a clear edge
-  const threshold = fighting ? -b.inertia * 0.3 : 0.22 + (0.5 - ctx.style.aggression) * 0.3;
-  let best = null;
-  let bestScore = -Infinity;
-  for (const e of v.enemies) {
-    const d = dst(e, v.self);
-    if (d > (fighting && e.serial === mem.fightTarget ? engage + 400 : engage)) continue;
-    const s = tradeScore(v, ctx, e) + (e.serial === mem.fightTarget ? 0.15 : 0) - hpPct(e) * 0.2;
-    if (s > bestScore) (bestScore = s), (best = e);
-  }
-  if (!best || bestScore < threshold) {
-    if (fighting) {
-      mem.mode = 'lane';
-      // target vanished into fog: maybe chase to its last known position (profile chaseIntoFogPct)
-      const last = mem.aware.get(mem.fightTarget);
-      if (last && !v.enemies.some((e) => e.serial === mem.fightTarget) && !mem.chaseRolled.has(mem.fightTarget)) {
-        const chase = rng.chance(b.chaseIntoFogPct / 100);
-        mem.chaseRolled.set(mem.fightTarget, chase);
-        if (chase && v.hpPct > 0.4) {
-          const a = moveTo(v, mem, last);
-          return a ? [a] : [];
-        }
-      }
-    }
-    return null;
-  }
-  if (!fighting || mem.fightTarget !== best.serial) {
-    if (!fighting) mem.fightReadyAt = v.tick + Math.round(b.engageHesitationS * 30 * (0.5 + rng.next()));
-    mem.mode = 'fight';
-    mem.fightTarget = best.serial;
-    mem.chaseRolled.delete(best.serial);
-  }
-  if (v.tick < mem.fightReadyAt) return null; // visible hesitation: keep farming meanwhile
-  if (v.self.atkPhase === 1) return []; // never cancel own wind-up
-  if (fumble(ctx, rng)) return [];
-  const cast = offensiveCast(v, ctx, rng, best);
-  if (cast) return [cast];
-  // autos only in reach (or to finish a low target); no endless chases across the map
-  const d = dst(v.self, best);
-  if (d > v.reach + best.radius + 120 && !(hpPct(best) < 0.35 && d < engage)) return null;
-  mem.lastMove = null;
-  return v.self.atkTarget === best.id ? [] : [{ cmd: { t: 'attack', target: best.id } }];
+/** Heal / shield allies (supports mostly; anyone with such a spell). */
+export function peel(n: NodeCtx): NodeResult {
+  if (n.v.self.atkPhase === 1) return 'failure';
+  return push(n, supportCast(n.v, n.ctx, n.mem.mode === 'fight')) ? 'success' : 'failure';
 }
 
-/** Lane for this bot right now: role lane, jungle roaming lane, or mid after 15:00 once the own lane tower fell. */
-function currentLane(v: View, ctx: BotStatic, mem: BotMemory, rng: Rng): LaneName {
-  const b = ctx.profile.behavior;
-  let lane: LaneName = ctx.lane ?? (['top', 'mid', 'bot'] as const)[Math.floor(v.time / (2 * b.macroIntervalS)) % 3]!;
-  if (v.time >= 15 * 60 && ctx.lane) {
-    const outer = ctx.map.sides[ctx.team].towers[ctx.lane][0]!;
-    if (!v.ownTowers.some((t) => dst(t, outer) < 200)) {
-      // ponytail: one-time roll; Phase 3 team AI decides grouping per macro interval with desires
-      mem.groupRolled ??= rng.chance(b.groupAfterFirstTowerPct / 100);
-      if (mem.groupRolled) lane = 'mid';
-    }
+/** Jungle: prototype route + gank on hurt enemies in reach (L's gank node takes over when it exists). */
+export function jungleLeaf(n: NodeCtx): NodeResult {
+  const { v, ctx, mem } = n;
+  if (ctx.role !== 'jungle' || mem.ext.laneOverride) return 'failure';
+  if (mem.mode !== 'fight') mem.mode = 'jungle';
+  const roamRange = 2000 + 300 * (n.p.playstyle.roam + 5);
+  const prey = v.enemies.find((e) => hpPct(e) < 0.45 && dst(e, v.self) < roamRange && !v.enemyTowers.some((t) => dst(t, e) < 900));
+  if (prey) return push(n, moveTo(v, mem, prey)) || v.self.moving ? 'running' : 'failure';
+  const j = jungle(v, ctx, mem);
+  if (j === 'wait') return 'running';
+  if (j === 'roam') return 'failure'; // fall through to laning (jungle rotation lane)
+  if ('cmd' in j) {
+    mem.lastMove = null;
+    n.out.push(j);
+    return 'running';
   }
-  return lane;
+  push(n, moveTo(v, mem, j));
+  stuckCheck(n);
+  return 'running';
 }
 
-function roleStep(v: View, ctx: BotStatic, mem: BotMemory, rng: Rng): BotAction[] {
+/** Lane for this bot right now: team-AI override, role lane, or the jungle rotation lane. */
+function currentLane(n: NodeCtx): LaneName {
+  const b = n.ctx.profile.behavior;
+  return n.mem.ext.laneOverride ?? n.ctx.lane ?? (['top', 'mid', 'bot'] as const)[Math.floor(n.v.time / (2 * b.macroIntervalS)) % 3]!;
+}
+
+/** Enemy champion close enough to punish a last hit (§7 last-hitting under pressure). */
+function pressure(n: NodeCtx, lane: LaneName): SnapEntity | null {
+  if ((n.pv.gankRisk[lane] ?? 0) >= 0.4) return n.v.self;
+  return n.v.enemies.find((e) => dst(e, n.v.self) < n.v.me.stats.range + 450) ?? null;
+}
+
+/**
+ * Laning: last hits (with pressure rules), wave state (freeze/hold = last hits only and further back, crash =
+ * push everything, slow-push = push while ahead), support follows the ADC. Returns failure when there is nothing
+ * to do right now (the tree then runs vision / idle).
+ */
+export function laneLeaf(n: NodeCtx): NodeResult {
+  const { v, ctx, mem, rng } = n;
   if (mem.mode !== 'fight') mem.mode = 'lane';
-  const out: BotAction[] = [];
-  const go = (p: Pt): BotAction[] => {
-    const a = moveTo(v, mem, p);
-    return a ? [a] : [];
-  };
   const melee = ctx.champ.attackType === 'melee';
   let behind = melee ? 220 : Math.max(250, v.me.stats.range * 0.75);
-  if (ctx.role === 'jungle') {
-    // gank: a noticed, hurt enemy champion within reach of a short walk
-    const prey = v.enemies.find((e) => hpPct(e) < 0.45 && dst(e, v.self) < 2000 + 3000 * ctx.style.roaming && !towerCovering(v, e));
-    if (prey) return go(prey);
-    const j = jungle(v, ctx, mem);
-    if (j === 'wait') return out;
-    if (j !== 'roam') {
-      if ('cmd' in j) {
-        mem.lastMove = null;
-        return [j];
-      }
-      return go(j);
-    }
-  }
-  const lane = currentLane(v, ctx, mem, rng);
+  const lane = currentLane(n);
+  let wave: { state: string } = ctx.lane || mem.ext.laneOverride ? chooseWave(n, lane) : { state: 'default' };
+  if (wave.state === 'freeze' || wave.state === 'hold') behind += 200;
+  // L's §4.1 gank-risk tier: shift back, no push, Diamond+ crash first, stay in Flash reach of the tower
+  const safety = laningSafety(mem);
+  behind += safety?.targetShift ?? 0;
+  if (safety?.crashFirst) wave = { state: 'crash' };
+  const pushOk = (safety?.allowPush ?? true) && wave.state !== 'freeze' && wave.state !== 'hold';
   let farm = true;
-  // minion aggro on me (no tank in front): back off further behind the wave
   if (v.enemyMinions.filter((m) => m.atkTarget === v.me.eid).length >= 2) behind += 350;
   let spot = laneSpot(v, ctx, lane, behind);
-  if (ctx.role === 'support') {
+  if (safety?.stayNearTower) {
+    const tower = v.ownTowers.filter((t) => ctx.map.sides[ctx.team].towers[lane].some((p) => dst(p, t) < 200)).sort((a, b) => dst(a, spot) - dst(b, spot))[0];
+    const d = tower ? dst(tower, spot) : 0;
+    if (tower && d > 1150) spot = { x: tower.x + ((spot.x - tower.x) * 1150) / d, y: tower.y + ((spot.y - tower.y) * 1150) / d };
+  }
+  if (ctx.role === 'support' && !mem.ext.laneOverride) {
     const adcSlot = ctx.players.find((p) => p.team === ctx.team && p.role === 'adc')?.slot;
     const adc = v.allies.find((a) => a.slot === adcSlot);
-    const fountain = ctx.map.sides[ctx.team].fountain;
-    if (adc && dst(adc, fountain) > 2500) {
+    const home = fountainOf(n);
+    // ponytail: the roam axis loosens this binding in L's roam node (knob supportAdcBinding)
+    if (adc && dst(adc, home) > 2500) {
       farm = false; // leave the CS to the ADC
       const pts = ctx.map.sides[ctx.team].lanes[lane];
       spot = lanePoint(pts, Math.max(0, laneProgress(pts, adc).s - 150));
       behind += 150;
     }
   }
-  if (v.self.atkPhase === 1) return out; // never cancel own wind-up
-  if (farm) {
+  if (v.self.atkPhase === 1) return 'running'; // never cancel own wind-up
+  if (farm && !(mem.wardTrip >= 0 && v.tick - mem.wardTrip < 8 * 30)) {
     const lh = lastHit(v, ctx, mem, rng, decisionTicks(ctx));
     if (lh) {
-      if (fumble(ctx, rng)) return out;
-      mem.lastMove = null;
-      if (lh.delay || v.self.atkTarget !== (lh.cmd as { target: number }).target) out.push(lh);
-      return out;
+      // under pressure (gank risk / enemy in trade range), Diamond+ only takes last hits inside the auto window
+      // without walking up while the enemy has a poke ready; Gold always takes them; farm +5 always
+      const pr = pressure(n, lane);
+      const target = v.enemyMinions.find((m) => m.id === (lh.cmd as { target: number }).target);
+      const walkUp = target ? dst(v.self, target) > v.reach + target.radius : false;
+      const pokeReady = pr && pr !== v.self ? (mem.ext.enemyCastAt.get(pr.serial) ?? -1e9) < v.tick - 6 * 30 : true;
+      if (pr && rankIdx(ctx.profile.rank) >= rankIdx('diamond') && n.p.playstyle.farmPriority < 5 && walkUp && pokeReady) {
+        n.log('lane', 'skip_last_hit', 'last hit under pressure', { minionHp: Math.round(target?.hp ?? 0) });
+      } else {
+        if (fumble(ctx, rng)) return 'running';
+        mem.lastMove = null;
+        if (lh.delay || v.self.atkTarget !== (lh.cmd as { target: number }).target) n.out.push(lh);
+        return 'running';
+      }
     }
-    const want = dst(v.self, spot) < 700 ? pushTarget(v, ctx) : -1;
-    if (want >= 0) {
-      mem.lastMove = null;
-      if (v.self.atkTarget !== want) out.push({ cmd: { t: 'attack', target: want } });
-      return out;
+    if (dst(v.self, spot) < 700 && pushOk) {
+      const ahead = v.ownMinions.filter((m) => dst(m, spot) < 1200).length - v.enemyMinions.filter((m) => dst(m, spot) < 1200).length;
+      let want = -1;
+      if (wave.state === 'crash') {
+        const inReach = v.enemyMinions.filter((m) => dst(v.self, m) <= v.reach + m.radius + 50).sort((a, b) => a.hp - b.hp);
+        want = inReach[0]?.id ?? pushTarget(v, ctx);
+      } else if (wave.state !== 'slowPush' || ahead >= 2) want = pushTarget(v, ctx);
+      if (want >= 0) {
+        mem.lastMove = null;
+        if (v.self.atkTarget !== want) n.out.push({ cmd: { t: 'attack', target: want } });
+        return 'running';
+      }
     }
   }
   // drop a lingering auto target (minion: keeps the attack timer free for the next last hit; champion: no chase)
   if (v.self.atkTarget >= 0) {
     mem.lastMove = null;
-    const a = moveTo(v, mem, spot);
-    out.push(a ?? { cmd: { t: 'stop' } });
-    return out;
+    n.out.push(moveTo(v, mem, spot) ?? { cmd: { t: 'stop' } });
+    return 'running';
   }
-  const g = go(spot);
-  if (g.length || v.self.moving) return g;
-  // waiting at the spot: shuffle around a little every few seconds like a player does (no 10 s statues)
+  if (push(n, moveTo(v, mem, spot))) {
+    stuckCheck(n);
+    return 'running';
+  }
+  if (v.self.moving) {
+    stuckCheck(n);
+    return 'running';
+  }
+  return 'failure';
+}
+
+/** Movement/idle: shuffle around the lane spot like a player does (no 10 s statues), unstick. */
+export function idle(n: NodeCtx): NodeResult {
+  const { v, mem, rng } = n;
   if (v.tick - (mem.lastMove?.tick ?? 0) > 90) {
-    const p = { x: spot.x + (rng.next() * 2 - 1) * 150, y: spot.y + (rng.next() * 2 - 1) * 150 };
+    const base = mem.lastMove ?? v.self;
+    const p = { x: base.x + (rng.next() * 2 - 1) * 150, y: base.y + (rng.next() * 2 - 1) * 150 };
     mem.lastMove = { ...p, tick: v.tick };
-    return [{ cmd: { t: 'move', x: p.x, y: p.y } }];
+    n.out.push({ cmd: { t: 'move', x: p.x, y: p.y } });
   }
-  return [];
+  stuckCheck(n);
+  return 'success';
 }
 
 /** No progress toward the move goal for 10 s: re-path via a random nearby point. */
-function stuckCheck(v: View, mem: BotMemory, rng: Rng, out: BotAction[]): void {
+export function stuckCheck(n: NodeCtx): void {
+  const { v, mem, rng } = n;
   mem.trail.push({ x: v.self.x, y: v.self.y, tick: v.tick });
   while (mem.trail.length && v.tick - mem.trail[0]!.tick > 330) mem.trail.shift();
   const old = mem.trail[0];
@@ -361,9 +374,11 @@ function stuckCheck(v: View, mem: BotMemory, rng: Rng, out: BotAction[]): void {
   if (dst(v.self, mem.lastMove) > 300 && dst(old, v.self) < 80) {
     const a = rng.next() * 2 - 1;
     const b = rng.next() * 2 - 1;
-    out.push({ cmd: { t: 'move', x: v.self.x + a * 500, y: v.self.y + b * 500 } });
+    n.out.push({ cmd: { t: 'move', x: v.self.x + a * 500, y: v.self.y + b * 500 } });
     mem.lastMove = null;
     mem.holdUntil = v.tick + 45;
     mem.trail = [];
   }
 }
+
+export { incomingDps, laneOf };

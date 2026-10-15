@@ -3,8 +3,8 @@
   { "id": "heilen", "name": { "de": "Heilen", "en": "Heal" }, "cooldown": 240, "range": 850 },
   { "id": "geist", "name": { "de": "Geist", "en": "Ghost" }, "cooldown": 210, "range": 0 },
   { "id": "entflammen", "name": { "de": "Entflammen", "en": "Ignite" }, "cooldown": 180, "range": 600 },
-  { "id": "erschoepfen", "name": { "de": "Erschöpfen", "en": "Exhaust" }, "cooldown": 210, "range": 650, "todo": "Phase 2" },
-  { "id": "reinigen", "name": { "de": "Reinigen", "en": "Cleanse" }, "cooldown": 210, "range": 0, "todo": "Phase 2" },
-  { "id": "teleport", "name": { "de": "Teleport", "en": "Teleport" }, "cooldown": 360, "range": 0, "todo": "Phase 2" },
+  { "id": "erschoepfen", "name": { "de": "Erschöpfen", "en": "Exhaust" }, "cooldown": 240, "range": 650 },
+  { "id": "reinigen", "name": { "de": "Reinigen", "en": "Cleanse" }, "cooldown": 210, "range": 0 },
+  { "id": "teleport", "name": { "de": "Teleport", "en": "Teleport" }, "cooldown": 360, "cooldownLate": 240, "range": 0 },
   { "id": "bannen", "name": { "de": "Bannen", "en": "Smite" }, "cooldown": 90, "range": 500 }
 ]

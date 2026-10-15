@@ -40,6 +40,9 @@ export function soundForEvent(ev: SimEvent, state: ClientState): void {
     case 'plate':
       play('plate', ...(at(ev.tower) as [number, number]));
       return;
+    case 'ping':
+      play('ping'); // team pings are always audible
+      return;
     case 'wave':
       if (me && ev.team === me.team && ev.lane === 1) play('wave'); // once per wave (mid lane event)
       return;

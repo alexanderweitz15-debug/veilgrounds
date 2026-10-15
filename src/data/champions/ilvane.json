@@ -4,6 +4,7 @@
   "title": { "de": "die Schleierweberin", "en": "the Veilweaver" },
   "roles": ["mid"],
   "archetype": "skillshot_mage",
+  "botBias": { "tradeLength": -2, "kiting": -1 },
   "trainingPurpose": { "de": "Skillshots landen, Abstand halten.", "en": "Land skillshots, keep your distance." },
   "attackType": "ranged",
   "resource": "mana",

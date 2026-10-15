@@ -2,7 +2,7 @@
 // Buy/sell only inside the own fountain circle (or while dead, like LoL). Recipes consume owned direct components
 // and cost `cost - sum(consumed component costs)`. Selling refunds 70 % of the full item cost.
 // ponytail: recipe discount looks at direct components only (no component-of-component discount); consumables
-// do not stack and have no effect yet; item passives/actives arrive with the item hook pass.
+// do not stack (one per slot). Passives/actives/consumable use: itemHooks.ts; rune stats: runeHooks.ts.
 
 import itemsJson from '../../data/items.json';
 import type { Sim } from '../sim';
@@ -10,6 +10,7 @@ import type { ItemData, ItemStat } from './schema';
 import { hasBuff } from '../buffs';
 import { dist2 } from '../vec';
 import { leviathanStacks } from '../systems/jungle';
+import { bootsPriceMult, runeStats } from './runeHooks';
 
 export const ITEMS = itemsJson.items as unknown as ItemData[];
 const BY_ID = new Map(ITEMS.map((i) => [i.id, i]));
@@ -70,7 +71,10 @@ export function quote(sim: Sim, eid: number, id: string): BuyQuote {
   const item = itemById(id);
   if (!item) return { ok: false, reason: 'unknown', price: 0, consumes: [] };
   const inv = inventory(sim, eid);
-  const { price, consumes } = recipePrice(inv, item);
+  const r = recipePrice(inv, item);
+  const { consumes } = r;
+  // ponytail: the Inspiration boots discount is sim-side only; the shop UI (recipePrice on snapshot data) shows full price
+  const price = item.tier === 'boots' ? Math.round(r.price * bootsPriceMult(sim, eid)) : r.price;
   const res = (reason?: BuyQuote['reason']): BuyQuote => ({ ok: !reason, reason, price, consumes });
   if (!canShop(sim, eid)) return res('notInShop');
   if (item.unique && inv.some((x, i) => x && !consumes.includes(i) && itemById(x)?.unique === item.unique)) return res('unique');
@@ -148,9 +152,10 @@ export const DORNENBOCK_MANA_REGEN_PCT = 100;
 /** Flussleviathan: permanent team stack, +6 % AD and AP each. */
 export const LEVIATHAN_PCT = 6;
 
-/** Items + jungle buffs; stats.ts folds these into the champion stat computation. */
+/** Items + runes + jungle buffs; stats.ts folds these into the champion stat computation. */
 export function bonusStats(sim: Sim, eid: number): Partial<Record<BonusStat, number>> {
   const out: Partial<Record<BonusStat, number>> = itemStats(sim, eid);
+  for (const [k, v] of Object.entries(runeStats(sim, eid)) as [BonusStat, number][]) out[k] = (out[k] ?? 0) + v;
   if (hasBuff(sim, eid, 'mark', 'dornenbock')) {
     out.haste = (out.haste ?? 0) + DORNENBOCK_HASTE;
     out.manaRegenPct = (out.manaRegenPct ?? 0) + DORNENBOCK_MANA_REGEN_PCT;

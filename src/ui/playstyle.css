@@ -1,0 +1,56 @@
+/* Bot playstyle scales (lobby editor, scoreboard mini scales) and the F9 bot debug overlay (Agent K).
+   Menu tokens from menu.css: --gold, --gold-hi, --line, --text-dim, --font-label. */
+
+/* ---------------------------------------------------------------- scales */
+.ps-mini { display: inline-flex; gap: 3px; align-items: center; vertical-align: middle; }
+.ps-mini-track { display: inline-flex; gap: 0; height: 9px; border: 1px solid #3c3c41; background: #0d1013; }
+.ps-mini-track .cell { width: 2px; height: 100%; }
+.ps-mini-track .cell.mid { background: rgba(200, 170, 110, 0.18); }
+.ps-mini-track .cell.on { background: var(--gold-hi, #f0e6d2); box-shadow: 0 0 0 1px var(--gold, #c8aa6e); }
+
+.ps-track { display: inline-flex; height: 14px; border: 1px solid #3c3c41; background: #0d1013; }
+.ps-track .cell { width: 11px; height: 100%; border-right: 1px solid rgba(255, 255, 255, 0.04); cursor: pointer; }
+.ps-track .cell:last-child { border-right: 0; }
+.ps-track .cell.mid { background: rgba(200, 170, 110, 0.12); }
+.ps-track .cell:hover { background: rgba(200, 170, 110, 0.3); }
+.ps-track .cell.on { background: var(--gold, #c8aa6e); }
+
+.ps-editor { display: grid; grid-template-columns: 86px 58px 18px auto 18px 58px 22px; gap: 3px 5px; align-items: center; font-size: 11.5px; }
+.ps-name { font-family: var(--font-label, sans-serif); text-transform: uppercase; letter-spacing: 0.04em; color: var(--gold, #c8aa6e); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ps-left { text-align: right; color: var(--text-dim, #a09b8c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ps-right { color: var(--text-dim, #a09b8c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ps-val { text-align: right; color: var(--gold-hi, #f0e6d2); font-variant-numeric: tabular-nums; }
+.ps-step { width: 18px; height: 16px; padding: 0; line-height: 1; background: #0d1013; color: var(--gold-hi, #f0e6d2); border: 1px solid #3c3c41; border-radius: 0; cursor: pointer; }
+.ps-step:hover:not(:disabled) { border-color: var(--gold, #c8aa6e); }
+.ps-step:disabled { opacity: 0.3; cursor: default; }
+
+/* ---------------------------------------------------------------- lobby bot rows */
+.bot-style { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 0 2px 5px 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+.bot-archetype { background: #0d1013; color: #e8e0cc; border: 1px solid #3c3c41; border-radius: 0; padding: 2px 4px; font-size: 12px; max-width: 124px; }
+.bot-style-edit { margin-left: auto; white-space: nowrap; background: none; border: 1px solid #3c3c41; border-radius: 0; padding: 2px 8px; cursor: pointer; color: var(--text-dim, #a09b8c);
+  font-family: var(--font-label, sans-serif); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+.bot-style-edit:hover, .bot-style-edit.active { color: var(--gold-hi, #f0e6d2); border-color: var(--gold, #c8aa6e); }
+.bot-style-box { padding: 8px 4px 10px 4px; border-bottom: 1px solid var(--line, rgba(201, 162, 78, 0.35)); background: rgba(200, 170, 110, 0.03); }
+.bot-style-foot { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.bot-style-foot .bot-style-edit { margin-left: 0; }
+.bot-style-hint { font-size: 11.5px; color: var(--text-dim, #a09b8c); }
+
+/* ---------------------------------------------------------------- scoreboard */
+.score-table td.style-cell { white-space: nowrap; }
+
+/* ---------------------------------------------------------------- F9 bot debug overlay */
+.panel.debug.open { max-width: min(1100px, 96vw); max-height: calc(100vh - 120px); overflow: auto; background: rgba(10, 12, 14, 0.94); border: 1px solid var(--line, rgba(201, 162, 78, 0.35)); border-radius: 0; }
+.bot-debug { margin-top: 8px; }
+.bot-debug-head { font-family: var(--font-label, sans-serif); text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold, #c8aa6e); font-size: 12px; margin-bottom: 4px; }
+.bot-debug-empty { color: var(--text-dim, #a09b8c); }
+.bot-debug-table { border-collapse: collapse; font-size: 11.5px; width: 100%; }
+.bot-debug-table th { text-align: left; font-family: var(--font-label, sans-serif); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gold, #c8aa6e); padding: 2px 6px; border-bottom: 1px solid #3a3226; white-space: nowrap; }
+.bot-debug-table td { padding: 2px 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); vertical-align: top; color: #e8e0cc; }
+.bot-debug-table tr.team0 .champ { color: #8fb7ea; }
+.bot-debug-table tr.team1 .champ { color: #e58f7d; }
+.bot-debug-table .sub { color: var(--text-dim, #a09b8c); font-size: 10.5px; white-space: nowrap; }
+.bot-debug-table .mode, .bot-debug-table .node { white-space: nowrap; }
+.bot-debug-table .scores { font-family: Consolas, monospace; font-size: 10.5px; white-space: nowrap; }
+.bot-debug-table .reason { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bot-debug-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bot-debug-table tr.err td.error { color: #ff8a6a; font-weight: 600; }

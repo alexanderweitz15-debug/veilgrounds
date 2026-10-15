@@ -1,0 +1,115 @@
+{
+  "note": "Bot behaviour tree (main spec §7, docs/spec-bots.md). Node types: selector, sequence, parallel, condition, action, cooldown, reaction, gate, inverter (src/ai/bt/runtime.ts). Leaf names: src/ai/bt/leaves.ts. Root priority: survive/escape > dodge > fight/trade/all-in > objective > recall > laning/jungle/roam > vision > movement/idle.",
+  "params": {
+    "orbwalk": { "marginMs": 70, "windowMs": 300 },
+    "objectiveThresholds": {
+      "iron": { "dragon": 0.3, "baron": 0.95, "prepS": 0 },
+      "bronze": { "dragon": 0.32, "baron": 0.95, "prepS": 0 },
+      "silver": { "dragon": 0.35, "baron": 0.92, "prepS": 0 },
+      "gold": { "dragon": 0.4, "baron": 0.9, "prepS": 15 },
+      "platinum": { "dragon": 0.5, "baron": 0.8, "prepS": 25 },
+      "emerald": { "dragon": 0.55, "baron": 0.75, "prepS": 35 },
+      "diamond": { "dragon": 0.6, "baron": 0.7, "prepS": 45 },
+      "master": { "dragon": 0.62, "baron": 0.68, "prepS": 50 },
+      "grandmaster": { "dragon": 0.64, "baron": 0.66, "prepS": 55 },
+      "challenger": { "dragon": 0.65, "baron": 0.65, "prepS": 60 }
+    },
+    "recall": { "threshold": 0.6, "evalS": 5 },
+    "wardEveryS": { "support": 25, "jungle": 35, "laner": 70 }
+  },
+  "root": {
+    "type": "sequence",
+    "id": "root",
+    "children": [
+      {
+        "type": "parallel",
+        "id": "housekeeping",
+        "policy": "always",
+        "comment": "runs every decision: level-ups, bookkeeping (buys, attack timer, events), team AI, player pings, summoner utility",
+        "children": [
+          { "type": "action", "name": "levelUp" },
+          { "type": "action", "name": "bookkeeping" },
+          { "type": "action", "name": "teamAI" },
+          { "type": "action", "name": "pingsIn" },
+          { "type": "action", "name": "utilitySpells" }
+        ]
+      },
+      {
+        "type": "selector",
+        "id": "main",
+        "children": [
+          { "type": "action", "name": "dead" },
+          { "type": "action", "name": "recallChannel" },
+          { "type": "action", "name": "fountain" },
+          {
+            "type": "selector",
+            "id": "survive",
+            "children": [
+              { "type": "action", "name": "escape" },
+              { "type": "action", "name": "pingRetreat" },
+              { "type": "action", "name": "diveDefence" },
+              { "type": "action", "name": "retreat" }
+            ]
+          },
+          { "type": "action", "name": "dodge" },
+          { "type": "action", "name": "peel" },
+          {
+            "type": "selector",
+            "id": "combat",
+            "children": [
+              { "type": "action", "name": "tradeRun" },
+              { "type": "action", "name": "disengage" },
+              {
+                "type": "sequence",
+                "children": [
+                  { "type": "reaction", "id": "teamfightReact", "child": { "type": "condition", "name": "teamfightNear" } },
+                  { "type": "action", "name": "teamfight" }
+                ]
+              },
+              { "type": "action", "name": "followUp" },
+              {
+                "type": "sequence",
+                "children": [
+                  { "type": "reaction", "id": "tradeReact", "child": { "type": "gate", "id": "tradeGate", "name": "tradeWindow", "threshold": 0.5, "dwellS": 2 } },
+                  { "type": "action", "name": "tradeStart" }
+                ]
+              },
+              { "type": "action", "name": "joinFight" }
+            ]
+          },
+          {
+            "type": "sequence",
+            "children": [
+              { "type": "condition", "name": "hasObjectiveDesire" },
+              { "type": "action", "name": "objective" }
+            ]
+          },
+          {
+            "type": "sequence",
+            "children": [
+              { "type": "cooldown", "id": "recallEval", "s": 5, "on": "any", "child": { "type": "condition", "name": "recallScore" } },
+              { "type": "action", "name": "recall" }
+            ]
+          },
+          { "type": "action", "name": "idleAfterShove" },
+          {
+            "type": "selector",
+            "id": "role",
+            "children": [
+              { "type": "action", "name": "gankRiskReaction" },
+              { "type": "action", "name": "gank" },
+              { "type": "action", "name": "counterGank" },
+              { "type": "action", "name": "roam" },
+              { "type": "action", "name": "enemyRoamReaction" },
+              { "type": "action", "name": "splitPush" },
+              { "type": "action", "name": "jungle" },
+              { "type": "action", "name": "lane" }
+            ]
+          },
+          { "type": "action", "name": "vision" },
+          { "type": "action", "name": "idle" }
+        ]
+      }
+    ]
+  }
+}

@@ -4,6 +4,7 @@
   "title": { "de": "der Lampenlöscher", "en": "the Lamp Snuffer" },
   "roles": ["jungle"],
   "archetype": "stealth_assassin",
+  "botBias": { "aggression": 2, "roam": 2, "vision": -1 },
   "trainingPurpose": { "de": "Unsichtbare Ganks lesen.", "en": "Read invisible ganks." },
   "attackType": "ranged",
   "resource": "mana",

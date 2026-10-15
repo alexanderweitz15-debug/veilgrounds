@@ -4,6 +4,7 @@
   "title": { "de": "die Rudelführerin", "en": "the Pack Leader" },
   "roles": ["jungle"],
   "archetype": "pet_hunter",
+  "botBias": { "objectiveRisk": 1, "farmPriority": 1 },
   "trainingPurpose": { "de": "Begleiter, Slow-Ganks, Jungle-Tracking.", "en": "Companions, slow ganks, jungle tracking." },
   "attackType": "ranged",
   "resource": "mana",

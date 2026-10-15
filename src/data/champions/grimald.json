@@ -4,6 +4,7 @@
   "title": { "de": "der Fallensteller", "en": "the Trapper" },
   "roles": ["jungle"],
   "archetype": "tank_engage_jungler",
+  "botBias": { "roam": 1, "objectiveRisk": 1, "teamplay": 2 },
   "trainingPurpose": { "de": "CC-Ganks lesen, Dive-Druck.", "en": "Read CC ganks, dive pressure." },
   "attackType": "melee",
   "resource": "mana",

@@ -4,6 +4,7 @@
   "title": { "de": "der Feuersteinlehrling", "en": "the Flint Apprentice" },
   "roles": ["jungle"],
   "archetype": "burst_mage_jungler",
+  "botBias": { "tradeLength": -2, "aggression": 1, "roam": 1 },
   "trainingPurpose": { "de": "Burst-Ganks aus dem Fog.", "en": "Burst ganks out of the fog." },
   "attackType": "ranged",
   "resource": "mana",

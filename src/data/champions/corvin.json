@@ -4,6 +4,7 @@
   "title": { "de": "der Büchsenmacher", "en": "the Gunsmith" },
   "roles": ["adc"],
   "archetype": "short_range_marksman",
+  "botBias": { "tradeLength": 1, "kiting": -1, "aggression": 1 },
   "trainingPurpose": { "de": "Aggressive Kurz-Range-Lane, Nachlade-Fenster.", "en": "Aggressive short-range lane, reload windows." },
   "attackType": "ranged",
   "resource": "mana",

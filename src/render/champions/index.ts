@@ -1,0 +1,23 @@
+// Champion sprites (style C "Gouache-Dämmerung"): procedural paper-doll renderer + atlas builder.
+export {
+  buildChampionAtlas,
+  buildChampionAtlasAsync,
+  drawChampionFrame,
+  renderMaster,
+  dirFromAngle,
+  championKit,
+  framesOf,
+  worldSizeOf,
+  CHAMPION_IDS,
+  DIR_YAW,
+  ANIMS,
+  DIRS,
+  FRAMES,
+  FPS,
+  LOOP,
+  type Anim,
+  type Dir,
+  type FrameRect,
+  type ChampionAtlas,
+  type AtlasOptions,
+} from './atlas';

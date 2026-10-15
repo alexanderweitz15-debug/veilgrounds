@@ -1,6 +1,6 @@
 // Client-side view of the match: newest snapshot for positions, accumulated tallies from every snapshot's events.
 import type { SnapEntity, Snapshot } from '../sim/snapshot';
-import { Kind, TICK_HZ, type SimEvent } from '../sim/types';
+import { Kind, TICK_HZ, type PingKind, type SimEvent } from '../sim/types';
 
 const TICK_MS = 1000 / TICK_HZ;
 /** Moves longer than this in one tick are teleports/respawns: snap, do not sweep across the map. */
@@ -22,6 +22,9 @@ export class ClientState {
   /** Enemy towers destroyed by team i. */
   towers: [number, number] = [0, 0];
   winner: number | null = null;
+  /** Live team pings (newest last), kept for PING_KEEP_MS. */
+  pings: { id: number; kind: PingKind; x: number; y: number; slot: number; target: number; at: number }[] = [];
+  private pingSeq = 0;
   paused = false;
   /** Interpolation factor for the current frame (0..1), set by beginFrame. */
   alpha = 1;
@@ -42,11 +45,13 @@ export class ClientState {
         if (ev.kind === Kind.Champion && ev.team <= 1) this.kills[scorer]++;
         if (ev.kind === Kind.Tower && ev.team <= 1) this.towers[scorer]++;
       } else if (ev.e === 'gameOver') this.winner = ev.winner;
+      else if (ev.e === 'ping') this.pings.push({ id: ++this.pingSeq, kind: ev.kind, x: ev.x, y: ev.y, slot: ev.slot, target: ev.target, at: now });
     }
     return s.events;
   }
 
   beginFrame(now: number): void {
+    while (this.pings.length && now - this.pings[0]!.at > 3000) this.pings.shift();
     this.alpha = this.paused ? 1 : Math.min(1, Math.max(0, (now - this.recvAt) / TICK_MS));
     this.ix.clear();
     this.iy.clear();

@@ -35,6 +35,10 @@ export type LaneId = 0 | 1 | 2;
 export type DamageType = 'phys' | 'magic' | 'true';
 
 /** Player-equivalent inputs. Bots and humans produce exactly these; sim never trusts anything else. */
+/** Player/bot pings (spec §9, docs/spec-bots.md §9). Team-only, rate-limited by the sim. */
+export const PING_KINDS = ['alert', 'danger', 'onMyWay', 'back', 'missing', 'vision', 'help', 'group', 'focus', 'objective', 'ok'] as const;
+export type PingKind = (typeof PING_KINDS)[number];
+
 export type Command =
   | { t: 'move'; x: number; y: number }
   | { t: 'attack'; target: number }
@@ -44,8 +48,18 @@ export type Command =
   | { t: 'spell'; slot: 0 | 1; x: number; y: number; target?: number }
   | { t: 'levelUp'; slot: 0 | 1 | 2 | 3 }
   | { t: 'recall' }
+  /** Team ping at a map point; target = entity eid for focus/objective pings. */
+  | { t: 'ping'; kind: PingKind; x: number; y: number; target?: number }
+  /** Team chat line (bots: spec §9; ref = decision log tick the line refers to). Team-only, like pings. */
+  | { t: 'chat'; text: string; ref?: number }
   | { t: 'buy'; item: string }
   | { t: 'sell'; slot: number }
+  /** Use the item in inventory slot 0..5 (actives, consumables; src/sim/items/itemHooks.ts). */
+  | { t: 'item'; slot: number; x?: number; y?: number }
+  /** Use the trinket at a point: Schleierward places a ward, Suchfeuer sweeps (src/sim/wards.ts). */
+  | { t: 'ward'; x: number; y: number }
+  /** Swap the trinket (shop access, Suchfeuer from level 9). */
+  | { t: 'trinket'; id: 'schleierward' | 'suchfeuer' }
   | { t: 'cheat'; op: CheatOp; x?: number; y?: number; value?: number };
 
 export type CheatOp =
@@ -73,12 +87,25 @@ export type SimEvent =
   | { e: 'lastHitMiss'; eid: number; target: number; earlyHp?: number; lateMs?: number }
   | { e: 'level'; eid: number; level: number }
   | { e: 'attack'; src: number; dst: number }
-  | { e: 'cast'; src: number; slot: number; x: number; y: number }
+  /** Ability cast started (slot 0..3; rank for telegraphs). recast: second cast of a recast ability (no new wind-up). */
+  | { e: 'cast'; src: number; slot: number; x: number; y: number; rank?: number; recast?: boolean; /** Wind-up end tick (incl. hook time mods). */ at?: number }
   | { e: 'plate'; tower: number; team: number }
   | { e: 'wave'; lane: number; team: number; index: number }
   | { e: 'respawn'; eid: number }
+  /** Team ping (only delivered to the pinging team). */
+  | { e: 'ping'; slot: number; team: number; kind: PingKind; x: number; y: number; target: number }
+  /** Team chat line (only delivered to the sender's team). */
+  | { e: 'chat'; slot: number; team: number; text: string; ref?: number }
   /** Ground telegraph: AoE that resolves at tick `at` (render shows radius + fill). */
-  | { e: 'zone'; src: number; team: number; x: number; y: number; r: number; start: number; at: number }
+  | {
+      e: 'zone'; src: number; team: number; x: number; y: number; r: number; start: number; at: number;
+      /** Line zones (ability.line): segment from (ax, ay) to (bx, by), thickness `width`; circle otherwise. */
+      line?: { ax: number; ay: number; bx: number; by: number; width: number };
+      /** Persistent zones: last tick the area stays active (render keeps the area visible until then). */
+      until?: number;
+      /** Centre follows the caster until it resolves (self AoEs with a delay). */
+      follow?: boolean;
+    }
   | { e: 'gameOver'; winner: number };
 
 export interface PlayerSetup {
@@ -93,7 +120,18 @@ export interface PlayerSetup {
   /** Prägungen; omitted = champion's default preset (src/sim/items/runes.ts). */
   runes?: { keystone: string; minor: [string, string, string] };
   /** Bot-controlled slot (with isHuman false): rank profile + per-game variance (src/ai/runner.ts). */
-  bot?: { rank: import('../ai/profiles/schema').Rank; variance: 'stable' | 'normal' | 'volatile'; name?: string };
+  bot?: {
+    rank: import('../ai/profiles/schema').Rank;
+    variance: 'stable' | 'normal' | 'volatile';
+    name?: string;
+    /** Spec §2/§10: lobby archetype preset and/or manual axes (-5..+5); omitted = rank-typical roll. */
+    archetype?: import('../ai/contract').Archetype;
+    playstyle?: Partial<import('../ai/contract').Playstyle>;
+    /** Seed of the playstyle roll (src/ai/params.ts); default derived from config seed + slot. */
+    personalitySeed?: number;
+    /** Division-exact skill 0..100 (spec-bots §10); default = rank anchor. */
+    skill?: number;
+  };
 }
 
 export interface SimConfig {

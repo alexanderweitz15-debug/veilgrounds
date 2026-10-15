@@ -9,7 +9,8 @@ export type Action =
   | 'd' | 'f'
   | 'recall' | 'centerCamera' | 'toggleCameraLock' | 'pause' | 'showRange'
   | 'item1' | 'item2' | 'item3' | 'item4' | 'item5' | 'item6' | 'trinket'
-  | 'scoreboard' | 'debug' | 'shop';
+  | 'scoreboard' | 'debug' | 'shop'
+  | 'pingWheel' | 'pingMissing';
 
 export const DEFAULT_BINDS: Record<Action, string> = {
   stop: 'KeyS',
@@ -35,6 +36,8 @@ export const DEFAULT_BINDS: Record<Action, string> = {
   scoreboard: 'Tab',
   debug: 'F9',
   shop: 'KeyP',
+  pingWheel: 'KeyG',
+  pingMissing: 'KeyV',
 };
 
 export const ACTIONS = Object.keys(DEFAULT_BINDS) as Action[];

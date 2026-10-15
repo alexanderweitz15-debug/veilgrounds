@@ -13,7 +13,7 @@ import type { Sim } from '../sim';
 import type { System } from './index';
 import { DT, Kind, isStructure, sec } from '../types';
 import { dealDamage } from '../damage';
-import { dir, dist2, inCone, cosDeg, segDist2 } from '../vec';
+import { dir, dist2, circleInCone, cosDeg, segDist2 } from '../vec';
 import { findPath, nearestWalkable, walkable } from '../map';
 import { addBuff, addShield, canCast, canMove, channelBroken, healUnit, removeBuffs, reveal, type StatKey } from '../buffs';
 import { championData, championHooks, champIdOf, passiveHooksOf } from '../champions';
@@ -23,9 +23,10 @@ import { onMoveCommand } from './attack';
 import { spawnProjectile } from './projectiles';
 import { baseMaxHp } from './stats';
 import { cancelRecall, champions } from './economy';
-import { castSummonerSpell, summonerDef } from '../summoners';
+import { cancelTeleport, castSummonerSpell, summonerCooldown, summonerDef, teleporting } from '../summoners';
 import { sees } from '../vision';
 import { updateSummons } from '../summons';
+import { tickItemsAndRunes } from '../items/itemHooks';
 
 export interface AbilityHud {
   id: string;
@@ -285,6 +286,7 @@ export function noteDashEnd(sim: Sim, eid: number, slot: number): void {
 
 /** Casting (wind-up), channelling, dashing or being displaced: no movement, no autos. */
 export function isBusy(sim: Sim, eid: number): boolean {
+  if (teleporting(sim, eid)) return true;
   const s = sim.state.abilities as AbilState | undefined;
   if (!s) return false;
   const m = s.moves.get(eid);
@@ -316,6 +318,7 @@ export function castAbility(sim: Sim, eid: number, slot: number, x: number, y: n
     const win = sim.tick >= w.from && sim.tick <= w.until;
     if (a.cast?.slot === slot || win) {
       if (win) w.until = -1;
+      sim.events.push({ e: 'cast', src: eid, slot, x, y, rank, recast: true });
       runHooks(sim, makeCtx(sim, eid, slot, rank, 'recast', x, y, target ?? -1));
       return;
     }
@@ -341,13 +344,13 @@ export function castAbility(sim: Sim, eid: number, slot: number, x: number, y: n
   a.cdUntil[slot] = sim.tick + a.cdTotal[slot]!;
   cancelRecall(sim, eid);
   removeBuffs(sim, eid, (b) => b.kind === 'stat' && b.stat === 'invisible'); // casting breaks invisibility
-  sim.events.push({ e: 'cast', src: eid, slot, x, y });
-  face(sim, eid, x, y);
-  // instant self-casts (e.g. AS steroids) do not interrupt an auto; everything else does
-  if (ab.castTime > 0 || ab.type !== 'self') onMoveCommand(sim, eid);
   // blinks, cones and line skillshots with a delay (Seraphyne E, Isolde W, Lysa R): the delay is part of the wind-up
   const delayed = ab.type === 'blink' || ab.type === 'cone' || ab.type === 'skillshot_line';
   const castTime = (ab.castTime + (delayed ? (ab.delay ?? 0) : 0)) * mods.timeMult;
+  sim.events.push({ e: 'cast', src: eid, slot, x, y, rank, at: sim.tick + sec(castTime) });
+  face(sim, eid, x, y);
+  // instant self-casts (e.g. AS steroids) do not interrupt an auto; everything else does
+  if (ab.castTime > 0 || ab.type !== 'self') onMoveCommand(sim, eid);
   if (ab.flags?.includes('unstoppable')) addBuff(sim, eid, { kind: 'unstoppable', id: ab.id, src: eid, ticks: sec(castTime) + 1 });
   if (sec(castTime) > 0) {
     a.cast = { slot, rank, x, y, target: tgt, end: sim.tick + sec(castTime), cost, prevCdUntil, timeMult: mods.timeMult };
@@ -401,10 +404,17 @@ function face(sim: Sim, eid: number, x: number, y: number): void {
 }
 
 /** Line zone segment (ability.line) for a zone centred at (cx, cy) cast from (ox, oy) in direction (dx, dy). */
-function lineSegment(ab: AbilityData, ox: number, oy: number, cx: number, cy: number, dx: number, dy: number): [number, number, number, number] {
+export function lineSegment(ab: AbilityData, ox: number, oy: number, cx: number, cy: number, dx: number, dy: number): [number, number, number, number] {
   const r = ab.radius ?? 0;
   if (ab.line === 'forward') return [ox, oy, ox + dx * 2 * r, oy + dy * 2 * r];
   return [cx + dy * r, cy - dx * r, cx - dy * r, cy + dx * r];
+}
+
+/** Line geometry for 'zone' events of line zones (render draws the exact strip). */
+function zoneLine(ab: AbilityData, ox: number, oy: number, cx: number, cy: number, dx: number, dy: number): { line?: { ax: number; ay: number; bx: number; by: number; width: number } } {
+  if (!ab.line) return {};
+  const [ax, ay, bx, by] = lineSegment(ab, ox, oy, cx, cy, dx, dy);
+  return { line: { ax, ay, bx, by, width: ab.width ?? 0 } };
 }
 
 /** Units in a ground effect: circle of ability.radius, or the line segment for ability.line. */
@@ -445,7 +455,7 @@ function execute(sim: Sim, eid: number, slot: number, rank: number, x: number, y
       if (delay > 0 || dur > 0) {
         // ponytail: persistent zones re-apply their effects once per second (damage values are per tick)
         abilState(sim).zones.push({ caster: eid, casterSerial: Unit.serial[eid]!, slot, rank, x: cx, y: cy, ox, oy, dx, dy, cx: x, cy: y, follow: false, next: sim.tick + delay, until: sim.tick + delay + dur, period: sec(1) });
-        sim.events.push({ e: 'zone', src: eid, team: Unit.team[eid]!, x: cx, y: cy, r: ab.radius ?? 0, start: sim.tick, at: sim.tick + delay });
+        sim.events.push({ e: 'zone', src: eid, team: Unit.team[eid]!, x: cx, y: cy, r: ab.radius ?? 0, start: sim.tick, at: sim.tick + delay, ...(dur > 0 ? { until: sim.tick + delay + dur } : {}), ...zoneLine(ab, ox, oy, cx, cy, dx, dy) });
       } else {
         resolve(sim, ctx(areaHits(sim, eid, ab, ox, oy, cx, cy, dx, dy), cx, cy));
       }
@@ -453,7 +463,7 @@ function execute(sim: Sim, eid: number, slot: number, rank: number, x: number, y
     }
     case 'cone': {
       const cosHalf = cosDeg((ab.angle ?? 60) / 2);
-      const hits = unitsWhere(sim, (e) => isEnemyUnit(sim, eid, e) && inCone(Pos.x[e]!, Pos.y[e]!, ox, oy, dx, dy, cosHalf, range + Unit.radius[e]!));
+      const hits = unitsWhere(sim, (e) => isEnemyUnit(sim, eid, e) && circleInCone(Pos.x[e]!, Pos.y[e]!, Unit.radius[e]!, ox, oy, dx, dy, cosHalf, range));
       resolve(sim, ctx(hits, ox, oy));
       break;
     }
@@ -467,7 +477,7 @@ function execute(sim: Sim, eid: number, slot: number, rank: number, x: number, y
       if (delay > 0) {
         // self AoE after a delay (Brom Q): centred on the caster when it resolves
         abilState(sim).zones.push({ caster: eid, casterSerial: Unit.serial[eid]!, slot, rank, x: ox, y: oy, ox, oy, dx, dy, cx: x, cy: y, follow: true, next: sim.tick + delay, until: sim.tick + delay, period: sec(1) });
-        sim.events.push({ e: 'zone', src: eid, team: Unit.team[eid]!, x: ox, y: oy, r: ab.radius ?? 0, start: sim.tick, at: sim.tick + delay });
+        sim.events.push({ e: 'zone', src: eid, team: Unit.team[eid]!, x: ox, y: oy, r: ab.radius ?? 0, start: sim.tick, at: sim.tick + delay, follow: true });
       } else resolve(sim, ctx(ab.radius ? enemiesIn(sim, eid, ox, oy, ab.radius) : [], ox, oy));
       break;
     }
@@ -824,7 +834,10 @@ export const abilitiesSystem: System = {
     const s = abilState(sim);
     const { Unit } = sim.c;
     // per-tick champion hooks (before casts resolve and before attacks/projectiles move)
-    for (const eid of champions(sim)) championHooks(champIdOf(sim, eid)).onTick?.(sim, eid);
+    for (const eid of champions(sim)) {
+      championHooks(champIdOf(sim, eid)).onTick?.(sim, eid);
+      tickItemsAndRunes(sim, eid); // item/rune upkeep: potions, auras, recharges (src/sim/items/itemHooks.ts)
+    }
     updateSummons(sim);
     for (const [eid, a] of s.champs) {
       if (a.channel && (a.serial !== Unit.serial[eid] || !Unit.alive[eid] || channelBroken(sim, eid) || sim.tick >= a.channel.until)) a.channel = null;
@@ -870,11 +883,13 @@ export function castSummoner(sim: Sim, eid: number, slot: number, x: number, y: 
   const a = champAbil(sim, eid);
   const id = a.sums[slot]!;
   const def = summonerDef(id);
-  if (!def || def.todo || sim.tick < a.sumCdUntil[slot]!) return;
+  if (!def || def.todo) return;
+  if (id === 'teleport' && cancelTeleport(sim, eid)) return; // recast during the channel cancels it
+  if (sim.tick < a.sumCdUntil[slot]!) return;
   if (!castSummonerSpell(sim, eid, id, x, y, target)) return;
   cancelRecall(sim, eid);
   const setup = sim.config.players.find((p) => p.slot === Unit.slot[eid]);
-  a.sumCdTotal[slot] = sec(setup?.summonerCd?.[id] ?? def.cooldown);
+  a.sumCdTotal[slot] = sec(setup?.summonerCd?.[id] ?? summonerCooldown(sim, id));
   a.sumCdUntil[slot] = sim.tick + a.sumCdTotal[slot]!;
 }
 
@@ -904,7 +919,7 @@ export function abilityHud(sim: Sim, eid: number): AbilityHud[] {
       rank: def && !def.todo ? 1 : 0,
       maxRank: 1,
       cdLeft: Math.max(0, a.sumCdUntil[i]! - sim.tick) / 30,
-      cdTotal: (a.sumCdTotal[i] || sec(def?.cooldown ?? 0)) / 30,
+      cdTotal: (a.sumCdTotal[i] || sec(summonerCooldown(sim, a.sums[i]!))) / 30,
       cost: 0,
       canLevel: false,
     });

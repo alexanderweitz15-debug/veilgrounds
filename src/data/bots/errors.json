@@ -1,0 +1,18 @@
+{
+  "note": "Spec-bots §6 named error injections. Probability per opportunity at each rank anchor (Iron .. Challenger); linear in skill between anchors (bot skill after variance). Order of values: iron, bronze, silver, gold, platinum, emerald, diamond, master, grandmaster, challenger. Logged as injectedError for the post-game.",
+  "errors": {
+    "trade_on_cooldown": { "p": [0.7, 0.7, 0.3, 0, 0, 0, 0, 0, 0, 0], "note": "§6 Bronze: trades as soon as cooldowns are up (trigger 70 %)" },
+    "fight_in_enemy_wave": { "p": [0.6, 0.5, 0.3, 0, 0, 0, 0, 0, 0, 0], "note": "§6 Iron-Silver: ignores the minion-aggro condition of the trade window" },
+    "ignore_minion_aggro": { "p": [0.6, 0.5, 0.3, 0, 0, 0, 0, 0, 0, 0], "note": "§6 Iron-Silver: auto-attacks a champion inside the enemy wave" },
+    "no_flash_tracking": { "p": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0, 0, 0, 0], "note": "§6 up to Emerald 50 %: forgets a seen enemy flash" },
+    "chase_third_kill": { "p": [0.3, 0.3, 0.35, 0.4, 0.2, 0.1, 0, 0, 0, 0], "note": "§6 Gold: chases for another kill into fog" },
+    "flash_into_wall": { "p": [0.1, 0.1, 0, 0, 0, 0, 0, 0, 0, 0], "note": "§6 Iron-Bronze 10 %" },
+    "overcommit_after_kill": { "p": [0.5, 0.3, 0.1, 0, 0, 0, 0, 0, 0, 0], "note": "§6 Iron: dives on with 20 % HP after a kill" },
+    "flash_wrong_direction": { "p": [0.15, 0.08, 0, 0, 0, 0, 0, 0, 0, 0], "note": "§4.2 Iron 15 %: escape flash in the wrong direction" },
+    "roam_from_push": { "p": [0.3, 0.3, 0.3, 0, 0, 0, 0, 0, 0, 0], "note": "§5.1 Iron-Silver 30 %: roams away from a pushing wave" },
+    "flash_in_dive": { "p": [0.4, 0.4, 0.4, 0.4, 0, 0, 0, 0, 0, 0], "note": "§6 Gold 40 %: flashes out of a dive instead of tower dancing (Platinum+ correct)" },
+    "carry_too_far": { "p": [0.6, 0.6, 0.6, 0.5, 0.3, 0.15, 0, 0, 0, 0], "note": "§7 Gold: carry stands 150 units too far forward (Diamond correct)" },
+    "late_recall": { "p": [0.5, 0.25, 0, 0, 0, 0, 0, 0, 0, 0], "note": "§8 Iron: recalls only below 25 % HP or randomly" },
+    "idle_after_shove": { "p": [0.4, 0.4, 0.4, 0.4, 0.2, 0.1, 0, 0, 0, 0], "note": "§8 Gold 40 %: shoves and idles in the river" }
+  }
+}

@@ -1,5 +1,6 @@
 // Minimap (bottom right) drawn like a hand-inked field map: parchment, washed river, inked lanes and cliffs.
 // Left click/drag moves the camera, right click sends a move command.
+import { PING_COLOR } from './pingWheel';
 import type { MapData, Pt } from '../sim/map';
 import type { ClientState } from '../game/state';
 import type { World } from '../render/world';
@@ -21,7 +22,7 @@ export class Minimap {
   dragging = false;
   dispose: () => void = () => {};
 
-  constructor(map: MapData, private readonly onCamera: (x: number, y: number) => void, private readonly onMove: (x: number, y: number) => void) {
+  constructor(map: MapData, private readonly onCamera: (x: number, y: number) => void, private readonly onMove: (x: number, y: number) => void, private readonly onPing?: (x: number, y: number) => void) {
     this.canvas.className = 'minimap';
     this.dpr = Math.min(window.devicePixelRatio, 2);
     this.canvas.width = this.canvas.height = Math.round(SIZE * this.dpr);
@@ -36,7 +37,8 @@ export class Minimap {
     this.canvas.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       const [x, y] = toSim(e);
-      if (e.button === 0) {
+      if (e.button === 0 && e.altKey && this.onPing) this.onPing(x, y); // Alt+click: danger ping on the map
+      else if (e.button === 0) {
         this.dragging = true;
         this.onCamera(x, y);
       } else if (e.button === 2) this.onMove(x, y);
@@ -116,6 +118,20 @@ export class Minimap {
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText((e.champ ?? '?').charAt(0).toUpperCase(), x, y + 0.5 * d);
+          } else if (e.kind === Kind.Ward) {
+            // player wards as small diamonds; jungle river vision (no e.ward) is not drawn
+            if (!e.alive || !e.ward) continue;
+            const r = (e.ward === 'seal' ? 3.2 : 2.6) * d;
+            ctx.fillStyle = e.ward === 'seal' ? (e.team === state.myTeam ? '#f2d36b' : '#ff8a5a') : col;
+            ctx.beginPath();
+            ctx.moveTo(x, y - r);
+            ctx.lineTo(x + r, y);
+            ctx.lineTo(x, y + r);
+            ctx.lineTo(x - r, y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.lineWidth = 1 * d;
+            ctx.stroke();
           } else {
             if (!e.alive) continue;
             const r = (e.kind === Kind.MinionSiege || e.kind === Kind.MinionSuper ? 3 : 2.2) * d;
@@ -126,6 +142,22 @@ export class Minimap {
           }
         }
       }
+    }
+    // team pings: pulsing rings
+    for (const pg of state.pings) {
+      const age = (now - pg.at) / 3000;
+      if (age > 1) continue;
+      const [x, y] = simToCanvas(pg.x, pg.y, W);
+      ctx.strokeStyle = PING_COLOR[pg.kind];
+      ctx.globalAlpha = 1 - age;
+      ctx.lineWidth = 2.5 * this.dpr;
+      for (const k of [0, 0.5]) {
+        const r = (6 + ((age * 3 + k) % 1) * 14) * this.dpr;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
     }
     // camera footprint
     const fp = world.rig.footprint();

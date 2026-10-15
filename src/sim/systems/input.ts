@@ -7,8 +7,11 @@ import { canTarget, onMoveCommand } from './attack';
 import { castAbility, castSummoner, levelAbility, refreshCooldowns } from './abilities';
 import { cancelRecall, grantGold, grantXp, startRecall, xpToNext } from './economy';
 import { spawnDummy } from './champions';
-import type { Command } from '../types';
+import { PING_KINDS, type Command } from '../types';
+import { sees } from '../vision';
 import { buyItem, sellItem } from '../items/inventory';
+import { useItem } from '../items/itemHooks';
+import { swapTrinket, useTrinket } from '../wards';
 
 export const inputSystem: System = {
   name: 'input',
@@ -35,6 +38,9 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
   if (cmd.t === 'cheat') return cheat(sim, eid, cmd);
   if (cmd.t === 'buy') return void buyItem(sim, eid, cmd.item); // allowed while dead (inventory.ts)
   if (cmd.t === 'sell') return void sellItem(sim, eid, cmd.slot);
+  if (cmd.t === 'trinket') return void swapTrinket(sim, eid, cmd.id); // shop rule: also while dead
+  if (cmd.t === 'ping') return ping(sim, eid, cmd); // pings also while dead
+  if (cmd.t === 'chat') return chat(sim, eid, cmd);
   if (!Unit.alive[eid]) return;
   switch (cmd.t) {
     case 'move':
@@ -84,6 +90,12 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
     case 'recall':
       startRecall(sim, eid);
       break;
+    case 'ward':
+      useTrinket(sim, eid, cmd.x, cmd.y);
+      break;
+    case 'item':
+      useItem(sim, eid, cmd.slot, cmd.x, cmd.y);
+      break;
   }
 }
 
@@ -125,4 +137,33 @@ function cheat(sim: Sim, eid: number, cmd: Extract<Command, { t: 'cheat' }>): vo
     case 'skipTime':
       break; // ponytail: needs fast-forward stepping in the worker; Phase 5 sandbox
   }
+}
+
+const PING_WINDOW = 30 * 4; // ticks
+const PING_MAX = 6; // per window and player (anti-spam, LoL-like)
+
+/** Team ping. Rate-limited per player; delivered only to the pinging team by the snapshot filter. */
+/** Team chat (bots, spec §9): same rate limit as pings, 120 chars max. */
+function chat(sim: Sim, eid: number, cmd: Extract<Command, { t: 'chat' }>): void {
+  if (typeof cmd.text !== 'string' || !cmd.text) return;
+  const st = (sim.state.chats ??= new Map<number, number[]>()) as Map<number, number[]>;
+  const recent = (st.get(eid) ?? []).filter((t) => sim.tick - t < PING_WINDOW);
+  if (recent.length >= PING_MAX) return;
+  recent.push(sim.tick);
+  st.set(eid, recent);
+  const { Unit } = sim.c;
+  sim.events.push({ e: 'chat', slot: Unit.slot[eid]!, team: Unit.team[eid]!, text: cmd.text.slice(0, 120), ...(cmd.ref !== undefined ? { ref: cmd.ref } : {}) });
+}
+
+function ping(sim: Sim, eid: number, cmd: Extract<Command, { t: 'ping' }>): void {
+  if (!PING_KINDS.includes(cmd.kind) || !Number.isFinite(cmd.x) || !Number.isFinite(cmd.y)) return;
+  const st = (sim.state.pings ??= new Map<number, number[]>()) as Map<number, number[]>;
+  const recent = (st.get(eid) ?? []).filter((t) => sim.tick - t < PING_WINDOW);
+  if (recent.length >= PING_MAX) return;
+  recent.push(sim.tick);
+  st.set(eid, recent);
+  const { Unit } = sim.c;
+  // a target must be something the team actually sees (no info leak through pings)
+  const target = cmd.target !== undefined && cmd.target >= 0 && Unit.alive[cmd.target] && sees(sim, Unit.team[eid]!, cmd.target) ? cmd.target : -1;
+  sim.events.push({ e: 'ping', slot: Unit.slot[eid]!, team: Unit.team[eid]!, kind: cmd.kind, x: Math.max(0, Math.min(16000, cmd.x)), y: Math.max(0, Math.min(16000, cmd.y)), target });
 }

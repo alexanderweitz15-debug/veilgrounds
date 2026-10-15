@@ -54,6 +54,7 @@
     "surrenderAtMinus8kPct": 20,
     "apmCap": 120,
     "inertia": 0.5,
+    "hysteresis": 0.25,
     "engageHesitationS": 0.76
   },
   "notes": {

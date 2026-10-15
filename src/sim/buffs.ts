@@ -22,7 +22,9 @@ export type StatKey =
   | 'untargetable'
   | 'range'
   | 'armorPen'
-  | 'projImmune';
+  | 'projImmune'
+  /** Outgoing damage in percent points (Exhaust: -40). Applied by damage.dealDamage. */
+  | 'dmgDealt';
 export type BuffKind = CcKind | 'stat' | 'shield' | 'unstoppable' | 'dot' | 'grievous' | 'mark';
 
 export interface Buff {
@@ -234,6 +236,11 @@ export function statMods(sim: Sim, eid: number, stat: StatKey): [number, number]
 /** Multiplier on incoming damage from dmgReduction buffs (applied by damage.dealDamage after mitigation). */
 export function damageTakenMult(sim: Sim, eid: number): number {
   return Math.max(0.1, 1 - statMods(sim, eid, 'dmgReduction')[0] / 100);
+}
+
+/** Multiplier on outgoing damage from dmgDealt buffs (Exhaust). */
+export function damageDealtMult(sim: Sim, eid: number): number {
+  return Math.max(0, 1 + statMods(sim, eid, 'dmgDealt')[0] / 100);
 }
 
 /** Multiplier on healing received (grievous wounds: strongest applies). */

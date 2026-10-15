@@ -56,6 +56,7 @@ export class Game {
     const f = map.sides[0].fountain;
     this.world.rig.focus(f.x + 600, f.y + 600);
     this.link = config ? workerLink(config, 0) : mockLink();
+    this.link.onBotDebug = (rows, tick) => this.hud.botDebug.update(rows, tick);
     this.link.onSnap = (s) => {
       const now = performance.now();
       this.snapsThisSec++;
@@ -75,6 +76,7 @@ export class Game {
         quit: () => this.exit(),
         buy: (item) => this.link.send({ t: 'buy', item }),
         sell: (slot) => this.link.send({ t: 'sell', slot }),
+        swapTrinket: (id) => this.link.send({ t: 'trinket', id }),
       },
       config?.mode === 'sandbox' || !config,
       config?.players ?? [],
@@ -87,6 +89,7 @@ export class Game {
         this.link.send({ t: 'move', x, y });
         this.world.fx.clickMarker(x, y, false, performance.now());
       },
+      (x, y) => this.link.send({ t: 'ping', kind: 'danger', x, y }),
     );
     const mmWrap = document.createElement('div');
     mmWrap.className = 'minimap-wrap';
@@ -209,7 +212,9 @@ export class Game {
         `tick ${s?.tick ?? '-'}  entities ${s?.entities.length ?? 0}  projectiles ${s?.projectiles.length ?? 0}\n` +
         `draw calls ${info.calls}  triangles ${info.triangles}\n` +
         `camera ${Math.round(this.world.rig.tx)},${Math.round(this.world.rig.ty)} ${settings.cameraLocked ? 'locked' : 'free'}\n` +
-        `bots: Phase 4`;
+        `bots: ${this.link.requestBotDebug ? 'see table' : '-'}`;
+      // F9 bot overlay: poll the worker only while the panel is open
+      if (this.hud.isPanelOpen('debug')) this.link.requestBotDebug?.();
     }
   };
 

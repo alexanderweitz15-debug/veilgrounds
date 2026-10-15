@@ -4,6 +4,7 @@
   "title": { "de": "der Garndeuter", "en": "the Yarn Reader" },
   "roles": ["support"],
   "archetype": "mage_support",
+  "botBias": { "tradeLength": -1, "aggression": 1, "vision": 1 },
   "trainingPurpose": { "de": "Poke-Supports, Wurzeln dodgen.", "en": "Poke supports, dodging roots." },
   "attackType": "ranged",
   "resource": "mana",

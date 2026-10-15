@@ -4,6 +4,7 @@
   "title": { "de": "der Kurier", "en": "the Courier" },
   "roles": ["mid", "jungle"],
   "archetype": "dash_assassin",
+  "botBias": { "aggression": 2, "roam": 1, "resourceUse": 2 },
   "trainingPurpose": { "de": "Dash-Combos.", "en": "Dash combos." },
   "attackType": "melee",
   "resource": "energy",

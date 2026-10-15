@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PROFILES, profileAt, profileOf, rollBotProfile, sampleReactionMs } from '../src/ai/profiles';
 import { RANKS } from '../src/ai/profiles/schema';
 import { botNames, chatLine, CHAT } from '../src/ai/humanize/names';
-import { formatAxis, rollStyle, STYLE_AXES } from '../src/ai/profiles/style';
+import { formatScale } from '../src/ai/params';
 import { Rng } from '../src/sim/rng';
 
 const ENUMS: Record<string, string[]> = {
@@ -66,7 +66,7 @@ describe('rank profiles', () => {
     const [mStable, sdStable] = spread('stable');
     const [, sdVolatile] = spread('volatile');
     expect(sdStable!).toBeLessThan(sdVolatile!);
-    expect(Math.abs(mStable! - 57)).toBeLessThan(3);
+    expect(Math.abs(mStable! - 58)).toBeLessThan(3);
   });
 
   it('reaction samples are log-normal around the median, never constant', () => {
@@ -80,20 +80,9 @@ describe('rank profiles', () => {
   });
 });
 
-describe('bot play styles', () => {
-  it('10 axes, archetype bias shifts the mean, overrides win, format shows a slider', () => {
-    expect(STYLE_AXES.length).toBe(10);
-    const rng = new Rng(9);
-    const n = 400;
-    let jug = 0;
-    let mage = 0;
-    for (let i = 0; i < n; i++) {
-      jug += rollStyle(rng, 'juggernaut').tradeLength;
-      mage += rollStyle(rng, 'burst_mage').tradeLength;
-    }
-    expect(jug / n).toBeGreaterThan(mage / n + 0.3);
-    expect(rollStyle(rng, 'marksman', { kiting: 0 }).kiting).toBe(0);
-    expect(formatAxis('tradeLength', 0.25)).toBe('kurze Trades -x--- lange Trades');
-    expect(formatAxis('mechanics', 0, 'en')).toBe('skill: pro x---- skill: beginner');
+describe('bot play styles (spec-bots §2 scale text)', () => {
+  it('scale text shows 11 cells', () => {
+    expect(formatScale('tradeLength', -3)).toBe('kurz --x-------- lang');
+    expect(formatScale('kiting', 5, 'en')).toBe('pro ----------x none');
   });
 });

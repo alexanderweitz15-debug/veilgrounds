@@ -3,7 +3,7 @@
 // structure lineup (tower / inhibitor / nexus per team) further south. Same layout for every variant.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { CHAMPS, SIZE, sprite, type Key } from './figures';
+import { CHAMPS, sprite, spriteSize, type Key } from './figures';
 import { REL, type TeamColors, type Variant } from './styles';
 import { PITCH, at, disposeOutlineMats, mix, mulberry, outlineMesh, paint, radialCanvas, scale } from './util';
 
@@ -1111,7 +1111,7 @@ export function buildScene(v: Variant, renderer: THREE.WebGLRenderer): LabScene 
   UNITS.forEach((u, i) => {
     const [x, y] = lane(u.s, u.o);
     const champ = CHAMPS.includes(u.key);
-    const size = SIZE[u.key];
+    const size = spriteSize(v, u.key);
     const map = tex(u.key, u.team);
     const m = new THREE.Mesh(quad, new THREE.MeshBasicMaterial({ map, alphaTest: 0.5, side: THREE.DoubleSide }));
     const flip = u.team ? -1 : 1;

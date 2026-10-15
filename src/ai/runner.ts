@@ -3,19 +3,21 @@
 // fog-filtered snapshot; brains get Snapshot + static data (see src/ai/bot/types.ts).
 // Used by the sim worker (merged with the human's inputs, recorded in replays), tests and tools/botSim.ts.
 
-import { buildSnapshot, type Snapshot } from '../sim/snapshot';
+import { buildSnapshot, teamEvents, type Snapshot, type SnapAudio } from '../sim/snapshot';
 import type { Sim } from '../sim/sim';
 import { loadMap, type LaneName, type MapData } from '../sim/map';
 import { Rng } from '../sim/rng';
-import type { PlayerSetup, SimConfig, TeamId, TickInput } from '../sim/types';
+import type { PlayerSetup, SimConfig, SimEvent, TeamId, TickInput } from '../sim/types';
 import { CHAMPION_DATA, championData } from '../sim/champions';
 import { botRunes } from '../sim/items/runes';
-import { profileOf, rollBotProfile } from './profiles';
-import { rollStyle } from './profiles/style';
+import { profileAt, profileOf } from './profiles';
+import { buildBotParams, defaultPersonalitySeed } from './params';
+import { BotDecisionLog, debugRows, type BotDebugRow } from './log';
 import type { Rank } from './profiles/schema';
 import { BUILDS } from './bot/builds';
 import { newMemory, type BotAction, type BotMemory, type BotStatic, type Brain } from './bot/types';
 import { think, decisionTicks } from './bot/brain';
+import { TeamAI } from './bot/teamai';
 
 let mapCache: MapData | null = null;
 /** Static map (walls, lanes, camps); built once and shared by all bots. */
@@ -29,6 +31,10 @@ interface BotSlot {
   rng: Rng;
   interval: number;
   next: number;
+  /** Fog-filtered events + audio cues since the last decision (events live for one sim tick only). */
+  events: SimEvent[];
+  eventTicks: number[];
+  audio: SnapAudio[];
 }
 
 export const isBotSlot = (p: PlayerSetup): boolean => !p.isHuman && !!p.bot;
@@ -39,12 +45,20 @@ export class BotRunner {
   private queue: { tick: number; slot: number; action: BotAction }[] = [];
   /** Test hook: sees every snapshot handed to a brain (fog test). */
   onPerceive?: (slot: number, snap: Snapshot) => void;
+  private bufferedTick = -1;
+  /** Decision log of all bots of this game (spec-bots §1/§10): F9 overlay, Replay.botLog. */
+  readonly log = new BotDecisionLog();
+  /** Team AI per team (spec-bots §8, Agent M): desires re-evaluated at the macro interval. */
+  readonly teams: [TeamAI, TeamAI];
 
   constructor(config: SimConfig, private readonly brain: Brain = think) {
     const rng = new Rng((config.seed ^ 0x5eed_b075) >>> 0);
+    this.teams = [new TeamAI(0, staticMap(), config.players, config.seed, this.log), new TeamAI(1, staticMap(), config.players, config.seed, this.log)];
     for (const p of [...config.players].sort((a, b) => a.slot - b.slot)) {
       if (!isBotSlot(p)) continue;
-      const profile = rollBotProfile(p.bot!.rank, p.bot!.variance, rng);
+      // spec-bots §10: rank profile -> variance -> champion bias (rolled only) -> playstyle axes (src/ai/params.ts)
+      const params = buildBotParams(p, rng, config.seed);
+      const profile = profileAt(params.skill);
       const champ = championData(p.champion);
       const ctx: BotStatic = {
         slot: p.slot,
@@ -54,14 +68,33 @@ export class BotRunner {
         champ,
         build: BUILDS[p.champion] ?? null,
         profile,
-        style: rollStyle(rng, champ.archetype),
         map: staticMap(),
         players: config.players,
+        params,
+        log: this.log,
+        teamAI: this.teams[p.team === 1 ? 1 : 0],
       };
+      ctx.teamAI.register({ slot: p.slot, role: p.role, champion: p.champion, profile, params });
       const interval = decisionTicks(ctx);
       // stagger first decisions so bots do not all think on the same tick
-      this.bots.push({ ctx, mem: newMemory(), rng: new Rng(rng.u32()), interval, next: rng.int(interval) });
+      this.bots.push({ ctx, mem: newMemory(), rng: new Rng(rng.u32()), interval, next: rng.int(interval), events: [], eventTicks: [], audio: [] });
     }
+  }
+
+  /** F9 overlay rows: latest decision, scores, injected error, reaction time and perception age per bot. */
+  debugRows(): BotDebugRow[] {
+    return debugRows(
+      this.log,
+      this.bots.map((b) => ({
+        slot: b.ctx.slot,
+        champ: b.ctx.champ.id,
+        rank: b.ctx.params.rank,
+        skill: Math.round(b.ctx.params.skill),
+        archetype: b.ctx.params.archetype,
+        rolled: b.ctx.params.rolled,
+        mode: b.mem.mode,
+      })),
+    );
   }
 
   /** Bot is in its own cast wind-up / channel: delayed move/attack orders would break it, drop them. */
@@ -73,16 +106,49 @@ export class BotRunner {
   /** Inputs for the coming tick (call before step(sim, inputs)). */
   tick(sim: Sim): TickInput[] {
     const out: TickInput[] = [];
+    // sim.events holds the tick just stepped and is cleared by the next step: buffer it per bot (fog-filtered per
+    // team) so a brain sees every event and audio cue since its last decision, not only those of its decision tick
+    if (sim.tick !== this.bufferedTick) {
+      this.bufferedTick = sim.tick;
+      const byTeam = new Map<number, ReturnType<typeof teamEvents>>();
+      if (sim.events.length) {
+        for (const b of this.bots) {
+          let te = byTeam.get(b.ctx.team);
+          if (!te) byTeam.set(b.ctx.team, (te = teamEvents(sim, b.ctx.team)));
+          for (const ev of te.events) {
+            b.events.push(ev);
+            b.eventTicks.push(sim.tick);
+          }
+          for (const a of te.audio) b.audio.push(a);
+        }
+      }
+    }
     for (const b of this.bots) {
       if (sim.tick < b.next) continue;
       // jitter the cadence a little (+-20 %) so decisions do not phase-lock with attack timers
       b.next = sim.tick + Math.max(1, Math.round(b.interval * (0.8 + 0.4 * b.rng.next())));
       const snap = buildSnapshot(sim, b.ctx.team, b.ctx.slot);
+      snap.events = b.events;
+      snap.audio = b.audio;
+      snap.eventTicks = b.eventTicks;
+      b.events = [];
+      b.audio = [];
+      b.eventTicks = [];
       this.onPerceive?.(b.ctx.slot, snap);
-      for (const a of this.brain(snap, b.ctx, b.mem, b.rng)) {
+      const prevMode = b.mem.mode;
+      const actions = this.brain(snap, b.ctx, b.mem, b.rng);
+      // drop queued orders whose tag the brain cancelled (orbwalk plans superseded by a dodge / retreat)
+      if (b.mem.cancelTags.size) {
+        const slot = b.ctx.slot;
+        this.queue = this.queue.filter((q) => q.slot !== slot || !q.action.tag || !b.mem.cancelTags.has(q.action.tag));
+        b.mem.cancelTags.clear();
+      }
+      for (const a of actions) {
         if (a.delay && a.delay > 0) this.queue.push({ tick: sim.tick + a.delay, slot: b.ctx.slot, action: a });
         else out.push({ slot: b.ctx.slot, cmd: a.cmd });
       }
+      // baseline log entry on every mode switch (behaviour nodes add their own detailed entries via ctx.log)
+      if (b.mem.mode !== prevMode) this.log.push({ tick: sim.tick, bot: b.ctx.slot, node: 'mode', inputs: {}, chosen: b.mem.mode, reason: `${prevMode} -> ${b.mem.mode}` });
     }
     if (this.queue.length) {
       const keep: typeof this.queue = [];
@@ -102,11 +168,11 @@ const ROLES: PlayerSetup['role'][] = ['top', 'jungle', 'mid', 'adc', 'support'];
 
 /** Summoners by role. */
 const SUMMONERS: Record<PlayerSetup['role'], [string, string]> = {
-  top: ['sprung', 'entflammen'],
+  top: ['sprung', 'teleport'],
   jungle: ['sprung', 'bannen'],
   mid: ['sprung', 'entflammen'],
   adc: ['sprung', 'heilen'],
-  support: ['sprung', 'heilen'],
+  support: ['sprung', 'erschoepfen'],
 };
 
 /** Roster champions playing a role (data roles; first role counts most). */
@@ -167,6 +233,7 @@ export function classicConfig(
   blueRoles.forEach((role, i) => players.push(botSetup(1 + i, 0, role, pickChampion(role, taken, rng), botRank, rng)));
   ROLES.forEach((role, i) => players.push(botSetup(5 + i, 1, role, pickChampion(role, taken, rng), botRank, rng)));
   if (opts.variance) for (const p of players) if (p.bot) p.bot.variance = opts.variance;
+  seedPersonalities(seed, players);
   return { seed, mode: 'classic', players };
 }
 
@@ -177,5 +244,11 @@ export function botGameConfig(seed: number, rank: Rank = 'gold', variance: 'stab
   const players: PlayerSetup[] = [];
   for (const team of [0, 1] as const) ROLES.forEach((role, i) => players.push(botSetup(team * 5 + i, team, role, pickChampion(role, taken, rng), rank, rng)));
   for (const p of players) p.bot!.variance = variance;
+  seedPersonalities(seed, players);
   return { seed, mode: 'classic', players };
+}
+
+/** Every bot gets an explicit personality seed, so lobby/scoreboard show the same rolled playstyle as the worker. */
+export function seedPersonalities(seed: number, players: PlayerSetup[]): void {
+  for (const p of players) if (p.bot && p.bot.personalitySeed === undefined) p.bot.personalitySeed = defaultPersonalitySeed(seed, p.slot);
 }

@@ -4,6 +4,7 @@
   "title": { "de": "der Uhrmacher", "en": "the Clockmaker" },
   "roles": ["mid"],
   "archetype": "control_mage",
+  "botBias": { "aggression": -1, "vision": 1, "teamplay": 2 },
   "trainingPurpose": { "de": "Zonen umlaufen, lange Abklingzeiten tracken.", "en": "Walk around zones, track long cooldowns." },
   "attackType": "ranged",
   "resource": "mana",

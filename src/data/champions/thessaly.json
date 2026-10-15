@@ -4,6 +4,7 @@
   "title": { "de": "die Lichtrichterin", "en": "the Light Assessor" },
   "roles": ["mid"],
   "archetype": "pointclick_burst_mage",
+  "botBias": { "tradeLength": -2, "roam": 1, "resourceUse": 1 },
   "trainingPurpose": { "de": "Point-and-Click-Trades einschätzen, Abklingzeiten tracken.", "en": "Judge point-and-click trades, track cooldowns." },
   "attackType": "ranged",
   "resource": "mana",

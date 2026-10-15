@@ -9,6 +9,9 @@ import { RUNES, runePresets, runesFromPreset } from '../sim/items/runes';
 import { classicConfig } from '../ai/runner';
 import { botNames } from '../ai/humanize/names';
 import { RANKS, type Rank } from '../ai/profiles/schema';
+import { ARCHETYPES, type Archetype, type Playstyle } from '../ai/contract';
+import { ARCHETYPE_NAMES, clampAxis, resolvePlaystyle } from '../ai/params';
+import { renderMiniScales, renderScaleEditor } from './playstyleView';
 import { Rng } from '../sim/rng';
 import { settings, updateSettings } from '../settings';
 import { champName, summonerName } from './names';
@@ -42,6 +45,10 @@ const pick = {
   variance: 'normal' as Variance,
   seed: (Math.random() * 2 ** 31) | 0,
   overrides: new Map<number, Rank>(),
+  /** Per-slot manual playstyle (archetype preset or axes); absent = rolled. Survives rerolls. */
+  styles: new Map<number, { archetype?: Archetype; playstyle?: Playstyle }>(),
+  /** Slots whose 10-axis editor is open. */
+  expanded: new Set<number>(),
 };
 
 export const championsFor = (role: Role): string[] =>
@@ -69,6 +76,9 @@ export function buildClassicConfig(): SimConfig {
     p.bot!.name = names[i];
     const o = pick.overrides.get(p.slot);
     if (o) p.bot!.rank = o;
+    const st = pick.styles.get(p.slot);
+    if (st?.archetype) p.bot!.archetype = st.archetype;
+    if (st?.playstyle) p.bot!.playstyle = { ...st.playstyle };
   });
   return cfg;
 }
@@ -81,6 +91,49 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
   const cols = el('div', 'classic-cols', panel);
   const left = el('div', 'classic-left', cols);
   const right = el('div', 'classic-right', cols);
+
+  /** Spec-bots §2: archetype preset dropdown, mini scales and the expandable 10-axis editor of one bot. */
+  const drawStyle = (list: HTMLElement, p: PlayerSetup): void => {
+    const res = resolvePlaystyle(p);
+    const line = el('div', 'bot-style', list);
+    const sel = el('select', 'bot-archetype', line);
+    const manual = pick.styles.get(p.slot);
+    const opts: [string, string][] = [['', t('classic.styleRolled')], ...ARCHETYPES.map((a): [string, string] => [a, ARCHETYPE_NAMES[a][settings.lang]])];
+    if (manual?.playstyle && !manual.archetype) opts.push(['manual', t('classic.styleManual')]);
+    const current = manual?.archetype ?? (manual?.playstyle ? 'manual' : '');
+    for (const [v, label] of opts) {
+      const o = el('option', '', sel, label);
+      o.value = v;
+      if (v === current) o.selected = true;
+    }
+    sel.addEventListener('change', () => {
+      if (sel.value === '') pick.styles.delete(p.slot);
+      else if (sel.value !== 'manual') pick.styles.set(p.slot, { archetype: sel.value as Archetype });
+      draw();
+    });
+    renderMiniScales(line, res.playstyle);
+    const open = pick.expanded.has(p.slot);
+    const edit = el('button', `bot-style-edit${open ? ' active' : ''}`, line, t('classic.styleEdit'));
+    edit.addEventListener('click', () => {
+      if (open) pick.expanded.delete(p.slot);
+      else pick.expanded.add(p.slot);
+      draw();
+    });
+    if (!open) return;
+    const box = el('div', 'bot-style-box', list);
+    renderScaleEditor(box, res.playstyle, (axis, v) => {
+      // manual edit: the full current playstyle becomes manual (no champion bias, archetype label dropped)
+      pick.styles.set(p.slot, { playstyle: { ...res.playstyle, [axis]: clampAxis(v) } });
+      draw();
+    });
+    const foot = el('div', 'bot-style-foot', box);
+    el('span', 'bot-style-hint', foot, res.rolled ? t('classic.styleRolled') : t('classic.styleHint'));
+    const reset = el('button', 'bot-style-edit', foot, t('classic.styleReset'));
+    reset.addEventListener('click', () => {
+      pick.styles.delete(p.slot);
+      draw();
+    });
+  };
 
   const draw = (): void => {
     if (!championsFor(pick.role).includes(pick.champ)) pick.champ = championsFor(pick.role)[0] ?? 'mira';
@@ -195,6 +248,7 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
             pick.overrides.set(p.slot, sel.value as Rank);
             draw();
           });
+          drawStyle(list, p);
         }
       }
     }

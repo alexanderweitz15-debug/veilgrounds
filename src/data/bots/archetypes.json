@@ -1,0 +1,20 @@
+{
+  "note": "Spec-bots §2 lobby presets. Axis order: tradeLength, kiting, aggression, roam, objectiveRisk, farmPriority, vision, resourceUse, teamplay, tempo. Kiting uses the inverted sign of the spec table (docs/DECISIONS.md: -5 = Profi), e.g. Pro-Standard -4, Int-Bot +5. Roll: sigma interpolated by nominal skill (Iron 2.5 .. Challenger 1.2); constraints apply from minSkill on.",
+  "archetypes": {
+    "farmer": { "name": { "de": "Der Farmer", "en": "The Farmer" }, "playstyle": { "tradeLength": -2, "kiting": -2, "aggression": -3, "roam": -4, "objectiveRisk": -2, "farmPriority": 5, "vision": 0, "resourceUse": -2, "teamplay": -1, "tempo": -1 } },
+    "duelist": { "name": { "de": "Der Duellant", "en": "The Duelist" }, "playstyle": { "tradeLength": 4, "kiting": -3, "aggression": 4, "roam": -3, "objectiveRisk": 0, "farmPriority": -1, "vision": -2, "resourceUse": 3, "teamplay": -4, "tempo": 0 } },
+    "roamer": { "name": { "de": "Der Roamer", "en": "The Roamer" }, "playstyle": { "tradeLength": -3, "kiting": 0, "aggression": 2, "roam": 5, "objectiveRisk": 2, "farmPriority": -3, "vision": 2, "resourceUse": 2, "teamplay": 3, "tempo": 4 } },
+    "cautious": { "name": { "de": "Der Vorsichtige", "en": "The Cautious" }, "playstyle": { "tradeLength": -4, "kiting": -1, "aggression": -4, "roam": -1, "objectiveRisk": -5, "farmPriority": 1, "vision": 3, "resourceUse": -4, "teamplay": 2, "tempo": -3 } },
+    "intBot": { "name": { "de": "Der Int-Bot", "en": "The Int Bot" }, "playstyle": { "tradeLength": 5, "kiting": 5, "aggression": 5, "roam": 1, "objectiveRisk": 4, "farmPriority": -4, "vision": -5, "resourceUse": 5, "teamplay": -3, "tempo": 2 } },
+    "shotcaller": { "name": { "de": "Der Shotcaller", "en": "The Shotcaller" }, "playstyle": { "tradeLength": -1, "kiting": 0, "aggression": 0, "roam": 2, "objectiveRisk": 1, "farmPriority": 0, "vision": 4, "resourceUse": 0, "teamplay": 5, "tempo": 3 } },
+    "splitpusher": { "name": { "de": "Der Splitpusher", "en": "The Splitpusher" }, "playstyle": { "tradeLength": 0, "kiting": -1, "aggression": -1, "roam": -5, "objectiveRisk": -3, "farmPriority": 3, "vision": 1, "resourceUse": -1, "teamplay": -5, "tempo": 2 } },
+    "proStandard": { "name": { "de": "Der Pro-Standard", "en": "The Pro Standard" }, "playstyle": { "tradeLength": 0, "kiting": -4, "aggression": 1, "roam": 1, "objectiveRisk": 0, "farmPriority": 1, "vision": 2, "resourceUse": 1, "teamplay": 2, "tempo": 3 } }
+  },
+  "roll": {
+    "sigma": [{ "skill": 5, "sigma": 2.5 }, { "skill": 100, "sigma": 1.2 }],
+    "constraints": [
+      { "minSkill": 100, "axis": "kiting", "max": 3, "note": "Challenger: kiting never worse than +3 (towards 'none')" },
+      { "minSkill": 100, "axis": "vision", "min": 0, "note": "Challenger: vision never below 0" }
+    ]
+  }
+}

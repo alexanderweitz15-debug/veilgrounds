@@ -42,6 +42,23 @@ export function inCone(px: number, py: number, ax: number, ay: number, dx: numbe
   return d > 0 && d * d >= cosHalf * cosHalf * l2;
 }
 
+/**
+ * Does a circle (unit hitbox at p, radius pr) touch the cone sector (apex a, unit direction d, half-angle cosine
+ * cosHalf, range r)? Centre inside the angle within r + pr, or the hitbox overlapping one of the two side edges.
+ * Matches the drawn telegraph exactly on the sides ("Hitbox = sichtbare Fläche").
+ */
+export function circleInCone(px: number, py: number, pr: number, ax: number, ay: number, dx: number, dy: number, cosHalf: number, r: number): boolean {
+  if (inCone(px, py, ax, ay, dx, dy, cosHalf, r + pr)) return true;
+  const sinHalf = Math.sqrt(Math.max(0, 1 - cosHalf * cosHalf));
+  const pr2 = pr * pr;
+  for (const s of [sinHalf, -sinHalf]) {
+    const ex = dx * cosHalf - dy * s;
+    const ey = dx * s + dy * cosHalf;
+    if (segDist2(px, py, ax, ay, ax + ex * r, ay + ey * r) <= pr2) return true;
+  }
+  return false;
+}
+
 /** cos/sin via Taylor series (only + and *), so results are bit-identical on every engine, unlike Math.cos. */
 export function cosRad(x: number): number {
   const TWO_PI = 6.283185307179586;

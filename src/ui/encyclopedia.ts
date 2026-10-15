@@ -5,7 +5,8 @@ import itemsJson from '../data/items.json';
 import type { ItemData } from '../sim/items/schema';
 import { RUNES } from '../sim/items/runes';
 import { PROFILES } from '../ai/profiles';
-import { STYLE_AXES } from '../ai/profiles/style';
+import { PLAYSTYLE_AXES, ARCHETYPES } from '../ai/contract';
+import { AXIS_LABELS, ARCHETYPE_NAMES, ARCHETYPE_PLAYSTYLES, signed } from '../ai/params';
 import { settings } from '../settings';
 
 type Lang = 'de' | 'en';
@@ -206,7 +207,12 @@ function ranksTab(body: HTMLElement, lang: Lang): void {
 function stylesTab(body: HTMLElement, lang: Lang): void {
   const wrap = el('div', 'enc-scroll', undefined, body);
   el('p', 'enc-desc', L('Spielstile sind unabhängig vom Rang: Der Rang bestimmt, wie gut ein Bot spielt, der Stil, wie er spielt.', 'Play styles are independent of rank: rank decides how well a bot plays, style decides how.'), wrap);
-  for (const a of STYLE_AXES) el('div', 'enc-style', `${a.left[lang]}  ◄────►  ${a.right[lang]}`, wrap);
+  for (const a of PLAYSTYLE_AXES) el('div', 'enc-style', `${AXIS_LABELS[a].name[lang]}: ${AXIS_LABELS[a].left[lang]}  ◄─ −5 … +5 ─►  ${AXIS_LABELS[a].right[lang]}`, wrap);
+  el('h3', '', L('Archetypen', 'Archetypes'), wrap);
+  for (const id of ARCHETYPES) {
+    const p = ARCHETYPE_PLAYSTYLES[id];
+    el('div', 'enc-style', `${ARCHETYPE_NAMES[id][lang]}: ${PLAYSTYLE_AXES.map((a) => `${AXIS_LABELS[a].name[lang]} ${signed(p[a])}`).join(', ')}`, wrap);
+  }
 }
 
 export function renderEncyclopedia(parent: HTMLElement, onBack: () => void): void {

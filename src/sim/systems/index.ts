@@ -14,6 +14,8 @@ import { movementSystem } from './movement';
 import { economySystem } from './economy';
 import { jungleSystem } from './jungle';
 import { computeVision } from '../vision';
+import { summonersSystem } from '../summoners';
+import { wardsSystem } from '../wards';
 
 export interface System {
   name: string;
@@ -34,9 +36,11 @@ export const systems = (): System[] =>
   jungleSystem, // camps, monster aggro/leash, jungle buffs, objectives (Agent H)
   minionsSystem, // minion aggro + lane following intents
   abilitiesSystem, // cast timers, ability effects
+  summonersSystem, // Teleport channel (Agent J)
   attackSystem, // auto-attack state machine for every unit with a target
   projectilesSystem,
   movementSystem,
   economySystem, // passive gold, regen, recall, respawn, fountain
+  wardsSystem, // ward expiry/kills, seal + sweep reveal/disable, trinket charges: right before vision (Agent J)
   { name: 'vision', update: computeVision },
 ]);

@@ -4,6 +4,7 @@
   "title": { "de": "der Hafenschlepper", "en": "the Dock Hauler" },
   "roles": ["support"],
   "archetype": "hook_support",
+  "botBias": { "aggression": 2, "roam": 1, "vision": 1, "resourceUse": 1 },
   "trainingPurpose": { "de": "Hooks dodgen und landen.", "en": "Dodge and land hooks." },
   "attackType": "melee",
   "resource": "mana",

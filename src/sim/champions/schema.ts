@@ -130,4 +130,9 @@ export interface ChampionData {
   voiceLines: Record<'pick' | 'firstBlood' | 'kill' | 'death' | 'recall' | 'taunt', L10n>;
   /** Silhouette hint for procedural placeholder sprites. */
   silhouette: string;
+  /**
+   * Spec-bots §2 champion bias on rolled bot playstyles (axes -5..+5, kiting -5 = Profi). Manual styles ignore it.
+   * Bot code only; the sim never reads it.
+   */
+  botBias?: Partial<Record<import('../../ai/contract').PlaystyleAxis, number>>;
 }

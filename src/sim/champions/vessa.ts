@@ -7,9 +7,9 @@ import { dist2, segDist2 } from '../vec';
 import { inBush, LANES } from '../map';
 import { sees } from '../vision';
 import { alliedChampionsIn, effectAmount, rv } from '../systems/abilities';
-import { champions } from '../systems/economy';
 import type { ChampionHooks } from './hooks';
-import { hookState } from './util';
+import { hookState, isChampLike } from './util';
+import { query } from 'bitecs';
 
 interface VessaState {
   stacks: number;
@@ -113,8 +113,9 @@ export const hooks: ChampionHooks = {
         let best = -1;
         let bestD = 300 * 300;
         const reach = (ctx.ability.distance ?? 700) + 100;
-        for (const t of champions(sim)) {
-          if (!Unit.alive[t] || Unit.team[t] !== enemyOf(Unit.team[e]!) || Unit.untargetable[t]) continue;
+        // champions and practice dummies (combo trainer); Agent J fix
+        for (const t of query(sim.world, [Unit])) {
+          if (!isChampLike(sim, t) || !Unit.alive[t] || Unit.team[t] !== enemyOf(Unit.team[e]!) || Unit.untargetable[t]) continue;
           if (!sees(sim, Unit.team[e]!, t) || dist2(Pos.x[t]!, Pos.y[t]!, Pos.x[e]!, Pos.y[e]!) > reach * reach) continue;
           const d = dist2(Pos.x[t]!, Pos.y[t]!, ctx.cursorX, ctx.cursorY);
           if (d < bestD) (bestD = d), (best = t);

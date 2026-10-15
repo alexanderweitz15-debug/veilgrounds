@@ -1,0 +1,15 @@
+{
+  "note": "Spec-bots §10 bot configurations (src/ai/botConfig.ts). playstyle uses the axis definition (kiting -5 = Profi, docs/DECISIONS.md); the spec example's 'kiting: 4' is therefore written as -4 (an orbwalking roamer).",
+  "configs": [
+    {
+      "id": "enemy_jungle",
+      "champion": "vessa",
+      "rank": "diamond",
+      "skill": 80,
+      "variance": "normal",
+      "playstyle": { "tradeLength": -2, "kiting": -4, "aggression": 1, "roam": 3, "objectiveRisk": 0, "farmPriority": -1, "vision": 2, "resourceUse": 1, "teamplay": 2, "tempo": 3 },
+      "personalitySeed": 918273,
+      "archetype": "roamer"
+    }
+  ]
+}

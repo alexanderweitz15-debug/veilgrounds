@@ -4,6 +4,7 @@
   "title": { "de": "die Köhlerin", "en": "the Charcoal Burner" },
   "roles": ["adc"],
   "archetype": "zone_marksman",
+  "botBias": { "kiting": -1, "vision": 1, "teamplay": 1 },
   "trainingPurpose": { "de": "Zonen-ADC, DoT-Trades.", "en": "Zone marksman, DoT trades." },
   "attackType": "ranged",
   "resource": "mana",

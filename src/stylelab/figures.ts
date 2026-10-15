@@ -1,6 +1,7 @@
 // One shared figure set (silhouettes), three renderers (Painter driven by SpriteStyle).
 // All figures face right, feet at the bottom centre of a 256x256 cell, light from the upper right.
 // Shape language: Lichtwerk = round (domes, round shields, lenses); Aschehalle = angular (wedges, spikes, plates).
+import { renderMaster, worldSizeOf, DIR_YAW } from '../render/champions';
 import type { TeamColors, Variant } from './styles';
 import { luma } from './util';
 
@@ -424,9 +425,23 @@ const DRAW: Record<Key, (g: Painter, t: TeamColors, team: number) => void> = {
 
 const cache = new Map<string, HTMLCanvasElement>();
 /** 256x256 sprite for a variant/key/team (cached). */
+/** Variant C champions use the procedural paper-doll sprites (src/render/champions), facing right. */
+const usesNewChampion = (v: Variant, key: Key) => v.id === 'C' && CHAMPS.includes(key);
+
+/** World height of the sprite cell for a variant (variant C champions: the new kit's world size). */
+export function spriteSize(v: Variant, key: Key): number {
+  return usesNewChampion(v, key) ? worldSizeOf(key) : SIZE[key];
+}
+
 export function sprite(v: Variant, key: Key, team: number): HTMLCanvasElement {
   const id = `${v.id}:${key}:${team}`;
   let c = cache.get(id);
+  if (!c && usesNewChampion(v, key)) {
+    c = document.createElement('canvas');
+    c.width = c.height = CELL;
+    c.getContext('2d')!.drawImage(renderMaster(key, 'idle', DIR_YAW.E, 0, CELL), 0, 0);
+    cache.set(id, c);
+  }
   if (!c) {
     c = document.createElement('canvas');
     c.width = c.height = CELL;

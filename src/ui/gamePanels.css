@@ -124,3 +124,16 @@
 .practice-info { font-size: 13.5px; color: var(--text-dim, #a09b8c); line-height: 1.45; }
 /* in-game panels need to stay readable over the bright map */
 .panel.shop.open, .panel.scoreboard.open { background: rgba(10, 12, 14, 0.96); border: 1px solid var(--line, rgba(201,162,78,.35)); }
+
+/* trinket slot (Agent J): recharge sweep, charge count, swap highlight */
+.item.trinket .tcd { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; background: conic-gradient(rgba(0, 0, 0, 0.72) calc(var(--p, 0) * 360deg), transparent 0); }
+.item.trinket .charges { position: absolute; right: 2px; top: 0; font-size: 10px; font-weight: 800; color: #f1e6c8; text-shadow: 0 0 3px #000, 0 0 2px #000; }
+.item.trinket.empty-charges .abbr { opacity: 0.45; }
+.item.trinket.swap { box-shadow: 0 0 0 2px #d9ad4c; cursor: pointer; }
+/* ping wheel */
+.ping-wheel { position: fixed; width: 0; height: 0; display: none; z-index: 20; pointer-events: none; }
+.ping-wheel.open { display: block; }
+.ping-wheel::before { content: ''; position: absolute; left: -110px; top: -110px; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle, rgba(10,12,14,0.55) 0 40%, rgba(10,12,14,0.25) 70%, transparent 71%); }
+.ping-slot { position: absolute; transform: translate(-50%, -50%); padding: 4px 8px; white-space: nowrap; font-family: var(--font-label, sans-serif); font-weight: 600; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: #e8e0cc; background: rgba(10,12,14,0.85); border: 1px solid #3c3c41; border-left: 3px solid var(--c); }
+.ping-slot.on { color: #fff; border-color: var(--c); background: rgba(30,32,36,0.95); }
+.killfeed .entry.ping { border-left-width: 4px; }

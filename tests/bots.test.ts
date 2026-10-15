@@ -62,7 +62,7 @@ describe('bot fog of war', () => {
     expectTypeOf<Parameters<Brain>[0]>().toEqualTypeOf<Snapshot>();
     expectTypeOf<Parameters<Brain>[1]>().toEqualTypeOf<BotStatic>();
     // static guard: brain modules must not import sim state (sim.ts, ecs, vision, bitecs)
-    const sources = import.meta.glob<string>('../src/ai/bot/*.ts', { query: '?raw', import: 'default', eager: true });
+    const sources = import.meta.glob<string>(['../src/ai/bot/*.ts', '../src/ai/bt/*.ts'], { query: '?raw', import: 'default', eager: true });
     expect(Object.keys(sources).length).toBeGreaterThan(5);
     for (const [f, src] of Object.entries(sources)) {
       expect(src, f).not.toMatch(/from '(\.\.\/)+sim\/(sim|ecs|vision)'|from 'bitecs'/);

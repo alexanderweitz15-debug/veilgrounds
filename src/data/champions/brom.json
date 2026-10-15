@@ -4,6 +4,7 @@
   "title": { "de": "der Holzfäller", "en": "the Woodcutter" },
   "roles": ["top"],
   "archetype": "juggernaut",
+  "botBias": { "tradeLength": 2, "kiting": 2, "aggression": 1, "roam": -1 },
   "trainingPurpose": { "de": "Gegen Juggernauts kiten.", "en": "Kite juggernauts." },
   "attackType": "melee",
   "resource": "mana",

@@ -4,6 +4,7 @@
   "title": { "de": "die Blitzableiterin", "en": "the Lightning Rod" },
   "roles": ["top", "mid"],
   "archetype": "battlemage",
+  "botBias": { "tradeLength": 2, "aggression": 1 },
   "trainingPurpose": { "de": "Zonen, DoT-Trades, Mana-Management.", "en": "Zones, DoT trades, mana management." },
   "attackType": "ranged",
   "resource": "mana",

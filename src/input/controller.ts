@@ -6,6 +6,8 @@ import type { SimLink } from '../game/link';
 import type { World } from '../render/world';
 import { settings, updateSettings } from '../settings';
 import { actionFor, type Action } from './keybinds';
+import { PingWheel } from '../ui/pingWheel';
+import { Kind, type PingKind } from '../sim/types';
 
 const EDGE_PX = 10;
 const EDGE_SPEED = 2600; // units per second at cameraSpeed 1
@@ -39,12 +41,17 @@ export class InputController {
   private armed: Armed = null;
   private inside = false;
   private readonly off: (() => void)[] = [];
+  private readonly wheel: PingWheel;
+  /** Ground point where the ping wheel was opened (pings land there, like LoL). */
+  private wheelAt: { x: number; y: number } | null = null;
 
   constructor(private readonly host: InputHost, private readonly el: HTMLElement) {
     const on = <K extends keyof WindowEventMap>(t: EventTarget, type: K, fn: (e: WindowEventMap[K]) => void, opts?: AddEventListenerOptions): void => {
       t.addEventListener(type, fn as EventListener, opts);
       this.off.push(() => t.removeEventListener(type, fn as EventListener, opts));
     };
+    this.wheel = new PingWheel(el.parentElement ?? document.body);
+    this.off.push(() => this.wheel.el.remove());
     on(el, 'contextmenu', (e) => e.preventDefault());
     on(el, 'mousedown', (e) => this.mouseDown(e));
     on(window, 'mouseup', (e) => this.mouseUp(e));
@@ -52,6 +59,7 @@ export class InputController {
       this.mouseX = e.clientX;
       this.mouseY = e.clientY;
       this.inside = true;
+      if (this.wheel.isOpen) this.wheel.highlight(e.clientX, e.clientY);
     });
     on(document.documentElement, 'mouseleave', () => (this.inside = false));
     on(el, 'wheel', (e) => {
@@ -109,6 +117,14 @@ export class InputController {
     } else if (e.button === 0) {
       const g = this.cursorGround();
       if (!g) return;
+      if (e.altKey && !this.armed) {
+        // Alt+click: danger on ground, focus on an enemy, objective on a big monster
+        const h = this.hover;
+        const big = h && h.kind === Kind.Monster && h.radius >= 120;
+        const kind: PingKind = big ? 'objective' : h && h.team !== this.host.state.myTeam && h.team <= 1 ? 'focus' : 'danger';
+        this.ping(kind, h && kind !== 'danger' ? h.x : g.x, h && kind !== 'danger' ? h.y : g.y, kind !== 'danger' ? h?.id : undefined);
+        return;
+      }
       if (this.armed === 'attackMove') {
         this.send({ t: 'attackMove', x: g.x, y: g.y });
         this.host.world.fx.clickMarker(g.x, g.y, true, now);
@@ -207,12 +223,20 @@ export class InputController {
       case 'item3':
       case 'item4':
       case 'item5':
-      case 'item6':
-        this.host.useItem(Number(action.slice(4)) - 1);
+      case 'item6': {
+        const slot = Number(action.slice(4)) - 1;
+        const g = this.cursorGround();
+        this.send(g ? { t: 'item', slot, x: g.x, y: g.y } : { t: 'item', slot });
+        this.host.useItem(slot);
         return;
-      case 'trinket':
+      }
+      case 'trinket': {
+        // Schleierward: place at the cursor; Suchfeuer: sweep there (src/sim/wards.ts clamps to range)
+        const g = this.cursorGround();
+        if (g) this.send({ t: 'ward', x: g.x, y: g.y });
         this.host.useItem(6);
         return;
+      }
       case 'scoreboard':
         this.host.togglePanel('scoreboard', true);
         return;
@@ -222,6 +246,16 @@ export class InputController {
       case 'shop':
         this.host.togglePanel('shop');
         return;
+      case 'pingWheel': {
+        this.wheelAt = this.cursorGround();
+        if (this.wheelAt) this.wheel.show(this.mouseX, this.mouseY);
+        return;
+      }
+      case 'pingMissing': {
+        const g = this.cursorGround();
+        if (g) this.ping('missing', g.x, g.y);
+        return;
+      }
     }
   }
 
@@ -241,8 +275,19 @@ export class InputController {
     else this.send(target !== undefined ? { t, slot: slot as 0 | 1, x: g.x, y: g.y, target } : { t, slot: slot as 0 | 1, x: g.x, y: g.y });
   }
 
+  private ping(kind: PingKind, x: number, y: number, target?: number): void {
+    this.send(target !== undefined ? { t: 'ping', kind, x, y, target } : { t: 'ping', kind, x, y });
+  }
+
   private keyUp(e: KeyboardEvent): void {
     const action = actionFor(e.code);
+    if (action === 'pingWheel' && this.wheel.isOpen) {
+      const kind = this.wheel.pick(this.mouseX, this.mouseY);
+      this.wheel.hide();
+      if (this.wheelAt) this.ping(kind, this.wheelAt.x, this.wheelAt.y);
+      this.wheelAt = null;
+      return;
+    }
     if (action === 'centerCamera') this.centerHeld = false;
     else if (action === 'showRange') this.showRange = false;
     else if (action === 'scoreboard') this.host.togglePanel('scoreboard', false);

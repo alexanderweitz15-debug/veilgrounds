@@ -4,6 +4,7 @@
   "title": { "de": "die Kesselschmiedin", "en": "the Kettlesmith" },
   "roles": ["top"],
   "archetype": "tank_bruiser",
+  "botBias": { "tradeLength": 1, "teamplay": 1 },
   "trainingPurpose": { "de": "Gegen Tanks traden, Minion-Aggro.", "en": "Trade against tanks, minion aggro." },
   "attackType": "melee",
   "resource": "mana",

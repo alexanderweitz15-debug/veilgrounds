@@ -4,6 +4,7 @@
   "title": { "de": "der Harpunier", "en": "the Harpooner" },
   "roles": ["adc"],
   "archetype": "harpoon_marksman",
+  "botBias": { "aggression": 1, "resourceUse": 1 },
   "trainingPurpose": { "de": "Hook-ähnlicher Skillshot, Kiting mit Slow.", "en": "Hook-like skillshot, kiting with slows." },
   "attackType": "ranged",
   "resource": "mana",

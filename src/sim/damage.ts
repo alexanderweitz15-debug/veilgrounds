@@ -5,7 +5,7 @@ import type { Sim } from './sim';
 import { despawn } from './sim';
 import { Kind, sec, type DamageType } from './types';
 import { onDeath } from './systems/economy';
-import { damageTakenMult, healMult, statMods } from './buffs';
+import { damageDealtMult, damageTakenMult, healMult, statMods } from './buffs';
 import { passiveHooksOf } from './champions';
 
 export interface DamageOpts {
@@ -75,14 +75,22 @@ export function dealDamage(sim: Sim, src: number, dst: number, amount: number, t
   const { Unit, Hp, LastHit } = sim.c;
   if (!Unit.alive[dst] || Unit.invulnerable[dst] || amount <= 0) return 0;
   if (sim.flags.towersInvulnerable && Unit.kind[dst]! >= Kind.Tower && Unit.kind[dst]! <= Kind.Nexus) return 0;
+  if (Unit.kind[dst] === Kind.Ward) {
+    // wards (src/sim/wards.ts) lose exactly 1 HP per basic attack; nothing else damages them
+    if (!opts.isAuto) return 0;
+    amount = 1;
+    opts = { ...opts, raw: true, crit: false };
+  }
   const log = combatLog(sim);
   const top = log.depth === 0;
   log.depth++;
   try {
-    if (top && src >= 0) for (const h of passiveHooksOf(sim, src)) if (h.modifyDamage) amount = h.modifyDamage(sim, src, dst, amount, type, !!opts.isAuto);
+    const ward = Unit.kind[dst] === Kind.Ward;
+    if (top && src >= 0 && !ward) for (const h of passiveHooksOf(sim, src)) if (h.modifyDamage) amount = h.modifyDamage(sim, src, dst, amount, type, !!opts.isAuto);
+    if (src >= 0 && !ward) amount *= damageDealtMult(sim, src);
     if (amount <= 0) return 0;
     let dmg = opts.raw || type === 'true' ? amount : amount * mitigation(effectiveResist(sim, src, dst, type));
-    dmg *= damageTakenMult(sim, dst);
+    if (!ward) dmg *= damageTakenMult(sim, dst);
     const absorbed = Math.min(Hp.shield[dst]!, dmg);
     Hp.shield[dst] = Hp.shield[dst]! - absorbed;
     const toHp = dmg - absorbed;

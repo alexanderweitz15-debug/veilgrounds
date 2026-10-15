@@ -24,14 +24,15 @@ export type VarianceMode = 'stable' | 'normal' | 'volatile';
 const VARIANCE_MULT: Record<VarianceMode, number> = { stable: 0.5, normal: 1, volatile: 2 };
 
 /** Fractional rank index (0 = Iron, 9 = Challenger) for a skill value. */
-function rankIndex(skill: number): number {
+export function rankIndex(skill: number): number {
   const s = PROFILES.map((p) => p.skill);
   if (skill <= s[0]!) return 0;
   for (let i = 1; i < s.length; i++) if (skill <= s[i]!) return i - 1 + (skill - s[i - 1]!) / (s[i]! - s[i - 1]!);
   return s.length - 1;
 }
 
-function skillOfIndex(idx: number): number {
+/** Skill at a fractional rank index (inverse of rankIndex). */
+export function skillOfIndex(idx: number): number {
   const i = Math.max(0, Math.min(PROFILES.length - 1, idx));
   const lo = Math.floor(i);
   const hi = Math.min(PROFILES.length - 1, lo + 1);
@@ -72,10 +73,10 @@ export function profileAt(skill: number): RankProfile {
  * Game-start roll (§7 "Varianz"): offset in rank steps drawn from N(0, variance), applied to the whole profile.
  * A Platinum bot may play like Gold one game and Emerald the next.
  */
-export function rollBotProfile(rank: Rank, mode: VarianceMode, rng: Rng): RankProfile {
-  const base = profileOf(rank);
-  const sigma = base.behavior.varianceRanks * VARIANCE_MULT[mode];
-  const idx = RANKS.indexOf(rank) + rng.normal() * sigma;
+export function rollBotProfile(rank: Rank, mode: VarianceMode, rng: Rng, skill = profileOf(rank).skill): RankProfile {
+  // skill: division-exact value (spec-bots §10); defaults to the rank anchor
+  const sigma = profileAt(skill).behavior.varianceRanks * VARIANCE_MULT[mode];
+  const idx = rankIndex(skill) + rng.normal() * sigma;
   return profileAt(skillOfIndex(idx));
 }
 

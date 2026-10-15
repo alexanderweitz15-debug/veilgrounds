@@ -1,6 +1,6 @@
 {
   "rank": "platinum",
-  "skill": 57,
+  "skill": 58,
   "targets": {
     "csPerMin": 7.1,
     "csAt10": 84,
@@ -54,6 +54,7 @@
     "surrenderAtMinus8kPct": 25,
     "apmCap": 147,
     "inertia": 0.4,
+    "hysteresis": 0.22,
     "engageHesitationS": 0.68
   },
   "notes": {

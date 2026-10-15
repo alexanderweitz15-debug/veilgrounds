@@ -4,6 +4,7 @@
   "title": { "de": "die Glasbläserin", "en": "the Glassblower" },
   "roles": ["top"],
   "archetype": "duelist",
+  "botBias": { "tradeLength": 2, "aggression": 1, "teamplay": -1 },
   "trainingPurpose": { "de": "Wand-Engages, 1v1, Splitpush.", "en": "Wall engages, 1v1, split-push." },
   "attackType": "melee",
   "resource": "mana",

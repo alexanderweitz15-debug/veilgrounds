@@ -4,6 +4,7 @@
   "title": { "de": "die Wasserträgerin", "en": "the Water Carrier" },
   "roles": ["support"],
   "archetype": "healer_enchanter",
+  "botBias": { "aggression": -2, "vision": 1, "teamplay": 2 },
   "trainingPurpose": { "de": "Sustain-Lanes, Heilung timen.", "en": "Sustain lanes, time your heals." },
   "attackType": "ranged",
   "resource": "mana",

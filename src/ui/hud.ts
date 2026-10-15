@@ -1,5 +1,6 @@
 // DOM HUD: bottom panel (portrait, bars, abilities, summoners, items, gold), top bar (clock, kills, towers,
 // CS), kill feed, respawn timer, pause / game-over overlays and placeholder panels. Writes are diffed.
+import { PING_COLOR } from './pingWheel';
 import type { ClientState } from '../game/state';
 import type { AbilityHud } from '../sim/systems/abilities';
 import { Kind, type SimEvent } from '../sim/types';
@@ -12,6 +13,7 @@ import { CUM_XP } from '../sim/systems/economy';
 import type { PlayerSetup } from '../sim/types';
 import { ShopPanel, itemAbbr, itemTooltip } from './shop';
 import { Scoreboard } from './scoreboard';
+import { BotDebugPanel } from './botDebug';
 
 const KILLFEED_MS = 9000;
 
@@ -52,7 +54,11 @@ export interface HudHooks {
   /** Shop (Agent H). */
   buy(item: string): void;
   sell(slot: number): void;
+  /** Trinket swap (Agent J); clicking the trinket slot in the fountain. */
+  swapTrinket?(id: 'schleierward' | 'suchfeuer'): void;
 }
+
+type TrinketHud = NonNullable<NonNullable<ClientState['snap']>['me']>['trinket'];
 
 export class Hud {
   readonly root = el('div', 'hud');
@@ -81,6 +87,8 @@ export class Hud {
   private readonly armedHint: HTMLElement;
   private readonly panels: Record<Panel, HTMLElement>;
   readonly debugText: HTMLElement;
+  /** F9 bot overlay (src/ui/botDebug.ts), filled by Game from the worker's bot rows. */
+  readonly botDebug: BotDebugPanel;
   private readonly noChamp: HTMLElement;
   private feedEntries: { at: number; node: HTMLElement }[] = [];
   private champ = '';
@@ -88,6 +96,8 @@ export class Hud {
   private readonly score: Scoreboard;
   private itemKey = '';
   private readonly marks: HTMLElement;
+  private trinketKey = '';
+  private trinketSwap: 'schleierward' | 'suchfeuer' | null = null;
 
   constructor(hooks: HudHooks, sandbox: boolean, players: readonly PlayerSetup[] = []) {
     const r = this.root;
@@ -144,6 +154,14 @@ export class Hud {
       const s = el('div', i === 6 ? 'item trinket' : 'item', grid);
       el('div', 'abbr', s);
       el('div', 'key', s, keyLabel(binds[k]));
+      if (i === 6) {
+        el('div', 'tcd', s);
+        el('div', 'charges', s);
+        s.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+          if (this.trinketSwap) hooks.swapTrinket?.(this.trinketSwap);
+        });
+      }
       this.items.push(s);
     });
     this.gold = el('div', 'gold', inv, '0');
@@ -171,6 +189,7 @@ export class Hud {
     };
     el('div', 'ttl', this.panels.debug, t('hud.debug'));
     this.debugText = el('pre', '', this.panels.debug);
+    this.botDebug = new BotDebugPanel(this.panels.debug);
     this.shop = new ShopPanel(this.panels.shop, hooks);
     this.score = new Scoreboard(this.panels.scoreboard, players);
     // active jungle/objective buffs (Dornenbock, Glutwächter, Schleierwächter) above the ability bar
@@ -205,6 +224,10 @@ export class Hud {
     this.panels[p].classList.toggle('open', on);
   }
 
+  isPanelOpen(p: Panel): boolean {
+    return this.panels[p].classList.contains('open');
+  }
+
   setArmed(a: Armed): void {
     setText(this.armedHint, a === 'attackMove' ? t('hud.attackMoveArmed') : a ? t('hud.teleportArmed') : '');
   }
@@ -218,6 +241,13 @@ export class Hud {
   }
 
   onEvent(ev: SimEvent, state: ClientState, now: number): void {
+    if (ev.e === 'ping') {
+      const who = [...state.byId.values()].find((e) => e.kind === Kind.Champion && e.slot === ev.slot);
+      const node = el('div', 'entry ping', this.feed, `${champName(who?.champ ?? null)}: ${t(`ping.${ev.kind}`)}`);
+      node.style.borderLeftColor = PING_COLOR[ev.kind];
+      this.feedEntries.push({ at: now, node });
+      return;
+    }
     if (ev.e !== 'death') return;
     let text = '';
     if (ev.kind === Kind.Champion) {
@@ -270,6 +300,7 @@ export class Hud {
     setStyle(this.xpRing, '--p', hi === undefined ? '1' : String(Math.min(1, Math.max(0, (me.xp - lo) / Math.max(1, hi - lo)))));
     setText(this.gold, String(Math.floor(me.gold)));
     this.drawItems(me.items ?? [], me.marks ?? []);
+    this.drawTrinket(me.trinket);
     if (this.panels.shop.classList.contains('open')) this.shop.update(me);
     if (meE) {
       const total = Math.max(meE.maxHp, meE.hp + meE.shield) || 1;
@@ -285,8 +316,12 @@ export class Hud {
     toggle(this.respawn, 'open', me.dead);
     toggle(this.root, 'dead', me.dead);
     if (me.dead) setText(this.respawn, t('hud.respawn', { s: Math.ceil(me.respawnIn) }));
-    toggle(this.recall, 'open', me.recallLeft > 0);
-    if (me.recallLeft > 0) {
+    const tp = me.teleportLeft ?? 0; // Teleport channel reuses the recall bar (4 s)
+    toggle(this.recall, 'open', me.recallLeft > 0 || tp > 0);
+    if (tp > 0) {
+      setText(this.recall.firstElementChild as HTMLElement, `${summonerName('teleport')} ${tp.toFixed(1)}`);
+      setStyle(this.recallFill, 'width', `${Math.min(100, (tp / 4) * 100)}%`);
+    } else if (me.recallLeft > 0) {
       setText(this.recall.firstElementChild as HTMLElement, t('hud.recall', { s: me.recallLeft.toFixed(1) }));
       setStyle(this.recallFill, 'width', `${Math.min(100, (me.recallLeft / 8) * 100)}%`);
     }
@@ -298,6 +333,7 @@ export class Hud {
     if (key === this.itemKey) return;
     this.itemKey = key;
     this.items.forEach((s, i) => {
+      if (i === 6) return; // trinket slot: drawTrinket
       const id = items[i] ?? null;
       setText(s.firstElementChild as HTMLElement, id ? itemAbbr(id) : '');
       toggle(s, 'filled', !!id);
@@ -308,6 +344,28 @@ export class Hud {
       const b = el('div', `buff-mark ${m.id}`, this.marks, `${t(`buff.${m.id}`)} ${Math.ceil(m.left)}s`);
       b.title = t(`buff.${m.id}.desc`);
     }
+  }
+
+  /** Trinket slot: short name, charges, recharge / cooldown sweep; gold ring when a swap is possible. */
+  private drawTrinket(tr: TrinketHud): void {
+    const s = this.items[6];
+    if (!s || !tr) return;
+    const key = `${tr.id}|${tr.charges}|${tr.canSwap}|${Math.ceil(tr.cdLeft * 4)}`;
+    if (key === this.trinketKey) return;
+    this.trinketKey = key;
+    this.trinketSwap = tr.canSwap;
+    const name = t(`trinket.${tr.id}`);
+    setText(s.querySelector('.abbr') as HTMLElement, name.slice(0, 2));
+    toggle(s, 'filled', true);
+    toggle(s, 'swap', !!tr.canSwap);
+    toggle(s, 'empty-charges', tr.charges <= 0);
+    setText(s.querySelector('.charges') as HTMLElement, tr.maxCharges > 1 ? String(tr.charges) : '');
+    // veil: sweep shows the recharge of the next charge; sweeper: its cooldown
+    setStyle(s.querySelector('.tcd') as HTMLElement, '--p', tr.cdLeft > 0 && tr.cdTotal > 0 ? String(tr.cdLeft / tr.cdTotal) : '0');
+    const swap = tr.canSwap ? `
+${t('trinket.swap', { name: t(`trinket.${tr.canSwap}`) })}` : '';
+    s.title = `${name}
+${t(`trinket.${tr.id}.desc`)}${tr.cdLeft > 0 ? ` (${Math.ceil(tr.cdLeft)} s)` : ''}${swap}`;
   }
 
   private drawAbilities(list: AbilityHud[]): void {

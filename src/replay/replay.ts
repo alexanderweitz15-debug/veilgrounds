@@ -10,6 +10,8 @@ export interface Replay {
   ticks: number;
   /** State hash at the end, to verify reproduction. */
   hash: string;
+  /** Bot decision log as NDJSON (src/ai/log.ts), shown by the replay's F9 overlay. Not needed to re-simulate. */
+  botLog?: string;
 }
 
 export class Recorder {
@@ -18,8 +20,8 @@ export class Recorder {
   record(tick: number, inputs: TickInput[]): void {
     if (inputs.length) this.inputs[tick] = inputs.map((i) => structuredClone(i));
   }
-  finish(sim: Sim): Replay {
-    return { version: 1, config: this.config, inputs: this.inputs, ticks: sim.tick, hash: stateHash(sim) };
+  finish(sim: Sim, botLog?: string): Replay {
+    return { version: 1, config: this.config, inputs: this.inputs, ticks: sim.tick, hash: stateHash(sim), ...(botLog ? { botLog } : {}) };
   }
 }
 

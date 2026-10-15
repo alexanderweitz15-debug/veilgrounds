@@ -10,7 +10,7 @@ import { isRef } from '../sim';
 import { MAX_ENT } from '../ecs';
 import { Kind, TICK_HZ, Team, isStructure, type DamageType } from '../types';
 import { dealDamage } from '../damage';
-import { canAttack, healUnit, isBlind, removeBuffs } from '../buffs';
+import { canAttack, healMult, healUnit, isBlind, removeBuffs } from '../buffs';
 import { sees } from '../vision';
 import { findPath } from '../map';
 import { championData, passiveHooksOf } from '../champions';
@@ -284,7 +284,12 @@ export function resolveAutoHit(sim: Sim, p: AutoPayload, dst: number): void {
   const src = Unit.serial[p.src] === p.srcSerial ? p.src : -1;
   const dmg = dealDamage(sim, src, dst, p.amount, p.type, { isAuto: true, crit: p.crit, raw: p.raw });
   if (src < 0 || Unit.kind[src] !== Kind.Champion) return;
-  if (Stats.lifesteal[src]! > 0 && Unit.alive[src]) healUnit(sim, src, dmg * Stats.lifesteal[src]!);
-  for (const h of passiveHooksOf(sim, src)) h.onAutoHit?.(sim, src, dst, dmg);
+  let overheal = 0;
+  if (Stats.lifesteal[src]! > 0 && Unit.alive[src]) {
+    const want = dmg * Stats.lifesteal[src]!;
+    overheal = Math.max(0, want * healMult(sim, src) - healUnit(sim, src, want));
+  }
+  const info = { crit: p.crit, overheal };
+  for (const h of passiveHooksOf(sim, src)) h.onAutoHit?.(sim, src, dst, dmg, info);
   if (p.emp) resolveEmpowered(sim, src, p.emp, dst, p.amount);
 }

@@ -4,6 +4,7 @@
   "title": { "de": "Die Bogenmacherin", "en": "The Bowyer" },
   "roles": ["adc"],
   "archetype": "marksman",
+  "botBias": { "kiting": -1, "farmPriority": 1 },
   "trainingPurpose": { "de": "Orbwalking, Positionierung, Last-Hitting", "en": "Orbwalking, positioning, last-hitting" },
   "attackType": "ranged",
   "resource": "mana",

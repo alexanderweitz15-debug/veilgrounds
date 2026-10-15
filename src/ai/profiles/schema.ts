@@ -72,13 +72,16 @@ export interface RankBehavior {
   apmCap: number;
   /** Behaviour inertia (hysteresis bonus for the running behaviour, 0..1). Gold high, Challenger low (§8). */
   inertia: number;
+  /** Spec-bots §1 hysteresis: bonus (fraction) for the running behaviour in withHysteresis(), 0.25 Gold .. 0.10 Challenger. */
+  hysteresis: number;
   /** Visible hesitation before engages, seconds (§8: 0.3-1.0 by rank). */
   engageHesitationS: number;
 }
 
 export interface RankProfile {
   rank: Rank;
-  /** Continuous skill anchor 0..100 (Iron 5, Gold 45, Diamond 80, Challenger 100). */
+  /** Continuous skill anchor 0..100 (spec-bots §10: Iron 5, Bronze 15, Silver 30, Gold 45, Platinum 58, Emerald 68,
+   *  Diamond 80, Master 88, GM 94, Challenger 100). */
   skill: number;
   targets: RankTargets;
   behavior: RankBehavior;

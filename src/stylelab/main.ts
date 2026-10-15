@@ -1,6 +1,7 @@
 // Style lab entry (stylelab.html): three art-direction variants rendered with the game's camera, a 64 px
 // silhouette test strip and palette swatches. Switch variants with the tabs or ?v=A|B|C&view=lane|structures.
 import * as THREE from 'three';
+import { mountChampions } from './champions';
 import { CHAMPS, LABEL, MINIONS, sprite, type Key } from './figures';
 import { drawMinimap } from './minimap';
 import { buildScene, VIEWS, type LabScene } from './scene';
@@ -63,7 +64,32 @@ function setVariant(id: VariantId): void {
   history.replaceState(null, '', url);
 }
 
+// ------------------------------------------------------------------------------------------------ champions view
+const champHost = document.createElement('div');
+document.querySelector('header')!.after(champHost);
+const champView = mountChampions(champHost);
+const champBtn = document.createElement('button');
+champBtn.textContent = 'Champions';
+champBtn.title = 'Champion-Sprites (Variante C): Spielgröße, Animationen, 8 Richtungen, 64-px-Test';
+document.getElementById('views')!.insertBefore(champBtn, document.getElementById('labelsBtn'));
+let champsOn = false;
+function showChampions(on: boolean): void {
+  champsOn = on;
+  document.querySelector<HTMLElement>('main')!.style.display = on ? 'none' : '';
+  for (const s of document.querySelectorAll<HTMLElement>('section.block')) s.style.display = on ? 'none' : '';
+  champBtn.classList.toggle('on', on);
+  if (on) {
+    for (const b of document.querySelectorAll<HTMLButtonElement>('#views button[data-view]')) b.classList.remove('on');
+    champView.start();
+    const url = new URL(location.href);
+    url.searchParams.set('view', 'champions');
+    history.replaceState(null, '', url);
+  } else champView.stop();
+}
+champBtn.onclick = () => showChampions(true);
+
 function setView(name: keyof typeof VIEWS): void {
+  if (champsOn) showChampions(false);
   Object.assign(cam, VIEWS[name]);
   for (const b of document.querySelectorAll<HTMLButtonElement>('#views button[data-view]')) b.classList.toggle('on', b.dataset.view === name);
   const url = new URL(location.href);
@@ -87,9 +113,11 @@ function placeLabels(): void {
 
 function frame(now: number): void {
   applyCamera();
-  lab?.update(now / 1000);
-  if (lab) renderer.render(lab.scene, camera);
-  placeLabels();
+  if (!champsOn) {
+    lab?.update(now / 1000);
+    if (lab) renderer.render(lab.scene, camera);
+    placeLabels();
+  }
   requestAnimationFrame(frame);
 }
 
@@ -224,6 +252,7 @@ resize();
 const params = new URLSearchParams(location.search);
 setView((params.get('view') as keyof typeof VIEWS) in VIEWS ? (params.get('view') as keyof typeof VIEWS) : 'lane');
 setVariant((params.get('v') as VariantId) ?? 'A');
+if (params.get('view') === 'champions') showChampions(true);
 requestAnimationFrame(frame);
 
 // hook for automated screenshots / debugging
@@ -233,4 +262,4 @@ const renderNow = (t = 2.2): void => {
   lab?.update(t);
   if (lab) renderer.render(lab.scene, camera);
 };
-(window as unknown as { __lab: unknown }).__lab = { setVariant, setView, canvas, renderNow };
+(window as unknown as { __lab: unknown }).__lab = { setVariant, setView, canvas, renderNow, showChampions, champView };

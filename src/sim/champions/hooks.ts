@@ -101,6 +101,12 @@ export interface DamageInfo {
   isAuto: boolean;
 }
 
+export interface AutoHitInfo {
+  crit: boolean;
+  /** Lifesteal healing of this hit lost to full HP (Blutkrone). */
+  overheal: number;
+}
+
 export interface CastMods {
   cost: number;
   /** Multiplies castTime and delay. */
@@ -113,7 +119,7 @@ export interface PassiveHook {
   /** Auto-attack hit point (windup finished). Return damage multipliers for extra projectiles/hits, e.g. [0.5]. */
   onAutoFire?(sim: Sim, eid: number, target: number): number[] | void;
   /** Auto-attack damage landed (melee instantly, ranged on projectile impact). */
-  onAutoHit?(sim: Sim, eid: number, target: number, damage: number): void;
+  onAutoHit?(sim: Sim, eid: number, target: number, damage: number, info?: AutoHitInfo): void;
   /** An ability (slot 0..3) resolved its cast. */
   onCast?(sim: Sim, eid: number, slot: number): void;
   /** Pure modifier before a cast is accepted (cost, cast time). Must not change state (cast may still be rejected). */

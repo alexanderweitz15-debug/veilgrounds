@@ -4,6 +4,7 @@
   "title": { "de": "die Mauer des Ordens", "en": "the Wall of the Order" },
   "roles": ["top", "jungle"],
   "archetype": "engage_tank",
+  "botBias": { "objectiveRisk": 1, "teamplay": 2 },
   "trainingPurpose": { "de": "Engage antizipieren, Peel.", "en": "Anticipate engages, peel." },
   "attackType": "melee",
   "resource": "mana",

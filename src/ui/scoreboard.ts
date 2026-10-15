@@ -5,6 +5,8 @@ import type { PlayerSetup } from '../sim/types';
 import { champName } from './names';
 import { itemAbbr, itemTooltip } from './shop';
 import { t } from '../i18n';
+import { resolvePlaystyle } from '../ai/params';
+import { renderMiniScales } from './playstyleView';
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?: HTMLElement, text?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -42,13 +44,17 @@ export class Scoreboard {
     for (const team of [snap.team, snap.team === 0 ? 1 : 0]) {
       const tab = el('table', `score-table ${team === snap.team ? 'ally' : 'enemy'}`, r);
       const hr = el('tr', '', el('thead', '', tab));
-      for (const h of ['score.champ', 'score.player', 'score.level', 'score.kda', 'score.cs', team === snap.team ? 'score.gold' : 'score.itemValue', 'score.items'])
+      for (const h of ['score.champ', 'score.player', 'score.style', 'score.level', 'score.kda', 'score.cs', team === snap.team ? 'score.gold' : 'score.itemValue', 'score.items'])
         el('th', '', hr, t(h));
       const body = el('tbody', '', tab);
       for (const p of rows.filter((x) => x.team === team).sort((a, b) => a.slot - b.slot)) {
         const tr = el('tr', `${p.dead ? 'dead' : ''}${snap.me && p.slot === this.players.find((x) => x.isHuman)?.slot ? ' me' : ''}`, body);
         el('td', 'champ', tr, champName(p.champ));
-        el('td', 'name', tr, playerLabel(this.players.find((x) => x.slot === p.slot)));
+        const setup = this.players.find((x) => x.slot === p.slot);
+        el('td', 'name', tr, playerLabel(setup));
+        const st = el('td', 'style-cell', tr);
+        // spec-bots §2: rank (in the label) + ten mini scales per bot; same pure roll as the worker (src/ai/params.ts)
+        if (setup?.bot && !setup.isHuman) renderMiniScales(st, resolvePlaystyle(setup).playstyle);
         el('td', '', tr, String(p.level));
         el('td', '', tr, `${p.kills} / ${p.deaths} / ${p.assists}`);
         el('td', '', tr, String(p.cs));

@@ -4,6 +4,7 @@
   "title": { "de": "die Näherin", "en": "the Seamstress" },
   "roles": ["adc"],
   "archetype": "hypercarry",
+  "botBias": { "kiting": -2, "farmPriority": 2 },
   "trainingPurpose": { "de": "Positionierung ohne Escape.", "en": "Positioning without an escape." },
   "attackType": "ranged",
   "resource": "mana",

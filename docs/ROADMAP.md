@@ -1,14 +1,14 @@
 # Roadmap (Stand 2026-10-15)
 
-## Status pro Phase (2026-10-15, nach Bot-Prototyp)
+## Status pro Phase (2026-10-15, Abend)
 | Phase | Stand | Erledigt | Offen |
 |---|---|---|---|
 | 1 Simulation + 1 Champion | abgeschlossen | Map, Grid-Pathing, Wellen/Aggro, Türme/Platten, Gold/XP, Kamera/Steuerung/HUD, Mira, Puppe; Abnahme: 107 Minions bis 10:00, Turmschüsse exakt, Replay bit-identisch | – |
-| 2 Champions, Items, Prägungen, Zauber | ~80 % → **läuft (Agents I, J)** | 26 Champions inkl. Hooks, Engine, Shop + Item-Stats, Prägungs-Presets, Flash/Heilen/Geist/Entflammen/Bannen | Item-Passiva/Aktive, Prägungs-Effekte, Erschöpfen/Reinigen/Teleport, Wards/Trinkets, Combo-Abnahme, Telegraph-Audit, Champion-Sprites |
-| 3 Bots Gold | ~30 % | Bot-Prototyp (grobe Logik), Jungle-Camps/Objectives, 5v5-Lobby, bot-sim | Team-KI, Vision/Wards-Nutzung, F9-Overlay, Behavior Trees als JSON, Influence Map, Kalibrierung (CS/min ~3–5 statt 6,8) |
-| 4 Ränge + Humanisierung | ~15 % | Rangprofile, Reaktionszeiten, Varianz, Spielstile, Namen/Chat-Daten | Kalibrierung je Rang, Tilt, Pings/Chat, Siegquoten |
-| 5 Trainer | ~10 % | Sandbox-Cheats, Lane-Übung mit allen Champions | Dodge-/Last-Hit-/Kiting-/Combo-Trainer, Post-Game, Trainingsplan |
-| 6 Politur | ~15 % | Menüs, Enzyklopädie, prozeduraler Sound, Vollbild-Tastensperre, Stil-Labor (läuft) | Art-Pass, Barrierefreiheit, PWA, Performance, Szenarien, Challenger-Geist |
+| 2 Champions, Items, Prägungen, Zauber | ~95 % | 26 Champions inkl. Hooks, Engine, Shop (rekursive Rezepte), Item-Passiva/Aktive, Prägungs-Effekte + Presets, alle 8 Beschwörerzauber, Wards/Trinkets, Champion-Sprites | Combo-Abnahme, Telegraph-Audit |
+| 3 Bots Gold | ~70 % → **läuft (Agent Bots)** | Behavior Tree als JSON, Wahrnehmung ohne Allwissen, Team-KI, Ganks/Roams/Trades/Kiten, F9-Overlay, Entscheidungs-Log, bot-sim | CS-Kalibrierung (2,9 statt 6,8 CS/min), Wards/Kontrollwards, Baron/Kesselbrut, Log-Drosselung |
+| 4 Ränge + Humanisierung | ~50 % → **läuft (Agent Bots)** | Rangprofile, 10 Spielstil-Achsen, Reaktionszeiten, Varianz, Pings, Rage-„?“-Pings + Toxizitäts-Schalter | Kalibrierung je Rang, fehlende Fehlerarten, Siegquoten |
+| 5 Trainer | ~10 % → **läuft (Agent Trainer)** | Sandbox-Cheats, Lane-Übung | Last-Hit-, Dodge-, Kiting-/Combo-Trainer, Post-Game-Analyse |
+| 6 Politur | ~25 % → **läuft (Agent Art)** | Menüs, Enzyklopädie, prozeduraler Sound, Vollbild, Stil C | Minion-Sprites, Porträts, Barrierefreiheit, PWA, Performance, Szenarien |
 
 Nutzer-Entscheidung 2026-10-15: zuerst **Phase 2 abschließen**.
 

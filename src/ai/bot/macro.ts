@@ -302,15 +302,23 @@ export function splitPush(n: NodeCtx): NodeResult {
 // ------------------------------------------------------------------ vision
 
 /** Ward a nearby unwarded bush (or the objective area) when due: interval by role x wardIntervalMult (vision axis). */
-export function vision(n: NodeCtx): NodeResult {
+/** A ward is due (charge, interval by role x wardIntervalMult, safe) or a ward trip is running: laning yields. */
+export function wardDue(n: NodeCtx): boolean {
   const v = n.v;
   const tr = v.me.trinket;
   const base = n.ctx.role === 'support' ? WARD_EVERY.support : n.ctx.role === 'jungle' ? WARD_EVERY.jungle : WARD_EVERY.laner;
-  if (!tr || tr.id !== 'schleierward' || tr.charges <= 0 || v.time < 75) return 'failure';
-  if (v.tick - n.mem.wardAt < base * n.p.knobs.wardIntervalMult * 30) return 'failure';
-  if (n.ctx.role !== 'support' && n.ctx.role !== 'jungle' && n.p.playstyle.vision < 0 && v.hpPct > 0.3) return 'failure'; // "wardet nur erzwungen"
-  if (v.enemies.some((e) => dst(e, v.self) < 1200)) return 'failure';
-  return wardNear(n, null) ?? 'failure';
+  if (!tr || tr.id !== 'schleierward' || tr.charges <= 0 || v.time < 75) return false;
+  if (n.mem.wardTrip >= 0 && v.tick - n.mem.wardTrip < 8 * 30) return true;
+  if (v.tick - n.mem.wardAt < base * n.p.knobs.wardIntervalMult * 30) return false;
+  if (n.ctx.role !== 'support' && n.ctx.role !== 'jungle' && n.p.playstyle.vision < 0) return false; // "wardet nur erzwungen"
+  return !v.enemies.some((e) => dst(e, v.self) < 1200);
+}
+
+export function vision(n: NodeCtx): NodeResult {
+  if (!wardDue(n)) return 'failure';
+  const r = wardNear(n, null);
+  if (!r) n.mem.wardAt = n.v.tick - 20 * 30; // no spot nearby: look again in a while
+  return r ?? 'failure';
 }
 
 function wardNear(n: NodeCtx, d: Desire | null): NodeResult | null {

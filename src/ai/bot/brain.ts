@@ -18,7 +18,7 @@ import { cleanseStep, exhaustStep, teleportStep } from './spells';
 import { runTree } from '../bt/leaves';
 import type { NodeCtx, NodeResult } from '../bt/types';
 import { cancelOrbwalk, attackTicks } from './kite';
-import { chooseWave, laneOf } from './macro';
+import { chooseWave, laneOf, wardDue } from './macro';
 import { laningSafety, rankIdx } from '../bt/deps';
 
 /** Decision interval in ticks for this bot (profile microHz). */
@@ -334,6 +334,8 @@ export function laneLeaf(n: NodeCtx): NodeResult {
       }
     }
   }
+  // a ward is due: yield to the vision node (spec order: laning > vision; laning has nothing urgent here)
+  if (wardDue(n)) return 'failure';
   // drop a lingering auto target (minion: keeps the attack timer free for the next last hit; champion: no chase)
   if (v.self.atkTarget >= 0) {
     mem.lastMove = null;

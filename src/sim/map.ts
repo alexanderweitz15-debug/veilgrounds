@@ -150,13 +150,40 @@ export function walkable(nav: NavGrid, x: number, y: number): boolean {
   return nav.walk[cy * nav.w + cx] === 1;
 }
 
-/** Straight-line walkability (samples every half cell). */
+/**
+ * Straight-line walkability: every grid cell the segment touches must be walkable (supercover DDA), so a path
+ * can never cut across the corner of a blocked cell that movement would later refuse.
+ */
 export function lineWalkable(nav: NavGrid, ax: number, ay: number, bx: number, by: number): boolean {
+  let cx = Math.floor(ax / CELL);
+  let cy = Math.floor(ay / CELL);
+  const cell = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < nav.w && y < nav.h && nav.walk[y * nav.w + x] === 1;
+  // the start cell itself is not checked: a unit nudged into a blocked cell may always walk out
   const dx = bx - ax;
   const dy = by - ay;
-  const n = Math.ceil(Math.sqrt(dx * dx + dy * dy) / (CELL / 2));
-  for (let i = 1; i <= n; i++) {
-    if (!walkable(nav, ax + (dx * i) / n, ay + (dy * i) / n)) return false;
+  const sx = dx > 0 ? 1 : -1;
+  const sy = dy > 0 ? 1 : -1;
+  const tdx = dx !== 0 ? Math.abs(CELL / dx) : Infinity;
+  const tdy = dy !== 0 ? Math.abs(CELL / dy) : Infinity;
+  let tmx = dx !== 0 ? ((sx > 0 ? (cx + 1) * CELL : cx * CELL) - ax) / dx : Infinity;
+  let tmy = dy !== 0 ? ((sy > 0 ? (cy + 1) * CELL : cy * CELL) - ay) / dy : Infinity;
+  // walk cell boundaries until the segment ends (t = 1); endpoints on boundaries must not overshoot
+  for (let guard = 0; Math.min(tmx, tmy) < 1 - 1e-12 && guard < 4096; guard++) {
+    if (Math.abs(tmx - tmy) < 1e-9) {
+      // passes exactly through a corner: both side cells must be free
+      if (!cell(cx + sx, cy) || !cell(cx, cy + sy)) return false;
+      cx += sx;
+      cy += sy;
+      tmx += tdx;
+      tmy += tdy;
+    } else if (tmx < tmy) {
+      cx += sx;
+      tmx += tdx;
+    } else {
+      cy += sy;
+      tmy += tdy;
+    }
+    if (!cell(cx, cy)) return false;
   }
   return true;
 }

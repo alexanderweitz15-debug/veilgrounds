@@ -22,6 +22,8 @@ export const Kind = {
   Monster: 10,
   Projectile: 11,
   Ward: 12,
+  /** Temporary allied unit spawned by a champion hook (src/sim/summons.ts). */
+  Pet: 13,
 } as const;
 export type KindId = (typeof Kind)[keyof typeof Kind];
 export const isMinion = (k: number): boolean => k >= Kind.MinionMelee && k <= Kind.MinionSuper;
@@ -90,6 +92,8 @@ export interface PlayerSetup {
   isHuman: boolean;
   /** Prägungen; omitted = champion's default preset (src/sim/items/runes.ts). */
   runes?: { keystone: string; minor: [string, string, string] };
+  /** Bot-controlled slot (with isHuman false): rank profile + per-game variance (src/ai/runner.ts). */
+  bot?: { rank: import('../ai/profiles/schema').Rank; variance: 'stable' | 'normal' | 'volatile'; name?: string };
 }
 
 export interface SimConfig {

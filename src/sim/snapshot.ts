@@ -5,6 +5,9 @@ import type { Sim } from './sim';
 import { pointVisible, sees } from './vision';
 import { Kind, isStructure, type SimEvent } from './types';
 import { abilityHud, type AbilityHud } from './systems/abilities';
+import { inFountain, inventory, itemValue } from './items/inventory';
+import { champions, kda } from './systems/economy';
+import { buffs } from './buffs';
 
 export interface SnapEntity {
   id: number;
@@ -57,6 +60,10 @@ export interface PlayerHud {
   cs: number;
   dead: boolean;
   respawnIn: number;
+  /** Agent H: 6 item slots + trinket (null = empty), shop access, active jungle/objective buffs (id, seconds left). */
+  items: (string | null)[];
+  inFountain: boolean;
+  marks: { id: string; left: number }[];
   recallLeft: number;
   abilities: AbilityHud[];
   stats: { ad: number; ap: number; armor: number; mr: number; as: number; ms: number; range: number; crit: number };
@@ -70,6 +77,46 @@ export interface Snapshot {
   projectiles: SnapProjectile[];
   me: PlayerHud | null;
   events: SimEvent[];
+  /** Scoreboard rows for all champions (Agent H). Fog-safe: enemies show item value, never gold or items. */
+  players: ScoreRow[];
+}
+
+export interface ScoreRow {
+  slot: number;
+  team: number;
+  champ: string;
+  level: number;
+  kills: number;
+  deaths: number;
+  assists: number;
+  cs: number;
+  dead: boolean;
+  /** Own team only. */
+  gold?: number;
+  items?: (string | null)[];
+  /** Sum of item costs (both teams). */
+  itemValue: number;
+}
+
+function scoreRows(sim: Sim, team: number): ScoreRow[] {
+  const { Unit, Champ } = sim.c;
+  return champions(sim).map((e) => {
+    const [kills, deaths, assists] = kda(sim, e);
+    const own = Unit.team[e] === team;
+    return {
+      slot: Unit.slot[e]!,
+      team: Unit.team[e]!,
+      champ: sim.championIds[Unit.champ[e]!] ?? '',
+      level: Champ.level[e]!,
+      kills,
+      deaths,
+      assists,
+      cs: Champ.cs[e]!,
+      dead: Unit.alive[e] !== 1,
+      ...(own ? { gold: Math.floor(Champ.gold[e]!), items: [...inventory(sim, e)] } : {}),
+      itemValue: itemValue(sim, e),
+    };
+  });
 }
 
 export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
@@ -127,6 +174,9 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
       respawnIn: Unit.alive[me] ? 0 : Math.max(0, (Champ.respawnAt[me]! - sim.tick) / 30),
       recallLeft: Champ.recallAt[me]! > sim.tick ? (Champ.recallAt[me]! - sim.tick) / 30 : 0,
       abilities: abilityHud(sim, me),
+      items: [...inventory(sim, me)],
+      inFountain: inFountain(sim, me),
+      marks: buffs(sim, me).filter((b) => b.kind === 'mark' && b.until > sim.tick).map((b) => ({ id: b.id, left: (b.until - sim.tick) / 30 })),
       stats: { ad: Stats.ad[me]!, ap: Stats.ap[me]!, armor: Stats.armor[me]!, mr: Stats.mr[me]!, as: Stats.as[me]!, ms: Stats.ms[me]!, range: Stats.range[me]!, crit: Stats.crit[me]! },
     };
   }
@@ -147,9 +197,13 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
       case 'level':
       case 'lastHitMiss':
         return Unit.team[ev.eid] === team;
+      case 'death':
+        // camp kills stay in the fog (no free jungle timers); epic objectives (r >= 130) are announced like LoL
+        if (ev.kind !== Kind.Monster || Unit.radius[ev.eid]! >= 130) return true;
+        return (ev.killer >= 0 && Unit.team[ev.killer] === team) || pointVisible(sim, team, ev.x, ev.y);
       default:
         return true;
     }
   });
-  return { tick: sim.tick, time: sim.tick / 30, team, entities, projectiles, me: hud, events };
+  return { tick: sim.tick, time: sim.tick / 30, team, entities, projectiles, me: hud, events, players: scoreRows(sim, team) };
 }

@@ -222,6 +222,23 @@ function paintParchment(map: MapData, W: number): HTMLCanvasElement {
     ctx.arc(x, y, Math.max(2, b.r * k), 0, Math.PI * 2);
     ctx.fill();
   }
+  // jungle camps + objectives (Agent H): small inked rings; buffs tinted blue/red, objectives larger
+  const camp = (p: { x: number; y: number }, r: number, fill: string): void => {
+    const [x, y] = P(p);
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  };
+  for (const side of map.sides) {
+    for (const c of side.camps) camp(c, 3, c.id === 'dornenbock' ? 'rgba(90,140,210,0.85)' : c.id === 'glutwaechter' ? 'rgba(210,100,70,0.85)' : 'rgba(215,190,120,0.8)');
+  }
+  for (const p of map.objectives.nebelschleicher) camp(p, 3, 'rgba(160,210,200,0.85)');
+  camp(map.objectives.leviathan, 5, 'rgba(80,170,190,0.9)');
+  camp(map.objectives.schleierwaechter, 5, 'rgba(150,110,200,0.9)');
   // border
   ctx.strokeStyle = '#3b2c1c';
   ctx.lineWidth = 4;

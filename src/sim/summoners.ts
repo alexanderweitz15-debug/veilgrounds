@@ -7,8 +7,9 @@ import { Kind, sec } from './types';
 import raw from '../data/summoners.json';
 import { addBuff, canAttack, canMove, healUnit } from './buffs';
 import { dir, dist2 } from './vec';
-import { landingPoint, nearestAlly, teleport } from './systems/abilities';
+import { landingPoint, nearestAlly, noteDashEnd, teleport } from './systems/abilities';
 import { onMoveCommand } from './systems/attack';
+import { dealDamage } from './damage';
 
 export interface SummonerDef {
   id: string;
@@ -44,6 +45,7 @@ export function castSummonerSpell(sim: Sim, eid: number, id: string, x: number, 
         sim.c.Face.x[eid] = dx;
         sim.c.Face.y[eid] = dy;
       }
+      noteDashEnd(sim, eid, -1);
       return true;
     }
     case 'heilen': {
@@ -66,8 +68,30 @@ export function castSummonerSpell(sim: Sim, eid: number, id: string, x: number, 
       addBuff(sim, t, { kind: 'grievous', id: 'entflammen', src: eid, pct: 40, ticks: sec(5) });
       return true;
     }
+    case 'bannen': {
+      // Smite (Agent H): true damage to a monster or minion in range, nearest to the cursor if no target given.
+      const ok = (t: number): boolean => {
+        const k = Unit.kind[t]!;
+        if (t < 0 || !Unit.alive[t] || Unit.untargetable[t] || Unit.team[t] === Unit.team[eid]) return false;
+        if (k !== Kind.Monster && !(k >= Kind.MinionMelee && k <= Kind.MinionSuper)) return false;
+        const r = 500 + Unit.radius[eid]! + Unit.radius[t]!;
+        return dist2(Pos.x[t]!, Pos.y[t]!, Pos.x[eid]!, Pos.y[eid]!) <= r * r;
+      };
+      let t = target !== undefined && ok(target) ? target : -1;
+      if (t < 0) {
+        let bestD = 400 * 400;
+        for (const e of query(sim.world, [Unit])) {
+          if (!ok(e)) continue;
+          const d = dist2(Pos.x[e]!, Pos.y[e]!, x, y);
+          if (d < bestD) (bestD = d), (t = e);
+        }
+      }
+      if (t < 0) return false;
+      dealDamage(sim, eid, t, byLevel(sim, eid, 450, 900), 'true');
+      return true;
+    }
     default:
-      return false; // TODO Phase 2: erschoepfen, reinigen, teleport, bannen
+      return false; // TODO Phase 2: erschoepfen, reinigen, teleport
   }
 
   function igniteTarget(sim: Sim, eid: number, x: number, y: number, target?: number): number {

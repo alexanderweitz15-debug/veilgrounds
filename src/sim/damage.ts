@@ -1,15 +1,48 @@
-// Damage pipeline: mitigation, shields, last-hit credit, death. Every damage source goes through dealDamage.
+// Damage pipeline: outgoing modifiers, mitigation, damage reduction, shields, last-hit credit, death, champion hook
+// events (modifyDamage, onDamageTaken, onKill, onTakedown). Every damage source goes through dealDamage.
 
 import type { Sim } from './sim';
 import { despawn } from './sim';
-import { Kind, type DamageType } from './types';
+import { Kind, sec, type DamageType } from './types';
 import { onDeath } from './systems/economy';
+import { damageTakenMult, healMult, statMods } from './buffs';
+import { passiveHooksOf } from './champions';
 
 export interface DamageOpts {
   isAuto?: boolean;
   crit?: boolean;
   /** Skip armor/MR (already-mitigated values, e.g. tower %-HP shots against minions). */
   raw?: boolean;
+}
+
+/** Takedown window for onTakedown (champion damaged the victim within this many ticks). */
+export const TAKEDOWN_TICKS = sec(3);
+
+interface CombatLog {
+  /** Last tick a champion dealt / took damage (for "out of combat" checks). */
+  dealt: Map<number, number>;
+  taken: Map<number, number>;
+  /** Champion victim -> (champion source -> last damage tick). */
+  pair: Map<number, Map<number, number>>;
+  /** Re-entrancy depth: hook events fire only for top-level damage (no reflect ping-pong). */
+  depth: number;
+}
+
+function combatLog(sim: Sim): CombatLog {
+  let s = sim.state.damage as CombatLog | undefined;
+  if (!s) sim.state.damage = s = { dealt: new Map(), taken: new Map(), pair: new Map(), depth: 0 };
+  return s;
+}
+
+/** Tick `src` last damaged `dst` (both champions), or -1e9. */
+export function lastDamageTick(sim: Sim, src: number, dst: number): number {
+  return combatLog(sim).pair.get(dst)?.get(src) ?? -1e9;
+}
+
+/** Last tick the champion dealt or took damage, or -1e9. */
+export function lastCombatTick(sim: Sim, eid: number): number {
+  const s = combatLog(sim);
+  return Math.max(s.dealt.get(eid) ?? -1e9, s.taken.get(eid) ?? -1e9);
 }
 
 /** LoL mitigation: 100/(100+R) for R >= 0, 2 - 100/(100-R) for R < 0. */
@@ -23,7 +56,7 @@ export function effectiveResist(sim: Sim, src: number, dst: number, type: Damage
   if (type === 'phys') {
     let a = Stats.armor[dst]!;
     if (src >= 0) {
-      if (a > 0) a *= 1 - Stats.armorPenPct[src]!;
+      if (a > 0) a *= (1 - Stats.armorPenPct[src]!) * (1 - Math.min(100, statMods(sim, src, 'armorPen')[0]) / 100);
       // ponytail: lethality as flat pen 1:1 (LoL scales with level); refine with items in Phase 2.
       if (a > 0) a = Math.max(0, a - Stats.lethality[src]!);
     }
@@ -42,32 +75,54 @@ export function dealDamage(sim: Sim, src: number, dst: number, amount: number, t
   const { Unit, Hp, LastHit } = sim.c;
   if (!Unit.alive[dst] || Unit.invulnerable[dst] || amount <= 0) return 0;
   if (sim.flags.towersInvulnerable && Unit.kind[dst]! >= Kind.Tower && Unit.kind[dst]! <= Kind.Nexus) return 0;
-  let dmg = opts.raw || type === 'true' ? amount : amount * mitigation(effectiveResist(sim, src, dst, type));
-  const absorbed = Math.min(Hp.shield[dst]!, dmg);
-  Hp.shield[dst] = Hp.shield[dst]! - absorbed;
-  const toHp = dmg - absorbed;
-  Hp.cur[dst] = Hp.cur[dst]! - toHp;
-  if (src >= 0) {
-    LastHit.eid[dst] = src;
-    LastHit.serial[dst] = Unit.serial[src]!;
-    LastHit.tick[dst] = sim.tick;
-  }
-  sim.events.push({ e: 'damage', src, dst, amount: dmg, type, crit: opts.crit });
-  if (Hp.cur[dst]! <= 0) {
-    if (Unit.kind[dst] === Kind.Dummy) {
-      Hp.cur[dst] = Hp.max[dst]!; // practice dummy never dies
-    } else {
-      kill(sim, dst, src);
+  const log = combatLog(sim);
+  const top = log.depth === 0;
+  log.depth++;
+  try {
+    if (top && src >= 0) for (const h of passiveHooksOf(sim, src)) if (h.modifyDamage) amount = h.modifyDamage(sim, src, dst, amount, type, !!opts.isAuto);
+    if (amount <= 0) return 0;
+    let dmg = opts.raw || type === 'true' ? amount : amount * mitigation(effectiveResist(sim, src, dst, type));
+    dmg *= damageTakenMult(sim, dst);
+    const absorbed = Math.min(Hp.shield[dst]!, dmg);
+    Hp.shield[dst] = Hp.shield[dst]! - absorbed;
+    const toHp = dmg - absorbed;
+    Hp.cur[dst] = Hp.cur[dst]! - toHp;
+    if (src >= 0) {
+      LastHit.eid[dst] = src;
+      LastHit.serial[dst] = Unit.serial[src]!;
+      LastHit.tick[dst] = sim.tick;
     }
+    const srcChamp = src >= 0 && Unit.kind[src] === Kind.Champion;
+    if (srcChamp) log.dealt.set(src, sim.tick);
+    if (Unit.kind[dst] === Kind.Champion) {
+      log.taken.set(dst, sim.tick);
+      if (srcChamp && Unit.team[src] !== Unit.team[dst]) {
+        let m = log.pair.get(dst);
+        if (!m) log.pair.set(dst, (m = new Map()));
+        m.set(src, sim.tick);
+      }
+    }
+    sim.events.push({ e: 'damage', src, dst, amount: dmg, type, crit: opts.crit });
+    if (top && dmg > 0) for (const h of passiveHooksOf(sim, dst)) h.onDamageTaken?.(sim, dst, src, { amount: dmg, absorbed, type, isAuto: !!opts.isAuto });
+    if (Hp.cur[dst]! <= 0 && Unit.alive[dst]) {
+      if (Unit.kind[dst] === Kind.Dummy) {
+        Hp.cur[dst] = Hp.max[dst]!; // practice dummy never dies
+      } else {
+        kill(sim, dst, src);
+      }
+    }
+    return dmg;
+  } finally {
+    log.depth--;
   }
-  return dmg;
 }
 
+/** Heals (grievous wounds apply here, so regen and every heal honour them). */
 export function heal(sim: Sim, dst: number, amount: number): number {
   const { Hp, Unit } = sim.c;
   if (!Unit.alive[dst]) return 0;
   const before = Hp.cur[dst]!;
-  Hp.cur[dst] = Math.min(Hp.max[dst]!, before + amount);
+  Hp.cur[dst] = Math.min(Hp.max[dst]!, before + amount * healMult(sim, dst));
   return Hp.cur[dst]! - before;
 }
 
@@ -77,7 +132,15 @@ export function kill(sim: Sim, victim: number, killer: number): void {
   Hp.cur[victim] = 0;
   sim.events.push({ e: 'death', eid: victim, kind: Unit.kind[victim]!, team: Unit.team[victim]!, killer, x: Pos.x[victim]!, y: Pos.y[victim]! });
   onDeath(sim, victim, killer); // rewards, respawn timers, structure state (economy.ts)
+  // hook events while the victim's position is still valid
+  if (killer >= 0 && Unit.kind[killer] === Kind.Champion) for (const h of passiveHooksOf(sim, killer)) h.onKill?.(sim, killer, victim);
   if (Unit.kind[victim] === Kind.Champion) {
+    const log = combatLog(sim);
+    const parts = new Set<number>();
+    if (killer >= 0 && Unit.kind[killer] === Kind.Champion && Unit.team[killer] !== Unit.team[victim]) parts.add(killer);
+    for (const [c, t] of log.pair.get(victim) ?? []) if (sim.tick - t <= TAKEDOWN_TICKS) parts.add(c);
+    log.pair.delete(victim);
+    for (const c of [...parts].sort((a, b) => a - b)) for (const h of passiveHooksOf(sim, c)) h.onTakedown?.(sim, c, victim);
     Unit.alive[victim] = 0; // entity stays; economy respawns it
     sim.paths.delete(victim);
   } else {

@@ -9,7 +9,20 @@ import { cancelRecall } from './systems/economy';
 import { MAX_ENT } from './ecs';
 
 export type CcKind = 'slow' | 'blind' | 'root' | 'silence' | 'stun' | 'airborne' | 'suppress' | 'stasis';
-export type StatKey = 'as' | 'ms' | 'ad' | 'ap' | 'armor' | 'mr' | 'dmgReduction' | 'tenacity' | 'invisible' | 'untargetable';
+export type StatKey =
+  | 'as'
+  | 'ms'
+  | 'ad'
+  | 'ap'
+  | 'armor'
+  | 'mr'
+  | 'dmgReduction'
+  | 'tenacity'
+  | 'invisible'
+  | 'untargetable'
+  | 'range'
+  | 'armorPen'
+  | 'projImmune';
 export type BuffKind = CcKind | 'stat' | 'shield' | 'unstoppable' | 'dot' | 'grievous' | 'mark';
 
 export interface Buff {
@@ -173,6 +186,16 @@ export const canMove = (sim: Sim, eid: number): boolean => !active(sim, eid, ['r
 export const canAttack = (sim: Sim, eid: number): boolean => !active(sim, eid, ['stun', 'airborne', 'suppress', 'stasis']);
 export const canCast = (sim: Sim, eid: number): boolean => !active(sim, eid, ['silence', 'stun', 'airborne', 'suppress', 'stasis']);
 export const isBlind = (sim: Sim, eid: number): boolean => active(sim, eid, ['blind']);
+/** Hard CC (root/stun/airborne/suppression/stasis) or silence: interrupts channels. */
+export const channelBroken = (sim: Sim, eid: number): boolean => active(sim, eid, ['root', 'stun', 'airborne', 'suppress', 'stasis', 'silence']);
+
+/** Any active stat buff of this stat (flag-like stats: invisible, projImmune, untargetable). */
+export function hasStat(sim: Sim, eid: number, stat: StatKey): boolean {
+  const e = entry(sim, eid, false);
+  if (!e) return false;
+  for (const b of e.list) if (b.kind === 'stat' && b.stat === stat && b.until > sim.tick) return true;
+  return false;
+}
 
 /** 0 none, 1 slow, 2 blind, 3 root, 4 stun/airborne, 5 suppression (for HUD/bots). Silence counts as 2. */
 export function ccLevel(sim: Sim, eid: number): number {
@@ -208,7 +231,7 @@ export function statMods(sim: Sim, eid: number, stat: StatKey): [number, number]
   return [pct, flat];
 }
 
-/** Multiplier on incoming damage from dmgReduction buffs. ponytail: not yet applied by damage.ts (lead's file). */
+/** Multiplier on incoming damage from dmgReduction buffs (applied by damage.dealDamage after mitigation). */
 export function damageTakenMult(sim: Sim, eid: number): number {
   return Math.max(0.1, 1 - statMods(sim, eid, 'dmgReduction')[0] / 100);
 }
@@ -222,9 +245,9 @@ export function healMult(sim: Sim, eid: number): number {
   return 1 - g / 100;
 }
 
-/** Healing from abilities/summoners; honours grievous wounds. ponytail: economy regen still uses damage.heal. */
+/** Healing from abilities/summoners. Grievous wounds apply inside damage.heal (so regen honours them too). */
 export function healUnit(sim: Sim, eid: number, amount: number): number {
-  return heal(sim, eid, amount * healMult(sim, eid));
+  return heal(sim, eid, amount);
 }
 
 // ------------------------------------------------------------------ reveal (vision.ts reads this)

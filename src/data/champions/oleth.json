@@ -111,8 +111,8 @@
       "costType": "mana",
       "width": 100,
       "radius": 400,
+      "line": "perpendicular",
       "delay": 0.7,
-      "duration": 4,
       "effects": [
         { "kind": "stun", "duration": 1.5 },
         { "kind": "hook", "id": "oleth_r_wall" }

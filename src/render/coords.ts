@@ -24,6 +24,8 @@ export function visionRadius(kind: number): number {
     case Kind.Inhibitor:
     case Kind.Nexus:
       return 1000;
+    case Kind.Ward:
+      return 1000; // river vision from Nebelschleicher (jungle.ts RIVER_VISION_R)
     case Kind.Dummy:
     case Kind.Projectile:
       return 0;

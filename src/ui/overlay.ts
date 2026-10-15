@@ -6,6 +6,7 @@ import { Kind, type SimEvent } from '../sim/types';
 import { REL } from '../render/palette';
 import { settings } from '../settings';
 import { t } from '../i18n';
+import { champName } from './names';
 
 interface Floater {
   x: number;
@@ -80,9 +81,10 @@ export class Overlay {
         const dummy = e.kind === Kind.Dummy;
         const minion = !champ && !structure && !dummy;
         // minions only show a bar when damaged or hovered (less clutter, like LoL)
-        if (minion && e.hp >= e.maxHp && e.id !== hoverId) continue;
-        const color = e.id === myEid ? '#59d35a' : e.team === state.myTeam ? REL.ally : REL.enemy;
-        const bw = champ ? 104 : structure ? 130 : dummy ? 104 : 54;
+        if (minion && e.kind !== Kind.Monster && e.hp >= e.maxHp && e.id !== hoverId) continue;
+        const monster = e.kind === Kind.Monster;
+        const color = e.id === myEid ? '#59d35a' : monster ? '#d8a64a' : e.team === state.myTeam ? REL.ally : REL.enemy;
+        const bw = champ ? 104 : structure ? 130 : dummy ? 104 : monster && e.radius >= 100 ? 110 : monster && e.radius >= 70 ? 76 : 54;
         const bh = champ ? 11 : structure ? 9 : dummy ? 10 : 5;
         const x = a.sx - bw / 2 + (champ ? 10 : 0);
         const y = a.sy - bh;
@@ -113,6 +115,15 @@ export class Overlay {
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(String(e.level), x - 13, y + bh / 2 + 2);
+          // name label (Agent H)
+          const name = champName(e.champ);
+          ctx.font = '600 12px system-ui, sans-serif';
+          ctx.textBaseline = 'bottom';
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = 'rgba(12,10,8,0.9)';
+          ctx.strokeText(name, x + bw / 2, y - 5);
+          ctx.fillStyle = e.team === state.myTeam ? '#cfe0ff' : '#ffc9bd';
+          ctx.fillText(name, x + bw / 2, y - 5);
         }
         if (dummy) {
           ctx.fillStyle = '#fff';

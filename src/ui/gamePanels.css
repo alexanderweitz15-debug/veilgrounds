@@ -1,0 +1,121 @@
+/* Agent H: classic lobby, loading screen, shop, scoreboard, item slots. Shares tokens with menu.css (lead). */
+
+/* ---------------------------------------------------------------- classic lobby */
+.classic-lobby { display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 56px 16px 24px; box-sizing: border-box; }
+.classic-panel { width: min(1180px, 100%); box-sizing: border-box; font-family: var(--font-body, system-ui); color: #e8e0cc; }
+.classic-panel .menu-title { font-family: var(--font-display, Georgia); color: var(--gold-hi, #f0e6d2); margin: 0 0 10px; letter-spacing: 0.04em; }
+.classic-cols { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 28px; }
+@media (max-width: 860px) { .classic-cols { grid-template-columns: 1fr; } }
+.classic-panel .role-tabs { display: flex; flex-wrap: wrap; gap: 0; border-bottom: 1px solid var(--line, rgba(201,162,78,.35)); }
+.classic-panel .role-tab {
+  background: none; border: 0; border-bottom: 2px solid transparent; padding: 7px 14px; cursor: pointer; color: var(--text-dim, #a09b8c);
+  font-family: var(--font-label, sans-serif); font-size: 15px; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.classic-panel .role-tab:hover { color: var(--gold-hi, #f0e6d2); }
+.classic-panel .role-tab.active { color: var(--gold-hi, #f0e6d2); border-bottom-color: var(--gold, #c8aa6e); }
+.champ-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.classic-panel .champ-card {
+  display: grid; grid-template-columns: 34px 1fr; grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left;
+  background: rgba(255,255,255,0.02); border: 1px solid #2c2c30; padding: 6px 8px; cursor: pointer; color: inherit; border-radius: 0;
+}
+.classic-panel .champ-card:hover { border-color: var(--line, rgba(201,162,78,.35)); }
+.classic-panel .champ-card.selected { border-color: var(--gold, #c8aa6e); background: rgba(200,170,110,0.08); }
+.classic-panel .champ-card .champ-portrait, .loading-card .champ-portrait {
+  grid-row: span 2; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line, #6b5a35);
+  font-family: var(--font-display, Georgia); font-size: 18px; color: var(--gold-hi, #f0e6d2); background: #101317; border-radius: 0;
+}
+.classic-panel .champ-card .champ-name { font-family: var(--font-label, sans-serif); font-size: 15px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--gold-hi, #f0e6d2); }
+.classic-panel .champ-card .champ-title { font-size: 11.5px; color: var(--text-dim, #a09b8c); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.summ-row { display: flex; gap: 8px; }
+.summ-select, .bot-rank {
+  background: #0d1013; color: #e8e0cc; border: 1px solid #3c3c41; border-radius: 0; padding: 4px 6px; font-family: var(--font-body, system-ui); font-size: 13px;
+}
+.preset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.classic-panel .preset-card { text-align: left; background: rgba(255,255,255,0.02); border: 1px solid #2c2c30; padding: 7px 9px; cursor: pointer; color: inherit; border-radius: 0; }
+.classic-panel .preset-card.selected { border-color: var(--gold, #c8aa6e); background: rgba(200,170,110,0.08); }
+.classic-panel .preset-card .preset-name { font-family: var(--font-label, sans-serif); text-transform: uppercase; letter-spacing: 0.05em; color: var(--gold-hi, #f0e6d2); }
+.classic-panel .preset-card .preset-desc, .classic-panel .preset-card .runes { font-size: 12px; color: var(--text-dim, #a09b8c); margin-top: 2px; }
+.rank-row { display: flex; align-items: center; gap: 12px; }
+.rank-slider { flex: 1; accent-color: var(--gold, #c8aa6e); }
+.rank-value { min-width: 110px; font-family: var(--font-label, sans-serif); text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold-hi, #f0e6d2); }
+.bot-list { border-top: 1px solid var(--line, rgba(201,162,78,.35)); }
+.bot-row { display: grid; grid-template-columns: 74px 92px 1fr 118px; gap: 8px; align-items: center; padding: 4px 2px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 13px; }
+.bot-row.me { color: var(--gold-hi, #f0e6d2); }
+.bot-role { font-family: var(--font-label, sans-serif); text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold, #c8aa6e); font-size: 12px; }
+.bot-champ { font-weight: 600; }
+.bot-name { color: #cfc8b6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bot-list.team1 .bot-role { color: #c46b5a; }
+.classic-right .menu-btn { margin-top: 10px; }
+.classic-panel .row-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+/* ---------------------------------------------------------------- loading screen */
+.loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; cursor: pointer; }
+.loading-screen .menu-title { font-family: var(--font-display, Georgia); color: var(--gold-hi, #f0e6d2); font-size: 28px; }
+.loading-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.loading-card { width: 168px; padding: 12px; background: rgba(10,12,14,0.95); border: 1px solid #2c2c30; border-top: 2px solid #4a7ab8; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.loading-row.team1 .loading-card { border-top-color: #b85a4a; }
+.loading-card.me { border-color: var(--gold, #c8aa6e); }
+.loading-card .champ-portrait { width: 64px; height: 64px; font-size: 32px; }
+.loading-card .champ-name { font-family: var(--font-label, sans-serif); text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold-hi, #f0e6d2); }
+.loading-card .bot-name { font-size: 13px; color: #cfc8b6; }
+.loading-card .bot-rank { font-family: var(--font-label, sans-serif); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold, #c8aa6e); }
+.loading-vs { font-family: var(--font-display, Georgia); color: var(--gold, #c8aa6e); font-size: 22px; }
+.loading-hint { font-size: 12px; color: var(--text-dim, #a09b8c); }
+
+/* ---------------------------------------------------------------- HUD item slots + buffs */
+.hud .gold { pointer-events: auto; cursor: pointer; }
+.item .abbr { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #f1e6c8; text-align: center; line-height: 1; }
+.item.filled { background: linear-gradient(#2a2318, #17130e); border-color: #8a7348; }
+.buff-marks { position: absolute; left: 50%; bottom: calc(150px * var(--ui)); transform: translateX(-50%); display: flex; gap: 6px; }
+.buff-mark { font-size: 12px; font-weight: 700; padding: 2px 7px; background: rgba(10,12,14,0.9); border: 1px solid #4d4233; color: #f1e6c8; pointer-events: auto; }
+.buff-mark.dornenbock { border-color: #4a7ab8; }
+.buff-mark.glutwaechter { border-color: #c0573a; }
+.buff-mark.schleierwaechter { border-color: #9a6fd0; }
+
+/* ---------------------------------------------------------------- shop */
+.panel.shop.open { top: 60px; left: 50%; transform: translateX(-50%); width: min(860px, 96vw); height: auto; max-height: calc(100vh - 230px); overflow-y: auto; border-radius: 0; box-sizing: border-box; }
+.shop-head { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+.shop-head .ttl { margin: 0; }
+.shop-hint { color: #e07a5f; font-size: 13px; }
+.shop-close { margin-left: auto; }
+.shop-rec, .shop-inv { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px 0; border-top: 1px solid #3a3226; border-bottom: 1px solid #3a3226; }
+.shop-rec .lbl, .shop-inv .lbl { font-size: 12px; color: #c8aa6e; text-transform: uppercase; letter-spacing: 0.1em; margin-right: 6px; }
+.shop-body { display: grid; grid-template-columns: 1fr 250px; gap: 12px; margin: 8px 0; }
+.shop-tier { font-size: 12px; color: #c8aa6e; text-transform: uppercase; letter-spacing: 0.1em; margin: 6px 0 3px; }
+.shop-grid, .shop-from { display: flex; flex-wrap: wrap; gap: 4px; }
+.shop-item {
+  width: 52px; height: 46px; padding: 2px; background: #15120f; border: 1px solid #3a3226; border-radius: 0; color: #a99f8a; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+}
+.shop-item .abbr { font-size: 12px; font-weight: 700; }
+.shop-item .price { font-size: 11px; color: #a08a4a; }
+.shop-item.afford { color: #f1e6c8; }
+.shop-item.afford .price { color: #ffd24a; }
+.shop-item.rec { border-color: #c8aa6e; box-shadow: inset 0 0 0 1px rgba(200,170,110,0.35); }
+.shop-item.owned { background: #23301f; }
+.shop-item.sel { outline: 2px solid #f0e6d2; }
+.shop-detail { border-left: 1px solid #3a3226; padding-left: 12px; display: flex; flex-direction: column; gap: 3px; font-size: 13px; }
+.shop-name { font-weight: 800; color: #f3d98c; font-size: 15px; }
+.shop-cost { color: #ffd24a; }
+.shop-stat { color: #cfe3b0; }
+.shop-passive { color: #b9b0d8; font-size: 12px; }
+.shop-sub { font-size: 12px; color: #c8aa6e; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.08em; }
+.shop-empty { color: #a99f8a; }
+.shop-buy { margin-top: 8px; }
+.shop-buy:disabled, .shop-slot button:disabled { opacity: 0.45; cursor: not-allowed; }
+.shop-slot { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 64px; padding: 3px; border: 1px solid #3a3226; background: #15120f; }
+.shop-slot.empty { min-height: 40px; opacity: 0.5; }
+.shop-slot .abbr { font-weight: 700; font-size: 12px; color: #f1e6c8; }
+
+/* ---------------------------------------------------------------- scoreboard */
+.panel.scoreboard.open { min-width: min(820px, 96vw); text-align: left; border-radius: 0; }
+.score-table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 13px; }
+.score-table th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #c8aa6e; text-align: left; padding: 3px 6px; border-bottom: 1px solid #3a3226; }
+.score-table td { padding: 3px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.score-table.ally td.champ { color: #8fb7ea; }
+.score-table.enemy td.champ { color: #e58f7d; }
+.score-table tr.dead { opacity: 0.5; }
+.score-table tr.me td { color: #f3d98c; }
+.score-table .gold-cell { color: #ffd24a; }
+.mini-item { display: inline-block; min-width: 24px; padding: 1px 2px; margin-right: 2px; font-size: 10px; text-align: center; border: 1px solid #4d4233; background: #15120f; color: #f1e6c8; }
+.mini-item.empty { opacity: 0.3; }

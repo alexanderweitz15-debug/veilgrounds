@@ -5,8 +5,9 @@ Every id below is referenced from `src/data/champions/<id>.json` (`passive.hooks
 `{ "kind": "hook", "id": ... }`) and should be exported under that id from `src/sim/champions/<champ>.ts`.
 Per the contract in `src/sim/champions/hooks.ts`: ids from `passive.hooks` go into `hooks.passive` (PassiveHook
 event handlers), ability hook ids into `hooks.effects` (EffectHook called per resolution with EffectCtx).
-None of these is implemented yet. Mira Quell (Agent B) is not listed here. This file was generated together with
-the JSON; keep both in sync when editing either.
+Mira Quell (Agent B) is not listed here. This file was generated together with the JSON; keep both in sync when
+editing either. The engine side (timing phases, `ownsHits`, `onTick`, next-auto handling, summons, terrain, cooldown /
+recast / channel helpers) is documented at the top of `src/sim/champions/hooks.ts`.
 
 ## Data conventions used by the champion JSON
 
@@ -32,6 +33,8 @@ the JSON; keep both in sync when editing either.
   effects; the hook owns them and its numbers are given below.
 - **Backward hops** (`*_backstep`, `*_retreat_shot`, `*_smoke_hop`): the dash goes away from the cursor.
 - Passive numbers live only in `passive.desc` and here (the schema has no `passive.effects`).
+- **Line zones** use the ability field `line: "perpendicular" | "forward"` (Oleth R uses it; Oleth R has no
+  `duration`, so the stun resolves once and the hook keeps the wall for 4 s).
 
 ## Ilvane (`ilvane`)
 

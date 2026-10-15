@@ -6,5 +6,5 @@
   { "id": "erschoepfen", "name": { "de": "Erschöpfen", "en": "Exhaust" }, "cooldown": 210, "range": 650, "todo": "Phase 2" },
   { "id": "reinigen", "name": { "de": "Reinigen", "en": "Cleanse" }, "cooldown": 210, "range": 0, "todo": "Phase 2" },
   { "id": "teleport", "name": { "de": "Teleport", "en": "Teleport" }, "cooldown": 360, "range": 0, "todo": "Phase 2" },
-  { "id": "bannen", "name": { "de": "Bannen", "en": "Smite" }, "cooldown": 90, "range": 500, "todo": "Phase 2" }
+  { "id": "bannen", "name": { "de": "Bannen", "en": "Smite" }, "cooldown": 90, "range": 500 }
 ]

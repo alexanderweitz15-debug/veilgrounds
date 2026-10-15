@@ -8,8 +8,9 @@ import type { System } from './index';
 import { Kind } from '../types';
 import { MAX_ENT } from '../ecs';
 import { canMove, statMods, strongestSlow, tickBuffs } from '../buffs';
-import { championData } from '../champions';
+import { championData, passiveHooksOf } from '../champions';
 import { isBusy } from './abilities';
+import { applySecondaryStats, bonusStats } from '../items/inventory';
 
 const AS_CAP = 2.5;
 const FIELDS = ['ad', 'ap', 'armor', 'mr', 'as', 'ms'] as const;
@@ -72,9 +73,10 @@ export function computeChampionStats(sim: Sim, eid: number, initial: boolean): v
   const g = growthFactor(Math.max(1, Champ.level[eid]!));
   const st = statsState(sim);
 
-  const hpMax = b.hp + b.hpGrowth * g;
-  st.baseHp[eid] = hpMax;
-  const manaMax = d.resource === 'mana' ? b.mana + b.manaGrowth * g : d.resource === 'energy' ? 200 : 0;
+  const it = bonusStats(sim, eid); // items + jungle buffs (Agent H, src/sim/items/inventory.ts)
+  const hpMax = b.hp + b.hpGrowth * g + (it.hp ?? 0);
+  st.baseHp[eid] = hpMax - (it.hp ?? 0);
+  const manaMax = d.resource === 'mana' ? b.mana + b.manaGrowth * g + (it.mana ?? 0) : d.resource === 'energy' ? 200 : 0;
   if (initial) {
     Hp.max[eid] = Hp.cur[eid] = hpMax;
     Mana.max[eid] = Mana.cur[eid] = manaMax;
@@ -87,27 +89,29 @@ export function computeChampionStats(sim: Sim, eid: number, initial: boolean): v
     Mana.max[eid] = manaMax;
     Mana.cur[eid] = Math.min(manaMax, Mana.cur[eid]! + Math.max(0, dm));
   }
-  Hp.regen[eid] = (b.hpRegen + b.hpRegenGrowth * g) / 5;
-  Mana.regen[eid] = d.resource === 'mana' ? (b.manaRegen + b.manaRegenGrowth * g) / 5 : d.resource === 'energy' ? 10 : 0;
+  Hp.regen[eid] = ((b.hpRegen + b.hpRegenGrowth * g) / 5) * (1 + (it.hpRegenPct ?? 0) / 100);
+  Mana.regen[eid] = d.resource === 'mana' ? ((b.manaRegen + b.manaRegenGrowth * g) / 5) * (1 + (it.manaRegenPct ?? 0) / 100) : d.resource === 'energy' ? 10 : 0;
 
   const adBase = b.ad + b.adGrowth * g;
   const [adPct, adFlat] = statMods(sim, eid, 'ad');
-  Stats.ad[eid] = (adBase + adFlat) * (1 + adPct / 100);
+  Stats.ad[eid] = (adBase + adFlat + (it.ad ?? 0)) * (1 + (adPct + (it.adPct ?? 0)) / 100);
   Stats.bonusAd[eid] = Stats.ad[eid]! - adBase;
   const [apPct, apFlat] = statMods(sim, eid, 'ap');
-  Stats.ap[eid] = apFlat * (1 + apPct / 100);
+  Stats.ap[eid] = (apFlat + (it.ap ?? 0)) * (1 + (apPct + (it.apPct ?? 0)) / 100);
   const [arPct, arFlat] = statMods(sim, eid, 'armor');
-  Stats.armor[eid] = (b.armor + b.armorGrowth * g + arFlat) * (1 + arPct / 100);
+  Stats.armor[eid] = (b.armor + b.armorGrowth * g + arFlat + (it.armor ?? 0)) * (1 + arPct / 100);
   const [mrPct, mrFlat] = statMods(sim, eid, 'mr');
-  Stats.mr[eid] = (b.mr + b.mrGrowth * g + mrFlat) * (1 + mrPct / 100);
+  Stats.mr[eid] = (b.mr + b.mrGrowth * g + mrFlat + (it.mr ?? 0)) * (1 + mrPct / 100);
+  applySecondaryStats(sim, eid, it); // crit, lifesteal, lethality, haste (delta-applied, keeps hook writes)
   // AS = base * (1 + bonus%), level growth counts as bonus AS (spec)
-  const asBonus = b.asGrowth * g + statMods(sim, eid, 'as')[0];
+  const asBonus = b.asGrowth * g + statMods(sim, eid, 'as')[0] + (it.asPct ?? 0);
   Stats.as[eid] = Math.min(AS_CAP, b.as * (1 + asBonus / 100));
-  Stats.range[eid] = b.range;
+  Stats.range[eid] = b.range + statMods(sim, eid, 'range')[1]; // flat range buffs
   Stats.windup[eid] = b.windup;
   Stats.tenacity[eid] = Math.min(1, statMods(sim, eid, 'tenacity')[0] / 100);
-  const ms = softCapMs(finalMs(sim, eid, b.ms));
+  const ms = softCapMs(finalMs(sim, eid, b.ms + (it.msFlat ?? 0)) * (1 + (it.msPct ?? 0) / 100));
   Stats.ms[eid] = !canMove(sim, eid) || isBusy(sim, eid) ? 0 : ms;
+  for (const h of passiveHooksOf(sim, eid)) h.onComputeStats?.(sim, eid);
 }
 
 /** Base HP (base + growth) of a champion; used by bonus-HP ratios. */

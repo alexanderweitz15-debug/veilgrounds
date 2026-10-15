@@ -118,7 +118,8 @@ export class Units {
         if (g.n >= g.vis.instanceMatrix.count) continue;
         let x = state.x(e);
         let y = state.y(e);
-        const size = SPRITE_SIZE[key];
+        // monsters scale with their hitbox (Agent H): small camp members ~0.6x, Schleierwächter ~1.8x
+        const size = key === 'monster' ? SPRITE_SIZE.monster * Math.min(1.8, Math.max(0.6, e.radius / 90)) : SPRITE_SIZE[key];
         let bob = 0;
         let sx = 1;
         let sy = 1;

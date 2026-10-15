@@ -55,3 +55,30 @@ describe('map', () => {
     }
   });
 });
+
+describe('wall corners', () => {
+  it('a unit walking from the blue base to Hohlkaefer never gets stuck (agent H repro)', async () => {
+    const { createSim, step } = await import('../src/sim/sim');
+    const sim = createSim({ seed: 3, mode: 'sandbox', minionsEnabled: false, players: [{ slot: 0, team: 0, champion: 'mira', role: 'jungle', summoners: ['sprung', 'heilen'], isHuman: true }] });
+    const me = sim.slots[0]!;
+    step(sim, [{ slot: 0, cmd: { t: 'cheat', op: 'teleport', x: 3846, y: 2742 } }]);
+    step(sim, [{ slot: 0, cmd: { t: 'move', x: 8800, y: 2900 } }]);
+    for (let i = 0; i < 30 * 25; i++) step(sim);
+    expect(Math.hypot(sim.c.Pos.x[me]! - 8800, sim.c.Pos.y[me]! - 2900)).toBeLessThan(120);
+  });
+
+  it('lineWalkable rejects segments that clip a blocked cell corner', () => {
+    // find a blocked cell with free diagonal neighbours and test the diagonal through its corner region
+    const { w, walk } = map.nav;
+    let found = false;
+    for (let i = w + 1; i < walk.length - w - 1 && !found; i++) {
+      if (walk[i] !== 0 || walk[i - w - 1] !== 1 || walk[i + w + 1] !== 1) continue;
+      const cx = i % w;
+      const cy = (i - cx) / w;
+      // segment from lower-left free cell to upper-right free cell passes through the blocked cell
+      expect(lineWalkable(map.nav, (cx - 0.5) * 50, (cy - 0.5) * 50, (cx + 1.5) * 50, (cy + 1.5) * 50)).toBe(false);
+      found = true;
+    }
+    expect(found).toBe(true);
+  });
+});

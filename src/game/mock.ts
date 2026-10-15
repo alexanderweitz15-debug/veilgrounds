@@ -321,8 +321,10 @@ export function mockLink(): SimLink {
         eid: me.id, champ: MIRA_ID, level, xp, gold, cs, dead: !me.alive, respawnIn: me.alive ? 0 : 10, recallLeft: recallAt ? (recallAt - tick) / 30 : 0,
         abilities: [ab('pfeilhagel', 0, 5, 6), ab('lichtfalle', 1, 5, 10), ab('schritt', 2, 5, 14), ab('sternenschuss', 3, 3, 80), ab('sprung', 4, 1, 300), ab('heilen', 5, 1, 300)],
         stats: { ad: 55, ap: 0, armor: 24, mr: 30, as: 0.66, ms: 330, range: 550, crit: 0 },
+        items: ['kurzschwert', 'trank', null, null, null, null, null], inFountain: false, marks: [],
       },
       events,
+      players: [],
     };
   };
 

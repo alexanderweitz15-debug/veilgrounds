@@ -2,16 +2,20 @@
 // kind 0 homing auto, kind 2 homing targeted ability: chase target, hit on contact, vanish if it died.
 // kind 1 line skillshot: swept segment (previous -> new position) vs unit circles; hit if the segment passes
 // within radius + width/2 (edge inclusive = visible area, no tolerance). Earliest hit along the sweep wins,
-// ties by lower eid.
+// ties by lower eid. Line projectiles reaching max range call the ability hooks with phase 'expire'; returning
+// projectiles (fireAbilityProjectile { returning }) fly back to the caster instead and may hit every unit once more.
+// Units with the stat buff 'projImmune' are passed through by enemy line projectiles and dodge homing ones.
 
 import { addEntity, query } from 'bitecs';
 import type { Sim } from '../sim';
 import type { System } from './index';
 import { addComp, isRef } from '../sim';
 import { DT, Kind, isStructure } from '../types';
-import { segDist2 } from '../vec';
+import { dir, dist, segDist2 } from '../vec';
+import { hasStat } from '../buffs';
+import type { EffectCtx } from '../champions/hooks';
 import { resolveAutoHit, type AutoPayload } from './attack';
-import { resolveAbilityHit, type AbilityPayload } from './abilities';
+import { resolveAbilityExpire, resolveAbilityHit, rv, type AbilityPayload } from './abilities';
 
 export type Payload = AutoPayload | AbilityPayload;
 
@@ -83,8 +87,49 @@ function aimAt(sim: Sim, eid: number, t: number): void {
 }
 
 function remove(sim: Sim, eid: number): void {
-  projState(sim).payloads.delete(eid);
+  if (!projState(sim).payloads.delete(eid)) return;
   sim.doomed.push(eid);
+}
+
+/** Remove a projectile without effect (blocked, destroyed). */
+export const destroyProjectile = remove;
+
+export interface AbilityProjectileOpts {
+  /** Start (default caster position) and direction (default ctx.dx/dy) of a line projectile. */
+  x?: number;
+  y?: number;
+  dx?: number;
+  dy?: number;
+  /** Homing at this unit instead of a line. */
+  target?: number;
+  /** Defaults: ability speed/width/range. */
+  speed?: number;
+  width?: number;
+  range?: number;
+  /** Default: the ability flags (pierce, blocked_by_minions). */
+  flags?: string[];
+  /** Passed back to hooks as ctx.tag. */
+  tag?: string;
+  /** Fly back to the caster at max range (each unit can be hit once per direction). */
+  returning?: boolean;
+  /** Home back to the caster right away (tag 'return'), e.g. a return flight spawned at an 'expire' point. */
+  returnNow?: boolean;
+}
+
+/** Ability projectile owned by ctx (hits resolve like the ability's own projectile: generic effects + hooks). */
+export function fireAbilityProjectile(sim: Sim, ctx: EffectCtx, o: AbilityProjectileOpts = {}): number {
+  const { Pos, Unit } = sim.c;
+  const ab = ctx.ability;
+  const payload: AbilityPayload = {
+    t: 'ability', caster: ctx.caster, casterSerial: Unit.serial[ctx.caster]!, slot: ctx.slot, rank: ctx.rank,
+    flags: o.flags ?? ab.flags ?? [], hit: [], dx: o.dx ?? ctx.dx, dy: o.dy ?? ctx.dy, cx: ctx.cursorX, cy: ctx.cursorY,
+    tag: o.tag ?? (o.returnNow ? 'return' : ''), ret: o.returnNow ? 2 : o.returning ? 1 : 0,
+  };
+  const x = o.x ?? Pos.x[ctx.caster]!;
+  const y = o.y ?? Pos.y[ctx.caster]!;
+  const speed = o.speed ?? ab.speed ?? 1500;
+  if (o.target !== undefined) return spawnProjectile(sim, { kind: 2, src: ctx.caster, team: Unit.team[ctx.caster]!, x, y, target: o.target, speed, width: o.width ?? ab.width ?? 0, payload });
+  return spawnProjectile(sim, { kind: 1, src: ctx.caster, team: Unit.team[ctx.caster]!, x, y, dx: payload.dx, dy: payload.dy, speed, width: o.width ?? ab.width ?? 60, maxDist: o.range ?? rv(ab.range, ctx.rank), payload });
 }
 
 export const projectilesSystem: System = {
@@ -105,6 +150,7 @@ function updateHoming(sim: Sim, eid: number, payload: Payload): void {
   const { Pos, Proj, Unit } = sim.c;
   const t = Proj.target[eid]!;
   if (!isRef(sim, t, Proj.targetSerial[eid]!)) return remove(sim, eid);
+  if (Unit.team[t] !== Proj.team[eid] && hasStat(sim, t, 'projImmune')) return remove(sim, eid); // dodged
   const step = Proj.speed[eid]! * DT;
   const dx = Pos.x[t]! - Pos.x[eid]!;
   const dy = Pos.y[t]! - Pos.y[eid]!;
@@ -134,6 +180,7 @@ function lineCandidate(sim: Sim, team: number, e: number, anyUnit: boolean): boo
   const k = Unit.kind[e]!;
   if (!Unit.alive[e] || Unit.untargetable[e] || Unit.team[e] === team) return false;
   if (k === Kind.Projectile || k === Kind.Ward || isStructure(k)) return false;
+  if (hasStat(sim, e, 'projImmune')) return false;
   return anyUnit || k === Kind.Champion || k === Kind.Dummy;
 }
 
@@ -157,6 +204,14 @@ export function sweepHit(ax: number, ay: number, bx: number, by: number, cx: num
 function updateLine(sim: Sim, eid: number, payload: Payload): void {
   const { Pos, Proj, Unit } = sim.c;
   if (payload.t !== 'ability') return remove(sim, eid);
+  if (payload.ret === 2) {
+    // returning: home on the caster
+    const c = payload.caster;
+    if (Unit.serial[c] !== payload.casterSerial || !Unit.alive[c]) return remove(sim, eid);
+    const d = dist(Pos.x[eid]!, Pos.y[eid]!, Pos.x[c]!, Pos.y[c]!);
+    [Proj.dx[eid], Proj.dy[eid]] = dir(Pos.x[eid]!, Pos.y[eid]!, Pos.x[c]!, Pos.y[c]!);
+    Proj.maxDist[eid] = Proj.travelled[eid]! + d;
+  }
   const remaining = Proj.maxDist[eid]! - Proj.travelled[eid]!;
   const step = Math.min(Proj.speed[eid]! * DT, remaining);
   const ax = Pos.x[eid]!;
@@ -189,5 +244,14 @@ function updateLine(sim: Sim, eid: number, payload: Payload): void {
   Pos.x[eid] = bx;
   Pos.y[eid] = by;
   Proj.travelled[eid] = Proj.travelled[eid]! + step;
-  if (Proj.travelled[eid]! >= Proj.maxDist[eid]! - 1e-9) remove(sim, eid);
+  if (Proj.travelled[eid]! >= Proj.maxDist[eid]! - 1e-9) {
+    if (payload.ret === 1) {
+      payload.ret = 2;
+      payload.hit = [];
+      payload.tag = 'return';
+      return;
+    }
+    remove(sim, eid);
+    if (payload.ret === 0) resolveAbilityExpire(sim, payload, bx, by);
+  }
 }

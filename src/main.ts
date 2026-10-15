@@ -11,6 +11,7 @@ import { RUNES, runePresets, runesFromPreset } from './sim/items/runes';
 import { CHAMPION_DATA } from './sim/champions';
 import { renderMainMenu, type MenuEntry } from './ui/mainMenu';
 import { renderEncyclopedia } from './ui/encyclopedia';
+import { buildClassicConfig, renderClassicLobby, renderLoading } from './ui/classicLobby';
 
 const app = document.getElementById('app')!;
 
@@ -44,6 +45,7 @@ function mainMenu(): void {
   const s = screen();
   // One line per mode; the classic 5v5 entry is added by the classic-lobby work.
   const modes: MenuEntry[] = [
+    { name: t('menu.classic'), desc: t('menu.classicDesc'), meta: t('menu.classicMeta'), onSelect: () => classicLobby() },
     { name: t('menu.lane'), desc: t('menu.laneDesc'), meta: t('menu.laneMeta'), onSelect: () => lobby('lane') },
     { name: t('menu.sandbox'), desc: t('menu.sandboxDesc'), meta: t('menu.sandboxMeta'), onSelect: () => lobby('sandbox') },
     { name: t('menu.mock'), desc: t('menu.mockDesc'), kind: 'dev', onSelect: () => start(null) },
@@ -64,6 +66,11 @@ function mainMenu(): void {
   });
 }
 
+/** Classic 5v5 vs bots (Agent H): lobby -> loading screen -> game. */
+function classicLobby(): void {
+  const s = screen();
+  renderClassicLobby(s, mainMenu, (cfg) => renderLoading(screen(), cfg, () => start(cfg)));
+}
 
 function encyclopedia(): void {
   const s = screen();
@@ -142,6 +149,7 @@ void (async () => {
   const q = new URLSearchParams(location.search);
   // dev shortcuts: ?mock, ?play=lane|sandbox
   if (q.has('mock')) start(null);
+  else if (q.get('play') === 'classic') start(buildClassicConfig());
   else if (q.get('play') === 'lane' || q.get('play') === 'sandbox') start(configFor(q.get('play') as 'lane' | 'sandbox', runesFromPreset(MIRA_ID, settings.runePresets[MIRA_ID])));
   else mainMenu();
 })();

@@ -37,7 +37,8 @@ export type Effect =
   | { kind: 'knockback' | 'pull'; distance: number; target?: EffectTarget }
   | {
       kind: 'buff';
-      stat: 'as' | 'ms' | 'ad' | 'ap' | 'armor' | 'mr' | 'dmgReduction' | 'tenacity' | 'invisible' | 'untargetable';
+      /** range: flat units; armorPen: percent armor penetration; projImmune: enemy projectiles pass through. */
+      stat: 'as' | 'ms' | 'ad' | 'ap' | 'armor' | 'mr' | 'dmgReduction' | 'tenacity' | 'invisible' | 'untargetable' | 'range' | 'armorPen' | 'projImmune';
       pct?: Ranked;
       flat?: Ranked;
       duration: Ranked;
@@ -66,7 +67,10 @@ export interface AbilityData {
   /** Circles/zones: radius; cones: angle in degrees (full angle). */
   radius?: number;
   angle?: number;
-  /** Delay between cast end and effect (ground AoEs, telegraphed). */
+  /** Zones/circles: line geometry instead of a circle; length 2 x radius, thickness width. 'perpendicular' = centred on
+   *  the target point, across the cast direction (walls, wires); 'forward' = from the caster along the cast direction. */
+  line?: 'perpendicular' | 'forward';
+  /** Delay between cast end and effect (ground AoEs, telegraphed; self AoEs; blinks: teleport after the delay). */
   delay?: number;
   /** Zones/buffs lasting over time. */
   duration?: Ranked;

@@ -10,14 +10,15 @@ import { isRef } from '../sim';
 import { MAX_ENT } from '../ecs';
 import { Kind, TICK_HZ, Team, isStructure, type DamageType } from '../types';
 import { dealDamage } from '../damage';
-import { canAttack, healUnit, isBlind } from '../buffs';
+import { canAttack, healUnit, isBlind, removeBuffs } from '../buffs';
 import { sees } from '../vision';
 import { findPath } from '../map';
 import { championData, passiveHooksOf } from '../champions';
 import { towerShotDamage } from './towers';
 import { MINION_DMG_VS_CHAMP_STRUCT } from './minions';
 import { spawnProjectile } from './projectiles';
-import { isBusy } from './abilities';
+import { breakChannel, isBusy, resolveEmpowered, takeEmpowered } from './abilities';
+import { ownerOnlyTarget } from '../summons';
 
 export const CRIT_MULT = 1.75;
 /** Attack-move acquisition reach beyond attack range. */
@@ -80,15 +81,19 @@ export function windupTicks(sim: Sim, eid: number): number {
   return Math.max(1, Math.round((TICK_HZ * w) / as));
 }
 
-/** Movement/stop command arrived: cancel windup (attack lost, timer kept) or backswing (orbwalk). */
+/** Movement/stop command arrived: cancel windup (attack lost, timer kept) or backswing (orbwalk); ends channels. */
 export function onMoveCommand(sim: Sim, eid: number): void {
   sim.c.Atk.phase[eid] = 0;
+  breakChannel(sim, eid);
 }
 
 /** True if `t` is a valid auto-attack target for `eid` right now (ignores range). */
 export function canTarget(sim: Sim, eid: number, t: number): boolean {
   const { Unit } = sim.c;
-  if (t < 0 || !Unit.alive[t] || Unit.untargetable[t] || Unit.kind[t] === Kind.Projectile) return false;
+  if (t < 0 || !Unit.alive[t] || Unit.kind[t] === Kind.Projectile) return false;
+  const owner = ownerOnlyTarget(sim, t); // summons targetable only by their owner (e.g. a powder keg)
+  if (owner >= 0) return owner === eid;
+  if (Unit.untargetable[t]) return false;
   const team = Unit.team[eid]!;
   if (Unit.team[t] === team) return false;
   return team === Team.Neutral || isStructure(Unit.kind[t]!) || sees(sim, team, t);
@@ -214,6 +219,8 @@ export interface AutoPayload {
   raw: boolean;
   crit: boolean;
   miss: boolean;
+  /** Empowered auto of a next-auto ability (abilities.armNextAuto). */
+  emp?: { slot: number; rank: number };
 }
 
 /** Hit point: compute damage now (crit roll, tower warming), then hit instantly (melee) or launch projectiles. */
@@ -249,14 +256,17 @@ function fire(sim: Sim, eid: number, t: number): void {
       const r = h.onAutoFire?.(sim, eid, t);
       if (r) extra = extra.concat(r);
     }
+    removeBuffs(sim, eid, (b) => b.kind === 'stat' && b.stat === 'invisible'); // attacking breaks invisibility
   } else if (kind >= Kind.MinionMelee && kind <= Kind.MinionSuper) {
     if (tk === Kind.Champion || isStructure(tk)) amount *= MINION_DMG_VS_CHAMP_STRUCT;
   }
   const base: AutoPayload = { t: 'auto', src: eid, srcSerial: Unit.serial[eid]!, amount, type, raw, crit, miss: isBlind(sim, eid) };
+  const emp = kind === Kind.Champion ? takeEmpowered(sim, eid) : null;
   const shots = [1, ...extra];
   const speed = attackProjectileSpeed(sim, eid);
   for (let i = 0; i < shots.length; i++) {
     const p: AutoPayload = { ...base, amount: amount * shots[i]! };
+    if (i === 0 && emp) p.emp = emp;
     if (speed > 0) {
       // twin arrows: offset sideways so render shows two
       const off = i === 0 ? 0 : 20 * i;
@@ -276,4 +286,5 @@ export function resolveAutoHit(sim: Sim, p: AutoPayload, dst: number): void {
   if (src < 0 || Unit.kind[src] !== Kind.Champion) return;
   if (Stats.lifesteal[src]! > 0 && Unit.alive[src]) healUnit(sim, src, dmg * Stats.lifesteal[src]!);
   for (const h of passiveHooksOf(sim, src)) h.onAutoHit?.(sim, src, dst, dmg);
+  if (p.emp) resolveEmpowered(sim, src, p.emp, dst, p.amount);
 }

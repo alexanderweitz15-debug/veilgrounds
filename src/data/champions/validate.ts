@@ -33,7 +33,7 @@ const FLAGS = ['blocked_by_minions', 'pierce', 'unstoppable', 'recast', 'ground_
 const COST_TYPES = ['mana', 'energy', 'hp', 'none'];
 const RESOURCES = ['mana', 'energy', 'none'];
 const TARGETS = ['hit', 'self', 'ally', 'allies', 'enemies'];
-const BUFF_STATS = ['as', 'ms', 'ad', 'ap', 'armor', 'mr', 'dmgReduction', 'tenacity', 'invisible', 'untargetable'];
+const BUFF_STATS = ['as', 'ms', 'ad', 'ap', 'armor', 'mr', 'dmgReduction', 'tenacity', 'invisible', 'untargetable', 'range', 'armorPen', 'projImmune'];
 const VOICE_KEYS = ['pick', 'firstBlood', 'kill', 'death', 'recall', 'taunt'];
 const SCORE_KEYS = ['engage', 'peel', 'range', 'scaling', 'waveclear', 'mobility'];
 
@@ -46,7 +46,7 @@ const BASE_KEYS = [
   'armor', 'armorGrowth', 'mr', 'mrGrowth', 'as', 'asGrowth', 'range', 'ms', 'windup', 'radius',
 ];
 const ABILITY_REQUIRED = ['id', 'name', 'desc', 'type', 'castTime', 'range', 'cooldown', 'cost', 'costType', 'effects'];
-const ABILITY_OPTIONAL = ['width', 'speed', 'radius', 'angle', 'delay', 'duration', 'distance', 'flags'];
+const ABILITY_OPTIONAL = ['width', 'speed', 'radius', 'angle', 'delay', 'duration', 'distance', 'flags', 'line'];
 const SCALING_KEYS = ['base', 'ad', 'bonusAd', 'ap', 'maxHp', 'bonusHp', 'targetMaxHp', 'targetMissingHp', 'byLevel'];
 
 /** Allowed keys per effect kind: [required, optional]. */
@@ -232,6 +232,8 @@ export function validateChampion(raw: unknown, where = 'champion'): string[] {
       if ('duration' in a) ranked(a.duration, `${path}.duration`, len);
       for (const k of ['width', 'speed', 'radius', 'angle', 'delay', 'distance']) if (k in a) num(a[k], `${path}.${k}`);
       if (!COST_TYPES.includes(a.costType as string)) err(`${path}.costType`, 'invalid costType');
+      if ('line' in a && a.line !== 'perpendicular' && a.line !== 'forward') err(`${path}.line`, 'expected perpendicular|forward');
+      if ('line' in a && typeof a.width !== 'number') err(`${path}.line`, 'line geometry needs width');
       if (a.costType === 'mana' && c.resource !== 'mana') err(`${path}.costType`, 'mana cost on non-mana champion');
       if (a.costType === 'energy' && c.resource !== 'energy') err(`${path}.costType`, 'energy cost on non-energy champion');
       if (a.costType === 'none' && a.cost !== 0) err(`${path}.cost`, 'costType none but cost > 0');

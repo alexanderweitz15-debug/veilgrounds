@@ -9,6 +9,9 @@ import { keyLabel, binds, type Action } from '../input/keybinds';
 import { abilityInfo, champName, summonerName } from './names';
 import type { Panel, Armed } from '../input/controller';
 import { CUM_XP } from '../sim/systems/economy';
+import type { PlayerSetup } from '../sim/types';
+import { ShopPanel, itemAbbr, itemTooltip } from './shop';
+import { Scoreboard } from './scoreboard';
 
 const KILLFEED_MS = 9000;
 
@@ -46,6 +49,9 @@ export interface HudHooks {
   cheat(op: string): void;
   arm(a: Armed): void;
   quit(): void;
+  /** Shop (Agent H). */
+  buy(item: string): void;
+  sell(slot: number): void;
 }
 
 export class Hud {
@@ -78,8 +84,12 @@ export class Hud {
   private readonly noChamp: HTMLElement;
   private feedEntries: { at: number; node: HTMLElement }[] = [];
   private champ = '';
+  private readonly shop: ShopPanel;
+  private readonly score: Scoreboard;
+  private itemKey = '';
+  private readonly marks: HTMLElement;
 
-  constructor(hooks: HudHooks, sandbox: boolean) {
+  constructor(hooks: HudHooks, sandbox: boolean, players: readonly PlayerSetup[] = []) {
     const r = this.root;
     // ---- top bar
     const top = el('div', 'hud-top', r);
@@ -132,10 +142,12 @@ export class Hud {
     const itemKeys: Action[] = ['item1', 'item2', 'item3', 'item4', 'item5', 'item6', 'trinket'];
     itemKeys.forEach((k, i) => {
       const s = el('div', i === 6 ? 'item trinket' : 'item', grid);
+      el('div', 'abbr', s);
       el('div', 'key', s, keyLabel(binds[k]));
       this.items.push(s);
     });
     this.gold = el('div', 'gold', inv, '0');
+    this.gold.addEventListener('mousedown', (e) => (e.stopPropagation(), this.togglePanel('shop')));
     this.armedHint = el('div', 'armed-hint', bottom);
 
     // ---- centre overlays
@@ -159,6 +171,10 @@ export class Hud {
     };
     el('div', 'ttl', this.panels.debug, t('hud.debug'));
     this.debugText = el('pre', '', this.panels.debug);
+    this.shop = new ShopPanel(this.panels.shop, hooks);
+    this.score = new Scoreboard(this.panels.scoreboard, players);
+    // active jungle/objective buffs (Dornenbock, Glutwächter, Schleierwächter) above the ability bar
+    this.marks = el('div', 'buff-marks', r);
 
     // ---- sandbox cheats
     if (sandbox) {
@@ -233,6 +249,7 @@ export class Hud {
     setText(this.kills[1], String(state.kills[1]));
     setText(this.towers[0], String(state.towers[0]));
     setText(this.towers[1], String(state.towers[1]));
+    this.score.update(snap);
     const me = snap.me;
     toggle(this.noChamp, 'open', !me);
     if (!me) {
@@ -252,6 +269,8 @@ export class Hud {
     const hi = CUM_XP[me.level + 1];
     setStyle(this.xpRing, '--p', hi === undefined ? '1' : String(Math.min(1, Math.max(0, (me.xp - lo) / Math.max(1, hi - lo)))));
     setText(this.gold, String(Math.floor(me.gold)));
+    this.drawItems(me.items ?? [], me.marks ?? []);
+    if (this.panels.shop.classList.contains('open')) this.shop.update(me);
     if (meE) {
       const total = Math.max(meE.maxHp, meE.hp + meE.shield) || 1;
       setStyle(this.hpFill, 'width', `${(100 * meE.hp) / total}%`);
@@ -270,6 +289,24 @@ export class Hud {
     if (me.recallLeft > 0) {
       setText(this.recall.firstElementChild as HTMLElement, t('hud.recall', { s: me.recallLeft.toFixed(1) }));
       setStyle(this.recallFill, 'width', `${Math.min(100, (me.recallLeft / 8) * 100)}%`);
+    }
+  }
+
+  /** Item slots (abbreviated names + tooltip) and active jungle/objective buffs. */
+  private drawItems(items: (string | null)[], marks: { id: string; left: number }[]): void {
+    const key = items.join(',') + '|' + marks.map((m) => `${m.id}:${Math.ceil(m.left)}`).join(',');
+    if (key === this.itemKey) return;
+    this.itemKey = key;
+    this.items.forEach((s, i) => {
+      const id = items[i] ?? null;
+      setText(s.firstElementChild as HTMLElement, id ? itemAbbr(id) : '');
+      toggle(s, 'filled', !!id);
+      s.title = id ? itemTooltip(id) : '';
+    });
+    this.marks.textContent = '';
+    for (const m of marks) {
+      const b = el('div', `buff-mark ${m.id}`, this.marks, `${t(`buff.${m.id}`)} ${Math.ceil(m.left)}s`);
+      b.title = t(`buff.${m.id}.desc`);
     }
   }
 

@@ -73,8 +73,11 @@ export class Game {
         cheat: (op) => this.link.send({ t: 'cheat', op: op as 'refreshCd' }),
         arm: (a) => this.input.setArmed(a),
         quit: () => this.exit(),
+        buy: (item) => this.link.send({ t: 'buy', item }),
+        sell: (slot) => this.link.send({ t: 'sell', slot }),
       },
       config?.mode === 'sandbox' || !config,
+      config?.players ?? [],
     );
     this.root.appendChild(this.hud.root);
     this.minimap = new Minimap(

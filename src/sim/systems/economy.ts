@@ -19,6 +19,7 @@ import { heal } from '../damage';
 import { onMoveCommand } from './attack';
 import { MINION_STATS, recordCombat } from './minions';
 import { onStructureDeath } from './towers';
+import { onMonsterDeath } from './jungle';
 
 export const START_GOLD = 500;
 export const PASSIVE_START_TICK = 1950;
@@ -48,15 +49,25 @@ interface EconSt {
   killStreak: Map<number, number>;
   deathStreak: Map<number, number>;
   firstBlood: boolean;
+  /** Scoreboard tallies per champion eid: [kills, deaths, assists] (Agent H). */
+  kda: Map<number, [number, number, number]>;
 }
 
 function st(sim: Sim): EconSt {
   let s = sim.state.economy as EconSt | undefined;
   if (!s) {
-    s = { dmg: new Map(), killStreak: new Map(), deathStreak: new Map(), firstBlood: false };
+    s = { dmg: new Map(), killStreak: new Map(), deathStreak: new Map(), firstBlood: false, kda: new Map() };
     sim.state.economy = s;
   }
   return s;
+}
+
+/** [kills, deaths, assists] of a champion. */
+export function kda(sim: Sim, eid: number): [number, number, number] {
+  const s = st(sim);
+  let k = s.kda.get(eid);
+  if (!k) s.kda.set(eid, (k = [0, 0, 0]));
+  return k;
 }
 
 /** All champion entities (alive or dead), ascending eid. */
@@ -207,7 +218,10 @@ function championDeath(sim: Sim, victim: number, killer: number): void {
       const f = Math.min(2, Math.max(0.4, 1 + 0.2 * (avg - Champ.level[p]!)));
       grantXp(sim, p, (total / parts.length) * f);
     }
+    kda(sim, credited)[0]++;
+    for (const a of assisters) kda(sim, a)[2]++;
   }
+  kda(sim, victim)[1]++;
   s.killStreak.set(victim, 0);
   s.deathStreak.set(victim, (s.deathStreak.get(victim) ?? 0) + 1);
   s.dmg.delete(victim);
@@ -221,7 +235,7 @@ export function onDeath(sim: Sim, victim: number, killer: number): void {
   if (isMinion(k)) minionDeath(sim, victim, killer);
   else if (k === Kind.Champion) championDeath(sim, victim, killer);
   else if (isStructure(k)) onStructureDeath(sim, victim, killer);
-  // ponytail: monsters (Phase 3 jungle) reward through their own camp data.
+  else if (k === Kind.Monster) onMonsterDeath(sim, victim, killer); // camp data in jungle.ts (Agent H)
 }
 
 function respawn(sim: Sim, eid: number): void {

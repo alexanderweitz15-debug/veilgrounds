@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "bot-sim": "tsx tools/botSim.ts"
   },
   "dependencies": {
     "bitecs": "0.4.0",

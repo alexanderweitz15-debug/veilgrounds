@@ -1,12 +1,13 @@
 // Team vision. Strict fog of war: snapshots and bot views only contain enemies a team can see.
 // Bush rule: a unit inside a bush is visible to an enemy only if that enemy stands in the same bush
 // (or a ward/true-sight source covers it - wards arrive with Phase 3).
+// Invisible units (stat buff 'invisible') are hidden from the enemy team unless revealed (reveal beats invisibility).
 
 import { query } from 'bitecs';
 import type { Sim } from './sim';
 import { inBush } from './map';
 import { Team } from './types';
-import { isRevealed } from './buffs';
+import { hasStat, isRevealed } from './buffs';
 
 /** visible[team][eid] = 1 if team sees eid this tick. Recomputed once per tick by computeVision. */
 export interface VisionState {
@@ -32,14 +33,12 @@ export function computeVision(sim: Sim): VisionState {
   const ents = query(sim.world, [Unit]);
   v.visible[0].fill(0);
   v.visible[1].fill(0);
-  const sources: number[] = [];
   v.sources[0].length = 0;
   v.sources[1].length = 0;
   for (let i = 0; i < ents.length; i++) {
     const e = ents[i]!;
     v.bush[e] = Unit.alive[e] ? inBush(sim.map, Pos.x[e]!, Pos.y[e]!) : -1;
     if (Unit.alive[e] && Vision.r[e]! > 0 && Unit.team[e]! !== Team.Neutral) {
-      sources.push(e);
       v.sources[Unit.team[e] as 0 | 1].push(e);
     }
   }
@@ -51,22 +50,35 @@ export function computeVision(sim: Sim): VisionState {
     for (const viewer of [Team.Blue, Team.Red] as const) {
       if (v.visible[viewer][e]) continue;
       if (isRevealed(sim, viewer, e)) {
-        v.visible[viewer][e] = 1; // reveal (e.g. Mira W) ignores range and bushes
+        v.visible[viewer][e] = 1; // reveal (e.g. Mira W) ignores range, bushes and invisibility
         continue;
       }
-      for (const s of sources) {
-        if (Unit.team[s] !== viewer) continue;
-        const dx = Pos.x[e]! - Pos.x[s]!;
-        const dy = Pos.y[e]! - Pos.y[s]!;
-        const r = Vision.r[s]!;
-        if (dx * dx + dy * dy > r * r) continue;
-        if (v.bush[e]! >= 0 && v.bush[s] !== v.bush[e]) continue;
-        v.visible[viewer][e] = 1;
-        break;
-      }
+      if (hasStat(sim, e, 'invisible')) continue;
+      if (sourceSees(sim, v, viewer, e, -1)) v.visible[viewer][e] = 1;
     }
   }
   return v;
+}
+
+function sourceSees(sim: Sim, v: VisionState, viewer: number, e: number, exclude: number): boolean {
+  const { Pos, Vision } = sim.c;
+  for (const s of v.sources[viewer as 0 | 1]) {
+    if (s === exclude) continue;
+    const dx = Pos.x[e]! - Pos.x[s]!;
+    const dy = Pos.y[e]! - Pos.y[s]!;
+    const r = Vision.r[s]!;
+    if (dx * dx + dy * dy > r * r) continue;
+    if (v.bush[e]! >= 0 && v.bush[s] !== v.bush[e]) continue;
+    return true;
+  }
+  return false;
+}
+
+/** Does any vision source of `team` other than `exclude` see eid (range/bush/invisibility rules, reveals ignored)? */
+export function seenByOthers(sim: Sim, team: number, eid: number, exclude: number): boolean {
+  if (team !== Team.Blue && team !== Team.Red) return false;
+  if (hasStat(sim, eid, 'invisible')) return false;
+  return sourceSees(sim, visionState(sim), team, eid, exclude);
 }
 
 export function sees(sim: Sim, team: number, eid: number): boolean {

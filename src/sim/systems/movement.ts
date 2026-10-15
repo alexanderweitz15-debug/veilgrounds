@@ -65,7 +65,12 @@ export const movementSystem: System = {
           const nx = Pos.x[eid]! + (dx / d) * step;
           const ny = Pos.y[eid]! + (dy / d) * step;
           if (!walkable(sim.map.nav, nx, ny) && walkable(sim.map.nav, Pos.x[eid]!, Pos.y[eid]!)) {
-            path.length = 0; // blocked (e.g. chasing into a wall edge); repath next tick
+            // slide along the wall on one axis; if both are blocked, repath next tick
+            if (walkable(sim.map.nav, nx, Pos.y[eid]!)) Pos.x[eid] = nx;
+            else if (walkable(sim.map.nav, Pos.x[eid]!, ny)) Pos.y[eid] = ny;
+            else path.length = 0;
+            sim.paths.delete(eid); // stale straight segment: get a fresh path from here
+            if (Move.mode[eid] === 1) sim.paths.set(eid, findPath(sim.map.nav, Pos.x[eid]!, Pos.y[eid]!, Move.tx[eid]!, Move.ty[eid]!));
             break;
           }
           Pos.x[eid] = nx;

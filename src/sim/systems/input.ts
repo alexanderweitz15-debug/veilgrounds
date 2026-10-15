@@ -3,12 +3,12 @@
 import type { Sim } from '../sim';
 import type { System } from './index';
 import { findPath } from '../map';
-import { onMoveCommand } from './attack';
+import { canTarget, onMoveCommand } from './attack';
 import { castAbility, castSummoner, levelAbility, refreshCooldowns } from './abilities';
 import { cancelRecall, grantGold, grantXp, startRecall, xpToNext } from './economy';
 import { spawnDummy } from './champions';
 import type { Command } from '../types';
-import { sees } from '../vision';
+import { buyItem, sellItem } from '../items/inventory';
 
 export const inputSystem: System = {
   name: 'input',
@@ -33,6 +33,8 @@ export function moveTo(sim: Sim, eid: number, x: number, y: number): void {
 function apply(sim: Sim, eid: number, cmd: Command): void {
   const { Unit, Atk, Move } = sim.c;
   if (cmd.t === 'cheat') return cheat(sim, eid, cmd);
+  if (cmd.t === 'buy') return void buyItem(sim, eid, cmd.item); // allowed while dead (inventory.ts)
+  if (cmd.t === 'sell') return void sellItem(sim, eid, cmd.slot);
   if (!Unit.alive[eid]) return;
   switch (cmd.t) {
     case 'move':
@@ -52,7 +54,7 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
       break;
     case 'attack': {
       const t = cmd.target;
-      if (t < 0 || !Unit.alive[t] || Unit.untargetable[t] || Unit.team[t] === Unit.team[eid] || !sees(sim, Unit.team[eid]!, t)) break;
+      if (!canTarget(sim, eid, t)) break;
       cancelRecall(sim, eid);
       if (Atk.target[eid] !== t) onMoveCommand(sim, eid);
       Atk.target[eid] = t;
@@ -82,9 +84,6 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
     case 'recall':
       startRecall(sim, eid);
       break;
-    case 'buy':
-    case 'sell':
-      break; // ponytail: shop arrives in Phase 2
   }
 }
 

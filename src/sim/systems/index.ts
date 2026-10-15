@@ -12,6 +12,7 @@ import { abilitiesSystem } from './abilities';
 import { projectilesSystem } from './projectiles';
 import { movementSystem } from './movement';
 import { economySystem } from './economy';
+import { jungleSystem } from './jungle';
 import { computeVision } from '../vision';
 
 export interface System {
@@ -30,6 +31,7 @@ export const systems = (): System[] =>
   inputSystem, // player-equivalent commands -> intents
   statsSystem, // buffs + level -> final stats
   wavesSystem, // minion spawning
+  jungleSystem, // camps, monster aggro/leash, jungle buffs, objectives (Agent H)
   minionsSystem, // minion aggro + lane following intents
   abilitiesSystem, // cast timers, ability effects
   attackSystem, // auto-attack state machine for every unit with a target

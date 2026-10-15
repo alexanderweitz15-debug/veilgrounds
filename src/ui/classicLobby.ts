@@ -291,5 +291,8 @@ export function renderLoading(root: HTMLElement, cfg: SimConfig, onDone: () => v
     onDone();
   };
   const timer = setTimeout(go, 2500);
-  root.addEventListener('click', go);
+  root.addEventListener('click', (e) => {
+    e.stopPropagation();
+    go();
+  }, { once: true });
 }

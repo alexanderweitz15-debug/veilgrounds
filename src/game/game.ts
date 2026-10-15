@@ -126,9 +126,17 @@ export class Game {
     window.addEventListener('keydown', audioUnlock);
     // Fullscreen + Keyboard Lock (Ctrl+W levels up instead of closing the tab). Retry on first click if the
     // start was not a user gesture (e.g. ?play= URL).
-    void enterGameFullscreen().then((ok) => {
-      if (!ok && settings.fullscreenLock) this.root.addEventListener('pointerdown', () => void enterGameFullscreen(), { once: true });
-    });
+    // Fullscreen + keyboard lock only from a click inside the RUNNING game (first snapshot received). Entering it
+    // from the loading-screen click while the game was still starting froze the client for some players.
+    const tryFullscreen = (): void => {
+      if (!settings.fullscreenLock) return;
+      if (!this.state.snap) {
+        this.root.addEventListener('pointerdown', tryFullscreen, { once: true });
+        return;
+      }
+      void enterGameFullscreen();
+    };
+    this.root.addEventListener('pointerdown', tryFullscreen, { once: true });
     this.resize();
     this.raf = requestAnimationFrame(this.loop);
   }

@@ -3,13 +3,14 @@ import './gamePanels.css';
 import type { Snapshot } from '../sim/snapshot';
 import type { PlayerSetup } from '../sim/types';
 import { champName } from './names';
-import { itemAbbr, itemTooltip } from './shop';
+import { itemAbbr } from './shop';
 import { t } from '../i18n';
 import { resolvePlaystyle } from '../ai/params';
 import { scaleTitle } from './playstyleView';
 import { PLAYSTYLE_AXES } from '../ai/contract';
 import { setPortrait } from '../render/portraits';
 import { itemIcon, setIcon } from './icons';
+import { setTip } from './tooltip';
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?: HTMLElement, text?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -77,7 +78,7 @@ export class Scoreboard {
           const icon = id ? itemIcon(id) : null;
           const s = el('span', `mini-item${id ? '' : ' empty'}`, v.items, id && !icon ? itemAbbr(id) : '');
           setIcon(s, icon);
-          if (id) s.title = itemTooltip(id);
+          if (id) setTip(s, `item:${id}`);
         }
       }
     }

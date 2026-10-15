@@ -8,6 +8,9 @@ import { settings, updateSettings } from '../settings';
 import { champName, summonerName } from './names';
 import { t } from '../i18n';
 import { setPortrait } from '../render/portraits';
+import { setTip } from './tooltip';
+import { renderShowcase } from './showcase';
+import { runeIcon, setIcon, summonerIcon } from './icons';
 
 type Role = PlayerSetup['role'];
 const FILTERS: (Role | 'all')[] = ['all', 'top', 'jungle', 'mid', 'adc', 'support'];
@@ -57,32 +60,33 @@ export function renderPracticeLobby(root: HTMLElement, title: string, onBack: ()
       setPortrait(el('div', 'champ-portrait', c), id);
       el('div', 'champ-name', c, champName(id));
       el('div', 'champ-title', c, d.title[settings.lang]);
-      c.title = `${d.title[settings.lang]}\n${d.roles.map((r) => t(`role.${r}`)).join(' / ')}`;
       c.addEventListener('click', () => {
         pick.champ = id;
         draw();
       });
     }
 
+    renderShowcase(body, pick.champ);
     const cols = el('div', 'classic-cols', body);
     const left = el('div', '', cols);
     const right = el('div', '', cols);
     el('div', 'field-label', left, t('lobby.summoners'));
-    const srow = el('div', 'summ-row', left);
     for (const i of [0, 1] as const) {
-      const sel = el('select', 'summ-select', srow);
+      const srow = el('div', 'summ-icons', left);
+      el('span', 'summ-key', srow, i === 0 ? 'D' : 'F');
       for (const s of SUMMONERS.filter((x) => !x.todo)) {
-        const o = el('option', '', sel, summonerName(s.id));
-        o.value = s.id;
-        if (s.id === pick.summoners[i]) o.selected = true;
+        const b = el('button', `summ-icon${s.id === pick.summoners[i] ? ' selected' : ''}`, srow);
+        setIcon(b, summonerIcon(s.id));
+        setTip(b, `summoner:${s.id}`);
+        b.setAttribute('aria-label', summonerName(s.id));
+        b.addEventListener('click', () => {
+          const next: [string, string] = [...pick.summoners];
+          next[i] = s.id;
+          if (next[0] === next[1]) next[1 - i] = pick.summoners[i]; // swap instead of duplicate
+          pick.summoners = next;
+          draw();
+        });
       }
-      sel.addEventListener('change', () => {
-        const next: [string, string] = [...pick.summoners];
-        next[i] = sel.value;
-        if (next[0] === next[1]) next[1 - i] = pick.summoners[i]; // swap instead of duplicate
-        pick.summoners = next;
-        draw();
-      });
     }
     const d = CHAMPION_DATA[pick.champ]!;
     el('div', 'field-label', right, d.name);
@@ -97,7 +101,13 @@ export function renderPracticeLobby(root: HTMLElement, title: string, onBack: ()
       const c = el('button', `preset-card${p.id === chosen ? ' selected' : ''}`, pg);
       el('div', 'preset-name', c, p.name[settings.lang]);
       el('div', 'preset-desc', c, p.desc[settings.lang]);
-      el('div', 'runes', c, [p.keystone, ...p.minor].map(runeName).join(' · '));
+      const rr = el('div', 'rune-icons', c);
+      [p.keystone, ...p.minor].forEach((id, k) => {
+        const ic = el('span', `rune-icon${k === 0 ? ' key' : ''}`, rr);
+        setIcon(ic, runeIcon(id, k === 0));
+        setTip(ic, `rune:${id}`);
+        ic.setAttribute('aria-label', runeName(id));
+      });
       c.addEventListener('click', () => {
         updateSettings({ runePresets: { ...settings.runePresets, [pick.champ]: p.id } });
         draw();

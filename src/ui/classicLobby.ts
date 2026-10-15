@@ -17,6 +17,9 @@ import { settings, updateSettings } from '../settings';
 import { champName, summonerName } from './names';
 import { t } from '../i18n';
 import { setPortrait } from '../render/portraits';
+import { setTip } from './tooltip';
+import { renderShowcase } from './showcase';
+import { roleIcon, runeIcon, setIcon, summonerIcon } from './icons';
 import { getChampionAtlas, getMinionAtlas } from '../render/sheets';
 
 type Role = PlayerSetup['role'];
@@ -147,7 +150,9 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
     el('div', 'field-label', left, t('classic.role'));
     const tabs = el('div', 'role-tabs', left);
     for (const r of ROLES) {
-      const b = el('button', `role-tab${r === pick.role ? ' active' : ''}`, tabs, t(`role.${r}`));
+      const b = el('button', `role-tab${r === pick.role ? ' active' : ''}`, tabs);
+      setIcon(el('span', 'role-icon', b), roleIcon(r));
+      b.append(t(`role.${r}`));
       b.addEventListener('click', () => {
         pick.role = r;
         pick.summoners = null;
@@ -164,31 +169,34 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
       setPortrait(el('div', 'champ-portrait', c, champName(id).charAt(0)), id);
       el('div', 'champ-name', c, champName(id));
       el('div', 'champ-title', c, d.title[settings.lang]);
-      c.title = `${d.title[settings.lang]}\n${d.roles.map((r) => t(`role.${r}`)).join(' / ')}`;
       c.addEventListener('click', () => {
         pick.champ = id;
         draw();
       });
     }
 
-    // summoners
+    // selected champion: splash + passive/abilities with LoL-style hover tooltips
+    renderShowcase(left, pick.champ);
+
+    // summoners: one icon row per slot (D, F)
     el('div', 'field-label', left, t('lobby.summoners'));
     const sums = pick.summoners ?? DEFAULT_SUMMONERS[pick.role];
-    const srow = el('div', 'summ-row', left);
     for (const i of [0, 1] as const) {
-      const sel = el('select', 'summ-select', srow);
+      const srow = el('div', 'summ-icons', left);
+      el('span', 'summ-key', srow, i === 0 ? 'D' : 'F');
       for (const id of summonerIds()) {
-        const o = el('option', '', sel, summonerName(id));
-        o.value = id;
-        if (id === sums[i]) o.selected = true;
+        const b = el('button', `summ-icon${id === sums[i] ? ' selected' : ''}`, srow);
+        setIcon(b, summonerIcon(id));
+        setTip(b, `summoner:${id}`);
+        b.setAttribute('aria-label', summonerName(id));
+        b.addEventListener('click', () => {
+          const next: [string, string] = [...sums];
+          next[i] = id;
+          if (next[0] === next[1]) next[1 - i] = sums[i]; // swap instead of duplicate
+          pick.summoners = next;
+          draw();
+        });
       }
-      sel.addEventListener('change', () => {
-        const next: [string, string] = [...sums];
-        next[i] = sel.value;
-        if (next[0] === next[1]) next[1 - i] = sums[i]; // swap instead of duplicate
-        pick.summoners = next;
-        draw();
-      });
     }
 
     // runes
@@ -201,7 +209,13 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
       const c = el('button', `preset-card${p.id === chosen ? ' selected' : ''}`, pg);
       el('div', 'preset-name', c, p.name[settings.lang]);
       el('div', 'preset-desc', c, p.desc[settings.lang]);
-      el('div', 'runes', c, [p.keystone, ...p.minor].map(runeName).join(' · '));
+      const rr = el('div', 'rune-icons', c);
+      [p.keystone, ...p.minor].forEach((id, k) => {
+        const ic = el('span', `rune-icon${k === 0 ? ' key' : ''}`, rr);
+        setIcon(ic, runeIcon(id, k === 0));
+        setTip(ic, `rune:${id}`);
+        ic.setAttribute('aria-label', runeName(id));
+      });
       c.addEventListener('click', () => {
         updateSettings({ runePresets: { ...settings.runePresets, [pick.champ]: p.id } });
         draw();

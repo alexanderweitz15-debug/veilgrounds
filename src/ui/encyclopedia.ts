@@ -8,7 +8,10 @@ import { PROFILES } from '../ai/profiles';
 import { PLAYSTYLE_AXES, ARCHETYPES } from '../ai/contract';
 import { AXIS_LABELS, ARCHETYPE_NAMES, ARCHETYPE_PLAYSTYLES, signed } from '../ai/params';
 import { settings } from '../settings';
-import { setPortrait } from '../render/portraits';
+import { setPortrait, setSplash } from '../render/portraits';
+import { setTip } from './tooltip';
+import { abilityIcon, itemIcon, passiveIcon, runeIcon, setIcon } from './icons';
+import './showcase.css';
 
 type Lang = 'de' | 'en';
 const L = (de: string, en: string): string => (settings.lang === 'de' ? de : en);
@@ -103,8 +106,8 @@ function championsTab(body: HTMLElement, lang: Lang): void {
     const c = CHAMPION_DATA[id]!;
     detail.textContent = '';
     const pic = el('div', 'enc-portrait', undefined, detail);
-    pic.style.cssText = 'float:right;width:96px;height:96px;margin:0 0 8px 12px;border:1px solid #6b5a35;background:#1c1824';
-    setPortrait(pic, id);
+    pic.style.cssText = 'float:right;width:168px;height:210px;margin:0 0 8px 12px;border:1px solid #6b5a35;background:#1c1824';
+    setSplash(pic, id);
     el('h2', '', c.name, detail);
     el('div', 'enc-sub', `${c.title[lang]} · ${c.roles.join(' / ')} · ${c.attackType === 'melee' ? L('Nahkampf', 'melee') : L('Fernkampf', 'ranged')} ${c.base.range}`, detail);
     el('p', 'enc-desc', c.trainingPurpose[lang], detail);
@@ -123,10 +126,22 @@ function championsTab(body: HTMLElement, lang: Lang): void {
     }
     const p = el('div', 'enc-ability', undefined, detail);
     const ph = el('div', 'enc-ab-head', undefined, p);
+    const pi = el('span', 'enc-ab-icon', undefined, ph);
+    setIcon(pi, passiveIcon(id));
+    setTip(pi, `passive:${id}`);
     el('span', 'enc-key', 'P', ph);
     el('span', 'enc-ab-name', c.passive.name[lang], ph);
     el('p', 'enc-desc', c.passive.desc[lang], p);
-    c.abilities.forEach((a, i) => abilityBlock(a, 'QWER'[i]!, detail, lang));
+    c.abilities.forEach((a, i) => {
+      abilityBlock(a, 'QWER'[i]!, detail, lang);
+      const head = detail.lastElementChild?.querySelector<HTMLElement>('.enc-ab-head');
+      if (!head) return;
+      const ic = document.createElement('span');
+      ic.className = 'enc-ab-icon';
+      setIcon(ic, abilityIcon(id, i));
+      setTip(ic, `ability:${id}:${i}:-1`);
+      head.prepend(ic);
+    });
     el('div', 'field-label', 'Power-Spike', detail);
     el('div', '', `${L('Level', 'Level')} ${c.spikeLevels.join(', ')} – ${c.spikeNote[lang]}`, detail);
     el('div', 'field-label', 'Signature-Combos', detail);
@@ -134,7 +149,9 @@ function championsTab(body: HTMLElement, lang: Lang): void {
     for (const k of c.combos) el('li', '', `${k.name[lang]}: ${k.sequence.join(' → ')}`, cl);
   };
   for (const id of ids) {
-    const b = el('button', '', CHAMPION_DATA[id]!.name, list);
+    const b = el('button', 'enc-champ-btn', undefined, list);
+    setPortrait(el('span', 'enc-mini-portrait', undefined, b), id);
+    b.append(CHAMPION_DATA[id]!.name);
     b.dataset.id = id;
     b.addEventListener('click', () => show(id));
   }
@@ -158,6 +175,9 @@ function itemsTab(body: HTMLElement, lang: Lang): void {
     for (const it of items.filter((i) => i.tier === tier)) {
       const c = el('div', 'enc-item', undefined, grid);
       const hd = el('div', 'enc-ab-head', undefined, c);
+      const ii = el('span', 'enc-ab-icon', undefined, hd);
+      setIcon(ii, itemIcon(it.id));
+      setTip(ii, `item:${it.id}`);
       el('span', 'enc-ab-name', it.name[lang], hd);
       el('span', 'enc-gold', String(it.cost), hd);
       el('div', 'enc-sub', Object.entries(it.stats).map(([k, v]) => `+${v} ${k}`).join(' · ') || '–', c);
@@ -170,7 +190,11 @@ function itemsTab(body: HTMLElement, lang: Lang): void {
   const rg = el('div', 'enc-items', undefined, wrap);
   for (const r of RUNES) {
     const c = el('div', 'enc-item', undefined, rg);
-    el('div', 'enc-ab-name', `${r.name[lang]}${r.kind === 'keystone' ? ' ★' : ''}`, c);
+    const rh = el('div', 'enc-ab-head', undefined, c);
+    const ri = el('span', 'enc-ab-icon', undefined, rh);
+    setIcon(ri, runeIcon(r.id, r.kind === 'keystone'));
+    setTip(ri, `rune:${r.id}`);
+    el('span', 'enc-ab-name', `${r.name[lang]}${r.kind === 'keystone' ? ' ★' : ''}`, rh);
     el('p', 'enc-desc', r.desc[lang], c);
   }
 }

@@ -424,3 +424,57 @@ export function summonerIcon(id: string): string | null {
     frame(g, '#a07850', 3);
   });
 }
+
+// ------------------------------------------------------------------------------------------------ passive / runes / roles / stats
+/** Champion passive: champion palette, gem glyph, round silver frame. */
+export function passiveIcon(champ: string): string | null {
+  if (!championData(champ)) return null;
+  return cached(`pas:${champ}`, (g) => {
+    const { base, accent } = champColors(champ);
+    const [h, s] = hexToHsl(base);
+    backdrop(g, hsl(h, Math.min(60, s + 10), 30), hsl(h, s, 8));
+    const [ah, as] = hexToHsl(accent);
+    GLYPHS.gem!(g, hsl(ah, Math.max(55, as), 68));
+    frame(g, '#b9b2a2', 3);
+  });
+}
+
+const RUNE_GLYPHS = ['sword', 'dagger', 'crown', 'shield', 'staff', 'book', 'gem', 'heart', 'horn', 'eye', 'fang', 'hourglass'];
+
+/** Rune (Prägung): keystones big glyph + gold frame, minors smaller with bronze frame; hue + glyph from the id. */
+export function runeIcon(id: string, keystone: boolean): string {
+  return cached(`rune:${id}`, (g) => {
+    let hsh = 0;
+    for (const ch of id) hsh = (hsh * 31 + ch.charCodeAt(0)) >>> 0;
+    const h = hsh % 360;
+    backdrop(g, hsl(h, 45, keystone ? 34 : 26), hsl(h, 40, 8));
+    GLYPHS[RUNE_GLYPHS[hsh % RUNE_GLYPHS.length]!]!(g, hsl(h, 75, keystone ? 70 : 62));
+    frame(g, keystone ? GOLD : '#8a6a44', keystone ? 4 : 3);
+  });
+}
+
+const ROLE_GLYPH: Record<string, [number, string]> = { top: [25, 'shield'], jungle: [110, 'fang'], mid: [265, 'staff'], adc: [5, 'bow'], support: [190, 'heart'] };
+
+export function roleIcon(role: string): string | null {
+  const def = ROLE_GLYPH[role];
+  if (!def) return null;
+  return cached(`role:${role}`, (g) => {
+    backdrop(g, hsl(def[0], 30, 26), hsl(def[0], 25, 8));
+    GLYPHS[def[1]]!(g, hsl(def[0], 60, 70));
+    frame(g, '#8a7550', 2);
+  });
+}
+
+const STAT_GLYPH: Record<string, [number, string]> = {
+  ad: [20, 'sword'], ap: [275, 'book'], armor: [35, 'shield'], mr: [200, 'cloak'], as: [45, 'dagger'],
+  ms: [100, 'boot'], range: [5, 'bow'], crit: [0, 'axe'], hp: [130, 'heart'], mana: [215, 'potion'], haste: [175, 'hourglass'],
+};
+
+export function statIcon(stat: string): string | null {
+  const def = STAT_GLYPH[stat];
+  if (!def) return null;
+  return cached(`stat:${stat}`, (g) => {
+    g.clearRect(0, 0, S, S);
+    GLYPHS[def[1]]!(g, hsl(def[0], 70, 64));
+  });
+}

@@ -1,0 +1,28 @@
+.showcase { display: flex; gap: 14px; margin: 10px 0 6px; padding: 8px; background: rgba(10, 8, 14, 0.55); border: 1px solid #3a3226; }
+.showcase-splash { flex: 0 0 168px; height: 210px; background: #1c1824; border: 1px solid #6b5a35; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6); }
+.showcase-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.showcase-name { font: 700 22px/1.1 'Spectral SC', serif; color: #f2dfa8; letter-spacing: 0.03em; }
+.showcase-title { font-size: 13px; color: #a69c88; font-style: italic; }
+.showcase-roles { display: flex; gap: 6px; margin-top: 2px; }
+.showcase-role { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #d8d0bf; padding: 1px 6px 1px 2px; border: 1px solid #3a3226; background: rgba(255, 255, 255, 0.03); }
+.role-icon { display: inline-block; width: 18px; height: 18px; background-size: cover; vertical-align: middle; margin-right: 4px; }
+.showcase-role .role-icon { margin-right: 0; }
+.showcase-meta { font-size: 12px; color: #9a9080; }
+.showcase-abilities { display: flex; gap: 6px; margin-top: auto; }
+.showcase-ab { position: relative; width: 46px; height: 46px; background-size: cover; border: 1px solid #6b5a35; cursor: help; }
+.showcase-ab.passive { width: 40px; height: 40px; margin-top: 6px; border-radius: 50%; }
+.showcase-ab.ult { border-color: #e8c45a; }
+.showcase-ab:hover { outline: 2px solid #f2dfa8; }
+.showcase-ab .key { position: absolute; right: -2px; bottom: -2px; font: 700 11px/1 'Barlow Condensed', sans-serif; color: #f2dfa8; background: #120f16; padding: 1px 3px; border: 1px solid #6b5a35; }
+.showcase-hint { font-size: 11px; color: #7d7464; }
+.summ-icons { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; flex-wrap: wrap; }
+.summ-key { font: 700 13px 'Barlow Condensed', sans-serif; color: #a69c88; width: 14px; }
+.summ-icon { width: 34px; height: 34px; padding: 0; border: 1px solid #3a3226; background-size: cover; cursor: pointer; opacity: 0.55; filter: saturate(0.6); }
+.summ-icon:hover { opacity: 0.9; }
+.summ-icon.selected { opacity: 1; filter: none; border-color: #e8c45a; box-shadow: 0 0 0 1px #e8c45a; }
+.rune-icons { display: flex; gap: 4px; margin-top: 6px; }
+.rune-icon { display: inline-block; width: 24px; height: 24px; background-size: cover; border: 1px solid #3a3226; }
+.rune-icon.key { width: 30px; height: 30px; border-color: #e8c45a; }
+.enc-ab-icon { display: inline-block; width: 32px; height: 32px; margin-right: 8px; vertical-align: middle; background-size: cover; border: 1px solid #6b5a35; cursor: help; flex: 0 0 auto; }
+.enc-champ-btn { display: flex !important; align-items: center; gap: 8px; }
+.enc-mini-portrait { flex: 0 0 22px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid #6b5a35; background: #1c1824; font-size: 0; }

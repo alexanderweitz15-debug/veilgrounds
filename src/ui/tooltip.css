@@ -1,0 +1,33 @@
+.vg-tip {
+  position: fixed;
+  z-index: 10000;
+  max-width: 380px;
+  min-width: 240px;
+  padding: 10px 12px 10px;
+  background: linear-gradient(180deg, rgba(22, 18, 28, 0.97), rgba(12, 10, 16, 0.97));
+  border: 1px solid #8a7550;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7), 0 8px 24px rgba(0, 0, 0, 0.55);
+  color: #d8d0bf;
+  font: 400 13px/1.4 'Barlow', sans-serif;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.08s;
+}
+.vg-tip.show { opacity: 1; }
+.vg-tip .tip-head { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 6px; }
+.vg-tip .tip-icon { flex: 0 0 44px; height: 44px; background-size: cover; border: 1px solid #6b5a35; }
+.vg-tip .tip-names { flex: 1; min-width: 0; }
+.vg-tip .tip-title { font: 700 16px/1.15 'Barlow Condensed', sans-serif; color: #f2dfa8; letter-spacing: 0.02em; }
+.vg-tip .tip-sub { font-size: 11px; color: #9a9080; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+.vg-tip .tip-meta { text-align: right; font-size: 12px; color: #b9c4d6; white-space: nowrap; }
+.vg-tip .tip-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 6px; }
+.vg-tip .tip-chip { font-size: 12px; padding: 1px 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.06); }
+.vg-tip .tip-chip.dmg-phys { color: #f0a560; }
+.vg-tip .tip-chip.dmg-magic { color: #b48cff; }
+.vg-tip .tip-chip.dmg-true { color: #f2f2f2; }
+.vg-tip .tip-chip.heal { color: #7fd88a; }
+.vg-tip .tip-chip.shield { color: #e8e2d0; }
+.vg-tip .tip-chip.cc { color: #f0d24a; }
+.vg-tip .tip-chip.stat { color: #9fd0ff; }
+.vg-tip .tip-body { margin: 4px 0 0; }
+.vg-tip .tip-foot { margin-top: 6px; font-size: 11px; color: #9a9080; border-top: 1px solid rgba(138, 117, 80, 0.4); padding-top: 4px; }

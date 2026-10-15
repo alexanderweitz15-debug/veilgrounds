@@ -12,6 +12,9 @@ import { sees } from '../vision';
 import { buyItem, sellItem } from '../items/inventory';
 import { useItem } from '../items/itemHooks';
 import { swapTrinket, useTrinket } from '../wards';
+import { scheduleNextWave } from './waves';
+import { raiseLevel } from '../trainer/common';
+import { respawnCamps, toggleGodMode, toggleNoCooldowns } from '../trainer/sandbox';
 
 export const inputSystem: System = {
   name: 'input',
@@ -100,8 +103,8 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
 }
 
 function cheat(sim: Sim, eid: number, cmd: Extract<Command, { t: 'cheat' }>): void {
-  // Only sandbox / trainers accept cheats; classic games ignore them so replays stay honest.
-  if (sim.config.mode === 'classic') return;
+  // Only sandbox, lane practice and the kiting trainer accept cheats; classic games and scored trainers ignore them.
+  if (sim.config.mode !== 'sandbox' && sim.config.mode !== 'laneOnly' && sim.config.mode !== 'kite') return;
   const { Hp, Mana, Pos, Unit } = sim.c;
   switch (cmd.op) {
     case 'refreshCd':
@@ -133,6 +136,21 @@ function cheat(sim: Sim, eid: number, cmd: Extract<Command, { t: 'cheat' }>): vo
       break;
     case 'towersInvulnerable':
       sim.flags.towersInvulnerable = !sim.flags.towersInvulnerable;
+      break;
+    case 'setLevel':
+      if (cmd.value !== undefined) raiseLevel(sim, eid, cmd.value);
+      break;
+    case 'noCooldowns':
+      toggleNoCooldowns(sim, eid);
+      break;
+    case 'godMode':
+      toggleGodMode(sim, eid);
+      break;
+    case 'spawnWave':
+      scheduleNextWave(sim, sim.tick + 1);
+      break;
+    case 'respawnCamps':
+      respawnCamps(sim);
       break;
     case 'skipTime':
       break; // ponytail: needs fast-forward stepping in the worker; Phase 5 sandbox

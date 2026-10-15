@@ -13,6 +13,8 @@ import { groundObjects } from './summons';
 import { trinketHud, wardTypeOf, type TrinketId, type WardType } from './wards';
 import { ccLevel } from './buffs';
 import { teleportLeft } from './summoners';
+import { trainerHud, type TrainerHud } from './trainer';
+import { sandboxFlags } from './trainer/sandbox';
 
 export interface SnapEntity {
   id: number;
@@ -68,9 +70,13 @@ export interface PlayerHud {
   level: number;
   xp: number;
   gold: number;
+  /** All gold earned incl. start and passive gold (post-game gold curve). */
+  totalGold?: number;
   cs: number;
   dead: boolean;
   respawnIn: number;
+  /** Lasting sandbox cheats of this champion (permanent cooldown reset, god mode). */
+  sandbox?: { noCd: boolean; god: boolean };
   /** Agent H: 6 item slots + trinket (null = empty), shop access, active jungle/objective buffs (id, seconds left). */
   items: (string | null)[];
   /** Item active cooldown per slot (same indices as items; seconds, total 0 = no active). Agent I. */
@@ -120,6 +126,8 @@ export interface Snapshot {
   eventTicks?: number[];
   /** Scoreboard rows for all champions (Agent H). Fog-safe: enemies show item value, never gold or items. */
   players: ScoreRow[];
+  /** Running trainer (Phase 5), absent outside trainers. */
+  trainer?: TrainerHud;
 }
 
 /** One heard (unseen) enemy cast; shape matches PerceptionView.audio in src/ai/contract.ts. */
@@ -230,7 +238,9 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
       level: Champ.level[me]!,
       xp: Champ.xp[me]!,
       gold: Champ.gold[me]!,
+      totalGold: Champ.totalGold[me]!,
       cs: Champ.cs[me]!,
+      ...(sim.state.sandbox ? { sandbox: sandboxFlags(sim, me) } : {}),
       dead: Unit.alive[me] !== 1,
       respawnIn: Unit.alive[me] ? 0 : Math.max(0, (Champ.respawnAt[me]! - sim.tick) / 30),
       recallLeft: Champ.recallAt[me]! > sim.tick ? (Champ.recallAt[me]! - sim.tick) / 30 : 0,
@@ -251,7 +261,8 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
     if (o.team !== team && (HIDDEN_OBJECT_TAGS.has(o.tag) || !pointVisible(sim, team, o.x, o.y))) continue;
     objects.push({ id: o.id, tag: o.tag, team: o.team, x: o.x, y: o.y, r: o.r });
   }
-  return { tick: sim.tick, time: sim.tick / 30, team, entities, projectiles, objects, me: hud, events, audio, players: scoreRows(sim, team) };
+  const trainer = trainerHud(sim);
+  return { tick: sim.tick, time: sim.tick / 30, team, entities, projectiles, objects, me: hud, events, audio, players: scoreRows(sim, team), ...(trainer ? { trainer } : {}) };
 }
 
 /** Grid the audio cue position snaps to (units). */

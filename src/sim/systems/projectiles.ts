@@ -16,8 +16,9 @@ import { hasStat } from '../buffs';
 import type { EffectCtx } from '../champions/hooks';
 import { resolveAutoHit, type AutoPayload } from './attack';
 import { resolveAbilityExpire, resolveAbilityHit, rv, type AbilityPayload } from './abilities';
+import { trainerShotHit, type TrainerPayload } from '../trainer/dodge';
 
-export type Payload = AutoPayload | AbilityPayload;
+export type Payload = AutoPayload | AbilityPayload | TrainerPayload;
 
 interface ProjState {
   next: number;
@@ -171,6 +172,7 @@ function updateHoming(sim: Sim, eid: number, payload: Payload): void {
 
 function hit(sim: Sim, payload: Payload, t: number, x: number, y: number): void {
   if (payload.t === 'auto') resolveAutoHit(sim, payload, t);
+  else if (payload.t === 'trainer') trainerShotHit(sim, t);
   else resolveAbilityHit(sim, payload, t, x, y);
 }
 
@@ -203,8 +205,8 @@ export function sweepHit(ax: number, ay: number, bx: number, by: number, cx: num
 
 function updateLine(sim: Sim, eid: number, payload: Payload): void {
   const { Pos, Proj, Unit } = sim.c;
-  if (payload.t !== 'ability') return remove(sim, eid);
-  if (payload.ret === 2) {
+  if (payload.t === 'auto') return remove(sim, eid);
+  if (payload.t === 'ability' && payload.ret === 2) {
     // returning: home on the caster
     const c = payload.caster;
     if (Unit.serial[c] !== payload.casterSerial || !Unit.alive[c]) return remove(sim, eid);
@@ -234,7 +236,7 @@ function updateLine(sim: Sim, eid: number, payload: Payload): void {
     payload.hit.push(h.e);
     const hx = ax + (bx - ax) * h.t;
     const hy = ay + (by - ay) * h.t;
-    resolveAbilityHit(sim, payload, h.e, hx, hy);
+    hit(sim, payload, h.e, hx, hy);
     if (!pierce) {
       Pos.x[eid] = hx;
       Pos.y[eid] = hy;
@@ -245,13 +247,13 @@ function updateLine(sim: Sim, eid: number, payload: Payload): void {
   Pos.y[eid] = by;
   Proj.travelled[eid] = Proj.travelled[eid]! + step;
   if (Proj.travelled[eid]! >= Proj.maxDist[eid]! - 1e-9) {
-    if (payload.ret === 1) {
+    if (payload.t === 'ability' && payload.ret === 1) {
       payload.ret = 2;
       payload.hit = [];
       payload.tag = 'return';
       return;
     }
     remove(sim, eid);
-    if (payload.ret === 0) resolveAbilityExpire(sim, payload, bx, by);
+    if (payload.t === 'ability' && payload.ret === 0) resolveAbilityExpire(sim, payload, bx, by);
   }
 }

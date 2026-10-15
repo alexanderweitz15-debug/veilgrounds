@@ -71,7 +71,13 @@ export type CheatOp =
   | 'spawnDummy'
   | 'toggleMinions'
   | 'towersInvulnerable'
-  | 'skipTime';
+  | 'skipTime'
+  /** Sandbox (Phase 5): set the level to `value`, permanent cooldown reset, god mode, immediate wave, camps now. */
+  | 'setLevel'
+  | 'noCooldowns'
+  | 'godMode'
+  | 'spawnWave'
+  | 'respawnCamps';
 
 /** One input as recorded in replays: which player slot issued what on which tick. */
 export interface TickInput {
@@ -134,9 +140,39 @@ export interface PlayerSetup {
   };
 }
 
+/** Trainer modes (Phase 5). 'lastHit' is also a trainer. */
+export type TrainerKind = 'dodge' | 'kite' | 'laneDuel' | 'jungleDuel' | 'arena';
+
+export interface TrainerOpts {
+  /** Run length in seconds (last-hit, kiting, jungle duel). */
+  durationSec?: number;
+  /** Last-hit: only enemy waves spawn, they push into the own outer tower (towers invulnerable). */
+  tower?: boolean;
+  /** Dodge: 1 easy, 2 normal, 3 hard. */
+  difficulty?: 1 | 2 | 3;
+  /** Dodge: hits until the run ends. */
+  lives?: number;
+  /** Kiting dummy: stands, strafes between random points, or chases the player. */
+  dummy?: 'stand' | 'strafe' | 'chase';
+  /** Start level (kiting, arena); abilities are levelled automatically. */
+  level?: number;
+  /** Arena: rounds to win; round time limit in seconds. */
+  rounds?: number;
+  roundSec?: number;
+  /** Lane duel: kills / CS that end the duel (first tower always ends it). */
+  kills?: number;
+  cs?: number;
+  /** Arena: items bought at the start, by player slot (string key for JSON). */
+  items?: Record<string, string[]>;
+}
+
 export interface SimConfig {
   seed: number;
-  mode: 'classic' | 'sandbox' | 'lastHit' | 'laneOnly';
+  mode: 'classic' | 'sandbox' | 'lastHit' | 'laneOnly' | TrainerKind;
+  /** Trainer options (Phase 5, src/sim/trainer). Which trainer runs follows `mode`. */
+  trainer?: TrainerOpts;
+  /** Teams that spawn lane minions. Default: both (tower last-hit trainer: enemy only). */
+  minionTeams?: TeamId[];
   players: PlayerSetup[];
   /** Bot toxicity (spec-bots §9: flame chat + rage '?' pings), default on; lobby/settings switch. */
   botToxicity?: boolean;

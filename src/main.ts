@@ -4,7 +4,12 @@ import { loadSettings, settings, updateSettings } from './settings';
 import { loadBinds } from './input/keybinds';
 import { t } from './i18n';
 import { Game } from './game/game';
-import { configFor, MIRA_ID } from './game/modes';
+import { configFor, MIRA_ID, trainerConfig, TRAINER_MODES, type TrainerMode, type TrainerSetup } from './game/modes';
+import type { SimConfig } from './sim/types';
+import type { SessionResult } from './game/session';
+import { isTrainerMode } from './game/session';
+import { renderTrainerMenu, defaultSetup, trainerOptions } from './ui/trainerMenu';
+import { renderPostGame } from './ui/postGame';
 import { buildSettingsPanel } from './ui/settingsPanel';
 import { runesFromPreset } from './sim/items/runes';
 import { renderMainMenu, type MenuEntry } from './ui/mainMenu';
@@ -47,6 +52,7 @@ function mainMenu(): void {
     { name: t('menu.classic'), desc: t('menu.classicDesc'), meta: t('menu.classicMeta'), onSelect: () => classicLobby() },
     { name: t('menu.lane'), desc: t('menu.laneDesc'), meta: t('menu.laneMeta'), onSelect: () => lobby('lane') },
     { name: t('menu.sandbox'), desc: t('menu.sandboxDesc'), meta: t('menu.sandboxMeta'), onSelect: () => lobby('sandbox') },
+    { name: t('menu.trainer'), desc: t('menu.trainerDesc'), meta: t('menu.trainerMeta'), onSelect: () => trainerMenu() },
     ...(new URLSearchParams(location.search).has('dev') ? [{ name: t('menu.mock'), desc: t('menu.mockDesc'), kind: 'dev' as const, onSelect: () => start(null) }] : []),
   ];
   disposeMenu = renderMainMenu(s, {
@@ -95,11 +101,36 @@ function lobby(mode: 'lane' | 'sandbox'): void {
   );
 }
 
-function start(config: ReturnType<typeof configFor> | null): void {
+/** Trainer hub (Phase 5) -> practice lobby with the trainer's options -> game. Options persist per trainer. */
+const trainerSetups = new Map<TrainerMode, TrainerSetup>();
+
+function trainerMenu(): void {
+  const s = screen();
+  renderTrainerMenu(s, mainMenu, (m) => trainerLobby(m));
+}
+
+function trainerLobby(mode: TrainerMode): void {
+  const setup = trainerSetups.get(mode) ?? defaultSetup(mode);
+  trainerSetups.set(mode, setup);
+  const s = screen();
+  renderPracticeLobby(s, `${t('lobby.title')} – ${t(`trainer.mode.${mode}`)}`, trainerMenu, (p) => start(trainerConfig(setup, p)), trainerOptions(setup));
+}
+
+/** Post-game analysis for classic games and trainer runs (not for short or sandbox sessions). */
+function afterGame(config: SimConfig | null, r?: SessionResult): void {
+  if (!config || !r) return mainMenu();
+  if (r.retry) return start({ ...structuredClone(config), seed: (Math.random() * 2 ** 31) | 0 });
+  const auto = (config.mode === 'classic' || config.mode === 'laneOnly') && r.summary.duration >= 60;
+  if (!r.analysis && !auto) return mainMenu();
+  const s = screen();
+  renderPostGame(s, r.summary, mainMenu, isTrainerMode(config.mode) ? () => afterGame(config, { ...r, retry: true }) : undefined);
+}
+
+function start(config: SimConfig | null): void {
   disposeMenu?.();
   disposeMenu = null;
   app.textContent = '';
-  new Game(app, config, () => mainMenu());
+  new Game(app, config, (r) => afterGame(config, r));
 }
 
 void (async () => {
@@ -109,6 +140,10 @@ void (async () => {
   // dev shortcuts: ?mock, ?play=lane|sandbox
   if (q.has('mock')) start(null);
   else if (q.get('play') === 'classic') start(buildClassicConfig());
+  else if (TRAINER_MODES.includes(q.get('play') as TrainerMode)) {
+    const m = q.get('play') as TrainerMode;
+    start(trainerConfig(defaultSetup(m), { champion: MIRA_ID, summoners: ['sprung', 'heilen'], runes: runesFromPreset(MIRA_ID, settings.runePresets[MIRA_ID]) }));
+  }
   else if (q.get('play') === 'lane' || q.get('play') === 'sandbox') start(configFor(q.get('play') as 'lane' | 'sandbox', runesFromPreset(MIRA_ID, settings.runePresets[MIRA_ID])));
   else mainMenu();
 })();

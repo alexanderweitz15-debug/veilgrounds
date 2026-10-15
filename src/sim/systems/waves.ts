@@ -43,6 +43,11 @@ function st(sim: Sim): WaveSt {
   return s;
 }
 
+/** Move the next wave to `tick` (trainers: no 65 s wait; sandbox: wave now). The schedule continues from there. */
+export function scheduleNextWave(sim: Sim, tick: number): void {
+  st(sim).next = Math.max(sim.tick, tick);
+}
+
 /** Time to the next wave and whether it carries a siege minion. */
 export function nextWaveInfo(sim: Sim): { tick: number; inSeconds: number; siege: boolean; index: number } {
   const s = st(sim);
@@ -85,7 +90,9 @@ export const wavesSystem: System = {
     // The schedule advances even with minions off, so toggling them back on stays in sync.
     if (sim.flags.minions) {
       const lanes = sim.config.minionLanes ?? [Lane.Top, Lane.Mid, Lane.Bot];
+      const teams: readonly number[] = sim.config.minionTeams ?? [0, 1];
       for (const team of [0, 1]) {
+        if (!teams.includes(team)) continue; // tower last-hit trainer: enemy waves only
         for (const lane of [Lane.Top, Lane.Mid, Lane.Bot] as LaneId[]) {
           if (!lanes.includes(lane)) continue;
           spawnWave(sim, team, lane, siege, inhibitorDown(sim, enemyOf(team), lane));

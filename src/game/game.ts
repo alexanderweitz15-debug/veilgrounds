@@ -17,6 +17,7 @@ import { buildSettingsPanel } from '../ui/settingsPanel';
 import { onSettingsChange, settings } from '../settings';
 import { t } from '../i18n';
 import { getChampionAtlas, getMinionAtlas } from '../render/sheets';
+import { SessionExtras, type ExitOpts, type SessionResult } from './session';
 
 export class Game {
   private readonly root: HTMLElement;
@@ -28,6 +29,7 @@ export class Game {
   private readonly overlay = new Overlay();
   private readonly minimap: Minimap;
   private readonly menu: HTMLElement;
+  private readonly extras: SessionExtras;
   private readonly chat: ChatBox;
   private raf = 0;
   private lastFrame = performance.now();
@@ -45,7 +47,7 @@ export class Game {
     e.returnValue = '';
   };
 
-  constructor(parent: HTMLElement, config: SimConfig | null, private readonly onExit: () => void) {
+  constructor(parent: HTMLElement, config: SimConfig | null, private readonly onExit: (r?: SessionResult) => void) {
     const map = loadMap();
     this.root = document.createElement('div');
     this.root.className = 'game';
@@ -79,6 +81,7 @@ export class Game {
     this.link.onSnap = (s) => {
       const now = performance.now();
       this.snapsThisSec++;
+      this.extras.ingest(s); // Phase 5: post-game stats
       for (const ev of this.state.ingest(s, now)) {
         this.world.onEvent(ev, this.state, now);
         this.overlay.onEvent(ev, this.state, now);
@@ -98,10 +101,12 @@ export class Game {
         sell: (slot) => this.link.send({ t: 'sell', slot }),
         swapTrinket: (id) => this.link.send({ t: 'trinket', id }),
       },
-      config?.mode === 'sandbox' || !config,
+      config?.mode === 'sandbox' || config?.mode === 'kite' || !config,
       config?.players ?? [],
     );
     this.root.appendChild(this.hud.root);
+    // Phase 5: trainer panel/result, sandbox+ panel, stats recorder (src/game/session.ts)
+    this.extras = new SessionExtras(this.root, config, (c) => this.link.send(c), (p) => this.setPaused(p), (o) => this.exit(o));
     this.minimap = new Minimap(
       map,
       (x, y) => this.world.rig.focus(x, y),
@@ -232,6 +237,7 @@ export class Game {
     this.overlay.draw(st, this.world, now, hoverId);
     this.minimap.draw(st, this.world, this.world.fog, now);
     this.hud.update(st, now);
+    this.extras.frame(st.snap);
     this.root.classList.toggle('dead', !!st.snap?.me?.dead);
     // stats for the F9 panel
     this.frames++;
@@ -253,7 +259,9 @@ export class Game {
     }
   };
 
-  exit(): void {
+  exit(o: ExitOpts = {}): void {
+    const result = this.extras.result(o);
+    this.extras.dispose();
     cancelAnimationFrame(this.raf);
     this.link.dispose();
     this.input.dispose();
@@ -267,6 +275,6 @@ export class Game {
     exitGameFullscreen();
     this.world.dispose();
     this.root.remove();
-    this.onExit();
+    this.onExit(result);
   }
 }

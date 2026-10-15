@@ -16,6 +16,7 @@ import { jungleSystem } from './jungle';
 import { computeVision } from '../vision';
 import { summonersSystem } from '../summoners';
 import { wardsSystem } from '../wards';
+import { trainerSystem } from '../trainer';
 
 export interface System {
   name: string;
@@ -41,6 +42,7 @@ export const systems = (): System[] =>
   projectilesSystem,
   movementSystem,
   economySystem, // passive gold, regen, recall, respawn, fountain
+  trainerSystem, // Phase 5 trainers + lasting sandbox cheats; no-op (no state) in other modes
   wardsSystem, // ward expiry/kills, seal + sweep reveal/disable, trinket charges: right before vision (Agent J)
   { name: 'vision', update: computeVision },
 ]);

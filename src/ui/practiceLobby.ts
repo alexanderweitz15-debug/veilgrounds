@@ -7,6 +7,7 @@ import { RUNES, runePresets, runesFromPreset, type RuneChoice } from '../sim/ite
 import { settings, updateSettings } from '../settings';
 import { champName, summonerName } from './names';
 import { t } from '../i18n';
+import { setPortrait } from '../render/portraits';
 
 type Role = PlayerSetup['role'];
 const FILTERS: (Role | 'all')[] = ['all', 'top', 'jungle', 'mid', 'adc', 'support'];
@@ -27,7 +28,8 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?:
   return e;
 }
 
-export function renderPracticeLobby(root: HTMLElement, title: string, onBack: () => void, onStart: (p: PracticePick) => void): void {
+/** `options` (trainers, Phase 5) renders extra settings above the start button; it is re-run on every redraw. */
+export function renderPracticeLobby(root: HTMLElement, title: string, onBack: () => void, onStart: (p: PracticePick) => void, options?: (parent: HTMLElement) => void): void {
   root.textContent = '';
   root.classList.add('menu-screen', 'classic-lobby');
   const panel = el('div', 'menu-panel classic-panel practice-panel', root);
@@ -52,7 +54,7 @@ export function renderPracticeLobby(root: HTMLElement, title: string, onBack: ()
     for (const id of ids) {
       const d = CHAMPION_DATA[id]!;
       const c = el('button', `champ-card${id === pick.champ ? ' selected' : ''}`, grid);
-      el('div', 'champ-portrait', c, champName(id).charAt(0));
+      setPortrait(el('div', 'champ-portrait', c), id);
       el('div', 'champ-name', c, champName(id));
       el('div', 'champ-title', c, d.title[settings.lang]);
       c.title = `${d.title[settings.lang]}\n${d.roles.map((r) => t(`role.${r}`)).join(' / ')}`;
@@ -102,6 +104,7 @@ export function renderPracticeLobby(root: HTMLElement, title: string, onBack: ()
       });
     }
 
+    if (options) options(el('div', '', body));
     const row = el('div', 'row-buttons', body);
     el('button', 'menu-btn secondary', row, t('menu.back')).addEventListener('click', onBack);
     el('button', 'menu-btn', row, t('lobby.start')).addEventListener('click', () =>

@@ -55,14 +55,24 @@ export interface BuyQuote {
 
 /** Recipe price of `item` given an inventory (pure; the shop UI uses it on snapshot data too). */
 export function recipePrice(inv: readonly (string | null)[], item: ItemData): { price: number; consumes: number[] } {
+  // LoL rule, recursive: an owned component counts with its full cost; a missing component may still be partly
+  // covered by owned sub-components (e.g. Langschwert towards Spitzhacke towards Sturmbogen).
   const consumes: number[] = [];
-  let price = item.cost;
-  for (const comp of item.from) {
-    const slot = inv.findIndex((x, i) => i < ITEM_SLOTS && x === comp && !consumes.includes(i));
-    if (slot < 0) continue;
-    consumes.push(slot);
-    price -= itemById(comp)?.cost ?? 0;
-  }
+  const cover = (it: ItemData): number => {
+    let covered = 0;
+    for (const comp of it.from) {
+      const slot = inv.findIndex((x, i) => i < ITEM_SLOTS && x === comp && !consumes.includes(i));
+      if (slot >= 0) {
+        consumes.push(slot);
+        covered += itemById(comp)?.cost ?? 0;
+      } else {
+        const sub = itemById(comp);
+        if (sub) covered += cover(sub);
+      }
+    }
+    return covered;
+  };
+  const price = item.cost - cover(item);
   return { price: Math.max(0, price), consumes };
 }
 

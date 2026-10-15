@@ -89,3 +89,18 @@ describe('inventory + shop', () => {
     expect(Stats.ms[me]!).toBeGreaterThan(ms + 60);
   });
 });
+
+describe('recursive recipes', () => {
+  it('owned sub-components (Langschwert) discount a legendary whose direct component is missing', async () => {
+    const { recipePrice, itemById } = await import('../src/sim/items/inventory');
+    const storm = itemById('sturmbogen')!;
+    const lang = itemById('langschwert')!;
+    const inv: (string | null)[] = ['langschwert', 'wetzdolch', null, null, null, null, null];
+    const r = recipePrice(inv, storm);
+    expect(r.price).toBe(storm.cost - lang.cost - itemById('wetzdolch')!.cost);
+    expect(r.consumes.sort()).toEqual([0, 1]);
+    // a direct component wins over its sub-components
+    const r2 = recipePrice(['spitzhacke', 'langschwert', null, null, null, null, null], storm);
+    expect(r2.consumes).toEqual([0]);
+  });
+});

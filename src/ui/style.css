@@ -94,6 +94,10 @@ h2, h3 { margin: 4px 0; color: #f3d98c; }
 .hud-top .lbl { color: #a99f8a; font-weight: 400; margin-right: 4px; }
 .hud-top .cs { font-size: 13px; color: #d8cfb6; }
 .hud-top .clock { font-variant-numeric: tabular-nums; font-size: 16px; }
+/* Kesselbrut stacks of the own team (grub icon + count), shown from the first grub on */
+.hud-top .kessel { display: none; align-items: center; gap: 3px; font-size: 14px; color: #d9bfff; pointer-events: auto; cursor: help; }
+.hud-top .kessel.show { display: flex; }
+.hud-top .kessel-icon { width: 22px; height: 22px; display: inline-block; filter: drop-shadow(0 0 2px rgba(150, 110, 220, 0.6)); }
 
 .killfeed { position: absolute; top: 120px; left: 10px; display: flex; flex-direction: column; gap: 4px; transform: scale(var(--ui)); transform-origin: top left; }
 .killfeed .entry { background: var(--panel); padding: 4px 10px; border-left: 4px solid var(--blue); font-size: 13px; animation: feedin 0.25s ease-out; }
@@ -205,6 +209,9 @@ h2, h3 { margin: 4px 0; color: #f3d98c; }
 @keyframes annin { 0% { opacity: 0; letter-spacing: 0.3em; } 10% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
 /* sprite bake banner: below the top bar (the sim waits until it is done) */
 .sprite-loading { position: absolute; left: 50%; top: 58px; transform: translateX(-50%); z-index: 50; padding: 6px 14px; border-radius: 6px; background: rgba(20, 16, 24, 0.82); border: 1px solid rgba(201, 162, 78, 0.4); color: #f2dfbd; font: 600 14px sans-serif; pointer-events: none; }
+.boot-cover { position: absolute; inset: 0; z-index: 40; background: radial-gradient(ellipse at 50% 45%, #1b1820 0%, #0b0a0d 70%); transition: opacity 0.35s ease-out; pointer-events: none; }
+.boot-cover.done { opacity: 0; }
+.boot-cover .sprite-loading { top: 50%; transform: translate(-50%, -50%); font-size: 15px; padding: 8px 18px; }
 .sim-error { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 400; max-width: 480px; padding: 18px 22px; border-radius: 8px; background: rgba(40, 10, 12, 0.94); border: 1px solid #c94e4e; color: #f2dfbd; font: 600 15px sans-serif; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; }
 .recall.open { display: block; position: absolute; bottom: 190px; left: 50%; transform: translateX(-50%); width: 220px; text-align: center; font-size: 13px; text-shadow: 0 0 3px #000; }
 .recall .track { height: 8px; background: #111; border: 1px solid #000; margin-top: 3px; }

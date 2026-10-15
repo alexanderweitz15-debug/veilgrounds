@@ -16,7 +16,8 @@ import { BotDebugPanel } from './botDebug';
 import { setPortrait } from '../render/portraits';
 import { Announcer } from './announce';
 import { DeathRecap } from './deathRecap';
-import { abilityIcon, itemIcon, setIcon, summonerIcon } from './icons';
+import { abilityIcon, itemIcon, kesselbrutIcon, setIcon, summonerIcon } from './icons';
+import { KESSELBRUT_MAX_STACKS, KESSELBRUT_STRUCT_PCT } from '../sim/systems/jungle';
 import { setTip } from './tooltip';
 
 const KILLFEED_MS = 9000;
@@ -84,6 +85,10 @@ export class Hud {
   private readonly kills: [HTMLElement, HTMLElement];
   private readonly towers: [HTMLElement, HTMLElement];
   private readonly cs: HTMLElement;
+  /** Kesselbrut stacks of the own team (icon + count, hidden at 0). */
+  private readonly kessel: HTMLElement;
+  private readonly kesselNum: HTMLElement;
+  private kesselSeen = -1;
   private readonly feed: HTMLElement;
   private readonly respawn: HTMLElement;
   private readonly recall: HTMLElement;
@@ -121,6 +126,9 @@ export class Hud {
     el('span', 'lbl', tw, t('hud.towers'));
     this.towers = [el('span', 'blue', tw, '0'), el('span', 'red', tw, '0')];
     tw.insertBefore(el('span', '', undefined, ':'), this.towers[1]);
+    this.kessel = el('span', 'kessel', top);
+    setIcon(el('span', 'kessel-icon', this.kessel), kesselbrutIcon());
+    this.kesselNum = el('span', 'kessel-num', this.kessel, '0');
     this.cs = el('span', 'cs', top, '');
     this.clock = el('span', 'clock', top, '00:00');
 
@@ -310,6 +318,7 @@ export class Hud {
     setText(this.kills[1], String(state.kills[1]));
     setText(this.towers[0], String(state.towers[0]));
     setText(this.towers[1], String(state.towers[1]));
+    this.drawKesselbrut(snap.kesselbrut ?? 0);
     this.score.update(snap);
     const me = snap.me;
     toggle(this.noChamp, 'open', !me);
@@ -360,6 +369,15 @@ export class Hud {
       setText(this.recall.firstElementChild as HTMLElement, t('hud.recall', { s: me.recallLeft.toFixed(1) }));
       setStyle(this.recallFill, 'width', `${Math.min(100, (me.recallLeft / 8) * 100)}%`);
     }
+  }
+
+  /** Kesselbrut stacks of the own team next to the tower score (tooltip explains the structure damage bonus). */
+  private drawKesselbrut(n: number): void {
+    if (n === this.kesselSeen) return;
+    this.kesselSeen = n;
+    toggle(this.kessel, 'show', n > 0);
+    setText(this.kesselNum, String(n));
+    setTip(this.kessel, n > 0 ? `text:${t('hud.kesselbrut', { n, max: KESSELBRUT_MAX_STACKS, pct: n * KESSELBRUT_STRUCT_PCT })}` : null);
   }
 
   /** Item slots (abbreviated names + tooltip) and active jungle/objective buffs. */

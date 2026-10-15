@@ -60,6 +60,7 @@ export function renderPracticeLobby(root: HTMLElement, title: string, onBack: ()
       setPortrait(el('div', 'champ-portrait', c), id);
       el('div', 'champ-name', c, champName(id));
       el('div', 'champ-title', c, d.title[settings.lang]);
+      c.title = `${champName(id)}, ${d.title[settings.lang]}`;
       c.addEventListener('click', () => {
         pick.champ = id;
         draw();

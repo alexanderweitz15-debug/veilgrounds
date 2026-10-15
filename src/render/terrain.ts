@@ -1115,6 +1115,35 @@ function paintGround(cx: Ctx, N: number): HTMLCanvasElement {
       ctx.stroke();
     }
   }
+  // 10. map edge: the ground fades into the dark forest floor of the skirt (no hard cut where the base plazas meet
+  // the edge), with ragged moss/earth dabs so the transition is not a clean ruler line
+  ctx.globalAlpha = 1;
+  const EDGE = 520;
+  const fade = (x0: number, y0: number, x1: number, y1: number): CanvasGradient => {
+    const g = ctx.createLinearGradient(...P(x0, y0), ...P(x1, y1));
+    g.addColorStop(0, 'rgba(43,48,34,1)');
+    g.addColorStop(0.35, 'rgba(43,48,34,0.75)');
+    g.addColorStop(1, 'rgba(43,48,34,0)');
+    return g;
+  };
+  for (const [x0, y0, x1, y1, rx, ry, rw, rh] of [
+    [0, 0, EDGE, 0, 0, 0, EDGE, S],
+    [S, 0, S - EDGE, 0, S - EDGE, 0, EDGE, S],
+    [0, 0, 0, EDGE, 0, 0, S, EDGE],
+    [0, S, 0, S - EDGE, 0, S - EDGE, S, EDGE],
+  ] as const) {
+    ctx.fillStyle = fade(x0, y0, x1, y1);
+    const [ax, ay] = P(rx, ry);
+    const [bx, by] = P(rx + rw, ry + rh);
+    ctx.fillRect(Math.min(ax, bx), Math.min(ay, by), Math.abs(bx - ax), Math.abs(by - ay));
+  }
+  for (let i = 0; i < 900 * scale; i++) {
+    const side = i % 4;
+    const along = rnd() * S;
+    const inset = rnd() * rnd() * EDGE * 1.1;
+    const [x, y] = side === 0 ? [inset, along] : side === 1 ? [S - inset, along] : side === 2 ? [along, inset] : [along, S - inset];
+    dab(x, y, 50 + rnd() * 110, 30 + rnd() * 70, rnd() * Math.PI, rnd() < 0.55 ? '#2b3022' : rnd() < 0.5 ? '#3a4a2a' : '#4a3f2e', 0.35 + rnd() * 0.35);
+  }
   ctx.globalAlpha = 1;
   return c;
 }

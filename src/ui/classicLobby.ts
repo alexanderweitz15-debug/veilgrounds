@@ -172,6 +172,7 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
       setPortrait(el('div', 'champ-portrait', c, champName(id).charAt(0)), id);
       el('div', 'champ-name', c, champName(id));
       el('div', 'champ-title', c, d.title[settings.lang]);
+      c.title = `${champName(id)}, ${d.title[settings.lang]}`;
       c.addEventListener('click', () => {
         pick.champ = id;
         draw();

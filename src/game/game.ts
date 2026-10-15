@@ -56,6 +56,9 @@ export class Game {
   };
   /** Sprite atlases baked; until then the sim stays paused (see constructor). */
   private atlasReady = false;
+  /** Dark screen behind the loading banner until the sprites are baked and the first snapshot arrived (before that the
+   * world has no vision yet and would show one violet fog wash). */
+  private cover: HTMLElement | null;
 
   constructor(parent: HTMLElement, config: SimConfig | null, private readonly onExit: (r?: SessionResult) => void) {
     if (config) config = withClientSettings(config, settings); // e.g. bot toxicity for trainer/duel bots too
@@ -72,11 +75,14 @@ export class Game {
     const f = map.sides[0].fountain;
     this.world.rig.focus(f.x + 600, f.y + 600);
     // bake the animated champion sprites (worker pool); champions show the placeholder sprite until it is done
+    this.cover = document.createElement('div');
+    this.cover.className = 'boot-cover';
+    this.root.appendChild(this.cover);
     const loading = document.createElement('div');
-    // below the top bar; the sim stays paused until the atlases are ready (loading must not eat game time)
+    // centred on the dark cover; the sim stays paused until the atlases are ready (loading must not eat game time)
     loading.className = 'sprite-loading';
     loading.textContent = t('hud.loadingChamps', { p: 0 });
-    this.root.appendChild(loading);
+    this.cover.appendChild(loading);
     void getChampionAtlas(config?.players.map((p) => p.champion) ?? ['mira'], (done, total) => {
       loading.textContent = t('hud.loadingChamps', { p: Math.round((done / total) * 100) });
     })
@@ -287,6 +293,13 @@ export class Game {
     this.lastFrame = now;
     const st = this.state;
     st.beginFrame(now);
+    if (this.cover && this.atlasReady && st.snap) {
+      // first real frame: fade the dark cover out (removed after the transition)
+      const c = this.cover;
+      this.cover = null;
+      c.classList.add('done');
+      window.setTimeout(() => c.remove(), 400);
+    }
     if (!this.focusedOnce) {
       const me = st.me();
       if (me) {

@@ -9,6 +9,7 @@ import { Kind } from '../sim/types';
 import { canvasToSim, mulberry, simToCanvas, MAP_SIZE } from '../render/coords';
 import { REL, INK } from '../render/palette';
 import { organicOutline } from '../render/organic';
+import { CAMPS } from '../sim/systems/jungle';
 
 const SIZE = 280;
 const REDRAW_MS = 66;
@@ -23,7 +24,7 @@ export class Minimap {
   dragging = false;
   dispose: () => void = () => {};
 
-  constructor(map: MapData, private readonly onCamera: (x: number, y: number) => void, private readonly onMove: (x: number, y: number) => void, private readonly onPing?: (x: number, y: number) => void) {
+  constructor(private readonly map: MapData, private readonly onCamera: (x: number, y: number) => void, private readonly onMove: (x: number, y: number) => void, private readonly onPing?: (x: number, y: number) => void) {
     this.canvas.className = 'minimap';
     this.dpr = Math.min(window.devicePixelRatio, 2);
     this.canvas.width = this.canvas.height = Math.round(SIZE * this.dpr);
@@ -81,6 +82,12 @@ export class Minimap {
     ctx.globalAlpha = 1;
 
     const snap = state.snap;
+    // epic objectives as small badges (position only: kills in the fog are not known). The pit holds the Kesselbrut
+    // until it leaves at 19:45, then the Schleierwaechter.
+    const time = snap?.time ?? 0;
+    const pitKessel = time < (CAMPS.kesselbrut.until ?? 0);
+    epicBadge(ctx, ...simToCanvas(this.map.objectives.leviathan.x, this.map.objectives.leviathan.y, W), this.dpr, 'leviathan');
+    epicBadge(ctx, ...simToCanvas(this.map.objectives.kesselbrut.x, this.map.objectives.kesselbrut.y, W), this.dpr, pitKessel ? 'kesselbrut' : 'schleierwaechter');
     if (snap) {
       const myEid = snap.me?.eid ?? -1;
       const P = (x: number, y: number): [number, number] => simToCanvas(x, y, W);
@@ -179,6 +186,60 @@ export class Minimap {
   }
 }
 
+const PLANT_FILL: Record<string, string> = { sprungfrucht: '#f08a3a', honigfrucht: '#f2cf4a', spaehfrucht: '#6fb6f0' };
+
+type Epic = 'leviathan' | 'kesselbrut' | 'schleierwaechter';
+const EPIC_FILL: Record<Epic, string> = { leviathan: '#3f9fb4', kesselbrut: '#8a5cc8', schleierwaechter: '#5a3a8e' };
+
+/** Round inked badge with a tiny glyph: Leviathan = wave crest, Kesselbrut = three grubs, Schleierwaechter = veiled eye. */
+function epicBadge(ctx: CanvasRenderingContext2D, x: number, y: number, d: number, kind: Epic): void {
+  const r = (kind === 'schleierwaechter' ? 8 : 7) * d;
+  ctx.fillStyle = EPIC_FILL[kind];
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 1.5 * d;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,240,210,0.9)';
+  ctx.lineWidth = 1.2 * d;
+  ctx.beginPath();
+  ctx.arc(x, y, r - 1.6 * d, 0, Math.PI * 2);
+  ctx.stroke();
+  const fg = '#fff3d6';
+  ctx.fillStyle = fg;
+  ctx.strokeStyle = fg;
+  ctx.lineWidth = 1.4 * d;
+  ctx.lineCap = 'round';
+  if (kind === 'leviathan') {
+    ctx.beginPath();
+    ctx.moveTo(x - 4 * d, y + 2 * d);
+    ctx.quadraticCurveTo(x - 2 * d, y - 4 * d, x + 1 * d, y - 1 * d);
+    ctx.quadraticCurveTo(x + 3 * d, y + 1 * d, x + 4 * d, y - 2 * d);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - 4 * d, y + 3.5 * d);
+    ctx.lineTo(x + 4 * d, y + 3.5 * d);
+    ctx.stroke();
+  } else if (kind === 'kesselbrut') {
+    for (const [dx, dy] of [[-2.6, 1.6], [2.6, 1.6], [0, -2.4]] as const) {
+      ctx.beginPath();
+      ctx.arc(x + dx * d, y + dy * d, 1.7 * d, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(x - 4.5 * d, y);
+    ctx.quadraticCurveTo(x, y - 4.5 * d, x + 4.5 * d, y);
+    ctx.quadraticCurveTo(x, y + 4.5 * d, x - 4.5 * d, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y, 1.6 * d, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.lineCap = 'butt';
+}
+
 /** placeholder art: parchment map with inked lanes, washed river, hatched cliffs. */
 function paintParchment(map: MapData, W: number): HTMLCanvasElement {
   const c = document.createElement('canvas');
@@ -272,12 +333,30 @@ function paintParchment(map: MapData, W: number): HTMLCanvasElement {
     ctx.fill();
     ctx.stroke();
   };
+  const campFill: Record<string, string> = {
+    dornenbock: 'rgba(90,140,210,0.9)',
+    glutwaechter: 'rgba(210,100,70,0.9)',
+    sumpfunke: 'rgba(96,170,110,0.95)', // swamp toad: mossy green, the one camp that stands alone
+  };
+  const d = W / SIZE;
   for (const side of map.sides) {
-    for (const c of side.camps) camp(c, 3, c.id === 'dornenbock' ? 'rgba(90,140,210,0.85)' : c.id === 'glutwaechter' ? 'rgba(210,100,70,0.85)' : 'rgba(215,190,120,0.8)');
+    for (const c of side.camps) camp(c, (c.id === 'sumpfunke' ? 3.6 : 3) * d, campFill[c.id] ?? 'rgba(215,190,120,0.85)');
+    // plants: small leaf-diamonds tinted by type (Sprungfrucht orange, Honigfrucht gold, Spaehfrucht blue)
+    for (const pl of side.plants) {
+      const [x, y] = P(pl);
+      const r = 2.6 * d;
+      ctx.fillStyle = PLANT_FILL[pl.type] ?? '#9fc27a';
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 0.8 * d;
+      ctx.beginPath();
+      ctx.moveTo(x, y - r);
+      ctx.quadraticCurveTo(x + r, y, x, y + r);
+      ctx.quadraticCurveTo(x - r, y, x, y - r);
+      ctx.fill();
+      ctx.stroke();
+    }
   }
-  for (const p of map.objectives.nebelschleicher) camp(p, 3, 'rgba(160,210,200,0.85)');
-  camp(map.objectives.leviathan, 5, 'rgba(80,170,190,0.9)');
-  camp(map.objectives.schleierwaechter, 5, 'rgba(150,110,200,0.9)');
+  for (const p of map.objectives.nebelschleicher) camp(p, 3 * d, 'rgba(160,210,200,0.9)');
   // border
   ctx.strokeStyle = '#3b2c1c';
   ctx.lineWidth = 4;

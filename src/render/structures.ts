@@ -46,24 +46,46 @@ function cone(r: number, h: number, seg: number, y: number, color: string, x = 0
   g.translate(x, y, z);
   return paint(g, color);
 }
-/** Hanging banner (two-sided quad with a swallow tail), facing +z rotated by ry. */
-function banner(w: number, h: number, y: number, r: number, ry: number, cloth: string, trim: string): THREE.BufferGeometry[] {
-  const g = new THREE.PlaneGeometry(w, h, 1, 3);
-  const pos = g.getAttribute('position') as THREE.BufferAttribute;
-  for (let i = 0; i < pos.count; i++) {
-    const py = pos.getY(i);
-    pos.setZ(i, Math.sin(py * 0.05) * 5);
-    if (py < -h / 2 + 1 && Math.abs(pos.getX(i)) < 1) pos.setY(i, py + h * 0.18);
+/**
+ * Banner colours, brighter than the minions' BASE_LOOK cloth: the banners must read as the team colour at game
+ * distance on both the ivory (blue) and the basalt (red) towers. Light trim + emblem for value contrast.
+ */
+const BANNER = [
+  { cloth: '#3d7fe0', trim: '#f1e4c0', emblem: '#f3c95a' },
+  { cloth: '#dc3b26', trim: '#ffcf7a', emblem: '#ffe1a0' },
+] as const;
+
+/**
+ * Hanging banners (one-sided quads facing outward, with a swallow tail, team emblem and hem stripe), a pair at the
+ * angles ry and PI - ry. Both are built by rotation: a mirrored copy would face inward (invisible cloth) or turn
+ * inside out (the trim box under the back-face outline hull).
+ */
+function banner(w: number, h: number, y: number, r: number, ry: number, team: number): THREE.BufferGeometry[] {
+  const { cloth, trim, emblem } = BANNER[Math.min(team, 1)]!;
+  const out: THREE.BufferGeometry[] = [];
+  for (const a of [ry, Math.PI - ry]) {
+    const g = new THREE.PlaneGeometry(w, h, 1, 3);
+    const pos = g.getAttribute('position') as THREE.BufferAttribute;
+    for (let i = 0; i < pos.count; i++) {
+      const py = pos.getY(i);
+      pos.setZ(i, Math.sin(py * 0.05) * 5);
+      if (py < -h / 2 + 1 && Math.abs(pos.getX(i)) < 1) pos.setY(i, py + h * 0.18);
+    }
+    g.translate(0, y, r);
+    const t = new THREE.BoxGeometry(w + 14, 12, 8);
+    t.translate(0, y + h / 2, r);
+    // emblem (diamond) + hem stripe a little in front of the cloth (it waves by up to 5 units)
+    const e = new THREE.PlaneGeometry(w * 0.42, w * 0.42);
+    e.rotateZ(Math.PI / 4);
+    e.translate(0, y + h * 0.12, r + 7);
+    const st = new THREE.PlaneGeometry(w * 0.86, h * 0.07);
+    st.translate(0, y - h * 0.2, r + 7);
+    for (const [geo, col] of [[g, cloth], [t, trim], [e, emblem], [st, trim]] as const) {
+      geo.rotateY(a);
+      out.push(paint(geo, col));
+    }
   }
-  g.translate(0, y, r);
-  g.rotateY(ry);
-  const back = g.clone();
-  back.scale(-1, 1, 1);
-  back.rotateY(Math.PI);
-  const t = new THREE.BoxGeometry(w + 8, 10, 6);
-  t.translate(0, y + h / 2, r);
-  t.rotateY(ry);
-  return [paint(g, cloth), paint(back, cloth), paint(t, trim)];
+  return out;
 }
 
 function tower(team: number): Template {
@@ -74,7 +96,7 @@ function tower(team: number): Template {
     parts.push(cyl(170, 185, 34, 8, 0, L.stoneDark), cyl(145, 160, 30, 8, 34, L.stone));
     parts.push(cyl(78, 98, 300, 8, 64, L.stone));
     for (const y of [120, 230, 330]) parts.push(cyl(100 - (y - 64) * 0.06, 102 - (y - 64) * 0.06, 14, 8, y, L.metal));
-    for (let i = 0; i < 2; i++) parts.push(...banner(70, 150, 250, 92, (i * Math.PI) + Math.PI / 4, L.cloth, L.metal));
+    for (let i = 0; i < 2; i++) parts.push(...banner(96, 205, 245, 100, (i * Math.PI) + Math.PI / 4, 0));
     // gallery with railing posts
     parts.push(cyl(132, 92, 30, 8, 364, L.stoneDark), cyl(134, 134, 10, 12, 394, L.metal));
     for (let i = 0; i < 10; i++) {
@@ -103,7 +125,7 @@ function tower(team: number): Template {
   }
   parts.push(cyl(84, 104, 290, 6, 66, L.metal2));
   for (const y of [110, 200, 290]) parts.push(cyl(108 - (y - 66) * 0.07, 110 - (y - 66) * 0.07, 16, 6, y, L.metal));
-  for (let i = 0; i < 2; i++) parts.push(...banner(74, 160, 240, 98, (i * Math.PI) + Math.PI / 3, L.cloth, L.metal));
+  for (let i = 0; i < 2; i++) parts.push(...banner(100, 210, 235, 112, (i * Math.PI) + Math.PI / 4, 1));
   // furnace chamber with chimney horns
   parts.push(cyl(130, 96, 40, 6, 356, L.stoneDark), cyl(122, 130, 110, 6, 396, L.metal2), cyl(140, 128, 20, 6, 506, L.metal));
   for (let i = 0; i < 4; i++) {
@@ -181,7 +203,7 @@ function nexus(team: number): Template {
       beam.rotateY(-a);
       beam.translate(Math.cos(a) * 250, 500, Math.sin(a) * 250);
       parts.push(paint(beam, L.metal));
-      parts.push(...banner(90, 170, 300, 200, -a + Math.PI / 2, L.cloth, L.metal));
+      parts.push(...banner(100, 190, 300, 200, -a + Math.PI / 2, 0));
     }
     const core = new THREE.OctahedronGeometry(150, 0);
     core.scale(1, 1.6, 1);
@@ -198,7 +220,7 @@ function nexus(team: number): Template {
     const ember = new THREE.OctahedronGeometry(22, 0);
     ember.translate(x, 500 + (i % 2) * 80, z);
     glow.push(ember);
-    if (i % 2 === 0) parts.push(...banner(90, 160, 280, 240, -a + Math.PI / 2, L.cloth, L.metal));
+    if (i % 2 === 0) parts.push(...banner(100, 180, 280, 240, -a + Math.PI / 2, 1));
   }
   const core = new THREE.OctahedronGeometry(140, 0);
   core.scale(1, 1.5, 1);

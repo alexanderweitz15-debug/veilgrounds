@@ -15,6 +15,7 @@ import { ccLevel } from './buffs';
 import { teleportLeft } from './summoners';
 import { trainerHud, type TrainerHud } from './trainer';
 import { sandboxFlags } from './trainer/sandbox';
+import { kesselbrutStacks } from './systems/jungle';
 
 export interface SnapEntity {
   id: number;
@@ -132,6 +133,8 @@ export interface Snapshot {
   players: ScoreRow[];
   /** Running trainer (Phase 5), absent outside trainers. */
   trainer?: TrainerHud;
+  /** Kesselbrut stacks of the viewing team (0-6, HUD indicator); absent while 0 and for spectators. */
+  kesselbrut?: number;
 }
 
 /** One heard (unseen) enemy cast; shape matches PerceptionView.audio in src/ai/contract.ts. */
@@ -268,7 +271,8 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
     objects.push({ id: o.id, tag: o.tag, team: o.team, x: o.x, y: o.y, r: o.r });
   }
   const trainer = trainerHud(sim);
-  return { tick: sim.tick, time: sim.tick / 30, team, entities, projectiles, objects, me: hud, events, audio, players: scoreRows(sim, team), ...(trainer ? { trainer } : {}) };
+  const kessel = kesselbrutStacks(sim, team);
+  return { tick: sim.tick, time: sim.tick / 30, team, entities, projectiles, objects, me: hud, events, audio, players: scoreRows(sim, team), ...(trainer ? { trainer } : {}), ...(kessel ? { kesselbrut: kessel } : {}) };
 }
 
 /** Grid the audio cue position snaps to (units). */

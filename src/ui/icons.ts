@@ -478,3 +478,39 @@ export function statIcon(stat: string): string | null {
     GLYPHS[def[1]]!(g, hsl(def[0], 70, 64));
   });
 }
+
+/** Kesselbrut (grub objective): a curled, segmented violet grub with ember mandibles on a transparent ground. */
+export function kesselbrutIcon(): string {
+  return cached('obj:kesselbrut', (g) => {
+    g.clearRect(0, 0, S, S);
+    g.lineWidth = 3;
+    g.strokeStyle = 'rgba(12,9,6,0.95)';
+    // body: four segments shrinking towards the tail, curled around the centre
+    const segs: [number, number, number][] = [[22, 40, 9], [34, 44, 11], [44, 34, 12], [40, 20, 13]];
+    segs.forEach(([x, y, r], i) => {
+      const gr = g.createRadialGradient(x - r * 0.3, y - r * 0.4, 1, x, y, r);
+      gr.addColorStop(0, i === 3 ? '#e4c8ff' : '#c9a6f0');
+      gr.addColorStop(1, '#5d3d8c');
+      g.fillStyle = gr;
+      g.beginPath();
+      g.arc(x, y, r, 0, Math.PI * 2);
+      g.fill();
+      g.stroke();
+    });
+    // mandibles + eye glow
+    g.fillStyle = '#ff9a3c';
+    for (const s of [-1, 1]) {
+      g.beginPath();
+      g.moveTo(40 + s * 5, 10);
+      g.lineTo(40 + s * 11, 2);
+      g.lineTo(40 + s * 2, 7);
+      g.closePath();
+      g.fill();
+      g.stroke();
+    }
+    g.fillStyle = '#ffe2a0';
+    g.beginPath();
+    g.arc(44, 17, 2.6, 0, Math.PI * 2);
+    g.fill();
+  });
+}

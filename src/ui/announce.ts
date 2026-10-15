@@ -8,6 +8,7 @@ import { playAnnounce, type AnnounceTone } from '../audio/sfx';
 import { t } from '../i18n';
 import { champName } from './names';
 import raw from '../data/map.json';
+import { CAMPS, KESSELBRUT_MAX_STACKS } from '../sim/systems/jungle';
 
 interface Item {
   title: string;
@@ -24,6 +25,8 @@ const MULTI_KEYS = ['', '', 'ann.double', 'ann.triple', 'ann.quadra', 'ann.penta
 /** Modes with the regular minion schedule (first wave at FIRST_WAVE_TICK). */
 const WAVE_MODES = new Set(['classic', 'laneOnly']);
 const OBJ = raw.neutral.objectives;
+/** Grubs die within seconds of each other: one banner once the own stack count settled for this long. */
+const KESSEL_SETTLE_MS = 2500;
 
 export class Announcer {
   readonly root: HTMLElement;
@@ -36,6 +39,10 @@ export class Announcer {
   private firstBlood = false;
   private readonly streak = new Map<string, { n: number; at: number }>();
   private readonly aced = [false, false];
+  /** Own Kesselbrut stacks last seen, and when they last rose (pending banner), -1 = none pending. */
+  private kessel = 0;
+  private kesselRoseAt = -1;
+  private kesselSpawned = false;
 
   constructor(parent: HTMLElement, private readonly mode?: string) {
     this.root = document.createElement('div');
@@ -144,6 +151,20 @@ export class Announcer {
       if (!this.warned && WAVE_MODES.has(this.mode ?? '') && snap.time >= warnAt && snap.time < warnAt + 10) {
         this.warned = true;
         this.push(t('ann.minions30'), 'neutral', 1);
+      }
+      // Kesselbrut: first spawn is public (classic schedule); grubs are small monsters, so their deaths stay in the
+      // fog: the banner comes from the own team's stack count instead
+      const first = CAMPS.kesselbrut.first;
+      if (!this.kesselSpawned && this.mode === 'classic' && snap.time >= first && snap.time < first + 10) {
+        this.kesselSpawned = true;
+        this.push(t('ann.kesselbrutSpawn'), 'neutral', 1);
+      }
+      const k = snap.kesselbrut ?? 0;
+      if (k > this.kessel) this.kesselRoseAt = now;
+      this.kessel = k;
+      if (this.kesselRoseAt >= 0 && now - this.kesselRoseAt >= KESSEL_SETTLE_MS) {
+        this.kesselRoseAt = -1;
+        this.push(t('ann.kesselbrutOwn'), 'epic', 1, t('ann.kesselbrutStacks', { n: k, max: KESSELBRUT_MAX_STACKS }));
       }
       for (const team of [0, 1]) if (this.aced[team] && snap.players.some((r) => r.team === team && !r.dead)) this.aced[team] = false;
     }

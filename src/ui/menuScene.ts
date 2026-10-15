@@ -5,6 +5,7 @@ import { ClientState } from '../game/state';
 import { createSim, step } from '../sim/sim';
 import { buildSnapshot } from '../sim/snapshot';
 import { Lane } from '../sim/types';
+import { getMinionAtlas } from '../render/sheets';
 
 const TICK_MS = 1000 / 30;
 
@@ -23,8 +24,18 @@ export function startMenuScene(canvas: HTMLCanvasElement): () => void {
   const resize = (): void => world.resize(canvas.clientWidth, canvas.clientHeight);
   resize();
   window.addEventListener('resize', resize);
+  // painted minion sprites like in the game (shared, cached per session: a later match loads faster). Started a moment
+  // after the first frames so the menu shows up at once; placeholders until then.
+  let disposed = false;
+  const bake = window.setTimeout(() => {
+    getMinionAtlas()
+      .then((atlas) => {
+        if (!disposed) world.setMinionAtlas(atlas);
+      })
+      .catch((e) => console.warn('menu: minion atlas failed, keeping placeholder sprites', e));
+  }, 1200);
 
-  const loop = (now: number): void => {
+  const frame = (now: number): void => {
     acc += Math.min(250, now - last);
     last = now;
     while (acc >= TICK_MS) {
@@ -47,13 +58,22 @@ export function startMenuScene(canvas: HTMLCanvasElement): () => void {
     prev = now;
     fx += (tx - fx) * k;
     fy += (ty - fy) * k;
-    world.rig.focus(fx - 1000, fy + 250); // action right of the mode list
+    world.rig.focus(fx - 650, fy - 50); // action right of the mode list, above the news box
     state.beginFrame(now);
     world.frame(state, now, -1, false);
+  };
+  const loop = (now: number): void => {
+    frame(now);
     raf = requestAnimationFrame(loop);
   };
   raf = requestAnimationFrame(loop);
+  // dev / ?bench: step the backdrop synchronously (hidden tabs pause rAF)
+  const hook = window as unknown as { __vgMenu?: unknown };
+  if (import.meta.env.DEV || location.search.includes('bench')) hook.__vgMenu = { frame, world };
   return () => {
+    disposed = true;
+    window.clearTimeout(bake);
+    delete hook.__vgMenu;
     cancelAnimationFrame(raf);
     window.removeEventListener('resize', resize);
     world.dispose();

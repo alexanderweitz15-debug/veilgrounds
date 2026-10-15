@@ -3,7 +3,8 @@
 
 import type { Sim } from '../sim';
 import { refreshCooldowns } from '../systems/abilities';
-import { jungleState } from '../systems/jungle';
+import { CAMPS, CLOSED, jungleState } from '../systems/jungle';
+import { sec } from '../types';
 
 interface SandboxState {
   noCd: number[];
@@ -31,9 +32,21 @@ export function toggleGodMode(sim: Sim, eid: number): void {
   if (!toggle(sbState(sim).god, eid)) sim.c.Unit.invulnerable[eid] = 0;
 }
 
-/** Camps without living monsters spawn on the next tick (epic objectives included). */
+/**
+ * Camps without living monsters spawn on the next tick (epic objectives included). Kesselbrut and Schleierwaechter
+ * share the pit like in a normal game: Kesselbrut until it leaves (19:45), the Schleierwaechter only after that, and
+ * never while the other one is up. A closed camp (Kesselbrut after its last wave) stays closed.
+ */
 export function respawnCamps(sim: Sim): void {
-  for (const c of jungleState(sim).camps) if (c.spawnAt >= 0) c.spawnAt = sim.tick + 1;
+  const camps = jungleState(sim).camps;
+  const up = (id: string): boolean => camps.some((c) => c.id === id && c.spawnAt < 0);
+  const kesselPhase = sim.tick < sec(CAMPS.kesselbrut.until ?? 0);
+  for (const c of camps) {
+    if (c.spawnAt < 0 || c.spawnAt === CLOSED) continue;
+    if (c.id === 'kesselbrut' && (!kesselPhase || up('schleierwaechter'))) continue;
+    if (c.id === 'schleierwaechter' && (kesselPhase || up('kesselbrut'))) continue;
+    c.spawnAt = sim.tick + 1;
+  }
 }
 
 export function sandboxFlags(sim: Sim, eid: number): { noCd: boolean; god: boolean } {

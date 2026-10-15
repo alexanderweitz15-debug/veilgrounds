@@ -9,7 +9,22 @@
 .shop-item { width: 38px; height: 46px; gap: 1px; padding: 1px; }
 .shop-item .item-icon { width: 30px; height: 30px; flex: none; border-radius: 2px; background-size: cover; }
 .shop-item .price { font-size: 10px; line-height: 1; }
-.shop-body { grid-template-columns: 1fr 220px; }
+.game .panel.shop.open { z-index: 31; } /* above the sandbox panel (z 30) while open */
+.shop-body { grid-template-columns: 1fr 200px; } /* 14 legendary/component tiles fit one row of the 860 px panel */
 .shop-slot .item-icon { width: 30px; height: 30px; border-radius: 2px; background-size: cover; }
 .shop-slot { min-width: 56px; }
 .shop-tier { margin: 4px 0 2px; }
+
+/* short screens (720p class): smaller tiles and tighter rows so every tier incl. the legendary row is visible
+   without scrolling; 1080p keeps the roomier layout above */
+@media (max-height: 820px) {
+  .game .panel.shop.open { top: 46px; padding: 10px 16px; max-height: calc((100vh - 46px - 150px * var(--ui)) / var(--ui)); }
+  .shop-head { margin-bottom: 4px; }
+  .shop-rec, .shop-inv { padding: 3px 0; }
+  .shop-body { margin: 4px 0; }
+  .shop-tier { margin: 2px 0 1px; font-size: 11px; }
+  .shop-item { width: 36px; height: 42px; }
+  .shop-item .item-icon { width: 28px; height: 28px; }
+  .shop-slot { min-width: 52px; }
+  .shop-slot .item-icon { width: 26px; height: 26px; }
+}

@@ -218,7 +218,11 @@ describe('sandbox cheats', () => {
     expect(buildSnapshot(sim, 0, 0).me!.sandbox).toEqual({ noCd: true, god: true });
     step(sim, cheat('respawnCamps'));
     run(sim, 2);
-    expect(jungleState(sim).camps.every((c) => c.spawnAt < 0)).toBe(true);
+    // every camp is up except the Schleierwaechter: it shares the pit with the Kesselbrut (only one at a time)
+    const camps = jungleState(sim).camps;
+    expect(camps.filter((c) => c.id !== 'schleierwaechter').every((c) => c.spawnAt < 0)).toBe(true);
+    expect(camps.find((c) => c.id === 'schleierwaechter')!.spawnAt).toBeGreaterThan(sim.tick);
+    expect(camps.find((c) => c.id === 'kesselbrut')!.spawnAt).toBe(-1);
   });
 
   it('scored trainers ignore cheats', () => {

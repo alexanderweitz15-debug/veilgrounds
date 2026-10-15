@@ -7,6 +7,7 @@ import type { Sim } from '../src/sim/sim';
 import { CAMPS, CLOSED, KESSELBRUT_MAX_STACKS, MONSTER_AD_PER_LEVEL, MONSTER_HP_PER_LEVEL, averageLevel, jungleState, kesselbrutStacks, nebelGold, type Camp } from '../src/sim/systems/jungle';
 import { SPRUNG_DIST, leapLanding, plantState, type Plant } from '../src/sim/systems/plants';
 import { inventory } from '../src/sim/items/inventory';
+import { buildSnapshot } from '../src/sim/snapshot';
 import { lineWalkable, walkable } from '../src/sim/map';
 import { cosDeg, sinRad } from '../src/sim/vec';
 import { dealDamage, kill } from '../src/sim/damage';
@@ -231,6 +232,9 @@ describe('monster scaling and objectives', () => {
     for (const g of grubs) kill(sim, g, me);
     expect(kesselbrutStacks(sim, 0)).toBe(3);
     expect(kesselbrutStacks(sim, 1)).toBe(0);
+    // HUD indicator: own team's stacks only
+    expect(buildSnapshot(sim, 0, 0).kesselbrut).toBe(3);
+    expect(buildSnapshot(sim, 1, -1).kesselbrut).toBeUndefined();
     expect(k.spawnAt).toBe(sim.tick + sec(240));
     // structure damage: +4 % per stack
     const tower = [...query(sim.world, [sim.c.Unit])].find((e) => sim.c.Unit.kind[e] === Kind.Tower && sim.c.Unit.team[e] === 1)!;

@@ -133,6 +133,9 @@ export class Minimap {
           } else if (e.kind === Kind.Ward) {
             // player wards as small diamonds; jungle river vision (no e.ward) is not drawn
             if (!e.alive || !e.ward) continue;
+            // revealed enemy Schleierward (B1 `stealth` flag, optional until sim/b-mechanics is merged): hollow
+            // diamond with an eye dot in the enemy colour
+            const revealed = (e as { stealth?: true }).stealth === true && e.team !== state.myTeam;
             const r = (e.ward === 'seal' ? 3.2 : 2.6) * d;
             ctx.fillStyle = e.ward === 'seal' ? (e.team === state.myTeam ? '#f2d36b' : '#ff8a5a') : col;
             ctx.beginPath();
@@ -141,6 +144,15 @@ export class Minimap {
             ctx.lineTo(x, y + r);
             ctx.lineTo(x - r, y);
             ctx.closePath();
+            if (revealed) {
+              ctx.strokeStyle = col;
+              ctx.lineWidth = 1.6 * d;
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.arc(x, y, 0.9 * d, 0, Math.PI * 2);
+              ctx.fill();
+              continue;
+            }
             ctx.fill();
             ctx.lineWidth = 1 * d;
             ctx.stroke();

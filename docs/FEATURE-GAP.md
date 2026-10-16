@@ -16,18 +16,18 @@ Stand: 16.10.2026, Agent C (Audit des Codes auf `main` @ `0bbc3d0`). Quelle der 
 
 | # | Funktion | LoL-Verhalten | Stand | Nutzen | Aufwand | Agent | Beleg / Lücke |
 |---|---|---|---|---|---|---|---|
-| 1.1 | Todestimer über der Minimap | Tote Verbündete und Gegner mit Porträt + Restzeit über der Minimap | fehlt | 5 | S | C | Nur der eigene Respawn-Timer (`hud.ts` `.respawn`). Andere Spieler: nur `ScoreRow.dead` ohne Zeit. → C2 |
-| 1.2 | Tab-Scoreboard: Objective-Leiste | Drachen-Elemente, Seele, Grubs, Baron-Buff-Restzeit, Türme, Inhibitoren mit Respawn | fehlt | 5 | M | C (+B) | `scoreboard.ts` hat nur Titel + zwei Tabellen. Leviathan-Stacks existieren nur in der Sim (`jungle.ts leviathanStacks`). → C2 |
-| 1.3 | Tab-Scoreboard: Todestimer pro Spieler | Graues Porträt + Sekunden | teilweise | 5 | S | C | Zeile wird bei Tod ausgegraut (`tr.dead`), aber ohne Restzeit. → C2 |
-| 1.4 | Tab-Scoreboard: Beschwörerzauber + Gegner-Klick-Timer | Eigene Zauber mit Abklingzeit; Klick auf Gegner-Zauber startet Timer, Chat-Zeile | fehlt | 5 | M | C (+B für eigene CDs) | Keine Zauber-Spalte. Gegnerische Zauber sind aus `PlayerSetup.summoners` bekannt (öffentlich), Abklingzeiten der Verbündeten fehlen im Snapshot. → C2 |
+| 1.1 | Todestimer über der Minimap | Tote Verbündete und Gegner mit Porträt + Restzeit über der Minimap | da | 5 | S | C | C2 `feb41a2`: `src/ui/deathBar.ts` + `src/game/objectives.ts`; Test tests/objectives.test.ts (Timer = Sim-Wert); Screenshot docs/ist/c2-minimap-after.jpg. |
+| 1.2 | Tab-Scoreboard: Objective-Leiste | Drachen-Elemente, Seele, Grubs, Baron-Buff-Restzeit, Türme, Inhibitoren mit Respawn | teilweise | 5 | M | C (+B) | C2: Türme, Inhibitoren mit Respawn, Leviathan-Stapel/Seele, Kesselbrut, Schleier-Buff-Restzeit (docs/ist/c2-scoreboard-objectives.jpg, Test). Gegnerische Kesselbrut nur „?“, bis die Sim beide Teams meldet (shared-changes.md). |
+| 1.3 | Tab-Scoreboard: Todestimer pro Spieler | Graues Porträt + Sekunden | da | 5 | S | C | C2: graues Porträt + Sekunden; Screenshot docs/ist/c2-scoreboard-after.jpg; Test tests/objectives.test.ts. |
+| 1.4 | Tab-Scoreboard: Beschwörerzauber + Gegner-Klick-Timer | Eigene Zauber mit Abklingzeit; Klick auf Gegner-Zauber startet Timer, Chat-Zeile | teilweise | 5 | M | C (+B für eigene CDs) | C2: eigene Abklingzeiten live, Gegner per Klick-Timer (Basis-CD, Teleport spät) + Chatzeile (docs/ist/c2-scoreboard-after.jpg, Test). Abklingzeiten der Verbündeten fehlen im Snapshot (Vorschlag ScoreRow.summonerCds). |
 | 1.5 | Tab-Scoreboard: Grunddaten | Porträt, Level, K/D/A, CS, Gold/Item-Wert, Items | da | 4 | – | C | `scoreboard.ts`; Screenshot `docs/ist/11-scoreboard.jpg`. Kein Test (nur DOM). |
 | 1.6 | Tab-Scoreboard: Trinket, Vision-Score, Schaden an Champions | Trinket-Icon, Vision-Score, Schaden (Post-Game) | fehlt | 4 | M | C + B | Snapshot hat weder Vision-Score noch Schaden pro Spieler. Trinket nur für das eigene Team über `items`. |
 | 1.7 | Tab-Scoreboard: Rang-Icon + 10 Spielstil-Mini-Skalen der Bots | (Veilgrounds-eigen) | teilweise | 4 | M | C (Daten A3) | Rang als Text, Spielstil nur als `title`-Tooltip (`styleTitle`). Wartet auf A3-Kalibrierung. |
-| 1.8 | Objective-Timer oben Mitte | Drache/Baron/Herald-Timer, Buff-Restzeit | fehlt | 5 | M | C | Oben nur Kills, Türme, eigene Kesselbrut-Stacks, CS, Uhr (`hud.ts` top bar). → C3 |
-| 1.9 | Zielrahmen über dem HUD | Porträt, HP/Mana, Werte, Buffs, Items des angeklickten Ziels | fehlt | 4 | M | C | Kein Code. → C3 |
-| 1.10 | Eigene Buff-/Debuff-Leiste | Icons mit Restzeit-Ring und Tooltip | teilweise | 4 | M | C | `.buff-marks` zeigt nur Jungle-/Objective-Buffs als Text; Fähigkeits-Buffs, CC, Debuffs fehlen. → C3 |
-| 1.11 | Kamera nach dem Tod | Kamera bleibt frei, Hinweis, letzte Position statt Nebel | fehlt | 3 | S | C | IST-ZUSTAND §8: Kamera zeigt Nebel, kein Hinweis. → C3 |
-| 1.12 | Minimap: letzte bekannte Gegnerposition | Geist-Icon / „?“ wo der Gegner verschwand | fehlt | 4 | S | C | `minimap.ts` zeichnet nur sichtbare Einheiten. → C3 |
+| 1.8 | Objective-Timer oben Mitte | Drache/Baron/Herald-Timer, Buff-Restzeit | da | 5 | M | C | C3 `4bdc78b`: Leviathan/Kesselbrut/Schleierwächter-Countdown bzw. „da“ unter der Top-Leiste (Classic); Test „epic timers“; docs/ist/c3-hud-objectives.jpg. Buff-Monster-Timer fehlen (Lager-Tode im Nebel). |
+| 1.9 | Zielrahmen über dem HUD | Porträt, HP/Mana, Werte, Buffs, Items des angeklickten Ziels | teilweise | 4 | M | C | C3: Linksklick auf Einheit → Porträt, Stufe, HP/Schild/Mana, K/D/A, CS, Items (nur eigenes Team), CC/Buffs (docs/ist/c2-minimap-after.jpg). Gegner-Items und Werte fehlen im Snapshot. |
+| 1.10 | Eigene Buff-/Debuff-Leiste | Icons mit Restzeit-Ring und Tooltip | teilweise | 4 | M | C | C3: CC mit Restzeit, Fähigkeits-Buffs (Icon, ohne Restzeit: Snapshot liefert nur IDs), Jungle-/Objective-Buffs mit Restzeit. |
+| 1.11 | Kamera nach dem Tod | Kamera bleibt frei, Hinweis, letzte Position statt Nebel | teilweise | 3 | S | C | C3: Hinweis „Kamera frei … Leertaste = zum Champion“ im Todes-Overlay (docs/ist/c3-dead-after.jpg). Kamera selbst unverändert. |
+| 1.12 | Minimap: letzte bekannte Gegnerposition | Geist-Icon / „?“ wo der Gegner verschwand | da | 4 | S | C | C3: gegnerische Champions 45 s an der letzten gesehenen Position (gestrichelter Ring + „?“); Test „minimap last-seen ghosts“; docs/ist/c3-hud-objectives.jpg. |
 | 1.13 | Todes-Zusammenfassung | „Getötet von“, Schadensaufteilung | da | 4 | – | C | `deathRecap.ts`; Screenshot `docs/ist/08-todesbildschirm.jpg`. Kein Test. |
 | 1.14 | Death-Recap-Vergleich mit Challenger-Schatten | (Veilgrounds-eigen) | fehlt | 4 | M | C | Challenger-Geist nur im Post-Game (`ghostReview.ts`), nicht im Death-Recap. |
 | 1.15 | Fehlzauber-Meldungen | „Nicht genug Mana“, „Außer Reichweite“ | teilweise | 3 | S | C | Für Fähigkeiten da (`castFail`), für Item-Aktive nicht. → C3 |
@@ -40,14 +40,14 @@ Stand: 16.10.2026, Agent C (Audit des Codes auf `main` @ `0bbc3d0`). Quelle der 
 | # | Funktion | LoL-Verhalten | Stand | Nutzen | Aufwand | Agent | Beleg / Lücke |
 |---|---|---|---|---|---|---|---|
 | 2.1 | Ping-Rad | Gefahr, Achtung, Auf dem Weg, Zurück, Vermisst, Vision erbeten, Hilfe, Sammeln | teilweise | 3 | S | C | `pingWheel.ts` WHEEL: danger, onMyWay, help, vision, missing, back, group, ok + alert in der Mitte. `focus`, `objective`, `question` existieren als PingKind, sind aber nur per Alt+Klick (`objective`/`focus`) bzw. gar nicht erreichbar. |
-| 2.2 | Objective-Ping mit Timer | „Drache in 1:20“ als Chat-Zeile | fehlt | 4 | S | C | → C4 |
-| 2.3 | Gegenstands-Ping aus dem Inventar | Alt+Klick auf Item: „X hat Y fertig“ / „Y: 2 Teile fehlen“ | fehlt | 2 | S | C | → C4 |
-| 2.4 | Minimap-Pings | Alt+Klick auf Minimap / Ping-Rad auf Minimap, Türme/Objectives anpingbar | teilweise | 3 | S | C | `minimap.ts`: Alt+Klick = immer „Gefahr“, kein Rad, keine Ziel-Erkennung. → C4 |
-| 2.5 | Beschwörerzauber-Ping | Klick auf Gegner-Zauber im Scoreboard schreibt „Flash 4:32“ in den Chat | fehlt | 4 | S | C | Zusammen mit 1.4. → C2/C4 |
+| 2.2 | Objective-Ping mit Timer | „Drache in 1:20“ als Chat-Zeile | da | 4 | S | C | C4 `28c5ab5`: Klick auf Objective-Timer → Teamchat „Flussleviathan in 1:20 (6:40)“ / „ist da!“. |
+| 2.3 | Gegenstands-Ping aus dem Inventar | Alt+Klick auf Item: „X hat Y fertig“ / „Y: 2 Teile fehlen“ | teilweise | 2 | S | C | C4: Alt+Klick auf Inventar-Item → „Ich habe X.“; im Shop und „fehlende Teile“ fehlt. |
+| 2.4 | Minimap-Pings | Alt+Klick auf Minimap / Ping-Rad auf Minimap, Türme/Objectives anpingbar | teilweise | 3 | S | C | C4: Alt+Klick auf die Minimap rastet auf gegnerische Gebäude (Fokus), eigene (Gefahr), Objective-Gruben (Objective) ein; Test tests/chatPings.test.ts. Kein Ping-Rad auf der Minimap. |
+| 2.5 | Beschwörerzauber-Ping | Klick auf Gegner-Zauber im Scoreboard schreibt „Flash 4:32“ in den Chat | da | 4 | S | C | C2/C4: Klick auf gegnerischen Zauber im Scoreboard startet den Timer und schreibt „Wren Sprung bis 12:34“ ins Team; Test (Timer). |
 | 2.6 | Team-Chat | Enter, Teamzeilen | da | 1 | – | C | `chat.ts`; Bot-Zeilen kommen aus der Sim. |
-| 2.7 | Chat-Befehle | /mute, /surrender, /ff, /all, /help | fehlt | 1 | S | C | `chat.ts` sendet jeden Text roh. → C4 |
+| 2.7 | Chat-Befehle | /mute, /surrender, /ff, /all, /help | teilweise | 1 | S | C | C4: /help, /mute, /unmute funktionieren; /ff, /surrender, /all antworten „noch nicht verfügbar“ (Sim/Bots nötig). Test tests/chatPings.test.ts. |
 | 2.8 | Allchat-Umschalter | Shift+Enter bzw. /all | fehlt | 1 | S | C (+B für Gegner-Zustellung) | Chat-Events gehen nur an das eigene Team (`teamEvents` `case 'chat'`). |
-| 2.9 | Stummschalten einzelner Spieler / Pings | /mute, Klick im Scoreboard | fehlt | 1 | S | C | – |
+| 2.9 | Stummschalten einzelner Spieler / Pings | /mute, Klick im Scoreboard | da | 1 | S | C | C4: /mute Name oder alle blendet Chatzeilen und Pings des Spielers lokal aus; Test (Parser). |
 | 2.10 | Surrender-Abstimmung mit Bot-Stimmen | /ff ab 15:00, Stimmen der Mitspieler | fehlt | 1 | M | C + A (Stimmen) | Kein Code. Bot-Stimmen = Gehirn-Team. |
 
 ## 3. Eingabe, Kamera, Einstellungen
@@ -67,7 +67,7 @@ Stand: 16.10.2026, Agent C (Audit des Codes auf `main` @ `0bbc3d0`). Quelle der 
 | 3.11 | Gegner-Skillshot-Hervorhebung | Umrisse gegnerischer Skillshots (Einstellung) | fehlt | 3 | S | C (+D) | Telegraphs existieren, keine Einstellung. |
 | 3.12 | Angriffsbewegung „Ziel am Cursor“ | Player Attack Move Click | teilweise | 3 | S | B + C | `attackMoveOnCursor` existiert (A sofort an den Cursor). B5 prüft „Ziel am Cursor“. |
 | 3.13 | Einstellungen Export/Import (JSON) | (Veilgrounds-eigen) | fehlt | 1 | S | C | → C7. `src/settings.ts` liegt außerhalb von C (Vorschlag über shared-changes nötig, falls Felder fehlen). |
-| 3.14 | Sprache DE/EN vollständig | – | teilweise | 2 | S | C | `de.json`/`en.json` je 543 Zeilen; bisher kein Test auf Schlüsselgleichheit (kommt mit C2). |
+| 3.14 | Sprache DE/EN vollständig | – | da | 2 | S | C | Test tests/i18n.test.ts (gleiche Schlüssel, gleiche Platzhalter, keine leeren Texte); t() ersetzt jedes Vorkommen eines Platzhalters. |
 | 3.15 | Farbenblind-Modi, reduzierte Bewegung, hoher Kontrast, Untertitel | Farbenblind-Modus | da | 2 | – | C | `settingsPanel.ts` a11y-Abschnitt, `cues.ts`. |
 
 ## 4. Lobby, Champion-Auswahl, Menüs
@@ -98,8 +98,8 @@ Stand: 16.10.2026, Agent C (Audit des Codes auf `main` @ `0bbc3d0`). Quelle der 
 
 | # | Funktion | LoL-Verhalten | Stand | Nutzen | Aufwand | Agent | Beleg / Lücke |
 |---|---|---|---|---|---|---|---|
-| 6.1 | Graphen Gold/XP/Schaden/Vision über Zeit | Gold/XP-Vorsprung, Schaden | teilweise | 5 | S | C | `postGame.ts`: CS-, Gold-, Schaden-Graph mit Tod-/Kill-Markern. XP und Vision fehlen (MatchSummary hat keine Felder). → C6 |
-| 6.2 | Zeitleiste mit Kill-/Objective-Markern, Klick öffnet Replay-Moment | – | fehlt | 4 | L | C | Kein Replay-Viewer im Client. → C6 |
+| 6.1 | Graphen Gold/XP/Schaden/Vision über Zeit | Gold/XP-Vorsprung, Schaden | teilweise | 5 | S | C | C6 `17f1a41`: + XP-Kurve, Item-Wert-Vorsprung des Teams, aktive Team-Wards (Ersatz für den fehlenden Vision-Score); Objective-Fähnchen auf allen Graphen (docs/ist/c6-postgame-after-charts.jpg). |
+| 6.2 | Zeitleiste mit Kill-/Objective-Markern, Klick öffnet Replay-Moment | – | teilweise | 4 | L | C | C6: Zeitleiste der Objectives unter den Graphen + Fähnchen; Klick → Replay-Moment fehlt (kein Replay-Viewer). |
 | 6.3 | Fehlerliste aus dem Bot-Log-Format | (Veilgrounds-eigen) | fehlt | 5 | M | C (Daten A3) | Wartet auf A3 Log-Format (`docs/agents/a3.md`). → C6 |
 | 6.4 | Rang-Kalibrierung pro Kategorie | (Veilgrounds-eigen) | fehlt | 5 | M | C (Daten A3) | Wartet auf A3 `stats/rankCalibration`. → C6 |
 | 6.5 | „Was ein Challenger getan hätte“ | (Veilgrounds-eigen) | da | 5 | – | C | `ghostReview.ts`, bis zu 10 Momente; Test `tests/ghost.test.ts`. |

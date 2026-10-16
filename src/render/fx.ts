@@ -6,7 +6,7 @@
 // (rim + fill over time, persistent zones until `until`). Own team cold blue, enemies warm red.
 import * as THREE from 'three';
 import type { ClientState } from '../game/state';
-import type { SimEvent } from '../sim/types';
+import { Kind, type SimEvent } from '../sim/types';
 import type { AbilityData } from '../sim/champions/schema';
 import { champions } from '../data/champions';
 import { REL } from './palette';
@@ -65,6 +65,10 @@ const flatRing = new THREE.RingGeometry(0.9, 1, 48).rotateX(-Math.PI / 2);
 const flatDisc = new THREE.CircleGeometry(1, 64).rotateX(-Math.PI / 2);
 /** Unit square centred on the origin, x = length, z = thickness. */
 const flatPlane = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+/** Tower attack range, edge to edge (sim: src/sim/systems/towers.ts TOWER_RANGE; not imported to keep the sim out of the render bundle). */
+const TOWER_RANGE = 750;
+/** Show an enemy tower's range circle this far before you enter it. */
+const TOWER_RING_NEAR = 350;
 
 const ringCache = new Map<string, THREE.BufferGeometry>();
 /** Unit-radius ring (inner = 1 - edge/r) or arc of half angle `half` (radians, centred on +x). */
@@ -237,6 +241,8 @@ export class Fx {
   /** Latest cast per caster: ability, origin and direction (hook-defined line zones are rebuilt from it). */
   private readonly lastCast = new Map<number, { ab: AbilityData; ox: number; oy: number; dx: number; dy: number }>();
   private readonly range: THREE.Mesh;
+  private readonly towerRings: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>[] = [];
+  private readonly towerLines: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>[] = [];
   private readonly m = new THREE.Matrix4();
   private readonly q = new THREE.Quaternion();
   private readonly p = new THREE.Vector3();
@@ -267,6 +273,15 @@ export class Fx {
     this.range = new THREE.Mesh(new THREE.RingGeometry(0.985, 1, 96).rotateX(-Math.PI / 2), groundMat('#f2e7b6', 0.7));
     this.range.visible = false;
     this.group.add(this.range);
+    for (let i = 0; i < 3; i++) {
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.988, 1, 96).rotateX(-Math.PI / 2), groundMat('#f0d8a0', 0.5));
+      const line = new THREE.Mesh(flatPlane, groundMat('#f0d8a0', 0.5));
+      ring.renderOrder = line.renderOrder = 3;
+      ring.visible = line.visible = false;
+      this.towerRings.push(ring);
+      this.towerLines.push(line);
+      this.group.add(ring, line);
+    }
     this.chanRing.renderOrder = this.chanArc.renderOrder = 3;
     this.chanRing.visible = this.chanArc.visible = false;
     this.group.add(this.chanRing, this.chanArc);
@@ -542,6 +557,40 @@ export class Fx {
       this.chanCol.material.opacity = 0.5 + 0.35 * prog + flick;
       this.chanCol.material.color.set(tp > 0 ? '#c79bff' : '#8fb6ff');
     }
+
+    // enemy tower readability (LoL): range circle when you come close, red when it targets you, aggro line to its target
+    let nt = 0;
+    if (snap && me) {
+      for (const t of snap.entities) {
+        if (t.kind !== Kind.Tower || !t.alive || t.team === state.myTeam || nt >= this.towerRings.length) continue;
+        const tx = state.x(t);
+        const ty = state.y(t);
+        const r = TOWER_RANGE + t.radius + me.radius;
+        const d = Math.sqrt((state.x(me) - tx) ** 2 + (state.y(me) - ty) ** 2);
+        if (d > r + TOWER_RING_NEAR) continue;
+        const onMe = t.atkTarget === me.id;
+        const ring = this.towerRings[nt]!;
+        const line = this.towerLines[nt++]!;
+        ring.visible = true;
+        ring.position.set(tx, 3, -ty);
+        ring.scale.setScalar(r);
+        ring.material.color.set(onMe ? '#ff4a3a' : '#f0d8a0');
+        ring.material.opacity = onMe ? 0.85 : 0.3 + 0.4 * Math.min(1, (r + TOWER_RING_NEAR - d) / TOWER_RING_NEAR);
+        const tgt = t.atkTarget >= 0 ? state.byId.get(t.atkTarget) : undefined;
+        line.visible = !!tgt;
+        if (tgt) {
+          const gx = state.x(tgt);
+          const gy = state.y(tgt);
+          const len = Math.sqrt((gx - tx) ** 2 + (gy - ty) ** 2);
+          line.position.set((tx + gx) / 2, 4, -(ty + gy) / 2);
+          line.rotation.set(0, Math.atan2(gy - ty, gx - tx), 0);
+          line.scale.set(len, 1, onMe ? 14 : 8);
+          line.material.color.set(onMe ? '#ff4a3a' : '#f0d8a0');
+          line.material.opacity = onMe ? 0.8 : 0.45;
+        }
+      }
+    }
+    for (let i = nt; i < this.towerRings.length; i++) this.towerRings[i]!.visible = this.towerLines[i]!.visible = false;
 
     // attack range circle (hold C)
     const stats = snap?.me?.stats;

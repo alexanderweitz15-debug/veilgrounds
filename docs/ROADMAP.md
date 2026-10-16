@@ -118,7 +118,7 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
   Belagerer, Turm, gezielte Fähigkeiten) ist derselbe Ikosaeder-Klecks in Teamfarbe auf Höhe 110, gerade Linie, ohne
   Schweif, Start in der Körpermitte. LoL: eigene Missiles je Champion, Kanonenkugel im Bogen, Turm-Energiekugel.
   Fix: Missile-Stil je Einheit/Champion (Pfeil, Bolzen, Kugel, Bogen), Schweif, Start auf Waffenhöhe.
-- [ ] **Turm-Lesbarkeit.** Kein Reichweitenkreis beim Annähern, keine Aggro-Linie zum Ziel; nur Rand-Vignette nach
+- [x] **Turm-Lesbarkeit.** (erledigt: Reichweitenkreis ab 350 vor der Grenze, rot + Ziel-Linie wenn er dich anvisiert; fx.ts) Kein Reichweitenkreis beim Annähern, keine Aggro-Linie zum Ziel; nur Rand-Vignette nach
   dem ersten Treffer (ui/cues.ts). LoL: Turmkreis taucht in der Nähe auf, rote Zielmarkierung vor dem Schuss. Fix:
   Kreis ab Abstand ≤ Reichweite + 300, Linie aus `atkTarget` (steht schon im Snapshot).
 - [ ] **Kein Auto-Angriff im Stand.** attack.ts `acquire` läuft nur bei Angriffsbewegung; ein stehender Champion

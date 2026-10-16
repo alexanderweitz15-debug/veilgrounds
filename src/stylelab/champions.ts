@@ -1,7 +1,7 @@
 // Style lab "Champions" view: the 26 procedural champion sprites (variant C "Gouache-Dämmerung") at game scale
 // on lane/jungle ground with team rings and violet shadows, enlarged animated previews, the 8-direction turntable
 // and the 64 px silhouette strip. Uses only the public API of src/render/champions.
-import { ANIMS, CHAMPION_IDS, DIRS, FPS, championKit, drawChampionFrame, framesOf, type Anim, type Dir } from '../render/champions';
+import { ANIMS, CHAMPION_IDS, DIRS, rateOf, championKit, drawChampionFrame, framesOf, type Anim, type Dir } from '../render/champions';
 
 const C = {
   bg: '#221c2c',
@@ -258,7 +258,7 @@ export function mountChampions(host: HTMLElement): ChampionsView {
       const col = i % perRow;
       const cx = 30 + col * (cell + gap) + cell / 2;
       const gy = row * rowH + 5 + rowH - 16;
-      const fps = FPS[anim];
+      const fps = rateOf(id)[anim];
       const f = Math.floor(time * fps + i * 0.7);
       unit(ctx, id, anim, i % 3 === 0 ? 'E' : i % 3 === 1 ? 'SE' : 'S', f, cx, gy, cell, i % 4 === 3 ? 1 : 0);
     });
@@ -322,7 +322,7 @@ export function mountChampions(host: HTMLElement): ChampionsView {
     paintGround(ctx, 0, 0, big.width, big.height, C.grass, 3);
     const anim = currentAnim(time);
     const dir = currentDir(time);
-    const f = Math.floor(time * FPS[anim]);
+    const f = Math.floor(time * rateOf(selected)[anim]);
     const n = Math.max(1, framesOf(selected, anim));
     const loopF = anim === 'death' ? Math.min(n - 1, f % (n + 4)) : f;
     // shadow + ring + 3x sprite (rendered directly at 384 px master for crispness)
@@ -342,7 +342,7 @@ export function mountChampions(host: HTMLElement): ChampionsView {
     const ctx = turn.getContext('2d')!;
     paintGround(ctx, 0, 0, turn.width, turn.height, C.lane, 5);
     const anim = currentAnim(time);
-    const f = Math.floor(time * FPS[anim]);
+    const f = Math.floor(time * rateOf(selected)[anim]);
     DIRS.forEach((d, i) => {
       const src = frameCanvas(selected, anim, d, anim === 'death' ? framesOf(selected, anim) - 1 : f, 128);
       ctx.drawImage(src, i * 100 - 14, -10, 128, 128);

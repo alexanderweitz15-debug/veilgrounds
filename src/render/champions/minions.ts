@@ -49,7 +49,8 @@ const LOOK: [TeamLook, TeamLook] = [
   },
 ];
 const LEATHER_DARK = leather('#4a3224');
-const NO_CAST: Partial<Record<Anim, number>> = { cast: 0 };
+/** minions keep the short frame layout (no cast; 4-frame attack with the strike on frame 1) */
+const NO_CAST: Partial<Record<Anim, number>> = { idle: 4, run: 6, attack: 4, cast: 0, death: 3 };
 
 // ------------------------------------------------------------------------------------------------ props
 /** Ring with a hole whose axis is the frame's z (wheels, lens rims, cages): hull of two discs ± depth. */

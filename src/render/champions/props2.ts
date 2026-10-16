@@ -440,8 +440,10 @@ export function clockPack(c: PropCtx): void {
 export function pendulumStaff(c: PropCtx): void {
   const { st, rig, pose } = c;
   const dir = aimW(c);
-  const base = madd(rig.handR.o, dir, -46);
-  const top = madd(rig.handR.o, dir, 70);
+  // held near the top like a walking staff when the kit leans on it
+  const cane = c.kit.hold === 'cane';
+  const base = madd(rig.handR.o, dir, cane ? -104 : -46);
+  const top = madd(rig.handR.o, dir, cane ? 30 : 70);
   pole(c, base, top, 2.4, m('#4a3a30', 'wood'));
   const f = poleFrame(top, dir, rig);
   st.add(top, 3.3, (p) => {
@@ -464,7 +466,8 @@ export function pistols(c: PropCtx): void {
     const hand = off ? rig.handL : rig.handR;
     const dir = off ? aimLW(c) : aimW(c);
     const f = frameYZ(hand.o, dir, rig.chest.y);
-    const fired = pose.anim === 'attack' && pose.act > 0.5 && ((pose.frame === 1 && !off) || (pose.frame === 2 && off));
+    // act 1 = main hand fires (hit frame), act 2 = the off hand follows up
+    const fired = pose.anim === 'attack' && (off ? pose.act > 1.5 : pose.act > 0.5 && pose.act < 1.5);
     st.add(madd(hand.o, dir, 8), 3.7, (p) => {
       p.fill(st.capsule(at(f, [0, -2, -2]), at(f, [0, 6, -9]), 2.6, 2.3), WOOD_DARK, { lw: 1.3 });
       p.fill(st.capsule(at(f, [0, 8, 0]), at(f, [0, 30, 0]), 2.4, 2.1), IRON, { lw: 1.3 });
@@ -717,6 +720,43 @@ export function courierBag(c: PropCtx): void {
   st.add(madd(bk.o, bk.z, 6), 0.1, (p) => {
     fillBox(st, p, bk, -12, 12, -8, 8, 0, 9, m('#7a5232', 'leather'), { stitch: true });
     p.fill(st.poly([at(bk, [-4, 8, 4]), at(bk, [6, 8, 4]), at(bk, [8, 15, 4]), at(bk, [-2, 15, 4])]), m('#efe4c8', 'paper'), { lw: 1.2 });
+  });
+}
+
+/** Ilvane: four jointed spider legs arching up and out of the back (they twitch with the animation). */
+export function spiderLegs(c: PropCtx, o: { mat: Mat; tip: Mat }): void {
+  const { st, rig, pose } = c;
+  const bk = backFrame(rig, 2, 2);
+  for (const s of [1, -1]) {
+    for (let i = 0; i < 2; i++) {
+      const tw = Math.sin(pose.t * TAU + i * 1.7 + s) * 0.08 + (pose.glow > 0.5 ? 0.12 : 0);
+      const root = at(bk, [s * 6, 6 - i * 10, 0]);
+      const knee = at(bk, [s * (30 + i * 6), 40 - i * 16 + tw * 30, 10 + i * 4]);
+      const tip = at(bk, [s * (46 + i * 10), 4 - i * 26 + tw * 20, 16 + i * 8]);
+      st.add(madd(knee, bk.z, 2), -0.2 + i * 0.01, (p) => {
+        p.fill(ribbon(st, [root, lerp3(root, knee, 0.5), knee], 6, 4.2), o.mat, { lw: 1.4 });
+        p.fill(ribbon(st, [knee, lerp3(knee, tip, 0.6), tip], 4.4, 1), o.mat, { lw: 1.4 });
+        p.fill(st.sphere(knee, 3.2), o.tip, { lw: 1.2 });
+      });
+    }
+  }
+}
+
+/** Oda: a big clay water jug on the left shoulder, water sloshing out of the mouth when casting. */
+export function waterJug(c: PropCtx): void {
+  const { st, rig, pose } = c;
+  const o = at(rig.chest, [rig.body.shW * 0.95, 16, -3]);
+  const up = norm(add(rig.chest.y, scl(rig.chest.x, -0.35)));
+  const f = frameYZ(o, up, rig.chest.z);
+  st.add(madd(o, rig.chest.z, 2), 2.6, (p) => {
+    const clay = m('#b0643c', 'stone');
+    p.fill(st.hull([...ring(f, -12, 7, 7, 12), ...ring(f, -2, 14, 14, 14), ...ring(f, 10, 12, 12, 14), ...ring(f, 18, 5, 5, 10)]), clay, { folds: [st.pts2([at(f, [-8, 10, 10]), at(f, [-10, -6, 9])])] });
+    p.fill(st.hull([...ring(f, 18, 6.5, 6.5, 10), ...ring(f, 22, 6.5, 6.5, 10)]), m('#8a4a2c', 'stone'), { lw: 1.4 });
+    // painted teal band
+    p.fill(st.hull([...ring(f, 2, 14.2, 14.2, 14), ...ring(f, 6, 13.8, 13.8, 14)]), m('#4f8a86', 'cloth'), { lw: 1.2, rim: false });
+    const mouth = at(f, [0, 23, 0]);
+    p.fill(st.sphere(mouth, 4.2), m('#7fb6d0', 'glass'), { lw: 1.2 });
+    if (pose.glow > 0.3) glowOrb(st, p, madd(mouth, up, 6), 4, '#a8e0f0', pose.glow);
   });
 }
 

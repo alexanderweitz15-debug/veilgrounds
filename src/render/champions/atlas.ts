@@ -9,7 +9,7 @@
 // UVs follow three.js CanvasTexture defaults (flipY = true: v = 1 at the canvas top). Mirrored directions
 // (W, SW, NW when opts.mirror) reuse the E/SE/NE cells with u0/u1 swapped and flip = true.
 import { Painter, Stage, TAU, project, type View } from './core';
-import { FPS, FRAMES, LOOP, poseFor } from './anim';
+import { ATTACK_HIT, CAST_FLEX, CAST_RELEASE, CHAMP_FPS, FPS, FRAMES, LOOP, poseFor } from './anim';
 import { bodyOf, drawHumanoid, solveRig } from './humanoid';
 import { KITS } from './kits';
 import { drawWolf, HARK } from './wolf';
@@ -39,6 +39,8 @@ export interface SpriteDrawer {
   foot: number;
   /** outer contour width multiplier (default 1) */
   ink?: number;
+  /** attack frame of the impact (default: middle frame, rounded down) */
+  hit?: number;
   draw(st: Stage, p: Painter, anim: Anim, frame: number): void;
 }
 // minions are defined here (not registered from game code) so the bake workers know them too
@@ -52,7 +54,7 @@ export function registerSpriteDrawer(id: string, d: SpriteDrawer): void {
 }
 const kitOf = (id: string): Kit | undefined => KITS[id] ?? EXTRA_KITS[id];
 
-export { ANIMS, DIRS, FRAMES, FPS, LOOP };
+export { ANIMS, DIRS, FRAMES, FPS, LOOP, CAST_RELEASE, CAST_FLEX };
 export type { Anim, Dir };
 
 export interface FrameRect {
@@ -80,7 +82,12 @@ export interface ChampionAtlas {
   frames: Record<string, Record<Anim, Record<Dir, FrameRect[]>>>;
   /** suggested world height of a frame cell (same scale as SPRITE_SIZE) */
   worldSize: Record<string, number>;
+  /** default playback rates (legacy layout); `rate[id]` overrides per sprite */
   fps: Record<Anim, number>;
+  /** playback rate per id and anim (frames per second) */
+  rate: Record<string, Record<Anim, number>>;
+  /** attack frame of the impact per id (synced to the sim's hit point) */
+  hit: Record<string, number>;
   loop: Record<Anim, boolean>;
 }
 
@@ -238,6 +245,18 @@ export function framesOf(id: string, anim: Anim): number {
   if (d) return d.frames[anim];
   return kitOf(id)?.frames?.[anim] ?? FRAMES[anim];
 }
+/** Attack frame of the impact (the sim's hit point) for an id. */
+export function hitOf(id: string): number {
+  const n = framesOf(id, 'attack');
+  if (id === 'hark') return 2;
+  const d = DRAWERS[id];
+  if (d) return d.hit ?? Math.floor((n - 1) / 2);
+  return n >= 5 ? ATTACK_HIT : 1;
+}
+/** Playback rates for an id: champions use the longer layout's rates, everything else the legacy ones. */
+export function rateOf(id: string): Record<Anim, number> {
+  return { ...(KITS[id] ? CHAMP_FPS : FPS) };
+}
 export function worldSizeOf(id: string): number {
   if (id === 'hark') return HARK.world;
   return DRAWERS[id]?.world ?? kitOf(id)?.world ?? 260;
@@ -269,7 +288,7 @@ function plan(ids: string[], opts: AtlasOptions) {
   const maxSize = opts.maxSize ?? 4096;
   let frame = opts.frame ?? 128;
   const fits = (fs: number) => Math.floor(maxSize / fs) ** 2 >= jobs.length;
-  while (!fits(frame) && frame > 48) frame -= 16;
+  while (!fits(frame) && frame > 48) frame -= 8;
   const cols = Math.floor(maxSize / frame);
   const width = Math.min(maxSize, pot(Math.min(cols, jobs.length) * frame));
   const perRow = Math.floor(width / frame);
@@ -355,12 +374,16 @@ function place(ctx: CanvasRenderingContext2D, p: Plan, job: AtlasJob, master: nu
 function result(p: Plan, canvas: HTMLCanvasElement, frames: ChampionAtlas['frames'], top: Record<string, number>): ChampionAtlas {
   const worldSize: Record<string, number> = {};
   const foot: Record<string, number> = {};
+  const rate: Record<string, Record<Anim, number>> = {};
+  const hit: Record<string, number> = {};
   for (const id of p.list) {
     worldSize[id] = worldSizeOf(id);
     foot[id] = footOf(id);
+    rate[id] = rateOf(id);
+    hit[id] = hitOf(id);
     top[id] ??= 0.2;
   }
-  return { canvas, frameSize: p.frame, frames, worldSize, foot, top, fps: { ...FPS }, loop: { ...LOOP } };
+  return { canvas, frameSize: p.frame, frames, worldSize, foot, top, fps: { ...FPS }, rate, hit, loop: { ...LOOP } };
 }
 
 function atlasCanvas(p: Plan): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {

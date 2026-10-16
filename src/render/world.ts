@@ -4,7 +4,9 @@ import { PingMarkers } from './pings';
 import * as THREE from 'three';
 import type { MapData } from '../sim/map';
 import type { SnapEntity } from '../sim/snapshot';
-import { Kind, type SimEvent } from '../sim/types';
+import { Kind, TICK_HZ, type SimEvent } from '../sim/types';
+import { champions } from '../data/champions';
+import { castKindOf } from './championSprites';
 import type { ClientState } from '../game/state';
 import { CameraRig, PITCH } from './camera';
 import { buildTerrain, type Terrain } from './terrain';
@@ -112,11 +114,18 @@ export class World {
 
   onEvent(ev: SimEvent, state: ClientState, now: number): void {
     this.fx.onEvent(ev, state, now);
-    if (ev.e === 'cast') this.units.champs?.onCast(ev.src, now);
-    else if (ev.e === 'death') this.units.onDeath(ev.eid, now);
+    if (ev.e === 'cast') {
+      // wind-up until the release: the sim's wind-up end tick (snapshot tick = event tick + 1)
+      const src = state.byId.get(ev.src);
+      const ab = src?.champ ? champions[src.champ]?.abilities[ev.slot] : undefined;
+      const dur = ev.at !== undefined && state.snap ? Math.max(0, ev.at - (state.snap.tick - 1)) * (1000 / TICK_HZ) : (ab?.castTime ?? 0) * 1000;
+      this.units.champs?.onCast(ev.src, now, dur, castKindOf(ab?.type));
+    } else if (ev.e === 'death') this.units.onDeath(ev.eid, now);
     if (ev.e === 'damage') {
       const d = state.byId.get(ev.dst);
       if (d) this.units.flash(d.serial, now);
+      const s = state.byId.get(ev.src);
+      if (d && s && ev.amount > 0) this.units.hit(ev.dst, now, s.x, s.y);
     } else if (ev.e === 'attack') {
       const s = state.byId.get(ev.src);
       const d = state.byId.get(ev.dst);

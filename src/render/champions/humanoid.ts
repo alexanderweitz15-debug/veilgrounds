@@ -31,6 +31,7 @@ import {
   shapeFrom,
 } from './core';
 import type { BodySpec, Kit, Pose, Rig } from './types';
+import { digiFoot, drawBeastHead, drawTail, drawWisp } from './beast';
 
 export const DEFAULT_BODY: BodySpec = {
   H: 180,
@@ -44,6 +45,8 @@ export const DEFAULT_BODY: BodySpec = {
   legs: 0.48,
   stance: 9,
   bust: 0,
+  digi: 0,
+  float: 0,
 };
 
 export function bodyOf(kit: Kit): BodySpec {
@@ -56,7 +59,9 @@ export function solveRig(kit: Kit, pose: Pose): Rig {
   const b = bodyOf(kit);
   const g = b.girth;
   const hipH = b.H * b.legs;
-  const thigh = (hipH - 6) * 0.5;
+  // digitigrade: the heel stands off the ground, thigh + shin only reach down to it
+  const heelH = b.digi * 0.85;
+  const thigh = (hipH - 6 - heelH) * 0.5;
   const shin = thigh;
   const headTop = b.H;
   const headC = headTop - b.headR * 1.02;
@@ -68,12 +73,12 @@ export function solveRig(kit: Kit, pose: Pose): Rig {
   const crouchDrop = pose.crouch * thigh * 0.45;
 
   // pelvis: yaw + lean + roll around the hip centre
-  const po: V3 = [0, hipH + 3 + pose.bob - crouchDrop, 0];
+  const po: V3 = [pose.shift, hipH + 3 + pose.bob - crouchDrop + b.float, 0];
   const pf = (v: V3) => rotYXZ(v, pose.hipYaw, pose.lean * 0.4, pose.roll);
   const pelvis: Basis = { o: po, x: pf([1, 0, 0]), y: pf([0, 1, 0]), z: pf([0, 0, 1]) };
-  // chest: more lean (+hunch) and the twist
-  const cf = (v: V3) => rotYXZ(v, pose.hipYaw + pose.twist, pose.lean + b.hunch, pose.roll * 1.3);
-  const chestO = madd(po, cf([0, 1, 0]), torso);
+  // chest: more lean (+hunch) and the twist; the spine counters the hip roll (contrapposto) and lifts on a breath
+  const cf = (v: V3) => rotYXZ(v, pose.hipYaw + pose.twist, pose.lean + b.hunch, -pose.roll * 0.6);
+  const chestO = madd(po, cf([0, 1, 0]), torso + pose.breath * 1.6);
   const chest: Basis = { o: chestO, x: cf([1, 0, 0]), y: cf([0, 1, 0]), z: cf([0, 0, 1]) };
   const neck = at(chest, [0, neckLen * 0.6, -b.chestD * 0.15 + b.hunch * 6]);
   const hf = (v: V3) => rotYXZ(rotYXZ(v, pose.headYaw, pose.headTilt - b.hunch * 0.7, 0), pose.hipYaw + pose.twist, pose.lean * 0.6 + b.hunch, pose.roll);
@@ -97,7 +102,11 @@ export function solveRig(kit: Kit, pose: Pose): Rig {
   const kneePole = norm(add(pelvis.z, [0, 0.15, 0]));
   const footT = (f: V3): V3 => {
     const r = rotY(f, pose.hipYaw * 0.5);
-    return [r[0], r[1] + ankH, r[2]];
+    return [r[0], r[1] + ankH + heelH, r[2] - b.digi * 0.42];
+  };
+  const toeT = (f: V3): V3 => {
+    const r = rotY(f, pose.hipYaw * 0.5);
+    return [r[0], r[1] + 3, r[2] + b.digi * 0.25];
   };
   const [knL, anL] = ik(hipL, footT(pose.footL), thigh, shin, kneePole);
   const [knR, anR] = ik(hipR, footT(pose.footR), thigh, shin, kneePole);
@@ -126,6 +135,8 @@ export function solveRig(kit: Kit, pose: Pose): Rig {
     anR,
     footL: footB(anL, 1),
     footR: footB(anR, -1),
+    toeL: toeT(pose.footL),
+    toeR: toeT(pose.footR),
     arm: upper + fore,
     upper,
     fore,
@@ -209,7 +220,7 @@ const lineOf = (st: Stage, pts: V3[]) => st.pts2(pts);
 export function drawHumanoid(st: Stage, rig: Rig, pose: Pose, kit: Kit): void {
   const o = kit.outfit;
   const b = rig.body;
-  const skin = m(o.skin, 'skin');
+  const skin = m(o.skin, o.skinKind ?? 'skin');
   const torsoMat = o.coat?.mat ?? o.top;
   const longCoat = o.coat && o.coat.len >= 0.75;
 
@@ -227,6 +238,10 @@ export function drawHumanoid(st: Stage, rig: Rig, pose: Pose, kit: Kit): void {
       const cuff = st.capsule(bootTop, lerp3(bootTop, an, 0.14), rig.limb.sh * 1.06, rig.limb.sh * 1.02);
       p.fill(cuff, { c: mix(o.boots.c, '#000000', 0.1), k: o.boots.k }, { rim: false });
     });
+    if (b.digi > 0) {
+      digiFoot(st, rig, an, side > 0 ? rig.toeL : rig.toeR, foot, kit);
+      return;
+    }
     st.add(madd(foot.o, foot.z, 6), -0.4 + side * 0, (p) => {
       const f = st.hull([
         ...ring(foot, -5, 5.2 * b.girth, 5.5, 8, -2),
@@ -238,17 +253,20 @@ export function drawHumanoid(st: Stage, rig: Rig, pose: Pose, kit: Kit): void {
       p.line(lineOf(st, [at(foot, [-4, -5.5, -4]), at(foot, [0, -5.5, 12]), at(foot, [4, -5.5, -4])]), INK, 1.4);
     });
   };
-  leg(rig.hipL, rig.knL, rig.anL, rig.footL, 1);
-  leg(rig.hipR, rig.knR, rig.anR, rig.footR, -1);
-
-  // ---------------------------------------------------------------- hips / pelvis
-  st.add(rig.pelvis.o, -0.8, (p) => {
-    const sh = st.hull([...ring(rig.pelvis, 4, b.hipW + 2 + b.belly * 5, b.chestD * 0.85 + b.belly * 6, 14), ...ring(rig.pelvis, -6, b.hipW + 1, b.chestD * 0.75, 12)]);
-    p.fill(sh, o.legs);
-  });
+  if (b.float > 0) drawWisp(st, rig, pose, kit);
+  else {
+    leg(rig.hipL, rig.knL, rig.anL, rig.footL, 1);
+    leg(rig.hipR, rig.knR, rig.anR, rig.footR, -1);
+    // ---------------------------------------------------------------- hips / pelvis
+    st.add(rig.pelvis.o, -0.8, (p) => {
+      const sh = st.hull([...ring(rig.pelvis, 4, b.hipW + 2 + b.belly * 5, b.chestD * 0.85 + b.belly * 6, 14), ...ring(rig.pelvis, -6, b.hipW + 1, b.chestD * 0.75, 12)]);
+      p.fill(sh, o.legs);
+    });
+  }
+  if (o.tail) drawTail(st, rig, pose, o.tail);
 
   // ---------------------------------------------------------------- coat skirt / robe
-  if (o.coat && o.coat.len > 0.05) {
+  if (o.coat && o.coat.len > 0.05 && !b.float) {
     const c = o.coat;
     const kneeAvg = lerp3(rig.knL, rig.knR, 0.5);
     const hemY = -(rig.thigh * c.len) - 2;
@@ -657,7 +675,7 @@ function drawHead(st: Stage, rig: Rig, pose: Pose, kit: Kit): void {
   const o = kit.outfit;
   const r = rig.body.headR;
   const H = rig.head;
-  const skin = m(o.skin, 'skin');
+  const skin = m(o.skin, o.skinKind ?? 'skin');
   const hairM = o.hair?.mat ?? m('#3a2a22', 'hair');
   const style = o.hair?.style ?? 'short';
   const front = st.faces(H.z);
@@ -856,6 +874,7 @@ function drawHead(st: Stage, rig: Rig, pose: Pose, kit: Kit): void {
       }
     });
   }
+  if (o.snout || o.ears || o.horns || o.tusks) drawBeastHead(st, rig, kit, front);
   if (o.hat) drawHat(st, rig, o.hat);
 }
 
@@ -890,7 +909,7 @@ function drawFace(st: Stage, p: Painter, rig: Rig, kit: Kit, front: number): voi
   const o = kit.outfit;
   const f = o.face ?? {};
   const k = st.view.k;
-  const skinM = m(o.skin, 'skin');
+  const skinM = m(o.skin, o.skinKind ?? 'skin');
   const browC = mix(o.hair?.mat.c ?? '#3a2a22', INK, 0.35);
   const vis = (u: V3) => st.faces(dirOf(H, norm(u)));
   const fr = r / 22.5;
@@ -928,7 +947,7 @@ function drawFace(st: Stage, p: Painter, rig: Rig, kit: Kit, front: number): voi
     if (band.length > 2) p.fill(st.hull(band), f.blindfold, { lw: 1.6 });
   }
   // cheeks (warm)
-  if (front > 0.3 && !f.paint) {
+  if (front > 0.3 && !f.paint && !o.snout && (o.skinKind ?? 'skin') === 'skin') {
     for (const side of [1, -1]) {
       const c = st.p(at(H, [side * 0.55 * r, -0.36 * r, 0.78 * r]));
       p.ctx.globalAlpha = 0.28;
@@ -944,9 +963,9 @@ function drawFace(st: Stage, p: Painter, rig: Rig, kit: Kit, front: number): voi
   // nose: small volume (protrudes in profile, casts the shadow crescent in front view)
   const n0 = at(H, [0, 0.0, 0.92 * r]);
   const n1 = at(H, [0, -0.24 * r, 1.12 * r]);
-  p.fill(st.capsule(n0, n1, 0.1 * r, 0.13 * r), skinM, { lw: 1.2, rim: false, shadow: 1.3 });
+  if (!o.snout) p.fill(st.capsule(n0, n1, 0.1 * r, 0.13 * r), skinM, { lw: 1.2, rim: false, shadow: 1.3 });
   // mouth
-  if (front > 0.15 && !(o.beard && (o.beard.style === 'full' || o.beard.style === 'braided'))) {
+  if (front > 0.15 && !o.snout && !(o.beard && (o.beard.style === 'full' || o.beard.style === 'braided'))) {
     const m0 = st.p(at(H, [0.2 * r, -0.5 * r, 0.86 * r]));
     const m1 = st.p(at(H, [-0.2 * r, -0.5 * r, 0.86 * r]));
     const mc = st.p(at(H, [0, -0.53 * r, 0.9 * r]));
@@ -1060,6 +1079,20 @@ function drawHat(st: Stage, rig: Rig, hat: NonNullable<Kit['outfit']['hat']>): v
             p.fill(st.sphere(madd(c, H.z, r * 0.06), r * 0.17), m('#9fd0d8', 'glass'), { lw: 1.2 });
           }
         }
+        break;
+      }
+      case 'tophat': {
+        // tall stovepipe with a narrow brim (lamplighter)
+        p.fill(st.hull([...ring(H, r * 0.62, r * 1.45, r * 1.4, 20), ...ring(H, r * 0.7, r * 1.42, r * 1.38, 20)]), hat.mat, { shadow: 0.6 });
+        p.fill(st.hull([...ring(H, r * 0.6, r * 0.92, r * 0.92, 16), ...ring(H, r * 2.35, r * 0.98, r * 0.98, 16)]), hat.mat, { folds: [st.pts2([at(H, [r * 0.3, r * 2.2, r * 0.9]), at(H, [r * 0.3, r * 0.9, r * 0.92])])] });
+        if (hat.band) p.fill(st.hull([...ring(H, r * 0.72, r * 0.95, r * 0.95, 16), ...ring(H, r * 1.0, r * 0.96, r * 0.96, 16)]), hat.band, { lw: 1.4 });
+        break;
+      }
+      case 'straw': {
+        // conical straw hat (wide, shallow cone) with a woven band
+        const tip = at(H, [0, r * 1.75, 0]);
+        p.fill(st.hull([...ring(H, r * 0.5, r * 2.05, r * 2.0, 24), tip]), hat.mat, { shadow: 0.6, folds: [st.pts2([tip, at(H, [r * 1.4, r * 0.62, r * 1.3])]), st.pts2([tip, at(H, [-r * 1.4, r * 0.62, r * 1.3])]), st.pts2([tip, at(H, [0, r * 0.55, r * 2])])] });
+        if (hat.band) p.line(st.pts2(ring(H, r * 0.85, r * 1.55, r * 1.5, 24).filter((q) => st.faces(norm(sub(q, at(H, [0, r * 0.85, 0])))) > 0).sort((a2, b2) => st.p(a2).x - st.p(b2).x)), hat.band.c, 2.2);
         break;
       }
       case 'bearhood':

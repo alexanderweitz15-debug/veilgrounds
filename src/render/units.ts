@@ -11,6 +11,7 @@ import { SPRITE_KEYS, SPRITE_SIZE, type Atlas, type SpriteKey } from './sprites'
 import { MIRA_ID } from '../game/modes';
 import { ChampionSprites, type SpriteBatchOptions } from './championSprites';
 import { disposeTree } from './dispose';
+import { champions } from '../data/champions';
 import { minionId, MONSTER_SPRITE, type ChampionAtlas, type MinionKind } from './champions';
 
 const CAPACITY: Record<SpriteKey, number> = { mira: 10, champ: 10, melee: 96, caster: 96, siege: 32, super: 32, dummy: 8, monster: 32 };
@@ -56,6 +57,12 @@ const MONSTER_BATCH: SpriteBatchOptions = {
   scaleFor: (e) => monsterSprite(e)?.scale ?? 1,
 };
 
+/** Ranged attackers recoil at the hit point instead of lunging. */
+function isRanged(e: SnapEntity): boolean {
+  if (e.kind === Kind.MinionCaster || e.kind === Kind.MinionSiege) return true;
+  return e.kind === Kind.Champion && !!e.champ && champions[e.champ]?.attackType === 'ranged';
+}
+
 export function spriteKeyFor(e: SnapEntity): SpriteKey | null {
   switch (e.kind) {
     case Kind.Champion:
@@ -83,7 +90,7 @@ export class Units {
   readonly group = new THREE.Group();
   private readonly groups = new Map<string, Group>();
   private readonly flashAt = new Map<number, number>();
-  private readonly lungeAt = new Map<number, { t: number; dx: number; dy: number }>();
+  private readonly lungeAt = new Map<number, { t: number; dx: number; dy: number; armed: boolean }>();
   private readonly rings: THREE.InstancedMesh;
   private readonly qVis = new THREE.Quaternion().setFromEuler(new THREE.Euler(-PITCH, 0, 0));
   private readonly qCast: THREE.Quaternion;
@@ -181,10 +188,19 @@ export class Units {
     this.flashAt.set(serial, now);
   }
 
-  /** Small lunge toward the target when an attack starts. */
+  /**
+   * An attack started toward (dx, dy): the body lunge (melee) or recoil (ranged) plays at the hit point, when the
+   * wind-up ends (atkPhase 1 -> 2), together with the sprite's strike frame.
+   */
   lunge(serial: number, dx: number, dy: number, now: number): void {
     const d = Math.hypot(dx, dy) || 1;
-    this.lungeAt.set(serial, { t: now, dx: dx / d, dy: dy / d });
+    this.lungeAt.set(serial, { t: now, dx: dx / d, dy: dy / d, armed: true });
+  }
+
+  /** Took damage from (sx, sy): hit flinch on the animated sprites. */
+  hit(eid: number, now: number, sx: number, sy: number): void {
+    this.champs?.onHit(eid, now, sx, sy);
+    this.minions?.onHit(eid, now, sx, sy);
   }
 
   update(state: ClientState, now: number, hoverId: number): void {
@@ -231,12 +247,21 @@ export class Units {
         }
         const l = this.lungeAt.get(e.serial);
         if (l) {
-          const k = (now - l.t) / LUNGE_MS;
-          if (k >= 1) this.lungeAt.delete(e.serial);
-          else {
-            const amt = Math.sin(k * Math.PI) * 28;
-            x += l.dx * amt;
-            y += l.dy * amt;
+          if (l.armed) {
+            // waiting for the hit point; a cancelled wind-up (back to idle) drops it
+            if (e.atkPhase === 2) {
+              l.armed = false;
+              l.t = now;
+            } else if (e.atkPhase === 0 || now - l.t > 2000) this.lungeAt.delete(e.serial);
+          } else {
+            const k = (now - l.t) / LUNGE_MS;
+            if (k >= 1) this.lungeAt.delete(e.serial);
+            else {
+              // melee: snap forward with the strike; ranged: a short recoil as the shot leaves
+              const amt = isRanged(e) ? -Math.sin(Math.min(1, k * 1.6) * Math.PI) * 9 : Math.sin(k * Math.PI) * 26 * (1 - k * 0.3);
+              x += l.dx * amt;
+              y += l.dy * amt;
+            }
           }
         }
         if (e.atkPhase === 1) {

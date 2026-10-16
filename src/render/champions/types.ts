@@ -1,6 +1,6 @@
 // Data types shared by the champion sprite renderer: kit (what a champion is made of), pose (one animation
 // frame) and rig (the solved skeleton). See kits.ts for the 26 champion kits.
-import type { Basis, Mat, Stage, V3 } from './core';
+import type { Basis, Mat, MatKind, Stage, V3 } from './core';
 
 export const ANIMS = ['idle', 'run', 'attack', 'cast', 'death'] as const;
 export type Anim = (typeof ANIMS)[number];
@@ -9,10 +9,48 @@ export type Dir = (typeof DIRS)[number];
 
 export type HairStyle = 'none' | 'crop' | 'short' | 'long' | 'bun' | 'tied' | 'braid' | 'wild' | 'bob';
 export type BeardStyle = 'full' | 'short' | 'mustache' | 'stubble' | 'braided';
-export type HatKind = 'wide' | 'tricorn' | 'cap' | 'helm' | 'kerchief' | 'veil' | 'band' | 'goggles' | 'bearhood' | 'wolfhood';
+export type HatKind =
+  | 'wide'
+  | 'tricorn'
+  | 'cap'
+  | 'helm'
+  | 'kerchief'
+  | 'veil'
+  | 'band'
+  | 'goggles'
+  | 'bearhood'
+  | 'wolfhood'
+  | 'tophat'
+  | 'straw';
 
-/** How the champion carries its gear when idle/running. */
-export type Hold = 'relaxed' | 'bow' | 'pistols' | 'rifle' | 'shoulder' | 'pole' | 'shield' | 'yoke' | 'guard' | 'hook' | 'spindle' | 'blade' | 'fists';
+/** Non-human head parts (combine freely): muzzle/beak shape, ears, horns. */
+export type SnoutKind = 'wolf' | 'bear' | 'ram' | 'beak' | 'frog' | 'ogre';
+export type EarKind = 'wolf' | 'bear' | 'yordle' | 'pointy';
+export type HornKind = 'ram' | 'branch';
+export type TailKind = 'bushy' | 'feather' | 'stub';
+
+/**
+ * How the champion carries its gear when idle/running. pole = staff upright at the side, cane = old man leaning on
+ * a planted staff, port = spear held diagonally across the body, overhead = weapon resting behind the neck.
+ */
+export type Hold =
+  | 'relaxed'
+  | 'bow'
+  | 'pistols'
+  | 'rifle'
+  | 'shoulder'
+  | 'pole'
+  | 'cane'
+  | 'port'
+  | 'overhead'
+  | 'shield'
+  | 'yoke'
+  | 'guard'
+  | 'hook'
+  | 'spindle'
+  | 'blade'
+  | 'fists'
+  | 'jug';
 export type AttackStyle = 'bow' | 'pistols' | 'rifle' | 'chop' | 'slash' | 'thrust' | 'swipe' | 'bash' | 'throw' | 'staff' | 'ring';
 export type CastStyle = 'raise' | 'forward' | 'slam' | 'ring' | 'spin';
 
@@ -38,10 +76,23 @@ export interface BodySpec {
   stance: number;
   /** bust/chest shape for women: 0..1 (subtle) */
   bust: number;
+  /** digitigrade legs: length of the raised foot (heel off the ground), 0 = plantigrade */
+  digi: number;
+  /** hovering spirit: height above the ground, no legs drawn (0 = walks) */
+  float: number;
 }
 
 export interface Outfit {
   skin: string;
+  /** material of the skin (fur for beast-folk, wood bark, stone) */
+  skinKind?: MatKind;
+  snout?: { kind: SnoutKind; mat?: Mat; nose?: string };
+  ears?: { kind: EarKind; mat?: Mat; inner?: string };
+  horns?: { kind: HornKind; mat: Mat; leaf?: string };
+  tail?: { kind: TailKind; mat: Mat; len: number; tip?: Mat };
+  tusks?: Mat;
+  /** paws / hooves / talons at the end of digitigrade legs */
+  feet?: { kind: 'paw' | 'hoof' | 'talon'; mat: Mat };
   /** torso / shirt (or coat body when coat is set) */
   top: Mat;
   sleeves?: Mat;
@@ -73,6 +124,10 @@ export interface Outfit {
 
 export interface Pose {
   bob: number;
+  /** sideways pelvis shift (weight on one leg), char units, + = toward the left foot */
+  shift: number;
+  /** breathing: chest rise 0..1 */
+  breath: number;
   lean: number;
   twist: number;
   hipYaw: number;
@@ -126,6 +181,9 @@ export interface Rig {
   anR: V3;
   footL: Basis;
   footR: Basis;
+  /** digitigrade: toe contact points (the ankle joint is the raised heel) */
+  toeL: V3;
+  toeR: V3;
   /** lengths */
   arm: number;
   upper: number;

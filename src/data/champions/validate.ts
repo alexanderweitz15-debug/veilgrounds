@@ -30,7 +30,7 @@ export const ABILITY_TYPES = [
   'summon',
 ] as const;
 export const COMBO_TOKENS = ['Q', 'W', 'E', 'R', 'AA', 'FLASH'] as const;
-const FLAGS = ['blocked_by_minions', 'pierce', 'unstoppable', 'recast', 'ground_target', 'ally_target', 'auto_reset', 'channel', 'mobility'];
+const FLAGS = ['blocked_by_minions', 'pierce', 'unstoppable', 'recast', 'ground_target', 'ally_target', 'auto_reset', 'channel', 'mobility', 'stealth'];
 const COST_TYPES = ['mana', 'energy', 'hp', 'none'];
 const RESOURCES = ['mana', 'energy', 'none'];
 const TARGETS = ['hit', 'self', 'ally', 'allies', 'enemies'];

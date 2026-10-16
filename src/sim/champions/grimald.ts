@@ -66,7 +66,7 @@ export const hooks: ChampionHooks = {
       onKill(sim, eid, victim) {
         if (sim.c.Unit.kind[victim] !== Kind.Monster) return;
         const { Pos } = sim.c;
-        addGroundObject(sim, { owner: eid, tag: TRAP, x: Pos.x[victim]!, y: Pos.y[victim]!, r: 75, ticks: sec(60) });
+        addGroundObject(sim, { owner: eid, tag: TRAP, x: Pos.x[victim]!, y: Pos.y[victim]!, r: 75, ticks: sec(60), stealth: true });
         const mine = groundObjects(sim, TRAP, eid);
         for (let i = 0; i < mine.length - MAX_TRAPS; i++) removeGroundObject(sim, mine[i]!.id);
       },

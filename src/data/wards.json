@@ -1,0 +1,14 @@
+{
+  "_doc": "Wards, trinkets and stealth (src/sim/wards.ts). Distances in map units, times in seconds.",
+  "wardRadius": 25,
+  "placeRange": 600,
+  "vision": 900,
+  "veil": { "hp": 3, "lifeS": 90, "maxPerPlayer": 3, "stealth": true },
+  "seal": { "hp": 4, "maxPerPlayer": 1, "stealth": false, "revealR": 450 },
+  "trinket": { "maxCharges": 2, "startCharges": 1, "rechargeS": [240, 120] },
+  "sweep": { "unlockLevel": 9, "range": 600, "r": 450, "durationS": 6, "cooldownS": [90, 60] },
+  "stealth": {
+    "_doc": "Stealthed things (Schleierwards, Nyx seeds, Grimald traps, Lysa wire) stay hidden from the enemy team unless an enemy Siegelward (seal.revealR) or Suchfeuer covers them, or a Spaehfrucht / Nyx R reveal lingers revealLingerS.",
+    "revealLingerS": 3
+  }
+}

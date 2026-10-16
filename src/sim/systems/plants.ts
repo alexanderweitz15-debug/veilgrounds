@@ -4,7 +4,8 @@
 //   Sprungfrucht: every champion within SPRUNG_R is launched SPRUNG_DIST away from the plant over 0.5 s, over walls
 //                 (landing point: the nearest walkable spot at or beyond the nominal distance along the line).
 //   Honigfrucht:  champions within HONIG_R heal 60 + 6 % max HP and are slowed 25 % for 1.5 s (the eaten fruit).
-//   Spähfrucht:   the popping team sees a cone pointing away from the attacker for 10 s (three vision points).
+//   Spähfrucht:   the popping team sees a cone pointing away from the attacker for 10 s (three vision points);
+//                 stealthed enemy wards/traps/seeds in it are revealed for 3 s (wards.ts stealth rules).
 // Deterministic: only + - * / sqrt, no rng.
 
 import type { Sim } from '../sim';
@@ -16,6 +17,7 @@ import { dist2 } from '../vec';
 import { addBuff, healUnit } from '../buffs';
 import { leapTo } from './abilities';
 import { champions } from './economy';
+import { STEALTH_LINGER, revealStealthArea } from '../wards';
 
 export const PLANT_FIRST = 90;
 export const PLANT_RESPAWN = 300;
@@ -132,6 +134,8 @@ function spaehVision(sim: Sim, team: number, x: number, y: number, dx: number, d
     Unit.invulnerable[eid] = 1;
     Vision.r[eid] = r;
     plantState(sim).wards.push({ eid, serial: Unit.serial[eid]!, until: sim.tick + SPAEH_TICKS });
+    // stealth rule (c): enemy wards / traps / seeds in the cone are revealed for STEALTH_LINGER (3 s) at the pop
+    revealStealthArea(sim, team, x + dx * d, y + dy * d, r, STEALTH_LINGER);
   }
 }
 

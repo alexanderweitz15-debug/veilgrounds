@@ -78,7 +78,7 @@ export interface AbilityData {
    *  (then up to the cursor). */
   distance?: number;
   /** mobility: a non-dash/blink ability whose hook relocates the caster (leap); like dashes it is blocked by roots. */
-  flags?: ('blocked_by_minions' | 'pierce' | 'unstoppable' | 'recast' | 'ground_target' | 'ally_target' | 'auto_reset' | 'channel' | 'mobility')[];
+  flags?: ('blocked_by_minions' | 'pierce' | 'unstoppable' | 'recast' | 'ground_target' | 'ally_target' | 'auto_reset' | 'channel' | 'mobility' | 'stealth')[];
   effects: Effect[];
 }
 

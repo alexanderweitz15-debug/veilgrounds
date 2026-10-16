@@ -12,7 +12,7 @@ import { itemCooldownHud } from './items/itemHooks';
 import { champions, kda } from './systems/economy';
 import { buffs } from './buffs';
 import { groundObjects } from './summons';
-import { trinketHud, wardTypeOf, type TrinketId, type WardType } from './wards';
+import { isStealthUnit, stealthPointSeen, trinketHud, trueSight, wardTypeOf, type TrinketId, type WardType } from './wards';
 import { ccLevel, ccState } from './buffs';
 import { attackStartTick } from './systems/attack';
 import { projectileSource } from './systems/projectiles';
@@ -67,6 +67,11 @@ export interface SnapEntity {
   ward?: WardType;
   /** Own team only: current vision radius of wards (0 = disabled by an enemy seal ward / sweep). */
   vision?: number;
+  /**
+   * Stealthed unit (Schleierward). Own team: hidden from the enemy unless revealed. Enemy team: it is in this view only
+   * because it is revealed (Siegelward / Suchfeuer / Spaehfrucht / Nyx R): attackable, own minimap symbol.
+   */
+  stealth?: true;
   /** Own team only: vision radius of jungle vision points (river vision, Spähfrucht), for the fog overlay. */
   sight?: number;
   /** Monster / plant type (types.ts VARIANTS): sprite and name. */
@@ -162,13 +167,12 @@ export interface SnapObject {
   total?: number;
   n?: number;
   hue?: number;
+  /** Stealthed ground object (Nyx seed, Grimald trap). Own team: hidden from the enemy; enemy team: revealed. */
+  stealth?: true;
 }
 
-/** Tags enemies never see (invisible traps/seeds); everything else follows normal vision. */
 /** Lifetime (seconds) of ground object tags with a fixed duration: timer arc in the render. */
 const OBJECT_TOTAL: Record<string, number> = { renn_blade: 4 };
-
-const HIDDEN_OBJECT_TAGS = new Set(['grimald_trap', 'nyx_seed']);
 
 export interface Snapshot {
   tick: number;
@@ -297,6 +301,7 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
       ...ccFields(sim, e, alive),
       alive,
       ...(k === Kind.Ward ? wardFields(sim, e, team) : {}),
+      ...(k === Kind.Ward && isStealthUnit(sim, e) ? { stealth: true as const } : {}),
       ...(Unit.variant[e] ? { variant: VARIANTS[Unit.variant[e]!] } : {}),
     });
   }
@@ -339,8 +344,9 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
   const events = te.events.some((ev) => ev.e === 'castFail') ? te.events.filter((ev) => ev.e !== 'castFail' || ev.src === me) : te.events;
   const objects: SnapObject[] = [];
   for (const o of groundObjects(sim)) {
-    if (o.team !== team && (HIDDEN_OBJECT_TAGS.has(o.tag) || !pointVisible(sim, team, o.x, o.y))) continue;
-    objects.push({ id: o.id, tag: o.tag, team: o.team, x: o.x, y: o.y, r: o.r, ...(o.until < 1 << 29 ? { left: (o.until - sim.tick) / 30, ...(OBJECT_TOTAL[o.tag] ? { total: OBJECT_TOTAL[o.tag] } : {}) } : {}) });
+    // stealthed objects (seeds, traps): enemies only under true sight or a lingering reveal (wards.ts stealth rules)
+    if (o.team !== team && (o.stealth ? (team === 0 || team === 1) && !stealthPointSeen(sim, team, o.x, o.y, o.r, o.revealUntil[team]) : !pointVisible(sim, team, o.x, o.y))) continue;
+    objects.push({ id: o.id, tag: o.tag, team: o.team, x: o.x, y: o.y, r: o.r, ...(o.until < 1 << 29 ? { left: (o.until - sim.tick) / 30, ...(OBJECT_TOTAL[o.tag] ? { total: OBJECT_TOTAL[o.tag] } : {}) } : {}), ...(o.stealth ? { stealth: true as const } : {}) });
   }
   const vis = visualsCache;
   for (const [e, v] of vis) {
@@ -480,7 +486,9 @@ export function teamEvents(sim: Sim, team: number): { events: SimEvent[]; audio:
       case 'castFail':
         return Unit.team[ev.src] === team; // team-private (buildSnapshot narrows it to the own champion)
       case 'zone':
-        return ev.team === team || pointVisible(sim, team, ev.x, ev.y);
+        // stealthed zones (Lysa E wire): enemies only under true sight at the moment it is placed
+        if (ev.team === team) return true;
+        return ev.stealth && (team === 0 || team === 1) ? trueSight(sim, team, ev.x, ev.y, ev.r) : pointVisible(sim, team, ev.x, ev.y);
       case 'gold':
       case 'level':
       case 'lastHitMiss':

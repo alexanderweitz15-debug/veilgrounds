@@ -619,7 +619,7 @@ function execute(sim: Sim, eid: number, slot: number, rank: number, x: number, y
       if (delay > 0 || dur > 0) {
         // ponytail: persistent zones re-apply their effects once per second (damage values are per tick)
         abilState(sim).zones.push({ caster: eid, casterSerial: Unit.serial[eid]!, slot, rank, x: cx, y: cy, ox, oy, dx, dy, cx: x, cy: y, follow: false, next: sim.tick + delay, until: sim.tick + delay + dur, period: sec(1) });
-        sim.events.push({ e: 'zone', src: eid, team: Unit.team[eid]!, x: cx, y: cy, r: ab.radius ?? 0, start: sim.tick, at: sim.tick + delay, ...(dur > 0 ? { until: sim.tick + delay + dur } : {}), ...zoneLine(ab, ox, oy, cx, cy, dx, dy) });
+        sim.events.push({ e: 'zone', src: eid, team: Unit.team[eid]!, x: cx, y: cy, r: ab.radius ?? 0, start: sim.tick, at: sim.tick + delay, ...(dur > 0 ? { until: sim.tick + delay + dur } : {}), ...zoneLine(ab, ox, oy, cx, cy, dx, dy), ...(ab.flags?.includes('stealth') ? { stealth: true as const } : {}) });
       } else {
         resolve(sim, ctx(areaHits(sim, eid, ab, ox, oy, cx, cy, dx, dy), cx, cy));
       }

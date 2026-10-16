@@ -65,6 +65,10 @@ export interface GroundObject {
   until: number;
   /** Free hook data. */
   data: number;
+  /** Stealthed (Nyx seeds, Grimald traps): hidden from the enemy team unless revealed (wards.ts stealth rules). */
+  stealth: boolean;
+  /** Stealth reveal end tick per viewing team (Spaehfrucht / Nyx R linger; 0 = none). */
+  revealUntil: [number, number];
 }
 
 interface Terrain {
@@ -190,10 +194,10 @@ function follow(sim: Sim, eid: number, r: PetRec): void {
 
 // ------------------------------------------------------------------ ground objects
 
-export function addGroundObject(sim: Sim, o: { owner: number; tag: string; x: number; y: number; r: number; ticks: number; data?: number }): number {
+export function addGroundObject(sim: Sim, o: { owner: number; tag: string; x: number; y: number; r: number; ticks: number; data?: number; stealth?: boolean }): number {
   const s = st(sim);
   const id = s.nextId++;
-  s.objects.push({ id, owner: o.owner, team: sim.c.Unit.team[o.owner]!, tag: o.tag, x: o.x, y: o.y, r: o.r, until: o.ticks > 0 ? sim.tick + o.ticks : forever, data: o.data ?? 0 });
+  s.objects.push({ id, owner: o.owner, team: sim.c.Unit.team[o.owner]!, tag: o.tag, x: o.x, y: o.y, r: o.r, until: o.ticks > 0 ? sim.tick + o.ticks : forever, data: o.data ?? 0, stealth: !!o.stealth, revealUntil: [0, 0] });
   return id;
 }
 

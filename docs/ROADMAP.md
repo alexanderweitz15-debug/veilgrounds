@@ -121,7 +121,7 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
   an `damage` mit `auto: true`.
 - [x] **Kein Einschlag-Effekt.** (erledigt: Treffer-Funke am Ziel nach Schadensart, Krit größer; nur Champion-Kämpfe) Am Ziel nur 140 ms Aufhellung ×1,6 (units.ts `FLASH_MS`) + neu 9 Einheiten Zucken.
   LoL: Treffer-Funken/Partikel je Champion. Fix: kleiner Impact-Sprite am Projektil-Ende, nach Schadensart gefärbt.
-- [ ] **Projektile alle gleich.** fx.ts `update`: jedes zielsuchende Projektil (Champion-Autos, Caster-Bolzen,
+- [x] **Projektile alle gleich.** (erledigt: Turm-Energiekugel, Kanonenkugel, Caster-Bolzen, Champion-Pfeil, Fähigkeiten in Elementfarbe; fx.ts missileStyle) fx.ts `update`: jedes zielsuchende Projektil (Champion-Autos, Caster-Bolzen,
   Belagerer, Turm, gezielte Fähigkeiten) ist derselbe Ikosaeder-Klecks in Teamfarbe auf Höhe 110, gerade Linie, ohne
   Schweif, Start in der Körpermitte. LoL: eigene Missiles je Champion, Kanonenkugel im Bogen, Turm-Energiekugel.
   Fix: Missile-Stil je Einheit/Champion (Pfeil, Bolzen, Kugel, Bogen), Schweif, Start auf Waffenhöhe.

@@ -10,6 +10,7 @@ import { Kind, type SimEvent } from '../sim/types';
 import type { AbilityData } from '../sim/champions/schema';
 import { champions } from '../data/champions';
 import { REL } from './palette';
+import { abilityHue } from './abilityTheme';
 import { settings } from '../settings';
 import { castDir, castTelegraph, hitboxAbility, lineZone, windupTicks, zoneProgress, type CastTelegraph, type CircleShape, type LineShape, type Shape } from './telegraph';
 
@@ -65,6 +66,38 @@ const flatRing = new THREE.RingGeometry(0.9, 1, 48).rotateX(-Math.PI / 2);
 const flatDisc = new THREE.CircleGeometry(1, 64).rotateX(-Math.PI / 2);
 /** Unit square centred on the origin, x = length, z = thickness. */
 const flatPlane = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+interface MissileStyle {
+  color: string;
+  /** Width multiplier, length along the flight direction and thickness (relative to the width). */
+  size: number;
+  length: number;
+  thick: number;
+  height: number;
+  /** Halo scale relative to the core. */
+  halo: number;
+}
+
+/** Missile look from the projectile's source (snapshot srcKind / champ / slot). */
+function missileStyle(pr: { srcKind?: number; champ?: string | null; slot?: number }, own: boolean, homing: boolean): MissileStyle {
+  const team = homing ? (own ? REL.ownHoming : REL.enemyHoming) : own ? REL.ownShot : REL.enemyShot;
+  switch (pr.srcKind) {
+    case Kind.Tower:
+    case Kind.Nexus: // big energy orb
+      return { color: own ? '#9fd4ff' : '#ff8a6a', size: 2.2, length: 1.2, thick: 1.1, height: 260, halo: 2.4 };
+    case Kind.MinionSiege: // dark cannonball
+      return { color: '#3a3430', size: 1.5, length: 1, thick: 1, height: 120, halo: 1.3 };
+    case Kind.MinionCaster: // small bolt
+      return { color: team, size: 0.8, length: 2, thick: 0.55, height: 95, halo: 1.6 };
+  }
+  if (pr.champ && pr.slot !== undefined && pr.slot >= 0) {
+    // ability missile: element colour of the ability (fire orange, lightning yellow, water blue …), team-coloured halo
+    const hue = abilityHue(pr.champ, pr.slot);
+    return { color: hue === null ? team : `hsl(${hue}, 80%, 62%)`, size: 1.1, length: homing ? 2 : 2.8, thick: 0.75, height: homing ? 110 : 75, halo: 1.9 };
+  }
+  if (pr.srcKind === Kind.Champion) return { color: own ? '#fff1c8' : '#ffd0b8', size: 0.85, length: 3.2, thick: 0.35, height: 115, halo: 1.7 }; // arrow / bolt
+  return { color: team, size: 1, length: homing ? 1.8 : 2.6, thick: 0.7, height: homing ? 110 : 70, halo: 1.9 };
+}
+
 /** Tower attack range, edge to edge (sim: src/sim/systems/towers.ts TOWER_RANGE; not imported to keep the sim out of the render bundle). */
 const TOWER_RANGE = 750;
 /** Show an enemy tower's range circle this far before you enter it. */
@@ -470,17 +503,18 @@ export class Fx {
           if ((st.bx - x) * pr.dx + (st.by - y) * pr.dy > 0) this.strips[ns++]!.show(st, ownCol(pr.team), 1, 0.16, 0.75);
         }
         if (n >= MAX_PROJ) continue;
-        // blob: visual only, capped so wide waves stay readable (the strip is the hitbox)
-        const w = Math.max(14, Math.min(pr.width, 140) * (homing ? 0.6 : 0.55));
-        this.p.set(x, homing ? 110 : 70, -y);
+        // missile look by source (LoL: every unit has its own): visual only, the strip is the hitbox
+        const st = missileStyle(pr, own, homing);
+        const w = Math.max(14, Math.min(pr.width, 140) * (homing ? 0.6 : 0.55)) * st.size;
+        this.p.set(x, st.height, -y);
         this.dir.set(pr.dx || 1, 0, -(pr.dy || 0)).normalize();
         this.q.setFromUnitVectors(this.axis, this.dir);
-        this.s.set(homing ? w * 1.8 : w * 2.6, w * 0.7, w * 0.7);
+        this.s.set(w * st.length, w * st.thick, w * st.thick);
         this.m.compose(this.p, this.q, this.s);
         this.proj.setMatrixAt(n, this.m);
-        this.c.set(homing ? (own ? REL.ownHoming : REL.enemyHoming) : own ? REL.ownShot : REL.enemyShot);
+        this.c.set(st.color);
         this.proj.setColorAt(n, this.c);
-        this.s.multiplyScalar(1.9);
+        this.s.multiplyScalar(st.halo);
         this.m.compose(this.p, this.q, this.s);
         this.halo.setMatrixAt(n, this.m);
         this.halo.setColorAt(n, this.c);

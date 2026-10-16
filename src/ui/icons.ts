@@ -5,6 +5,7 @@ import { itemById } from '../sim/items/inventory';
 import type { ItemData } from '../sim/items/schema';
 import { championData } from '../sim/champions';
 import { championKit } from '../render/champions/atlas';
+import { MOTIF_RULES, abilityTheme } from '../render/abilityTheme';
 
 const S = 64;
 const cache = new Map<string, string>();
@@ -503,37 +504,10 @@ function GLYPHS_SPARK(g: CanvasRenderingContext2D, c: string, x: number, y: numb
   }
 }
 
-/** Keyword rules on the ability's English name + description: [pattern, motif, element hue]. First match wins. */
-const MOTIF_RULES: [RegExp, string, number][] = [
-  [/fire|ember|ash|flame|burn|ignite/, 'flame', 22],
-  [/lightning|thunder|spark|storm|electr|bolt/, 'bolt', 52],
-  [/water|jet|flood|current|spring|surge|sea|wave|steam|mist/, 'wave', 200],
-  [/ice|frost|freeze|snow/, 'snow', 195],
-  [/hook|anchor|harpoon|reel|haul|chain/, 'hook', 30],
-  [/thread|\bweb\b|\bnets?\b|yarn|\bknot|\bwire|tripwire|\btrap/, 'web', 300],
-  [/clock|rewind|standstill|wheel|\btime\b|\btick/, 'gear', 42],
-  [/blade|\bcut\b|slash|execution|sevenfold|dagger/, 'dagger', 5],
-  [/shield|\bwall\b|hide|guard|aegis/, 'shield', 210],
-  [/slam|strike|\bram\b|\bfell\b|axe|smash/, 'axe', 18],
-  [/\bbell|\btoll|\bpeal|\bring\b/, 'bell', 45],
-  [/claw|pounce|fang|bear|jaw|hunt|pack|nose|stalk/, 'claw', 14],
-  [/shadow|shroud|night|veil|dark|hollow|smoke|dusk/, 'moon', 270],
-  [/light|lance|prism|sun|glare|lantern|verdict/, 'sun', 48],
-  [/keg|powder|bomb|blast|burst/, 'bomb', 28],
-  [/banner|monument|call|faith|march|duty/, 'banner', 10],
-  [/whirl|whorl|spin/, 'spiral', 190],
-  [/glass|dome|crystal/, 'glass', 185],
-  [/root|grip|sap/, 'root', 110],
-  [/arrow|shot|volley|bow|needle|spear/, 'arrow', 35],
-];
 
 function abilityMotif(champ: string, slot: number): [Glyph, number] | null {
-  const ab = championData(champ)?.abilities[slot];
-  if (!ab) return null;
-  const text = `${ab.name.en} ${ab.desc.en}`.toLowerCase();
-  for (const [re, m, hue] of MOTIF_RULES) if (re.test(ab.name.en.toLowerCase())) return [(MOTIF[m] ?? GLYPHS[m])!, hue];
-  for (const [re, m, hue] of MOTIF_RULES) if (re.test(text)) return [(MOTIF[m] ?? GLYPHS[m])!, hue];
-  return null;
+  const m = abilityTheme(champ, slot);
+  return m ? [(MOTIF[m.motif] ?? GLYPHS[m.motif])!, m.hue] : null;
 }
 
 /** Ability icon for champion `champ`, slot 0..3 (R gets a gold frame): thematic motif + element colour on the champion palette. */

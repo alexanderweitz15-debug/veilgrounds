@@ -257,14 +257,114 @@ function itemHue(it: ItemData): [number, number] {
 
 const TIER_FRAME: Record<string, string> = { legendary: GOLD, component: '#b9c0c8', boots: '#a07850', basic: '#8a6a44', starter: '#8a6a44', consumable: '#6a5a44' };
 
+/** Element accent from the (German) item id: [motif key, hue]. */
+const ITEM_ACCENT: [RegExp, string, number][] = [
+  [/sturm|wetter|funken/, 'bolt', 52],
+  [/frost|kalt/, 'snow', 195],
+  [/brand/, 'flame', 22],
+  [/blut/, 'drop', 355],
+  [/schleier|schwarz/, 'moon', 270],
+  [/uhr|zeit/, 'gear', 42],
+  [/leben|wurzel/, 'leaf', 110],
+  [/schnelligkeit|eifer/, 'wing', 48],
+  [/hueter|spender/, 'sun', 48],
+];
+
+/** Hash -> 0..1 (stable per id): small per-item variation inside a stat category. */
+function idRand(id: string, k: number): number {
+  let h = k * 2654435761;
+  for (const ch of id) h = (Math.imul(h ^ ch.charCodeAt(0), 2246822519) + 3266489917) >>> 0;
+  return (h % 10007) / 10007;
+}
+
+/** Painterly backdrop: radial light + a few soft diagonal brush strokes (fixed per item). */
+function paintedBackdrop(g: CanvasRenderingContext2D, id: string, h: number, s: number): void {
+  backdrop(g, hsl(h, s, 40), hsl(h, s * 0.8, 11));
+  g.save();
+  g.globalAlpha = 0.13;
+  for (let i = 0; i < 7; i++) {
+    const y = idRand(id, i + 1) * S;
+    const x = idRand(id, i + 11) * S * 0.5;
+    g.strokeStyle = i % 2 ? hsl(h, s, 70) : hsl(h, s * 0.6, 6);
+    g.lineWidth = 5 + idRand(id, i + 21) * 7;
+    g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(x - 10, y + 12);
+    g.lineTo(x + 40, y - 14);
+    g.stroke();
+  }
+  g.restore();
+}
+
+/** Tier frame: basic bronze, component silver with rivets, legendary gold with corner gems + inner glow. */
+function tierFrame(g: CanvasRenderingContext2D, tier: string, h: number): void {
+  if (tier === 'legendary') {
+    const glow = g.createRadialGradient(S / 2, S / 2, S * 0.3, S / 2, S / 2, S * 0.72);
+    glow.addColorStop(0, 'rgba(255,220,140,0)');
+    glow.addColorStop(1, 'rgba(255,200,110,0.35)');
+    g.fillStyle = glow;
+    g.fillRect(0, 0, S, S);
+    frame(g, '#5a4210', 6);
+    frame(g, GOLD, 3);
+    for (const [x, y] of [[4, 4], [S - 4, 4], [4, S - 4], [S - 4, S - 4]] as const) {
+      g.fillStyle = hsl(h, 70, 55);
+      g.beginPath();
+      g.moveTo(x, y - 4);
+      g.lineTo(x + 4, y);
+      g.lineTo(x, y + 4);
+      g.lineTo(x - 4, y);
+      g.closePath();
+      g.fill();
+      g.strokeStyle = '#2a1e08';
+      g.lineWidth = 1;
+      g.stroke();
+    }
+  } else if (tier === 'component') {
+    frame(g, '#2c2f33', 5);
+    frame(g, '#c9d0d8', 2);
+    g.fillStyle = '#e6ecf2';
+    for (const [x, y] of [[5, 5], [S - 5, 5], [5, S - 5], [S - 5, S - 5]] as const) {
+      g.beginPath();
+      g.arc(x, y, 2, 0, 7);
+      g.fill();
+    }
+  } else frame(g, TIER_FRAME[tier] ?? '#6a5a44', 3);
+}
+
 export function itemIcon(id: string): string | null {
   const it = itemById(id);
   if (!it) return null;
   return cached(`item:${id}`, (g) => {
-    const [h, s] = itemHue(it);
-    backdrop(g, hsl(h, s, 38), hsl(h, s * 0.8, 12));
-    GLYPHS[itemGlyph(it)]!(g, hsl(h, Math.max(s, 50), 62));
-    frame(g, TIER_FRAME[it.tier] ?? '#6a5a44', it.tier === 'legendary' ? 4 : 3);
+    const [h0, s] = itemHue(it);
+    const h = (h0 + (idRand(id, 99) - 0.5) * 24 + 360) % 360; // same category, slightly different hue per item
+    paintedBackdrop(g, id, h, s);
+    // main object with a drop shadow, then a soft top-left highlight (painted look)
+    g.save();
+    g.shadowColor = 'rgba(0,0,0,0.6)';
+    g.shadowBlur = 4;
+    g.shadowOffsetX = 2;
+    g.shadowOffsetY = 3;
+    GLYPHS[itemGlyph(it)]!(g, hsl(h, Math.max(s, 55), 64));
+    g.restore();
+    const hl = g.createRadialGradient(S * 0.3, S * 0.25, 2, S * 0.3, S * 0.25, S * 0.45);
+    hl.addColorStop(0, 'rgba(255,250,235,0.28)');
+    hl.addColorStop(1, 'rgba(255,250,235,0)');
+    g.fillStyle = hl;
+    g.fillRect(0, 0, S, S);
+    // element accent badge (bottom right)
+    const acc = ITEM_ACCENT.find(([re]) => re.test(id));
+    if (acc && it.tier !== 'basic') {
+      g.save();
+      g.fillStyle = 'rgba(12,9,6,0.82)';
+      g.beginPath();
+      g.arc(48, 48, 12, 0, 7);
+      g.fill();
+      g.translate(37, 37);
+      g.scale(0.34, 0.34);
+      (MOTIF[acc[1]] ?? GLYPHS[acc[1]] ?? GLYPHS.gem)!(g, hsl(acc[2], 85, 64));
+      g.restore();
+    }
+    tierFrame(g, it.tier, h);
   });
 }
 
@@ -494,6 +594,14 @@ const MOTIF: Record<string, Glyph> = {
     line(g, c, 5, [32, 40, 46, 56]);
     line(g, c, 4, [32, 26, 46, 18]);
     line(g, c, 4, [32, 30, 18, 22]);
+  },
+  drop: (g, c) => shape(g, c, () => (g.moveTo(32, 6), g.bezierCurveTo(46, 26, 50, 36, 44, 48), g.quadraticCurveTo(32, 60, 20, 48), g.bezierCurveTo(14, 36, 18, 26, 32, 6), g.closePath())),
+  leaf: (g, c) => {
+    shape(g, c, () => (g.moveTo(10, 54), g.quadraticCurveTo(14, 12, 54, 10), g.quadraticCurveTo(50, 50, 10, 54), g.closePath()));
+    line(g, 'rgba(12,9,6,0.6)', 2, [14, 50, 46, 16]);
+  },
+  wing: (g, c) => {
+    for (const [dy, len] of [[0, 40], [10, 34], [20, 26]] as const) shape(g, c, () => (g.moveTo(14, 20 + dy), g.quadraticCurveTo(14 + len * 0.6, 8 + dy, 14 + len, 14 + dy), g.quadraticCurveTo(14 + len * 0.5, 22 + dy, 14, 28 + dy), g.closePath()), undefined, 2);
   },
 };
 

@@ -9,8 +9,8 @@ import { actionFor, type Action } from './keybinds';
 import { PingWheel } from '../ui/pingWheel';
 import { Kind, type PingKind } from '../sim/types';
 
-const EDGE_PX = 10;
-const EDGE_SPEED = 2600; // units per second at cameraSpeed 1
+const EDGE_PX = 20;
+const EDGE_SPEED = 4200; // units per second at cameraSpeed 1 (LoL-like brisk pan; 2600 felt sluggish)
 // held right button: re-path every 50 ms (smooth steering; 140 ms felt like 7 Hz steps)
 const HOLD_MOVE_MS = 50;
 

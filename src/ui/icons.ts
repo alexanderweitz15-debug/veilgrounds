@@ -243,7 +243,11 @@ function itemGlyph(it: ItemData): string {
 /** Category hue from the item's stats: physical warm red, magic violet, tank green, resistances steel/blue, etc. */
 function itemHue(it: ItemData): [number, number] {
   const st = it.stats;
-  if (it.tier === 'boots') return [32, 35];
+  if (it.tier === 'boots') {
+    // each upgrade its own colour: armour steel-brown, MR blue, haste gold, swiftness bright amber
+    const BOOTS: Record<string, [number, number]> = { stiefel_ruestung: [25, 20], stiefel_mr: [210, 40], stiefel_hast: [44, 60], stiefel_schnelligkeit: [36, 70] };
+    return BOOTS[it.id] ?? [32, 35];
+  }
   if (it.tier === 'consumable') return [it.id.includes('ward') ? 50 : 350, 55];
   if (st.critPct || st.asPct) return [42, 70];
   if (st.ad || st.lethality) return [8, 60];
@@ -267,6 +271,9 @@ const ITEM_ACCENT: [RegExp, string, number][] = [
   [/uhr|zeit/, 'gear', 42],
   [/leben|wurzel/, 'leaf', 110],
   [/schnelligkeit|eifer/, 'wing', 48],
+  [/stiefel_ruestung/, 'shield', 30],
+  [/stiefel_mr/, 'cloak', 205],
+  [/stiefel_hast/, 'gear', 42],
   [/hueter|spender/, 'sun', 48],
 ];
 

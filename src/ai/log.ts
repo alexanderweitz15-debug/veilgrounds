@@ -168,8 +168,8 @@ export interface BotDebugInfo {
   attention?: AttentionDebugRow;
 }
 
-/** Log node of A2's intent choice (BRAIN-REWORK §3/§5): chosen = intent, scores = every candidate's score. */
-export const INTENT_NODE = 'intent';
+/** Log node of A2's intent choice (BRAIN-REWORK §3/§5, src/ai/utility/select.ts): chosen = intent ('none' / 'wait' = idle), scores = all candidates. */
+export const INTENT_NODE = 'utility';
 
 export interface BotDebugRow extends BotDebugInfo {
   /** Latest intent decision (log node INTENT_NODE): intent and its top-3 candidates; absent before the utility model. */

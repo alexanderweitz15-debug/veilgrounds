@@ -57,7 +57,7 @@
     "hysteresis": 0.16,
     "engageHesitationS": 0.52,
     "utilityNoisePct": 11,
-    "distractionIntervalS": 16.5,
+    "distractionIntervalS": 15.5,
     "distractionDurMedianS": 1.0,
     "distractionDurSigma": 0.5,
     "minimapGlancePlannedPct": 85,

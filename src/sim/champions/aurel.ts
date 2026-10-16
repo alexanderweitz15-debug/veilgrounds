@@ -9,8 +9,9 @@ import { applyEffects, rv, teleport } from '../systems/abilities';
 import { destroyProjectile } from '../systems/projectiles';
 import { healUnit } from '../buffs';
 import { dist2 } from '../vec';
-import type { ChampionHooks, EffectCtx } from './hooks';
+import type { ChampionHooks, ChampionVisuals, EffectCtx, UnitMark } from './hooks';
 import { isChamp, stateMap, tickCtx } from './dagny';
+import { peekState } from './util';
 
 // ------------------------------------------------------------------ passive: balance wheel
 
@@ -115,7 +116,59 @@ function aurelTick(sim: Sim, eid: number): void {
   }
 }
 
+// ------------------------------------------------------------------ visuals (read-only)
+
+const WHEEL_CD = sec(8);
+
+/** Read-only ability state (no champAbil: that creates). */
+type AbilView = { serial: number; ranks: number[]; cdUntil: number[]; cast: { slot: number; end: number } | null };
+const abilView = (sim: Sim, eid: number): AbilView | undefined => {
+  const a = (sim.state.abilities as { champs: Map<number, AbilView> } | undefined)?.champs.get(eid);
+  return a && a.serial === sim.c.Unit.serial[eid] ? a : undefined;
+};
+
+/** Where the rewind started at `start` lands (same lookup + walkable fix as aurel_e_rewind). */
+function rewindPoint(sim: Sim, h: History, start: number): { x: number; y: number } {
+  const k = (((start - BACK) % RING) + RING) % RING;
+  const [x, y] = [h.x[k]!, h.y[k]!];
+  return walkable(sim.map.nav, x, y) ? { x, y } : nearestWalkable(sim.map.nav, x, y);
+}
+
+/**
+ * Passive: wheel cooldown / ready. E: own hint at the spot a rewind would return to now; while a cast is in flight a
+ * pin (all teams, fog-filtered) at the exact landing point. R: pending-damage timer on units in stasis.
+ */
+function aurelVisuals(sim: Sim, eid: number): ChampionVisuals {
+  const { Unit } = sim.c;
+  const until = peekState<number>(sim, 'aurelWheel')?.get(eid) ?? 0;
+  const v: ChampionVisuals = { passive: { cdLeft: Math.max(0, until - sim.tick), cdTotal: WHEEL_CD, ready: sim.tick >= until } };
+  const alive = Unit.alive[eid] === 1;
+  const h = peekState<History>(sim, 'aurelHistory')?.get(eid);
+  const a = abilView(sim, eid);
+  if (h && alive) {
+    // blink wind-up includes the 0.5 s delay: the rewind is in flight while the E cast state exists
+    const c = a?.cast;
+    if (c && c.slot === 2 && h.eStart >= 0) {
+      const p = rewindPoint(sim, h, h.eStart);
+      v.objects = [{ key: String(eid), tag: 'aurel_e_rewind', x: p.x, y: p.y, r: Unit.radius[eid]! + 15, shape: 'pin', left: Math.max(0, c.end - sim.tick), total: Math.max(1, c.end - h.eStart) }];
+    } else if (a && a.ranks[2]! > 0) {
+      const p = rewindPoint(sim, h, sim.tick);
+      v.hints = [{ slot: 2, x: p.x, y: p.y, r: Unit.radius[eid]! + 15, ok: sim.tick >= a.cdUntil[2]!, link: true }];
+    }
+  }
+  const pr = peekState<Pending>(sim, 'aurelR')?.get(eid);
+  if (pr && pr.at > sim.tick) {
+    const marks: UnitMark[] = [];
+    pr.hits.forEach((t, k) => {
+      if (Unit.serial[t] === pr.serials[k] && Unit.alive[t]) marks.push({ target: t, id: 'aurel_r_pending', left: pr.at - sim.tick });
+    });
+    if (marks.length) v.marks = marks;
+  }
+  return v;
+}
+
 export const hooks: ChampionHooks = {
+  visuals: aurelVisuals,
   onTick: aurelTick,
   ownsHits: ['aurel_r'],
   passive: {

@@ -6,8 +6,9 @@ import { addBuff, hasStat } from '../buffs';
 import { dealDamage } from '../damage';
 import { dir, dist2 } from '../vec';
 import { rv } from '../systems/abilities';
-import type { ChampionHooks } from './hooks';
+import type { ChampionHooks, ChampionVisuals, VisualObject } from './hooks';
 import { stateMap, unitsWhere } from './dagny';
+import { peekState } from './util';
 
 // ------------------------------------------------------------------ passive: foresight
 
@@ -83,7 +84,34 @@ function linkTick(sim: Sim, eid: number): void {
 const qOrigins = (sim: Sim): Map<number, { x: number; y: number }> => stateMap(sim, 'kiranQ');
 const Q_ROOT = [0.75, 0.85, 0.95, 1.05, 1.15];
 
+/** Length of the foresight thread drawn from Kiran (direction only, never the enemy's position). */
+const THREAD_LEN = 600;
+const FORESIGHT_TICKS = sec(15);
+
+/**
+ * Snapshot (read-only): P = foresight thread as a short line from Kiran (own team only) + HUD cooldown to the next
+ * check; E = the fate link as a line from Kiran to the linked ally (follows the ally) with its 3 s timer.
+ */
+function kiranVisuals(sim: Sim, eid: number): ChampionVisuals {
+  const { Pos, Unit } = sim.c;
+  const x = Pos.x[eid]!;
+  const y = Pos.y[eid]!;
+  const objects: VisualObject[] = [];
+  const f = peekState<Foresight>(sim, 'kiranForesight')?.get(eid);
+  const threadLeft = f ? f.until - sim.tick : 0;
+  if (f && threadLeft > 0 && Unit.alive[eid]) {
+    objects.push({ key: String(eid), tag: 'kiran_p_thread', x, y, r: 20, shape: 'line', x2: x + f.dx * THREAD_LEN, y2: y + f.dy * THREAD_LEN, left: threadLeft, total: sec(1), hidden: true });
+  }
+  const l = peekState<Link>(sim, 'kiranLink')?.get(eid);
+  if (l && l.until > sim.tick && Unit.alive[eid] && Unit.alive[l.ally] && Unit.serial[l.ally] === l.serial) {
+    objects.push({ key: String(eid), tag: 'kiran_e_link', x, y, r: 20, shape: 'line', x2: Pos.x[l.ally]!, y2: Pos.y[l.ally]!, follow: l.ally, left: l.until - sim.tick, total: sec(3) });
+  }
+  const passive = f ? (threadLeft > 0 ? { ready: true } : { ready: false, cdLeft: Math.max(0, f.next - sim.tick), cdTotal: FORESIGHT_TICKS }) : undefined;
+  return { objects, ...(passive ? { passive } : {}) };
+}
+
 export const hooks: ChampionHooks = {
+  visuals: kiranVisuals,
   onTick(sim, eid) {
     foresightTick(sim, eid);
     linkTick(sim, eid);

@@ -333,7 +333,7 @@ export function glassArm(c: PropCtx): void {
   const hand = rig.handR;
   const dir = norm(sub(hand.o, el));
   const b = frameYZ(el, dir, rig.chest.z);
-  markTip(c, hand.o, madd(hand.o, dir, 30));
+  markTip(c, hand.o, madd(hand.o, dir, 52));
   st.add(madd(hand.o, dir, 10), 3.5, (p) => {
     // gauntlet of glass shards encasing the forearm and running out into a long blade
     const shard = (o: V3, d: V3, l: number, w: number, side: number) => {

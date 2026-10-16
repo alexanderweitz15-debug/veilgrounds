@@ -5,13 +5,14 @@ import { query } from 'bitecs';
 import type { Sim } from '../sim';
 import { Kind, sec } from '../types';
 import { dealDamage } from '../damage';
-import { addBuff } from '../buffs';
+import { addBuff, buffs } from '../buffs';
 import { cosDeg, dist2 } from '../vec';
 import { championData, champIdOf } from './index';
 import { enemiesInRadius } from '../systems/abilities';
 import { destroyProjectile } from '../systems/projectiles';
 import type { AbilityData } from './schema';
-import type { ChampionHooks, EffectCtx } from './hooks';
+import type { ChampionHooks, ChampionVisuals, EffectCtx, UnitMark } from './hooks';
+import { peekState } from './util';
 
 // ------------------------------------------------------------------ shared helpers (Agent F hook files)
 
@@ -97,7 +98,44 @@ function dagnyTick(sim: Sim, eid: number): void {
     addBuff(sim, eid, { kind: 'stat', stat: 'ms', id: 'dagny_e', src: eid, pct: 30, ticks: 2 });
 }
 
+/** Half length and distance (beyond her radius) of the drawn E shield wall. */
+const WALL_HALF = 150;
+const WALL_GAP = 30;
+
+/**
+ * Snapshot visuals (read-only): passive auto counter (3rd auto = burst, empowered glow), E shield wall in front of her
+ * (oriented along the facing at cast, like the projectile block), W armor shred marks on enemies.
+ */
+function dagnyVisuals(sim: Sim, eid: number): ChampionVisuals {
+  const { Pos, Unit } = sim.c;
+  const v: ChampionVisuals = {};
+  const n = peekState<number>(sim, 'dagnyAutos')?.get(eid) ?? 0;
+  v.passive = { stacks: n, max: 3, ready: n >= 2 };
+  if (n >= 2 && Unit.alive[eid]) v.empowered = 4;
+  const w = peekState<Wall>(sim, 'dagnyWall')?.get(eid);
+  if (w && sim.tick < w.until && Unit.alive[eid]) {
+    const off = Unit.radius[eid]! + WALL_GAP;
+    const cx = Pos.x[eid]! + w.fx * off;
+    const cy = Pos.y[eid]! + w.fy * off;
+    v.objects = [{
+      key: `${eid}`, tag: 'dagny_e_wall', shape: 'wall', r: 18,
+      x: cx - w.fy * WALL_HALF, y: cy + w.fx * WALL_HALF, x2: cx + w.fy * WALL_HALF, y2: cy - w.fx * WALL_HALF,
+      left: w.until - sim.tick, total: sec(2),
+    }];
+    v.aura = 2;
+  }
+  const marks: UnitMark[] = [];
+  for (const t of unitsWhere(sim, (e) => !!Unit.alive[e])) {
+    for (const b of buffs(sim, t)) {
+      if (b.id === 'dagny_w_shred' && b.src === eid && b.until > sim.tick) marks.push({ target: t, id: 'dagny_w_shred', left: b.until - sim.tick });
+    }
+  }
+  if (marks.length) v.marks = marks;
+  return v;
+}
+
 export const hooks: ChampionHooks = {
+  visuals: dagnyVisuals,
   onTick: dagnyTick,
   passive: {
     dagny_glowing_shield: {

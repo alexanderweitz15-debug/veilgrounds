@@ -425,6 +425,17 @@ export function poseFor(kit: Kit, anim: Anim, frame: number): Pose {
       if (kit.hold === 'guard') p.crouch = Math.max(p.crouch, 0.25);
       const hitF = n >= 5 ? ATTACK_HIT : 1;
       p.sway = f < hitF ? 0.25 : f === hitF ? -0.45 : f === hitF + 1 ? -0.2 : 0.1;
+      // sprite revision: stronger anticipation on the coil (deeper crouch, more wind-up twist, weight back) and
+      // a little overshoot on the follow-through; keys and frame layout unchanged
+      if (f === hitF - 1) {
+        p.crouch = Math.min(0.7, p.crouch + 0.08);
+        p.twist *= 1.22;
+        p.lean -= 0.05;
+        p.bob -= 1.2;
+      } else if (f === hitF + 1) {
+        p.lean += 0.05;
+        p.twist *= 1.1;
+      }
       break;
     }
     case 'cast': {

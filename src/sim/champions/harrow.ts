@@ -3,15 +3,15 @@ import { query } from 'bitecs';
 import type { Sim } from '../sim';
 import { Kind, isMinion, isStructure, sec, type LaneId } from '../types';
 import { dealDamage } from '../damage';
-import { addBuff } from '../buffs';
+import { addBuff, hasBuff } from '../buffs';
 import { dist2 } from '../vec';
 import { effectAmount, enemiesInRadius } from '../systems/abilities';
 import { reward } from '../systems/economy';
 import { laneDir, laneGeo, lanePoint, laneProgress, setLanePath, spawnMinion } from '../systems/minions';
 import { towerState } from '../systems/towers';
 import { petsOf, trackLifetime } from '../summons';
-import type { ChampionHooks } from './hooks';
-import { hookState } from './util';
+import type { ChampionHooks, ChampionVisuals, UnitMark } from './hooks';
+import { hookState, peekState } from './util';
 
 interface HarrowState {
   /** Enemy minions near Harrow last tick: eid -> serial. */
@@ -66,7 +66,34 @@ function trackWaves(sim: Sim, eid: number, s: HarrowState): void {
   }
 }
 
+/** Read-only view of the summon lifetimes (src/sim/summons.ts keeps them private). */
+type PetLifetimes = { pets: Map<number, { serial: number; until: number; tag: string; owner: number }> } | undefined;
+
+/**
+ * Snapshot (read-only): cleared waves towards the next 40 gold (badge 0-3 of 4), E march aura + link to the enemy
+ * tower that gives the speed (bright while the bonus is active), remaining lifetime on each R siege minion.
+ */
+function harrowVisuals(sim: Sim, eid: number): ChampionVisuals {
+  const { Unit, Pos } = sim.c;
+  const s = peekState<HarrowState>(sim, 'harrow')?.get(eid);
+  const waves = (s?.waves ?? 0) % 4;
+  const v: ChampionVisuals = { passive: { stacks: waves, max: 4, ready: waves === 3 } };
+  if (s && sim.tick < s.marchUntil && Unit.alive[eid]) {
+    v.aura = 2;
+    const t = sim.state.towers ? nearestEnemyTower(sim, Unit.team[eid]!, Pos.x[eid]!, Pos.y[eid]!) : -1;
+    if (t >= 0) v.hints = [{ slot: 2, x: Pos.x[t]!, y: Pos.y[t]!, r: Unit.radius[t]! + 60, ok: hasBuff(sim, eid, 'stat', 'harrow_e'), link: true }];
+  }
+  const pets = (sim.state.summons as PetLifetimes)?.pets;
+  if (pets) {
+    const marks: UnitMark[] = [];
+    for (const [m, r] of pets) if (r.owner === eid && r.tag === SIEGE && Unit.alive[m] && Unit.serial[m] === r.serial && r.until > sim.tick) marks.push({ target: m, id: 'harrow_r_siege', left: r.until - sim.tick });
+    if (marks.length) v.marks = marks;
+  }
+  return v;
+}
+
 export const hooks: ChampionHooks = {
+  visuals: harrowVisuals,
   passive: {
     // +25 % damage to structures.
     harrow_besieger: {

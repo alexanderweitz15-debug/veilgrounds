@@ -7,11 +7,10 @@ import { Kind } from '../sim/types';
 import { PITCH } from './camera';
 import { CAST_FLEX, CAST_RELEASE, dirFromAngle, type Anim, type ChampionAtlas, type Dir } from './champions';
 import { champions } from '../data/champions';
+import { AFTER_MS, afterFrame } from './spriteTiming';
 
 /** How a cast plays: directed spells release forward, self buffs flex, dashes lunge. */
 export type CastKind = 'directed' | 'self' | 'dash';
-/** frame time of the follow-through frames after an attack's hit point / a cast's release */
-const AFTER_MS = 95;
 /** hit flinch: knock-back distance and duration */
 const FLINCH = 9;
 const FLINCH_MS = 150;
@@ -257,7 +256,7 @@ export class ChampionSprites {
     } else if (a.atkHit && nA && now - a.atkHit < (nA - hit) * AFTER_MS + 60 && (!e.moving || now - a.atkHit < AFTER_MS)) {
       // strike, follow-through, recover (moving during the backswing cancels it: orbwalking)
       anim = 'attack';
-      frame = Math.min(nA - 1, hit + Math.floor((now - a.atkHit) / AFTER_MS));
+      frame = hit + afterFrame(now - a.atkHit, nA - hit);
     }
     if (anim !== a.anim) {
       a.anim = anim;

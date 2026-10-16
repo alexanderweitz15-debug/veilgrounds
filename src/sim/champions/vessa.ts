@@ -7,8 +7,8 @@ import { dist2, segDist2 } from '../vec';
 import { inBush, LANES } from '../map';
 import { sees } from '../vision';
 import { alliedChampionsIn, effectAmount, rv } from '../systems/abilities';
-import type { ChampionHooks } from './hooks';
-import { hookState, isChampLike } from './util';
+import type { ChampionHooks, ChampionVisuals } from './hooks';
+import { hookState, isChampLike, peekState } from './util';
 import { query } from 'bitecs';
 
 interface VessaState {
@@ -47,14 +47,36 @@ function applyTrail(sim: Sim, eid: number): void {
   addBuff(sim, eid, { kind: 'stat', stat: 'ms', id: 'vessa_trail', src: eid, flat: n, ticks: 1 << 30 });
 }
 
+const MAX_STACKS = 10;
+
+/**
+ * Snapshot visuals (read-only): trail stacks (max 10) on the passive badge; E stalk window as an E aura while it
+ * lasts, the next auto shown empowered while it would ambush (fired from brush or unseen by the enemy team);
+ * a pending ambush slow as a mark on its target until the auto lands.
+ */
+function vessaVisuals(sim: Sim, eid: number): ChampionVisuals {
+  const s = peekState<VessaState>(sim, 'vessa')?.get(eid);
+  const v: ChampionVisuals = { passive: { stacks: s?.stacks ?? 0, max: MAX_STACKS, ready: (s?.stacks ?? 0) >= MAX_STACKS } };
+  if (!s || !sim.c.Unit.alive[eid]) return v;
+  if (sim.tick <= s.stalk) {
+    v.aura = 2;
+    const { Pos, Unit } = sim.c;
+    if (inBush(sim.map, Pos.x[eid]!, Pos.y[eid]!) >= 0 || !sees(sim, enemyOf(Unit.team[eid]!), eid)) v.empowered = 2;
+  }
+  // ambush mark until the slowing auto lands (cleared on hit; ignored once Vessa attacks something else)
+  if (s.ambush >= 0 && sim.c.Unit.alive[s.ambush] && sim.c.Atk.target[eid] === s.ambush) v.marks = [{ target: s.ambush, id: 'vessa_e_ambush' }];
+  return v;
+}
+
 export const hooks: ChampionHooks = {
+  visuals: vessaVisuals,
   passive: {
     vessa_trail: {
       // Monster kills: permanent stack (max 10), +1 % AS and +1 MS each.
       onKill(sim, eid, victim) {
         if (sim.c.Unit.kind[victim] !== Kind.Monster) return;
         const s = state(sim, eid);
-        s.stacks = Math.min(10, s.stacks + 1);
+        s.stacks = Math.min(MAX_STACKS, s.stacks + 1);
         applyTrail(sim, eid);
       },
       // E: an auto started from brush or unseen by the target's team slows 50 % for 2 s.

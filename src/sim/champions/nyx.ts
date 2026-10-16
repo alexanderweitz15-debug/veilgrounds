@@ -7,8 +7,8 @@ import { dist2 } from '../vec';
 import { seenByOthers } from '../vision';
 import { fireAbilityProjectile } from '../systems/projectiles';
 import { addGroundObject, groundObjects, removeGroundObject } from '../summons';
-import type { ChampionHooks } from './hooks';
-import { hookState } from './util';
+import type { ChampionHooks, ChampionVisuals } from './hooks';
+import { hookState, peekState } from './util';
 
 interface NyxState {
   /** W ambush window end (first auto from invisibility roots). */
@@ -29,7 +29,27 @@ const state = (sim: Sim, eid: number): NyxState => {
 const SEED = 'nyx_seed';
 const R_RANGE = 1200;
 
+/**
+ * Snapshot (read-only): P = number of own seeds on the HUD badge (the seeds are ground objects, hidden from enemies);
+ * W = ambush auto armed (empowered glow while the first auto from invisibility will root); R = veil range ring
+ * (1200, follows Nyx) with the 6 s timer + aura (R is a self cast without zone event).
+ */
+function nyxVisuals(sim: Sim, eid: number): ChampionVisuals {
+  const { Pos, Unit } = sim.c;
+  const s = peekState<NyxState>(sim, 'nyx')?.get(eid);
+  const seeds = groundObjects(sim, SEED, eid).length;
+  const out: ChampionVisuals = { passive: { stacks: seeds, ready: seeds > 0 } };
+  if (!s || !Unit.alive[eid]) return out;
+  if (sim.tick <= s.ambushUntil && hasStat(sim, eid, 'invisible')) out.empowered = 1;
+  if (sim.tick < s.rUntil) {
+    out.aura = 3;
+    out.objects = [{ key: String(eid), tag: 'nyx_r_veil', x: Pos.x[eid]!, y: Pos.y[eid]!, r: R_RANGE, shape: 'dome', left: s.rUntil - sim.tick, total: sec(6) }];
+  }
+  return out;
+}
+
 export const hooks: ChampionHooks = {
+  visuals: nyxVisuals,
   passive: {
     nyx_dark_seed: {
       // Killing the last monster of a camp leaves an invisible seed for 90 s.

@@ -9,8 +9,9 @@ import { displaceTo } from '../systems/abilities';
 import { spawnProjectile } from '../systems/projectiles';
 import { attackProjectileSpeed, canTarget, type AutoPayload } from '../systems/attack';
 import { setPetBehaviour, spawnPet } from '../summons';
-import type { ChampionHooks } from './hooks';
+import type { ChampionHooks, ChampionVisuals, VisualObject } from './hooks';
 import { stateMap, unitsWhere } from './dagny';
+import { peekState } from './util';
 
 const HARK = 'ottilie_hark';
 const RESPAWN = sec(30);
@@ -24,6 +25,9 @@ interface Pack {
   rUntil: number;
   /** W: scouting until this tick. */
   scoutUntil: number;
+  /** W: scout destination (render only). */
+  scoutX: number;
+  scoutY: number;
   /** Q: hunt focus (and a pending leap while `leap`). */
   hunt: number;
   huntSerial: number;
@@ -35,7 +39,7 @@ interface Pack {
 const packs = (sim: Sim): Map<number, Pack> => stateMap<Pack>(sim, 'ottiliePack');
 function pack(sim: Sim, eid: number): Pack {
   let p = packs(sim).get(eid);
-  if (!p) packs(sim).set(eid, (p = { hark: -1, serial: 0, respawnAt: 0, rUntil: 0, scoutUntil: 0, hunt: -1, huntSerial: 0, huntUntil: 0, leap: false, lastReady: 0 }));
+  if (!p) packs(sim).set(eid, (p = { hark: -1, serial: 0, respawnAt: 0, rUntil: 0, scoutUntil: 0, scoutX: 0, scoutY: 0, hunt: -1, huntSerial: 0, huntUntil: 0, leap: false, lastReady: 0 }));
   return p;
 }
 
@@ -132,7 +136,34 @@ function retreatShot(sim: Sim, eid: number, fx: number, fy: number): void {
   spawnProjectile(sim, { kind: 0, src: eid, team: Unit.team[eid]!, x: ox, y: oy, target: best, speed: attackProjectileSpeed(sim, eid) || 2000, payload });
 }
 
+const SCOUT = sec(6);
+const CALL = sec(8);
+
+/**
+ * Snapshot visuals (read-only): passive = Hark alive (ready) or his respawn timer; W scout destination pin with the
+ * scouting timer (own team only); Q leap line Hark -> hunted target while the leap is pending; R enlarged Hark mark.
+ */
+function ottilieVisuals(sim: Sim, eid: number): ChampionVisuals {
+  const p = peekState<Pack>(sim, 'ottiliePack')?.get(eid);
+  if (!p) return {};
+  const h = isRef(sim, p.hark, p.serial) ? p.hark : -1;
+  const v: ChampionVisuals = {
+    passive: h >= 0 ? { ready: true } : { ready: false, cdLeft: Math.max(0, p.respawnAt - sim.tick), cdTotal: RESPAWN },
+  };
+  if (h < 0) return v;
+  const { Pos } = sim.c;
+  const objects: VisualObject[] = [];
+  if (p.scoutUntil > sim.tick)
+    objects.push({ key: `${eid}`, tag: 'ottilie_w_scout', x: p.scoutX, y: p.scoutY, r: 60, shape: 'pin', left: p.scoutUntil - sim.tick, total: SCOUT, hidden: true });
+  else if (p.hunt >= 0 && p.leap && sim.tick < p.huntUntil && isRef(sim, p.hunt, p.huntSerial))
+    objects.push({ key: `${eid}`, tag: 'ottilie_q_leap', x: Pos.x[h]!, y: Pos.y[h]!, x2: Pos.x[p.hunt]!, y2: Pos.y[p.hunt]!, follow: p.hunt, r: 8, shape: 'line' });
+  if (objects.length) v.objects = objects;
+  if (p.rUntil > sim.tick) v.marks = [{ target: h, id: 'ottilie_r_call', left: p.rUntil - sim.tick }];
+  return v;
+}
+
 export const hooks: ChampionHooks = {
+  visuals: ottilieVisuals,
   onTick: packTick,
   passive: {
     ottilie_pack_hark: {
@@ -164,7 +195,9 @@ export const hooks: ChampionHooks = {
       const h = harkOf(sim, ctx.caster);
       if (ctx.phase !== 'cast' || h < 0) return;
       const p = pack(sim, ctx.caster);
-      p.scoutUntil = sim.tick + sec(6);
+      p.scoutUntil = sim.tick + SCOUT;
+      p.scoutX = ctx.x;
+      p.scoutY = ctx.y;
       p.hunt = -1;
       p.leap = false;
       sim.c.Vision.r[h] = 800;
@@ -181,7 +214,7 @@ export const hooks: ChampionHooks = {
     ottilie_r_hunting_call(sim, ctx) {
       if (ctx.phase !== 'cast') return;
       const p = pack(sim, ctx.caster);
-      p.rUntil = sim.tick + sec(8);
+      p.rUntil = sim.tick + CALL;
       if (harkOf(sim, ctx.caster) < 0) spawnHark(sim, ctx.caster, p);
     },
   },

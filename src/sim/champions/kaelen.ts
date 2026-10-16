@@ -2,11 +2,13 @@
 import type { Sim } from '../sim';
 import { Kind, sec } from '../types';
 import { dealDamage, lastCombatTick } from '../damage';
-import { addBuff, hasBuff, removeBuffs } from '../buffs';
+import { addBuff, buffs, hasBuff, removeBuffs } from '../buffs';
 import { dist2 } from '../vec';
-import { enemiesInRadius, reduceCooldown } from '../systems/abilities';
-import type { ChampionHooks } from './hooks';
-import { byLevel, hookState } from './util';
+import { cooldownLeft, enemiesInRadius, reduceCooldown } from '../systems/abilities';
+import { sees } from '../vision';
+import { query } from 'bitecs';
+import type { ChampionHooks, ChampionVisuals, HintMarker } from './hooks';
+import { byLevel, hookState, peekState } from './util';
 
 interface KaelenState {
   /** Follow-through armed until this tick. */
@@ -24,8 +26,39 @@ const state = (sim: Sim, eid: number): KaelenState => {
 
 const MARK = 'kaelen_mark';
 const OUT_OF_COMBAT = sec(1);
+const W_MARK_RANGE = 900;
+/** W cursor snap radius onto a marked enemy (kaelen_w_dash_to_mark). */
+const W_SNAP = 250;
+
+/**
+ * Snapshot (read-only): P follow-through armed = empowered auto + HUD timer; W = dash hints onto visible marked
+ * enemies (dimmed beyond 900 / on cooldown); R = aura while the vanish is pending or the kaelen_r invisibility runs
+ * (invisible buffs get no generic aura).
+ */
+function kaelenVisuals(sim: Sim, eid: number): ChampionVisuals {
+  const { Unit, Pos } = sim.c;
+  const s = peekState<KaelenState>(sim, 'kaelen')?.get(eid);
+  const out: ChampionVisuals = {};
+  const follow = s && s.follow >= sim.tick ? s.follow - sim.tick : 0;
+  out.passive = follow > 0 ? { ready: true, cdLeft: follow, cdTotal: sec(2) } : { ready: false };
+  if (follow > 0) out.empowered = 4;
+  const invis = buffs(sim, eid).some((b) => b.id === 'kaelen_r' && b.kind === 'stat' && b.stat === 'invisible' && b.until > sim.tick);
+  if ((s && s.vanish >= sim.tick) || invis) out.aura = 3;
+  if (!Unit.alive[eid]) return out;
+  const team = Unit.team[eid]!;
+  const wReady = cooldownLeft(sim, eid, 1) === 0;
+  const hints: HintMarker[] = [];
+  for (const t of query(sim.world, [Unit])) {
+    if (!Unit.alive[t] || Unit.team[t] === team || !hasBuff(sim, t, 'mark', MARK) || !sees(sim, team, t)) continue;
+    const near = dist2(Pos.x[t]!, Pos.y[t]!, Pos.x[eid]!, Pos.y[eid]!) <= W_MARK_RANGE * W_MARK_RANGE;
+    hints.push({ slot: 1, x: Pos.x[t]!, y: Pos.y[t]!, r: W_SNAP, ok: wReady && near, link: true });
+  }
+  if (hints.length) out.hints = hints;
+  return out;
+}
 
 export const hooks: ChampionHooks = {
+  visuals: kaelenVisuals,
   passive: {
     // After any own dash: next auto within 2 s deals bonus physical damage.
     kaelen_follow_through: {

@@ -3,11 +3,12 @@
 
 import type { Sim } from '../sim';
 import { Kind, isMinion, sec } from '../types';
-import { addBuff, hasBuff } from '../buffs';
+import { addBuff, buffs, hasBuff } from '../buffs';
 import { dir, dist2 } from '../vec';
 import { applyEffects, enemiesInRadius, enemiesOnSegment } from '../systems/abilities';
-import type { ChampionHooks } from './hooks';
+import type { ChampionHooks, ChampionVisuals, VisualObject } from './hooks';
 import { byLevel, stateMap, tickCtx, unitsWhere } from './dagny';
+import { peekState } from './util';
 
 const BURN = 'wren_embers';
 
@@ -56,6 +57,8 @@ interface Storm {
 }
 const storms = (sim: Sim): Map<number, Storm> => stateMap<Storm>(sim, 'wrenStorm');
 const STRIKE_GAP = sec(0.5);
+const SMOKE_TICKS = sec(2);
+const R_RADIUS = 450;
 
 /** Per-tick: R strikes 2..5 (each applies the generic damage; onAbilityHit ignites); smoke expiry. */
 function wrenTick(sim: Sim, eid: number): void {
@@ -64,13 +67,37 @@ function wrenTick(sim: Sim, eid: number): void {
   else if (sm) smokeTick(sim, sm);
   const s = storms(sim).get(eid);
   if (!s || sim.tick < s.next) return;
-  const ctx = tickCtx(sim, eid, 3, s.rank, enemiesInRadius(sim, eid, s.x, s.y, 450), s.x, s.y);
+  const ctx = tickCtx(sim, eid, 3, s.rank, enemiesInRadius(sim, eid, s.x, s.y, R_RADIUS), s.x, s.y);
   applyEffects(sim, ctx, 'hit');
   if (--s.left <= 0) storms(sim).delete(eid);
   else s.next += STRIKE_GAP;
 }
 
+/**
+ * Snapshot visuals (read-only): E smoke cloud (disc + timer), R firestorm area with the strikes still to come and the
+ * time until the last one, and a burn mark (time left) on every unit this Wren's embers are burning.
+ */
+function wrenVisuals(sim: Sim, eid: number): ChampionVisuals {
+  const v: ChampionVisuals = {};
+  const objects: VisualObject[] = [];
+  const sm = peekState<Smoke>(sim, 'wrenSmoke')?.get(eid);
+  if (sm && sim.tick < sm.until) objects.push({ key: `${eid}`, tag: 'wren_e_smoke', x: sm.x, y: sm.y, r: sm.r, shape: 'disc', left: sm.until - sim.tick, total: SMOKE_TICKS });
+  const st = peekState<Storm>(sim, 'wrenStorm')?.get(eid);
+  if (st && st.left > 0) {
+    const last = st.next + (st.left - 1) * STRIKE_GAP;
+    objects.push({ key: `${eid}`, tag: 'wren_r_storm', x: st.x, y: st.y, r: R_RADIUS, shape: 'ring', n: st.left, left: Math.max(0, last - sim.tick), total: 4 * STRIKE_GAP });
+  }
+  if (objects.length) v.objects = objects;
+  const { Unit } = sim.c;
+  for (const t of unitsWhere(sim, (e) => !!Unit.alive[e] && Unit.team[e] !== Unit.team[eid])) {
+    const b = buffs(sim, t).find((x) => x.kind === 'dot' && x.id === BURN && x.src === eid && x.until > sim.tick);
+    if (b) (v.marks ??= []).push({ target: t, id: BURN, left: b.until - sim.tick });
+  }
+  return v;
+}
+
 export const hooks: ChampionHooks = {
+  visuals: wrenVisuals,
   onTick: wrenTick,
   ownsHits: ['wren_w'],
   passive: {
@@ -106,7 +133,7 @@ export const hooks: ChampionHooks = {
       ctx.dash.dx = -ctx.dash.dx;
       ctx.dash.dy = -ctx.dash.dy;
       const { Pos } = sim.c;
-      wrenSmokes(sim).set(ctx.caster, { x: Pos.x[ctx.caster]!, y: Pos.y[ctx.caster]!, r: ctx.ability.radius ?? 250, until: sim.tick + sec(2) });
+      wrenSmokes(sim).set(ctx.caster, { x: Pos.x[ctx.caster]!, y: Pos.y[ctx.caster]!, r: ctx.ability.radius ?? 250, until: sim.tick + SMOKE_TICKS });
     },
     // Strike 1 = the cast resolution; strikes 2..5 every 0.5 s via onTick.
     wren_r_firestorm(sim, ctx) {

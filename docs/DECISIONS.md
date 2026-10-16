@@ -40,7 +40,7 @@ Offen: Die Champion-Zusammenstellung entscheidet mehr als die Seite (und als der
 | Laufweg Brunnen → Außenturm Mid / Seite (345 MS) | 21,9 s / 27,7 s | 23,0 s / 29,7 s | 23–30 s |
 | Nexus ↔ Nexus | 17536 | 17536 (Karte 16000 vs. LoL ≈ 14870) | 16400 |
 
-Seiten-Inhib-Türme bleiben, die Seitenlanes sind von Natur aus länger (Inhib→Außen 7400 vs. LoL ≈ 6200). Render: nur die Turmpositionen ändern sich (aus den Sim-Entities), Sprites unberührt. Last-Hit-Trainer setzt den Spieler jetzt relativ zum Mid-Außenturm aus den Kartendaten.
+Seiten-Inhib-Türme bleiben, die Seitenlanes sind von Natur aus länger (Inhib→Außen 7400 vs. LoL ≈ 6200). Render: nur die Turmpositionen ändern sich (aus den Sim-Entities), Sprites unberührt. Last-Hit-Trainer setzt den Spieler jetzt relativ zum Mid-Außenturm aus den Kartendaten. Phase-1-Abnahme: weiter 107 ankommende Minions; der Skript-Last-Hitter lief mit den näheren Türmen in die gegnerische Turmreichweite (52 CS < 60) und hält jetzt 1000 Abstand zum gegnerischen Außenturm (73 CS, vorher 66).
 
 **Toplane-Terrain.** Neue Viertel-Wand: Klippe am Kartenrand entlang der Toplane (x ≤ 380–560, y 3700 bis zur Ecke) – über Tausch/Spiegelung auch Botlane und Rots Hälften, Ecke rund – plus 2 Lane-Büsche auf der Außenseite (780, 9700) / (820, 12900). Lane jetzt 1300–1400 breit zwischen den Wänden (vorher bis Kartenrand ≈ 1950–2200, LoL 1300–1600); Isoldes E findet auf beiden Seiten Wände. Alle Lane-Linien (±150 seitlich) bleiben frei, Lager/Objectives erreichbar (map-/jungle-Tests).
 
@@ -48,7 +48,7 @@ Seiten-Inhib-Türme bleiben, die Seitenlanes sind von Natur aus länger (Inhib�
 
 **Kollision.** Ein laufender Champion, der auf einen stehenden (oder entgegenkommenden) Champion trifft, wird tangential um ihn herumgeschoben (Senkrechte zur Laufrichtung, zur freien Seite; exakt frontal: feste Seite relativ zur Laufrichtung, spiegelsymmetrisch) und übernimmt 80 % der Korrektur. Vorher frontal blockiert, ohne Ende. Test in `mechanics.test.ts` (900 Weg, Umweg ≤ 10 Ticks).
 
-**Rang-Siegquote** (nach allen Änderungen, `--mirror`, Seeds 51–54): RANKRESULTS
+**Rang-Siegquote** (nach allen Änderungen, `--mirror`, Seeds 51–54): Gold vs. Silber **4/8**, Diamant vs. Gold **4/8** (Ziel ≳ 65 % / ≳ 80 %: **nicht erreicht**, Profile nicht getunt). In den gespiegelten Paaren gewinnt meist dieselbe Aufstellung beide Spiele – die Champion-Zusammenstellung überwiegt den Rang. Diamant farmt weiter weniger als Gold (alle Rollen 2,58 vs. 3,03 CS/min; Top 4,17 vs. 4,52, ADC 4,17 vs. 5,00, Mid 2,25 vs. 2,89) bei gleicher Recall-Rate (0,30 vs. 0,31/min) und kaum Roams (0,02/min) – Ursache also nicht Roams/Recalls, sondern vermutlich mehr Trades/Bestrafen in der Lane (Trade-Auslöser Diamant+) und Shove-first; nächster Schritt: CS-Verlust pro Ursache messen (tools/scratch csloss-Ansatz) und Champion-Stärke zwischen den Aufstellungen angleichen. Pacing nach dem Turm-Umbau (diese 16 Spiele, vor Leine/Randklippe): Länge ≈ 33 min, erster Turm Ø 19,7 min (vorher 19,8), Kills ≈ 20 pro Spiel – Ziele 12–16 min / 40–60 Kills weiter offen.
 
 Werkzeug: `npm run bot-sim -- --sides` (neu) trennt Seiten- von Aufstellungs-Effekten.
 

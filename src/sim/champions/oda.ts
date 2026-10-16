@@ -68,6 +68,18 @@ function stoneTick(sim: Sim, eid: number): void {
 }
 
 export const hooks: ChampionHooks = {
+  // Snapshot (read-only): the 800 spring-water aura as a ring around Oda; HUD counts allies it currently heals.
+  visuals(sim, eid) {
+    const { Pos, Hp, Unit } = sim.c;
+    if (!Unit.alive[eid]) return { passive: { stacks: 0, ready: false } };
+    const x = Pos.x[eid]!;
+    const y = Pos.y[eid]!;
+    const healing = alliedChamps(sim, eid).filter((a) => dist2(Pos.x[a]!, Pos.y[a]!, x, y) <= AURA * AURA && Hp.cur[a]! < Hp.max[a]!).length;
+    return {
+      objects: [{ key: `${eid}`, tag: 'oda_p_spring', x, y, r: AURA, shape: 'ring' }],
+      passive: { stacks: healing, ready: healing > 0 },
+    };
+  },
   onTick(sim, eid) {
     springWater(sim, eid);
     stoneTick(sim, eid);

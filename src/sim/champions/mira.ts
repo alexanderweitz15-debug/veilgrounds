@@ -4,6 +4,7 @@ import type { Sim } from '../sim';
 import { sec } from '../types';
 import { extendBuff } from '../buffs';
 import type { ChampionHooks } from './hooks';
+import { peekState } from './util';
 
 /** Autos fired since the last double shot (0..2), per eid. */
 function counter(sim: Sim): Map<number, number> {
@@ -21,6 +22,12 @@ const Q_EXTEND = sec(0.5);
 const Q_MAX = sec(8);
 
 export const hooks: ChampionHooks = {
+  // Snapshot (read-only): Doppelzug counter on the HUD badge (autos 0..2 of 3); the third shot glows as empowered
+  // (also right after E, which arms it). Q extension = the generic mira_q aura/buff timer.
+  visuals(sim, eid) {
+    const n = peekState<number>(sim, 'miraPassive')?.get(eid) ?? 0;
+    return { passive: { stacks: n, max: 3, ready: n >= 2 }, ...(n >= 2 ? { empowered: 4 } : {}) };
+  },
   passive: {
     // Doppelzug: every third auto fires a second arrow for 50 %.
     doppelzug: {

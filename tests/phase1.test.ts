@@ -100,7 +100,6 @@ describe('Phase 1 acceptance', () => {
     console.log(`enemy minions arriving in lane by 10:00: ${arriving.size}`);
     expect(arriving.size).toBeGreaterThanOrEqual(107);
     console.log(`CS at 10:00: ${cs}, level ${sim.c.Champ.level[me]}, gold ${Math.round(sim.c.Champ.gold[me]!)}`);
-    // TODO(balance agent): back to 60 once the minion/tower WIP is tuned (temporarily 50 to unblock the Pages deploy)
-    expect(cs).toBeGreaterThanOrEqual(50); // greedy script; a human with pre-hitting gets more
+    expect(cs).toBeGreaterThanOrEqual(60); // greedy script; a human with pre-hitting gets more
   }, 300_000);
 });

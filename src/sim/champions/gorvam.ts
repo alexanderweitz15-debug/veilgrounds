@@ -3,11 +3,17 @@ import { sec } from '../types';
 import { addBuff } from '../buffs';
 import { cancelCast, displace } from '../systems/abilities';
 import type { ChampionHooks } from './hooks';
-import { hookState } from './util';
+import { hookState, peekState } from './util';
 
 const PULL_TICKS = sec(1.5);
 
 export const hooks: ChampionHooks = {
+  // Passive badge counts autos 0..3; the 4th (slowing) auto glows as an empowered auto.
+  visuals(sim, eid) {
+    const n = peekState<number>(sim, 'gorvamChains')?.get(eid) ?? 0;
+    const next = n === 3;
+    return { passive: { stacks: n, max: 4, ready: next }, ...(next && sim.c.Unit.alive[eid] ? { empowered: 4 } : {}) };
+  },
   passive: {
     // Every 4th auto slows its target by 40 % for 1 s.
     gorvam_heavy_chains: {

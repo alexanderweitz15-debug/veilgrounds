@@ -5,8 +5,9 @@ import { Kind, sec } from '../types';
 import { addBuff } from '../buffs';
 import { dealDamage } from '../damage';
 import { applyEffects, enemiesInRadius, setCooldown } from '../systems/abilities';
-import type { ChampionHooks, EffectCtx } from './hooks';
+import type { ChampionHooks, ChampionVisuals, EffectCtx, UnitMark, VisualObject } from './hooks';
 import { abilityOf, byLevel, stateMap, tickCtx } from './dagny';
+import { peekState } from './util';
 
 // ------------------------------------------------------------------ sparks
 
@@ -75,7 +76,36 @@ function burst(sim: Sim, ctx: EffectCtx): void {
   if (others.length) applyEffects(sim, { ...ctx, hits: others }, 'hit');
 }
 
+const SPARK_MAX = 3;
+const RAIN_GAP = sec(0.25);
+
+/**
+ * Snapshot (read-only): P = spark pips (n/3, 4 s timer) on every target carrying Lio's sparks, HUD badge = most sparks
+ * on one target (ready when the next hit detonates); R = the rain area (no zone event: skillshot_circle without delay)
+ * with the strikes left, plus the per-target hit count of this rain (3rd hit stuns).
+ */
+function lioVisuals(sim: Sim, eid: number): ChampionVisuals {
+  const { Unit } = sim.c;
+  const marks: UnitMark[] = [];
+  let best = 0;
+  const sparks = peekState<Map<number, Spark>>(sim, 'lioSparks')?.get(eid);
+  for (const [t, s] of sparks ?? []) {
+    if (s.serial !== Unit.serial[t] || s.until <= sim.tick || !Unit.alive[t]) continue;
+    marks.push({ target: t, id: 'lio_p_spark', n: s.count, max: SPARK_MAX, left: s.until - sim.tick });
+    best = Math.max(best, s.count);
+  }
+  const objects: VisualObject[] = [];
+  const r = peekState<Rain>(sim, 'lioRain')?.get(eid);
+  if (r && r.left > 0) {
+    const left = Math.max(0, r.next - sim.tick) + (r.left - 1) * RAIN_GAP;
+    objects.push({ key: String(eid), tag: 'lio_r_rain', x: r.x, y: r.y, r: abilityOf(sim, eid, 3).radius ?? 400, shape: 'disc', left, total: 4 * RAIN_GAP, n: r.left });
+    for (const [t, n] of r.count) if (Unit.alive[t] && n < 3) marks.push({ target: t, id: 'lio_r_hits', n, max: 3 });
+  }
+  return { marks, objects, passive: { stacks: best, max: SPARK_MAX, ready: best >= SPARK_MAX - 1 } };
+}
+
 export const hooks: ChampionHooks = {
+  visuals: lioVisuals,
   onTick: lioTick,
   passive: {
     lio_spark_load: {

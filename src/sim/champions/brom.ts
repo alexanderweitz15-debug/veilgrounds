@@ -5,8 +5,8 @@ import { dealDamage, heal } from '../damage';
 import { addBuff, hasBuff } from '../buffs';
 import { dist2 } from '../vec';
 import { champAbil, effectAmount, setCooldown } from '../systems/abilities';
-import type { ChampionHooks } from './hooks';
-import { hookState } from './util';
+import type { ChampionHooks, UnitMark } from './hooks';
+import { hookState, peekState } from './util';
 
 interface Bleed {
   serial: number;
@@ -45,7 +45,22 @@ function addStacks(sim: Sim, brom: number, t: number, n: number): void {
   });
 }
 
+/** E passive armor pen buff. No `brom_` prefix: the snapshot would otherwise draw a permanent E aura ring. */
+const E_PEN_ID = 'bromEPen';
+
 export const hooks: ChampionHooks = {
+  // Bleed stacks as pips on each target; passive badge = highest stack count, glowing while one target is at 5 (heals).
+  visuals(sim, eid) {
+    const { Unit } = sim.c;
+    const marks: UnitMark[] = [];
+    let top = 0;
+    for (const [t, b] of peekState<Map<number, Bleed>>(sim, 'bromBleed')?.get(eid) ?? []) {
+      if (b.serial !== Unit.serial[t] || !Unit.alive[t] || b.until <= sim.tick || b.stacks <= 0) continue;
+      marks.push({ target: t, id: 'brom_p_bleed', n: b.stacks, max: MAX_STACKS, left: b.until - sim.tick });
+      top = Math.max(top, b.stacks);
+    }
+    return { marks, passive: { stacks: top, max: MAX_STACKS, ready: top >= MAX_STACKS } };
+  },
   passive: {
     // Every ability hit adds a bleed stack (8 phys/s per stack, 5 s, max 5); at 5 stacks each tick heals Brom.
     brom_bleed: {
@@ -57,8 +72,8 @@ export const hooks: ChampionHooks = {
   onTick(sim, eid) {
     const { Unit, Hp } = sim.c;
     // E passive: 25 % armor penetration while E is learned (buff is lost on death, re-added here)
-    if (Unit.alive[eid] && champAbil(sim, eid).ranks[2]! > 0 && !hasBuff(sim, eid, 'stat', 'brom_e_pen'))
-      addBuff(sim, eid, { kind: 'stat', stat: 'armorPen', id: 'brom_e_pen', src: eid, pct: 25, ticks: 1 << 30 });
+    if (Unit.alive[eid] && champAbil(sim, eid).ranks[2]! > 0 && !hasBuff(sim, eid, 'stat', E_PEN_ID))
+      addBuff(sim, eid, { kind: 'stat', stat: 'armorPen', id: E_PEN_ID, src: eid, pct: 25, ticks: 1 << 30 });
     const m = bleeds(sim, eid);
     for (const [t, b] of [...m]) {
       if (b.serial !== Unit.serial[t] || !Unit.alive[t] || b.until < sim.tick) {

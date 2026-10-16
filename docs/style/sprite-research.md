@@ -184,11 +184,28 @@ g) **Teamfarbe nur am Bodenring:** Körperfarbe bleibt Champion-Identität. *(Lo
 
 h) **Pinseltextur nur in Größen, die bei 112 px überleben:** große Flächen, kein Feinrauschen. *(Dota-Guide: Detailmaßstab relativ zur Spielgröße, große ruhige Flächen lesen besser; Angstadt: Entsättigungs-Test.)*
 
-## 5. Umsetzung (Stand Revision 1)
+## 5. Umsetzung (Stand Revision 2)
 
-Siehe `docs/style/revision/` (vorher/nachher). Umgesetzt in `src/render/champions/atlas.ts` (`finishFigure`: Wert-/Sättigungsverlauf
-aus der echten Figurenhöhe, Fokuslicht Kopf + Waffe, warmes Sonnen-Randlicht + kühle Himmelskante, schattenseitig schwerere Kontur,
-deckender Smear-Bogen am Trefferframe von chop/slash/swipe/bash/thrust), `core.ts` (Detail-Schwelle für Maserung/Kratzer/Nähte/Falten,
-Innenlinien 0,72x, hellere Lichtseite), `humanoid.ts` (Champions: Kopf x1,1, Hände x1,15; Minions unverändert) und `props*.ts`
-(Waffenspitze via `markTip` für den Smear). Bekannte Grenze: W/SW/NW sind gespiegelte Zellen, ihr Randlicht liegt daher gespiegelt
-(das Randlicht ist deshalb überwiegend von oben gerichtet, damit der Unterschied klein bleibt).
+Bilder: `docs/style/revision/` (vorher/nachher; Labor: `tools/scratch/spriteRevision.html`).
+
+- `src/render/champions/atlas.ts` (`finishFigure`, alle Durchgänge nur im Begrenzungsrahmen der Figur):
+  Wert-/Sättigungsverlauf aus der echten Figurenhöhe (Beine Richtung Grauviolett, Sohlen dunkel), Fokuslicht auf
+  Kopf und Waffe, warmes Sonnen-Randlicht **von oben** (Kopf, Schultern, erhobene Waffen) und eine Außenkontur, die
+  **zum Boden hin** schwerer ist. Beides ist spiegelsicher: W/SW/NW sind gespiegelte E/SE/NE-Zellen, ein seitliches
+  Randlicht oder eine seitlich gewichtete Kontur würde dort die Seite wechseln. Die kühle Himmelsfüllung steckt in den
+  violetten Schattentönen der Teile (`core.ts`); eine eigene kühle Kante gibt es nicht mehr (sie wirkte als heller Hof).
+- Smear am Trefferframe: Bogen hinter der Waffenspitze bei chop/slash/bash, bei kurzen Waffen (Klauen, swipe) über
+  den ganzen Handweg mit Mindestbreite, bei thrust zwei Speed-Lines neben der Waffe (Lanzen, die aus der Zelle ragen,
+  bekommen die Linien am sichtbaren Teil). Deckend, weil die Sprites mit `alphaTest: 0.5` gezeichnet werden.
+- `src/render/champions/anim.ts`: stärkere Vorspannung im Ausholframe (tiefer, mehr Verdrehung, Gewicht zurück),
+  leichtes Überschwingen im Nachschwung. Frame-Anzahl und Trefferframe unverändert.
+- `src/render/spriteTiming.ts` (genutzt von `championSprites.ts`): Trefferframe wird gehalten (1,5x), Erholung kürzer;
+  die Gesamtdauer des Nachschwungs bleibt gleich, der Trefferframe beginnt weiter exakt auf dem Schadens-Tick
+  (`tests/spriteTiming.test.ts`).
+- `core.ts`: Detail-Schwelle für Maserung/Kratzer/Nähte/Falten, Innenlinien 0,72x, hellere Lichtseite.
+- `humanoid.ts`: Champions Kopf x1,1, Hände x1,15 (Minions unverändert). `props*.ts`: Waffenspitze via `markTip`.
+- Bake-Zeit: Begrenzungsrahmen statt Vollbild, 8 statt 12 Kontur-Abgriffe, Sättigung im selben Verlauf statt eigenem
+  Blend-Durchgang. Ergebnis siehe `docs/style/revision/README.md`.
+
+Bekannte Grenze: die Schattierung der einzelnen Teile (Licht oben rechts) ist in gespiegelten Zellen weiterhin
+gespiegelt; das lässt sich nur mit `mirror: false` (rund +60 % Bake-Jobs) beheben.

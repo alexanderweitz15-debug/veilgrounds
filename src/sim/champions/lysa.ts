@@ -4,7 +4,8 @@
 import type { Sim } from '../sim';
 import { sec } from '../types';
 import { addBuff, removeBuffs } from '../buffs';
-import type { ChampionHooks } from './hooks';
+import type { ChampionHooks, ChampionVisuals } from './hooks';
+import { peekState } from './util';
 import { dir } from '../vec';
 import { applyEffects, enemiesOnSegment, rv } from '../systems/abilities';
 import { abilityOf, isChamp, stateMap, tickCtx } from './dagny';
@@ -50,7 +51,23 @@ function wireTick(sim: Sim, eid: number): void {
 const pierced = (sim: Sim): Map<number, number> => stateMap<number>(sim, 'lysaPierced');
 
 
+/**
+ * Snapshot (read-only): P = thread stacks on the HUD badge (n/8, timer until they lapse) and as pips on the current
+ * target. E's wire is already drawn by the generic zone event (telegraph HOOK_LINE 'perpendicular'); not duplicated.
+ */
+function lysaVisuals(sim: Sim, eid: number): ChampionVisuals {
+  const t = peekState<Thread>(sim, 'lysaThread')?.get(eid);
+  const left = t ? STACK_TICKS - (sim.tick - t.last) : 0;
+  if (!t || left <= 0 || t.stacks <= 0) return { passive: { stacks: 0, max: MAX_STACKS } };
+  const alive = !!sim.c.Unit.alive[t.target] && sim.c.Unit.serial[t.target] === t.serial;
+  return {
+    passive: { stacks: t.stacks, max: MAX_STACKS, ready: t.stacks >= MAX_STACKS, cdLeft: left, cdTotal: STACK_TICKS },
+    ...(alive ? { marks: [{ target: t.target, id: 'lysa_p_thread', n: t.stacks, max: MAX_STACKS, left }] } : {}),
+  };
+}
+
 export const hooks: ChampionHooks = {
+  visuals: lysaVisuals,
   onTick: wireTick,
   ownsHits: ['lysa_e', 'lysa_r'],
   passive: {

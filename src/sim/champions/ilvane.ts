@@ -1,13 +1,28 @@
 // Ilvane hooks. Contract: ./hooks.ts, behaviour list: docs/champion-hooks.md.
 import { sec } from '../types';
 import { dealDamage } from '../damage';
-import { addBuff, hasBuff, removeBuffs } from '../buffs';
-import type { ChampionHooks } from './hooks';
+import { query } from 'bitecs';
+import { addBuff, buffs, hasBuff, removeBuffs } from '../buffs';
+import type { ChampionHooks, ChampionVisuals } from './hooks';
 import { byLevel } from './util';
 
 const MARK = 'ilvane_thread';
 
 export const hooks: ChampionHooks = {
+  // Snapshot (read-only). The thread marks are 'mark' buffs (generic diamond on the target). Badge: number of living
+  // units carrying her mark (glows while an auto can consume one). E: 0.4 s projectile immunity has no stat value, so
+  // it gets an explicit aura.
+  visuals(sim, eid) {
+    const { Unit } = sim.c;
+    let marked = 0;
+    for (const t of query(sim.world, [Unit])) {
+      if (!Unit.alive[t]) continue;
+      if (buffs(sim, t).some((b) => b.kind === 'mark' && b.id === MARK && b.src === eid && b.until > sim.tick)) marked++;
+    }
+    const v: ChampionVisuals = { passive: { stacks: marked, ready: marked > 0 } };
+    if (Unit.alive[eid] && hasBuff(sim, eid, 'stat', 'ilvane_e')) v.aura = 2;
+    return v;
+  },
   passive: {
     // Thread mark: an auto on a marked target consumes the mark for bonus magic damage and 20 % MS for 1 s.
     ilvane_thread_mark: {

@@ -49,3 +49,19 @@ branch shows. Nothing is merged yet; no gate has been measured yet.
 5. Browser check after C/D merges: built-in browser pane on `vite preview` for now; no Playwright dependency yet.
 6. A2/A3/B/C were spawned minutes before the check (reading phase); verify pushes at the next status pass.
 7. tests/phase1.test.ts keeps 60 as the hard floor; B's report must show the measured value (>= 73, AGENTS-PLAN B8).
+
+## Stop 16 Oct (user at usage limit)
+
+All agents stopped by the lead on the user's request. Every worktree's state was committed and pushed to its branch; commits titled "WIP: agent stopped ... NOT tested" are untested. Nothing from the agent branches is merged to main yet (main stays green and deployable).
+
+| Branch | Head | Commits ahead of main | State |
+|---|---|---|---|
+| brain/a1-reflex | 227ab5b | 4 | Phase 0 metrics + plan-api done; Phase 1 WIP untested |
+| brain/a2-utility | 876c9ad | 5 | utility scaffold behind BOT_UTILITY (flag off = bit-identical per agent); last WIP untested |
+| brain/a3-humanize | e08e396 | 6 | attention model, error episodes, F9 overlay; full suite green; supervisor review was running |
+| sim/b-mechanics | 39da7a5 | 5 | B1 ward stealth / B3 snapshot WIP, last commit untested |
+| ui/c-features | 54410f9 | 7 | C1 FEATURE-GAP + wind-down docs; C2 status in docs/agents/c.md |
+| art/d-visuals | 77a7bc5 | 1 | D1 started, WIP untested |
+| champ/e-sev | 688580b | 2 | Sev spec saved; no Sev code yet |
+
+Next session: read each docs/agents/<name>-handoff.md, run tsc + vitest per branch in a clean worktree, merge in order A3 -> B -> A1 -> A2 -> C -> D -> E, push.

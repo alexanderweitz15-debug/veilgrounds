@@ -1,0 +1,25 @@
+{
+  "note": "Target values of docs/BRAIN-REWORK.md for npm run bot-sim -- --report. Anchors at Iron/Gold/Diamond/Challenger (rank index 0/3/6/9), other ranks interpolated linearly between two given anchors; null = no target given in the prompt. type: target = within +-tolerance, max = at most target*(1+tol), min = at least target*(1-tol). Source section in 'src'.",
+  "tolerance": 0.1,
+  "anchors": { "iron": 0, "gold": 3, "diamond": 6, "challenger": 9 },
+  "metrics": {
+    "lanerCsPerMin15": { "label": "Laner CS/min at 15:00", "src": "§1", "type": "target", "values": { "iron": 4.8, "gold": 6.5, "diamond": 7.4, "challenger": 8.2 } },
+    "lanerCsPerMinEnd": { "label": "Laner CS/min game end", "src": "§1", "type": "target", "values": { "iron": 5.0, "gold": 6.8, "diamond": 7.7, "challenger": 8.6 } },
+    "killsPerGame": { "label": "Kills per game (both teams)", "src": "§1", "type": "target", "values": { "iron": 55, "gold": 50, "diamond": 44, "challenger": 40 } },
+    "firstTowerMin": { "label": "First tower (min)", "src": "§1", "type": "target", "values": { "iron": 16, "gold": 14, "diamond": 13, "challenger": 12 } },
+    "gameMin": { "label": "Game length (min, decided games)", "src": "§1", "type": "target", "values": { "iron": 33, "gold": 31, "diamond": 29, "challenger": 26 } },
+    "attackUtil": { "label": "Laner attack utilisation 2:00-14:00", "src": "§1", "type": "target", "values": { "iron": 0.35, "gold": 0.5, "diamond": 0.6, "challenger": 0.68 } },
+    "idleShare": { "label": "Laner idle share (targets in reach)", "src": "§1", "type": "max", "values": { "iron": 0.25, "gold": 0.1, "diamond": 0.04, "challenger": 0.02 } },
+    "harassPerMin": { "label": "Laner harass autos/min (no trade)", "src": "§4.3/4.7", "type": "target", "values": { "iron": 2, "gold": 6, "diamond": 10, "challenger": 12 } },
+    "laningKillShare": { "label": "Share of kills before 14:00", "src": "§6.4", "type": "target", "values": { "iron": 0.35, "gold": 0.3, "diamond": 0.25, "challenger": 0.22 } },
+    "deathsNoChampShare": { "label": "Deaths without enemy champion", "src": "§6.4", "type": "max", "values": { "iron": 0.08, "gold": 0.04, "diamond": 0.01, "challenger": 0.01 } },
+    "tradeS": { "label": "Average trade duration (s)", "src": "§6.4", "type": "target", "values": { "iron": 5, "gold": 4, "diamond": 3, "challenger": 2.5 } },
+    "platesPerTeam14": { "label": "Plates per team by 14:00", "src": "§7.1", "type": "target", "values": { "iron": null, "gold": 4, "diamond": 6, "challenger": 8 } },
+    "absenceLoss15": { "label": "Absence CS loss share of lane minions to 15:00", "src": "§4.6", "type": "max", "values": { "iron": null, "gold": 0.12, "diamond": null, "challenger": null } }
+  },
+  "gates": {
+    "phase1": { "laneAloneCs10": { "iron": 70, "gold": 88, "challenger": 100 }, "attackUtilGold": 0.5 },
+    "phase2": { "harassAutos14PerLaner": 40, "killsPerGame": 42, "lanerCsPerMin15": 5.0 },
+    "phase3": { "lanerCsPerMin15": 6.0, "absenceLoss15": 0.15, "firstTowerMin": 15, "idleShare": 0.12 }
+  }
+}

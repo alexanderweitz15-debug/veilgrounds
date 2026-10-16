@@ -11,7 +11,7 @@ import type { PlayerSetup, SimConfig, SimEvent, TeamId, TickInput } from '../sim
 import { CHAMPION_DATA, championData } from '../sim/champions';
 import { botRunes } from '../sim/items/runes';
 import { profileAt, profileOf } from './profiles';
-import { buildBotParams, defaultPersonalitySeed } from './params';
+import { buildBotParams, defaultPersonalitySeed, nominalSkill } from './params';
 import { BotDecisionLog, debugRows, type BotDebugRow } from './log';
 import type { Rank } from './profiles/schema';
 import { BUILDS } from './bot/builds';
@@ -42,6 +42,23 @@ interface BotSlot {
 
 export const isBotSlot = (p: PlayerSetup): boolean => !p.isHuman && !!p.bot;
 
+/** Measurement options (tools/botSim.ts, tests). None of them changes a decision. */
+export interface RunnerOptions {
+  /** --variance=0: every bot plays its nominal rank profile (the variance roll is still drawn, so the rng streams and
+   *  everything else stay identical; only the rolled offset is discarded). */
+  noVariance?: boolean;
+  /** Wall clock (ms) for the think / reflex cost metrics. Only read when given; never feeds a decision. */
+  clock?: () => number;
+}
+
+/** Accumulated brain cost (bot-sim reflexCostMs / thinkCostMs). */
+export interface RunnerCost {
+  thinkMs: number;
+  thinks: number;
+  reflexMs: number;
+  reflexCalls: number;
+}
+
 export class BotRunner {
   readonly bots: BotSlot[] = [];
   /** Commands scheduled for a future tick (reaction delay, last-hit timing), in insertion order. */
@@ -53,14 +70,25 @@ export class BotRunner {
   readonly log = new BotDecisionLog(100_000, 50 * 1024 * 1024, LOG_DEDUP_TICKS);
   /** Team AI per team (spec-bots §8, Agent M): desires re-evaluated at the macro interval. */
   readonly teams: [TeamAI, TeamAI];
+  /** Brain cost, only accumulated with RunnerOptions.clock. */
+  readonly cost: RunnerCost = { thinkMs: 0, thinks: 0, reflexMs: 0, reflexCalls: 0 };
+  private readonly clock: (() => number) | undefined;
 
-  constructor(config: SimConfig, private readonly brain: Brain = think) {
+  constructor(config: SimConfig, private readonly brain: Brain = think, opts: RunnerOptions = {}) {
+    this.clock = opts.clock;
     const rng = new Rng((config.seed ^ 0x5eed_b075) >>> 0);
     this.teams = [new TeamAI(0, staticMap(), config.players, config.seed, this.log), new TeamAI(1, staticMap(), config.players, config.seed, this.log)];
     for (const p of [...config.players].sort((a, b) => a.slot - b.slot)) {
       if (!isBotSlot(p)) continue;
       // spec-bots §10: rank profile -> variance -> champion bias (rolled only) -> playstyle axes (src/ai/params.ts)
-      const params = buildBotParams(p, rng, config.seed);
+      let params = buildBotParams(p, rng, config.seed);
+      const nominal = nominalSkill(p.bot!);
+      if (opts.noVariance) {
+        const np = profileAt(nominal);
+        params = { ...params, rank: np.rank, skill: nominal, behavior: np.behavior, hysteresis: np.behavior.hysteresis };
+      }
+      // rework §8: the per-game variance offset is in the log (and switchable with --variance=0)
+      this.log.push({ tick: 0, bot: p.slot, node: 'variance', inputs: { nominal: Math.round(nominal * 10) / 10, skill: Math.round(params.skill * 10) / 10 }, chosen: params.rank, reason: opts.noVariance ? 'variance off (nominal profile)' : `per-game offset ${(params.skill - nominal).toFixed(1)} skill` });
       const profile = profileAt(params.skill);
       const champ = championData(p.champion);
       const ctx: BotStatic = {
@@ -142,7 +170,12 @@ export class BotRunner {
       b.eventTicks = [];
       this.onPerceive?.(b.ctx.slot, snap);
       const prevMode = b.mem.mode;
+      const t0 = this.clock?.() ?? 0;
       const actions = this.brain(snap, b.ctx, b.mem, b.rng);
+      if (this.clock) {
+        this.cost.thinkMs += this.clock() - t0;
+        this.cost.thinks++;
+      }
       // drop queued orders whose tag the brain cancelled (orbwalk plans superseded by a dodge / retreat)
       if (b.mem.cancelTags.size) {
         const slot = b.ctx.slot;

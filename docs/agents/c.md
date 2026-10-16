@@ -12,8 +12,8 @@ Branch `ui/c-features` (base `0bbc3d0`). Spec: docs/AGENTS-PLAN.md §5 (C1-C7). 
 | C4 pings + chat | `28c5ab5` | – |
 | C6 post-game (without A3 parts) | `17f1a41` | – |
 
-Not merged-ready yet: B1 minimap symbol for revealed enemy wards (in the next commit, inert until B1's `stealth` field
-is on main), C5, C7.
+Also merge-ready: `f31d89f` (minimap symbol for revealed enemy wards, B1's request - inert until B1's `stealth`
+field is on main; screenshots; docs). Wind-down on lead's request: C5 and C7 not started (next steps below).
 
 ## Block 1 (2026-10-16): C1-C4, C6 part 1
 
@@ -45,7 +45,9 @@ is on main), C5, C7.
 | docs/ist/c2-minimap-after.jpg | death bar above the minimap, target frame (ally Dagny), objective timers under the top bar |
 | docs/ist/c2-scoreboard-objectives.jpg | 10:50: enemy team with one Leviathan stack, Kesselbrut "da", dead ally with timer |
 | docs/ist/c3-hud-objectives.jpg | same moment without the scoreboard (timers 4:59 / da / 9:10, death bar, ghost on the minimap) |
-| docs/ist/c3-dead-after.jpg, docs/ist/c6-postgame-*.jpg | being captured (see handoff) |
+| docs/ist/c3-dead-after.jpg | own death (walked into the enemy base): respawn overlay with the camera hint, death recap, death bar "7", objective timers (before: docs/ist/08-todesbildschirm.jpg) |
+| docs/ist/c6-postgame-before.jpg, c6-postgame-before-charts.jpg | old post-game (CS, gold, damage only), 7-min classic game quit via the menu |
+| docs/ist/c6-postgame-after.jpg, c6-postgame-after-charts.jpg, c6-postgame-after-timeline.jpg | new: XP, item-value lead (signed), team wards, objective flags; timeline below the charts (empty in that short game) |
 
 Fixed camera: the human player stays in the fountain (camera on the own champion), so before/after frames match.
 
@@ -58,9 +60,25 @@ Fixed camera: the human player stays in the fountain (camera on the own champion
 3. B's request (B1): minimap symbol for revealed enemy Schleierwards - implemented on C's side, reads the optional
    `stealth` field, inert until B1 is merged.
 
-### Open
+### Open (exact next steps)
 
-- C5 lobby, C7 settings (C7 needs the settings.ts decision).
+- **C5 lobby (not started):** (1) portrait crops are a render issue -> docs/agents/issues.md (D). (2) Bot config per
+  slot already exists under "Erweitert" (rank, variance, archetype preset, 10-axis editor): verify in the browser,
+  screenshot, then set FEATURE-GAP 4.1 to `da`. (3) Rune page editor (4.2): keystone + 3 minors from `RUNES`
+  (src/sim/items/runes.ts), named pages stored via `kvSet('runePages', …)` (src/store/kv.ts), selectable next to the
+  presets in classicLobby.ts/practiceLobby.ts; `runesFromPreset` fallback stays. (4) Optional ban phase (4.3): pick
+  up to 5 champions in classicLobby.ts, then replace banned bot champions in the built config with another
+  champion of the same role (post-process in the lobby, no change to src/ai/runner.ts). (5) Role swap (4.4) with a
+  bot slot: swap `role` of the human and one bot before `classicConfig`.
+- **C7 settings (not started, needs the src/settings.ts decision):** minimap scale + side (3.7: `.minimap` size and
+  `.minimap-wrap` left/right from a setting; the death bar is inside the wrap and follows), enemy skillshot outline
+  (3.11, with D), HP-bar style (3.10, with D), settings export/import as JSON (3.13: buttons in settingsPanel.ts,
+  `JSON.stringify(settings)` + binds, import validates keys against DEFAULTS), loading-screen tips (4.6: 10-20 tip
+  keys `tip.N` in de/en, random one in `renderLoading`), gold efficiency in the shop detail page (5.3: gold value per
+  stat point from the basic items in items.json - AD 35, AP 21.75, HP 2.67, armor 20, MR 16, AS% 25, mana 1.4 -
+  then `sum(stat * value) / cost`).
+- **Shop undo (5.2):** needs a sim `undo` command (B).
+- **"Nochmal" after classic (4.7):** one-line change in src/main.ts (issues.md).
 - Waiting for A3: C2 playstyle mini-scales + rank calibration in the scoreboard, C6 error list + rank calibration
   (A3 has `injectedError`/`detected:` log lines on brain/a3-humanize, no `rankCalibration` API yet).
 - Waiting for B: exact enemy Kesselbrut (proposal or B6 epic flag), ally summoner CDs, vision score, Teleport slot

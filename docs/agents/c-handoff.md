@@ -2,11 +2,15 @@
 
 - Branch: `ui/c-features` (origin), base `0bbc3d0`. Last commit: see `git log origin/ui/c-features -1`.
 - Done: C1, C2, C3, C4, C6 part 1 (details and commits in docs/agents/c.md).
-- Half-done: none in code. Screenshots c3-dead-after / c6-postgame-* may still be missing (headless capture runs
-  ~10 min per game).
-- Next steps: C5 lobby (portrait crops, role swap with a bot slot, rune page editor), C7 settings (needs the
-  src/settings.ts decision in docs/agents/shared-changes.md), then A3-dependent parts (playstyle mini-scales,
-  post-game error list, rank calibration) once A3 publishes `rankCalibration` and the player-error log format.
+- Half-done: nothing in code (stopped on the lead's wind-down request before C5/C7). All screenshots captured.
+- Next steps (details in c.md "Open"): C5 lobby, C7 settings (needs the src/settings.ts decision in
+  docs/agents/shared-changes.md), then A3-dependent parts (playstyle mini-scales in the scoreboard, post-game error
+  list, rank calibration) once A3 publishes `rankCalibration` and a player-error log format (brain/a3-humanize has
+  `injectedError:` / `detected:` bot log lines only). When B's snapshot fields land (proposal in shared-changes.md),
+  nothing has to change: `src/game/objectives.ts` and `scoreboard.ts` already read them first; then remove the "?"
+  note for enemy Kesselbrut in FEATURE-GAP 1.2.
+- Issues filed for others: docs/agents/issues.md (portrait crops -> D, "Nochmal" in main.ts -> lead, item cast-fail
+  events -> B).
 
 ## How to take screenshots (1280x720, built game)
 

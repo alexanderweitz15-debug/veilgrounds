@@ -444,6 +444,12 @@ ${t(`trinket.${tr.id}.desc`)}${tr.cdLeft > 0 ? ` (${Math.ceil(tr.cdLeft)} s)` : 
       setTip(s.root, isSumm ? `summoner:${a.id}` : `ability:${this.champ}:${i}:${a.rank}`);
       const ready = a.cdLeft <= 0.05;
       toggle(s.root, 'unlearned', !isSumm && a.rank === 0);
+      // LoL: the icon flashes once when the cooldown ends
+      if (ready && s.root.classList.contains('cooling')) {
+        s.root.classList.remove('cd-ready');
+        void s.root.offsetWidth; // restart the animation
+        s.root.classList.add('cd-ready');
+      }
       toggle(s.root, 'cooling', !ready);
       setStyle(s.cd, '--p', ready ? '0' : String(a.cdTotal > 0 ? a.cdLeft / a.cdTotal : 1));
       setText(s.cdNum, ready ? '' : a.cdLeft >= 1 ? String(Math.ceil(a.cdLeft)) : a.cdLeft.toFixed(1));

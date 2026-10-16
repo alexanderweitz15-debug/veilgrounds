@@ -105,9 +105,6 @@ export class Overlay {
         const champ = e.kind === Kind.Champion;
         const structure = e.kind >= Kind.Tower && e.kind <= Kind.Nexus;
         const dummy = e.kind === Kind.Dummy;
-        const minion = !champ && !structure && !dummy;
-        // minions only show a bar when damaged or hovered (less clutter, like LoL); checked before projecting
-        if (minion && e.kind !== Kind.Monster && e.hp >= e.maxHp && e.id !== hoverId) continue;
         const a = world.barAnchor(e, state.x(e), state.y(e));
         if (!a) continue;
         if (e.kind === Kind.Plant) {
@@ -151,8 +148,12 @@ export class Overlay {
         if (champ || dummy) {
           // 100-HP ticks
           ctx.fillStyle = 'rgba(0,0,0,0.45)';
-          const step = e.maxHp > 3000 ? 1000 : 100;
-          for (let v = step; v < e.maxHp; v += step) ctx.fillRect(x + (bw * v) / total, y, v % 1000 === 0 ? 2 : 1, bh * (v % 1000 === 0 ? 1 : 0.6));
+          // LoL: thin tick every 100 HP, thick one every 1000 (thin ones dropped only when they would merge)
+          const thin = (bw * 100) / total >= 2.5;
+          for (let v = 100; v < e.maxHp; v += 100) {
+            const k = v % 1000 === 0;
+            if (k || thin) ctx.fillRect(x + (bw * v) / total, y, k ? 2 : 1, bh * (k ? 1 : 0.6));
+          }
         }
         if (champ) {
           if (e.maxMana > 0) {

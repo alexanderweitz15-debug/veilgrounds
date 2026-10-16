@@ -182,7 +182,7 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
 - [ ] Designfrage: gegnerische Linien-Skillshots zeigen den kompletten Bodenstreifen bis Max-Reichweite während
   Wind-up und Flug (fx.ts `addPreview` + Strips für beide Teams). LoL zeigt bei Gegnern nur das Projektil
   (Bodenanzeige nur bei verzögerten Flächen). Option „LoL-Telegraphe“ für Gegner.
-- [ ] Keine „bereit“-Rückmeldung, wenn eine Abklingzeit endet (kurzes Aufleuchten des Symbols in LoL).
+- [x] Keine „bereit“-Rückmeldung, wenn eine Abklingzeit endet (erledigt: Symbol blitzt auf) (kurzes Aufleuchten des Symbols in LoL).
 
 ### Kampf-Lesbarkeit
 **Kritisch**
@@ -195,14 +195,14 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
 **Wichtig**
 - [x] **Kein Schadens-„Chunk“.** (erledigt: Nachlauf-Balken in overlay.ts, 97bb63d) HP-Balken springt sofort (ui/overlay.ts `draw`); LoL zeigt den frischen Verlust als
   hellen Abschnitt, der nach ~0,5 s abläuft. Fix: nachlaufender HP-Wert je Einheit.
-- [ ] **Minion-HP-Balken bei vollem Leben ausgeblendet** (overlay.ts `draw`: `minion && hp >= maxHp && !hover →
+- [x] **Minion-HP-Balken bei vollem Leben ausgeblendet** (erledigt: immer sichtbar) (overlay.ts `draw`: `minion && hp >= maxHp && !hover →
   continue`, Kommentar „like LoL“). LoL zeigt alle Minion-Balken → Wellen-HP für Last-Hits vergleichbar. Fix: immer
   zeigen (Einstellung).
 
 **Nice-to-have**
 - [ ] Treffer-Aufhellung bei jedem Schadensereignis inkl. DoT-Ticks (×1,6, 140 ms) + neues 9-Einheiten-Zucken: im
   Teamfight flackert alles; LoL tönt dezent. Beobachten, ggf. für DoT/Minion-Ziele abschwächen.
-- [ ] 100-HP-Striche wechseln über 3000 Max-HP auf 1000er-Schritte (overlay.ts); LoL behält 100er + dickere 1000er.
+- [x] 100-HP-Striche wechseln über 3000 Max-HP (erledigt: 100er bleiben, 1000er dicker) auf 1000er-Schritte (overlay.ts); LoL behält 100er + dickere 1000er.
 - Geprüft, OK: 100-HP-Striche, Schild als weißer Abschnitt, Schadenszahlen nur eigene, Gold-Popup + Last-Hit-Ton.
 
 ### Kamera
@@ -210,7 +210,7 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
   Breite durch die Mitte 3367 Einheiten (2449 bei 2000, 4040 bei 3300), Champion ≈ 69 px = 9,5 % der Bildhöhe,
   38 px je 100 Einheiten; Rand-Scrollen 2600 E/s bei 10 px Rand; Leertaste zentriert solange gehalten, Y sperrt.
   Wirkt im Rahmen von LoL (ca. Champion 10–12 % Bildhöhe, nicht nachgemessen).
-- [ ] Nice-to-have: herauszoomen über den Standard (+20 % Sichtbreite bis 4040) gibt mehr Übersicht als LoL erlaubt
+- [x] Nice-to-have: herauszoomen über den Standard (erledigt: Standard = Maximum 2750) (+20 % Sichtbreite bis 4040) gibt mehr Übersicht als LoL erlaubt
   (dort ist Standard = Maximum). Standard = Maximum setzen oder Maximum begrenzen.
 
 ### Zahlen

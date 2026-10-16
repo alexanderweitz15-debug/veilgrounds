@@ -5,7 +5,8 @@ import { MAP_SIZE } from './coords';
 export const PITCH = THREE.MathUtils.degToRad(56);
 const FOV = 38;
 const MIN_DIST = 2000;
-const MAX_DIST = 3300;
+// LoL: the default zoom is the maximum (no zooming out past it)
+const MAX_DIST = 2750;
 
 export class CameraRig {
   readonly camera: THREE.PerspectiveCamera;

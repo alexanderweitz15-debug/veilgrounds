@@ -2,6 +2,7 @@
 
 Checkliste aller Phasen. `[x]` = fertig und gepusht, `[ ]` = offen, `[~]` = teilweise / läuft.
 Entscheidungen und Zahlen stehen in docs/DECISIONS.md, das Bot-Verhalten in docs/spec-bots.md.
+Ausführlicher Ist-Zustand mit Screenshots: [docs/IST-ZUSTAND.md](IST-ZUSTAND.md).
 
 ## Phase 1 – Simulation + 1 Champion
 - [x] Deterministische 30-Hz-Sim im Worker (xoshiro128**, Replays bit-identisch, stateHash)

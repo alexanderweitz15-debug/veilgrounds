@@ -5,6 +5,8 @@ import { Kind, TICK_HZ, type PingKind, type SimEvent } from '../sim/types';
 const TICK_MS = 1000 / TICK_HZ;
 /** Moves longer than this in one tick are teleports/respawns: snap, do not sweep across the map. */
 const SNAP_DIST2 = 250 * 250;
+/** Render this many ticks behind the newest snapshot (absorbs delivery jitter; +16 ms input-to-screen latency). */
+const BUFFER_TICKS = 0.5;
 
 type DeathEvent = Extract<SimEvent, { e: 'death' }>;
 
@@ -42,6 +44,9 @@ export class ClientState {
   paused = false;
   /** Interpolation factor for the current frame (0..1), set by beginFrame. */
   alpha = 1;
+  /** Snapshot arrival baseline in ms (see ingest). */
+  private base = Number.NaN;
+  private readonly prev2 = new Map<number, [number, number]>();
   /** Interpolated positions for the current frame, keyed by eid. */
   readonly ix = new Map<number, number>();
   readonly iy = new Map<number, number>();
@@ -53,8 +58,17 @@ export class ClientState {
 
   /** Ingest one snapshot; returns its events for the fx/HUD dispatch. */
   ingest(s: Snapshot, now: number): SimEvent[] {
+    // positions two ticks back (= previous snapshot's px) for the interpolation buffer
+    this.prev2.clear();
+    if (this.snap && s.tick === this.snap.tick + 1) for (const e of this.snap.entities) this.prev2.set(e.id, [e.px, e.py]);
     this.snap = s;
     this.recvAt = now;
+    // Arrival clock: earliest observed (arrival - tick * TICK_MS). Interpolating against this steady clock instead of
+    // "time since the last message" removes the stutter of early/late/bursty snapshot delivery. Early arrivals pull
+    // the baseline down at once, late ones raise it slowly (clock drift); big jumps (pause, speed change) reset it.
+    const m = now - s.tick * TICK_MS;
+    if (Number.isNaN(this.base) || m < this.base || m - this.base > 250) this.base = m;
+    else this.base += (m - this.base) * 0.02;
     this.myTeam = s.team;
     this.byId.clear();
     for (const e of s.entities) {
@@ -74,17 +88,31 @@ export class ClientState {
 
   beginFrame(now: number): void {
     while (this.pings.length && now - this.pings[0]!.at > 3000) this.pings.shift();
-    this.alpha = this.paused ? 1 : Math.min(1, Math.max(0, (now - this.recvAt) / TICK_MS));
+    // ticks since the newest snapshot was due, minus a half-tick buffer: a snapshot up to ~16 ms late no longer
+    // freezes units (they are still moving through the previous segment)
+    const v = this.snap && !this.paused ? (now - this.base) / TICK_MS - this.snap.tick - BUFFER_TICKS : 1;
+    this.alpha = Math.min(1, Math.max(0, v));
     this.ix.clear();
     this.iy.clear();
     if (!this.snap) return;
     const a = this.alpha;
+    const b = Math.max(0, v + 1); // position inside the previous segment (tick-2 .. tick-1) while v < 0
     for (const e of this.snap.entities) {
       const dx = e.x - e.px;
       const dy = e.y - e.py;
-      const jump = dx * dx + dy * dy > SNAP_DIST2;
-      this.ix.set(e.id, jump ? e.x : e.px + dx * a);
-      this.iy.set(e.id, jump ? e.y : e.py + dy * a);
+      if (dx * dx + dy * dy > SNAP_DIST2) {
+        this.ix.set(e.id, e.x);
+        this.iy.set(e.id, e.y);
+        continue;
+      }
+      const p2 = v < 0 ? this.prev2.get(e.id) : undefined;
+      if (p2 && (e.px - p2[0]) ** 2 + (e.py - p2[1]) ** 2 <= SNAP_DIST2) {
+        this.ix.set(e.id, p2[0] + (e.px - p2[0]) * b);
+        this.iy.set(e.id, p2[1] + (e.py - p2[1]) * b);
+      } else {
+        this.ix.set(e.id, e.px + dx * a);
+        this.iy.set(e.id, e.py + dy * a);
+      }
     }
   }
 

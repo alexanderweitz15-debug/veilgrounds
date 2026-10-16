@@ -1,0 +1,50 @@
+diff --git a/tests/botPerception.test.ts b/tests/botPerception.test.ts
+index 62c88e1..653d96e 100644
+--- a/tests/botPerception.test.ts
++++ b/tests/botPerception.test.ts
+@@ -274,7 +274,9 @@ describe('snapshot audio cues (sim side)', () => {
+ });
+ 
+ describe('spec test 7: no omniscience', () => {
+-  const L_NODES = new Set(['escape', 'gankRisk', 'jungleGank', 'counterGank', 'roam', 'enemyRoam']);
++  // + BRAIN-REWORK log nodes (reflex plans, utility intents, attention windows, error episodes): any x/y they log must
++  // carry the seen/cloud/self/static tag (supervisor, review-checklist §1 #6)
++  const L_NODES = new Set(['escape', 'gankRisk', 'jungleGank', 'counterGank', 'roam', 'enemyRoam', 'reflex', 'utility', 'intent', 'wave', 'plan', 'attention', 'error']);
+ 
+   it('1000 random states: the log never contains an enemy position the team has not seen (scripted)', () => {
+     const rng = new Rng(77);
+@@ -339,11 +341,14 @@ describe('spec test 7: no omniscience', () => {
+ });
+ 
+ describe('fog guard (static)', () => {
+-  it('perception, gank and roam modules never import sim state (sim, ecs, vision, bitecs)', () => {
++  it('perception, gank, roam, reflex, utility and humanize modules never import sim state (sim, ecs, vision, bitecs) or clocks', () => {
+     const sources = {
+       ...import.meta.glob<string>('../src/ai/perception/*.ts', { query: '?raw', import: 'default', eager: true }),
+       ...import.meta.glob<string>('../src/ai/ganks/*.ts', { query: '?raw', import: 'default', eager: true }),
+       ...import.meta.glob<string>('../src/ai/roams/*.ts', { query: '?raw', import: 'default', eager: true }),
++      // BRAIN-REWORK directories (supervisor, review-checklist §1 #6): guarded before they exist; perf timing belongs
++      // to harness/runner, never to brain code
++      ...import.meta.glob<string>(['../src/ai/reflex/*.ts', '../src/ai/plan.ts', '../src/ai/utility/*.ts', '../src/ai/humanize/*.ts', '../src/ai/errors.ts'], { query: '?raw', import: 'default', eager: true }),
+     };
+     expect(Object.keys(sources).length).toBeGreaterThan(12);
+     for (const [f, src] of Object.entries(sources)) {
+diff --git a/tests/bots.test.ts b/tests/bots.test.ts
+index 886aa26..ff807bf 100644
+--- a/tests/bots.test.ts
++++ b/tests/bots.test.ts
+@@ -61,8 +61,12 @@ describe('bot fog of war', () => {
+   it('the brain type takes a Snapshot + static data, never the Sim', () => {
+     expectTypeOf<Parameters<Brain>[0]>().toEqualTypeOf<Snapshot>();
+     expectTypeOf<Parameters<Brain>[1]>().toEqualTypeOf<BotStatic>();
+-    // static guard: brain modules must not import sim state (sim.ts, ecs, vision, bitecs)
+-    const sources = import.meta.glob<string>(['../src/ai/bot/*.ts', '../src/ai/bt/*.ts'], { query: '?raw', import: 'default', eager: true });
++    // static guard: brain modules must not import sim state (sim.ts, ecs, vision, bitecs); the BRAIN-REWORK
++    // directories (reflex, plan, utility, humanize) are guarded before they exist (supervisor, review-checklist §1 #6)
++    const sources = import.meta.glob<string>(
++      ['../src/ai/bot/*.ts', '../src/ai/bt/*.ts', '../src/ai/reflex/*.ts', '../src/ai/plan.ts', '../src/ai/utility/*.ts', '../src/ai/humanize/*.ts', '../src/ai/errors.ts'],
++      { query: '?raw', import: 'default', eager: true },
++    );
+     expect(Object.keys(sources).length).toBeGreaterThan(5);
+     for (const [f, src] of Object.entries(sources)) {
+       expect(src, f).not.toMatch(/from '(\.\.\/)+sim\/(sim|ecs|vision)'|from 'bitecs'/);

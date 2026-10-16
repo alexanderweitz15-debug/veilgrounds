@@ -15,6 +15,11 @@ import { exchangeNoise } from '../exchange';
 import { carrySpot, fightRole, focusScore, moveCmd, orbwalkAttack, peelSpot } from './kite';
 import { decisionInterval, executes } from './trade';
 import { focusSerial } from './social';
+import { utilityOn } from '../utility/flag';
+import { VALUES } from '../utility/values';
+
+/** Current teamfight focus target per bot (enemy serial), utility flag only. */
+const focusOf = new WeakMap<object, number>();
 
 const CHALLENGER = rankIdx('challenger');
 
@@ -47,14 +52,22 @@ export function teamfight(n: NodeCtx): NodeResult {
   // once per fight and enemy, so low ranks spread damage over the wrong targets while high ranks focus the kill
   const noise = 1.5 * exchangeNoise(n.ctx.params.skill);
   const err = (st.err ??= {});
-  const scored = (e: (typeof enemies)[number]): number => focusScore(n, e, focus) * (1 + (err[e.serial] ??= noise * (n.rng.next() * 2 - 1)));
+  // §6.3 focus hysteresis (utility flag): switching away from the current focus costs focusHysteresis (no flicker)
+  const prev = utilityOn(n.ctx) ? focusOf.get(n.mem) : undefined;
+  const keep = (e: (typeof enemies)[number]): number => (prev !== undefined && e.serial === prev ? 1 + VALUES.combat.focusHysteresis : 1);
+  const scored = (e: (typeof enemies)[number]): number => focusScore(n, e, focus) * (1 + (err[e.serial] ??= noise * (n.rng.next() * 2 - 1))) * keep(e);
   const t = enemies.reduce((a, e) => (scored(e) > scored(a) ? e : a));
+  if (utilityOn(n.ctx)) {
+    if (prev !== undefined && prev !== t.serial) n.log('teamfight', 'focus_switch', 'new focus beats the old one by more than the hysteresis', { target: t.slot });
+    focusOf.set(n.mem, t.serial);
+  }
   const role = fightRole(n);
   const ri = rankIdx(n.ctx.profile.rank);
   const ex = estimateExchange(n.v, n.ctx, t, 6, n.rng);
   if (running < 0.1) n.log('teamfight', role, 'teamfight', { target: t.slot, enemies: enemies.length }, { win: ex.winProb, focus: focusScore(n, t, focus) });
   n.mem.mode = 'fight';
-  if (ri >= CHALLENGER && ex.winProb < 0.2 && ex.deathProb > 0.6) {
+  // classic: Challenger leaves hopeless fights; with the utility flag the commit rule (§6.3, utility/select.ts) decides
+  if (!utilityOn(n.ctx) && ri >= CHALLENGER && ex.winProb < 0.2 && ex.deathProb > 0.6) {
     n.log('teamfight', 'leave', 'hopeless fight', {}, { win: ex.winProb });
     return 'failure';
   }

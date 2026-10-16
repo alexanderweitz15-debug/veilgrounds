@@ -129,6 +129,37 @@ export function jungleGank(n: NodeCtx): NodeResult {
 
 const prefixed = (t: Record<string, number>): Inputs => Object.fromEntries(Object.entries(t).map(([k, v]) => [`t_${k}`, v]));
 
+// ------------------------------------------------------------------ utility model hooks (docs/BRAIN-REWORK.md §5)
+
+/** A gank is running (the utility's gank intent holds until the gank's own end rules). */
+export function gankActive(n: NodeCtx): boolean {
+  const pv = lv(n);
+  return !!pv && !!(pv.mem.tactics.gank as GankState | undefined)?.active;
+}
+
+/** Gank evaluations per lane (best first) for the utility model; null for non-junglers or before the next eval. */
+export function gankOptions(n: NodeCtx): GankEval[] | null {
+  const pv = lv(n);
+  if (!pv?.self || n.ctx.role !== 'jungle') return null;
+  const st = tac<GankState>(pv, 'gank', () => ({ nextEval: 0, active: null }));
+  if (st.active || n.snap.tick < st.nextEval) return null;
+  return LANES.map((l) => gankScore(n, pv, l)).filter((e): e is GankEval => !!e).sort((a, b) => b.score - a.score);
+}
+
+/** Start a gank chosen by the utility model, or continue the running one. */
+export function startGank(n: NodeCtx, ev: GankEval | undefined): NodeResult {
+  const pv = lv(n);
+  if (!pv?.self || n.ctx.role !== 'jungle') return 'failure';
+  const st = tac<GankState>(pv, 'gank', () => ({ nextEval: 0, active: null }));
+  if (!st.active) {
+    if (!ev || n.snap.tick < st.nextEval) return 'failure';
+    st.nextEval = n.snap.tick + Math.round(n.p.knobs.gankEvalIntervalS * 30);
+    log(n, pv, 'jungleGank', `gank_${ev.lane}`, 'utility: gank worth more than the camps', { ...ev.inputs, ...prefixed(ev.terms), via: 'utility' }, { [ev.lane]: +ev.score.toFixed(3) });
+    st.active = { lane: ev.lane, slot: ev.target.slot, since: n.snap.tick, flashSeenAt: ev.target.cds.flashReadyAt ?? -1, recheck: n.snap.tick + 60 };
+  }
+  return runGank(n, pv, st);
+}
+
 function runGank(n: NodeCtx, pv: BotPerception, st: GankState): NodeResult {
   const a = st.active!;
   const tick = n.snap.tick;

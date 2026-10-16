@@ -129,10 +129,50 @@ export function roam(n: NodeCtx): NodeResult {
   for (const [k, v] of Object.entries(best.terms)) inputs[`t_${k}`] = +v.toFixed(2);
   log(n, pv, 'roam', go ? `roam_${best.lane}` : 'stay', `score ${best.score.toFixed(2)} vs ${thr.toFixed(2)}`, inputs, Object.fromEntries(evals.map((e) => [e.lane, +e.score.toFixed(3)])), pre.err);
   if (!go) return 'failure';
+  return beginRoam(n, pv, st, best);
+}
+
+function beginRoam(n: NodeCtx, pv: BotPerception, st: RoamState, best: RoamEval): NodeResult {
   const startT = lanePos(n.ctx.map, n.ctx.team, best.lane, trackPos(best.target)!).t;
-  st.active = { lane: best.lane, slot: best.target.slot, since: tick, startT, reached: false, home: n.ctx.lane };
+  st.active = { lane: best.lane, slot: best.target.slot, since: n.snap.tick, startT, reached: false, home: n.ctx.lane! };
   if (atLeast(n.p, 'silver')) ping(n, pv, 'onMyWay', trackPos(best.target)!);
   return runRoam(n, pv, st);
+}
+
+// ------------------------------------------------------------------ utility model hooks (docs/BRAIN-REWORK.md §5)
+
+/** A roam is running (utility: the roam intent holds until arrival + the roam's own end rules). */
+export function roamActive(n: NodeCtx): boolean {
+  const pv = lv(n);
+  return !!pv && !!(pv.mem.tactics.roam as RoamState | undefined)?.active;
+}
+
+/**
+ * Roam options for the utility model: prerequisite (§5.1, incl. roam_from_push) and the target evaluations, without
+ * the threshold gate (the utility compares the roam's value with the wave it costs instead).
+ */
+export function roamOptions(n: NodeCtx): { pre: { ok: boolean; why: string; err?: ErrorId }; evals: RoamEval[] } | null {
+  const pv = lv(n);
+  if (!pv?.self || !n.ctx.lane) return null;
+  const targets = roamTargets(n);
+  if (!targets.length) return null;
+  const pre = roamPrerequisite(n, pv);
+  if (!pre.ok) return { pre, evals: [] };
+  return { pre, evals: targets.map((l) => roamScore(n, pv, l)).filter((e): e is RoamEval => !!e).sort((a, b) => b.score - a.score) };
+}
+
+/** Start a roam chosen by the utility model (logged like the gated start), or continue the running one. */
+export function startRoam(n: NodeCtx, ev: RoamEval | undefined): NodeResult {
+  const pv = lv(n);
+  if (!pv?.self || !n.ctx.lane) return 'failure';
+  const st = tac<RoamState>(pv, 'roam', () => ({ nextEval: 0, active: null }));
+  if (st.active) return runRoam(n, pv, st);
+  if (!ev || n.snap.tick < st.nextEval) return 'failure';
+  const inputs: Inputs = { lane: n.ctx.lane, via: 'utility' };
+  logTrack(inputs, 'target', ev.target);
+  for (const [k, v] of Object.entries(ev.terms)) inputs[`t_${k}`] = +v.toFixed(2);
+  log(n, pv, 'roam', `roam_${ev.lane}`, 'utility: roam worth more than the wave', inputs, { [ev.lane]: +ev.score.toFixed(3) });
+  return beginRoam(n, pv, st, ev);
 }
 
 function runRoam(n: NodeCtx, pv: BotPerception, st: RoamState): NodeResult {

@@ -1,0 +1,109 @@
+/* Shop (src/ui/shop.ts), LoL-like three-column layout in the gouache UI palette. */
+.game .panel.shop.sp-root.open {
+  top: 54px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1060px, calc(96vw / var(--ui, 1)));
+  height: min(640px, calc((100vh - 64px - 150px * var(--ui, 1)) / var(--ui, 1)));
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, rgba(24, 20, 30, 0.98), rgba(12, 10, 15, 0.98));
+  border: 1px solid #8a7550;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.8), 0 18px 48px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(232, 196, 90, 0.08);
+  z-index: 31;
+}
+.sp-root * { box-sizing: border-box; }
+
+/* header */
+.sp-head { display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-bottom: 1px solid #3a3226; background: linear-gradient(180deg, rgba(232, 196, 90, 0.08), transparent); }
+.sp-title { font: 700 20px/1 'Spectral SC', serif; color: #f2dfa8; letter-spacing: 0.04em; }
+.sp-gold { display: flex; align-items: center; gap: 6px; font: 700 17px/1 'Barlow Condensed', sans-serif; color: #ffd24a; }
+.sp-coin { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff2b0, #e8b22a 55%, #8a5a10); box-shadow: 0 0 0 1px #4a3208; }
+.sp-hint { color: #e8806a; font-size: 13px; }
+.sp-search { margin-left: auto; width: 220px; padding: 6px 10px; background: rgba(0, 0, 0, 0.45); border: 1px solid #5a4a30; color: #f2ead8; font: 500 14px 'Barlow', sans-serif; }
+.sp-search:focus { outline: none; border-color: #e8c45a; }
+.sp-close { width: 30px; height: 30px; background: rgba(0, 0, 0, 0.4); border: 1px solid #5a4a30; color: #d8d0bf; cursor: pointer; }
+.sp-close:hover { border-color: #e8c45a; color: #fff; }
+
+/* body: nav | list | detail */
+.sp-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 150px 1fr 300px; }
+.sp-nav { display: flex; flex-direction: column; gap: 2px; padding: 10px 6px; border-right: 1px solid #3a3226; overflow-y: auto; }
+.sp-cat { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: transparent; border: 1px solid transparent; color: #b9ae96; font: 600 14px 'Barlow Condensed', sans-serif; letter-spacing: 0.03em; text-align: left; cursor: pointer; }
+.sp-cat:hover { color: #f2ead8; background: rgba(255, 255, 255, 0.04); }
+.sp-cat.on { color: #f2dfa8; border-color: #8a7550; background: linear-gradient(90deg, rgba(232, 196, 90, 0.16), transparent); }
+.sp-cat-icon { flex: 0 0 22px; width: 22px; height: 22px; background-size: cover; display: grid; place-items: center; color: #e8c45a; font-size: 14px; }
+
+.sp-list { padding: 8px 14px 14px; overflow-y: auto; }
+.sp-tier { margin: 10px 0 6px; font: 700 12px 'Barlow Condensed', sans-serif; color: #c8aa6e; text-transform: uppercase; letter-spacing: 0.14em; display: flex; align-items: center; gap: 8px; }
+.sp-tier::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, #5a4a30, transparent); }
+.sp-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.sp-empty { color: #8f866f; padding: 14px 4px; font-size: 14px; }
+
+.sp-item { position: relative; width: 56px; padding: 3px 3px 2px; display: flex; flex-direction: column; align-items: center; gap: 2px; background: rgba(0, 0, 0, 0.35); border: 1px solid #3a3226; cursor: pointer; transition: transform 0.08s, border-color 0.08s; }
+.sp-item:hover { border-color: #c8aa6e; transform: translateY(-1px); }
+.sp-item.sel { border-color: #f2dfa8; box-shadow: 0 0 0 1px #f2dfa8, 0 0 12px rgba(242, 223, 168, 0.35); }
+.sp-item .sp-icon { width: 48px; height: 48px; filter: grayscale(0.55) brightness(0.8); }
+.sp-item.afford .sp-icon { filter: none; }
+.sp-item.tier-legendary .sp-icon { box-shadow: 0 0 0 1px #e8c45a; }
+.sp-item.rec::before { content: '★'; position: absolute; top: -3px; left: 1px; color: #ffd24a; font-size: 12px; text-shadow: 0 1px 2px #000; }
+.sp-item.owned::after { content: '✓'; position: absolute; top: 1px; right: 3px; color: #8fe08a; font-weight: 800; font-size: 13px; text-shadow: 0 1px 2px #000; }
+.sp-price { font: 700 13px/1 'Barlow Condensed', sans-serif; color: #8f866f; }
+.sp-item.afford .sp-price { color: #ffd24a; }
+.sp-price.reduced { color: #8fe08a !important; }
+.sp-icon { background-size: cover; background-color: #1c1824; display: grid; place-items: center; color: #f2ead8; font: 700 12px 'Barlow Condensed', sans-serif; }
+
+/* detail */
+.sp-detail { padding: 12px 14px; border-left: 1px solid #3a3226; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background: rgba(0, 0, 0, 0.18); }
+.sp-dhead { display: flex; gap: 12px; align-items: center; }
+.sp-icon.big { width: 64px; height: 64px; flex: 0 0 64px; box-shadow: 0 0 0 1px #8a7550; }
+.sp-icon.small { width: 26px; height: 26px; flex: 0 0 26px; }
+.sp-name { font: 700 19px/1.15 'Barlow Condensed', sans-serif; color: #f2dfa8; letter-spacing: 0.02em; }
+.sp-cost { display: flex; align-items: center; gap: 6px; margin-top: 4px; font: 700 17px 'Barlow Condensed', sans-serif; color: #ffd24a; }
+.sp-full { color: #8f866f; text-decoration: line-through; font-size: 14px; }
+.sp-stats { display: flex; flex-direction: column; gap: 3px; }
+.sp-stat { display: flex; align-items: center; gap: 6px; color: #cfe3b0; font-size: 14px; }
+.sp-stat-icon { width: 18px; height: 18px; background-size: cover; }
+.sp-effect { padding: 6px 8px; background: rgba(255, 255, 255, 0.03); border-left: 2px solid #8a7550; font-size: 13px; color: #d8d0bf; }
+.sp-effect-kind { color: #c8aa6e; text-transform: uppercase; font: 700 11px 'Barlow Condensed', sans-serif; letter-spacing: 0.1em; margin-right: 6px; }
+.sp-effect-name { color: #f2dfa8; font-weight: 600; }
+.sp-effect-desc { margin-top: 2px; color: #b9b0c8; }
+.sp-sub { font: 700 12px 'Barlow Condensed', sans-serif; color: #c8aa6e; text-transform: uppercase; letter-spacing: 0.14em; margin-top: 4px; }
+.sp-tree { display: flex; flex-direction: column; gap: 2px; }
+.sp-node { display: flex; align-items: center; gap: 8px; padding: 2px 4px; cursor: pointer; border: 1px solid transparent; }
+.sp-node:hover { border-color: #5a4a30; background: rgba(255, 255, 255, 0.03); }
+.sp-node-name { flex: 1; color: #d8d0bf; font-size: 13px; }
+.sp-node-cost { color: #ffd24a; font: 700 13px 'Barlow Condensed', sans-serif; }
+.sp-node.owned .sp-node-name { color: #8fe08a; }
+.sp-node.owned .sp-node-cost { color: #8fe08a; }
+.sp-buy { margin-top: auto; padding: 10px; background: linear-gradient(180deg, #c8a24e, #8a6a22); border: 1px solid #f2dfa8; color: #1a1208; font: 800 16px 'Barlow Condensed', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+.sp-buy:hover:not(:disabled) { filter: brightness(1.1); }
+.sp-buy:disabled { background: #3a3226; border-color: #5a4a30; color: #8f866f; cursor: not-allowed; }
+
+/* inventory */
+.sp-inv { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-top: 1px solid #3a3226; background: rgba(0, 0, 0, 0.3); }
+.sp-inv .sp-sub { margin: 0 6px 0 0; }
+.sp-slot { position: relative; width: 48px; height: 48px; border: 1px solid #5a4a30; background: rgba(0, 0, 0, 0.4); cursor: pointer; }
+.sp-slot .sp-icon { width: 100%; height: 100%; }
+.sp-slot.empty { opacity: 0.45; cursor: default; }
+.sp-sell { position: absolute; left: -1px; right: -1px; bottom: -14px; padding: 0; height: 14px; background: #2a1e14; border: 1px solid #5a4a30; color: #ffd24a; font: 700 10px/1 'Barlow Condensed', sans-serif; cursor: pointer; opacity: 0; }
+.sp-slot:hover .sp-sell { opacity: 1; }
+.sp-sell:disabled { color: #8f866f; cursor: not-allowed; }
+
+@media (max-height: 820px) {
+  .sp-body { grid-template-columns: 136px 1fr 260px; }
+  .sp-item { width: 50px; }
+  .sp-item .sp-icon { width: 42px; height: 42px; }
+}
+
+/* dark, thin scrollbars (the default white bars broke the look) */
+.sp-root { scrollbar-color: #5a4a30 transparent; scrollbar-width: thin; }
+.sp-root ::-webkit-scrollbar { width: 8px; height: 8px; }
+.sp-root ::-webkit-scrollbar-thumb { background: #5a4a30; border-radius: 4px; }
+.sp-root ::-webkit-scrollbar-track { background: transparent; }
+.sp-list, .sp-nav, .sp-detail { overflow-x: hidden; }
+.sp-cat { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-buy { position: sticky; bottom: 0; box-shadow: 0 -10px 14px rgba(12, 10, 15, 0.9); }

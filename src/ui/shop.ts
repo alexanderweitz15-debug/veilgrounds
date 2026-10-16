@@ -1,20 +1,58 @@
-// Shop panel (P): items by tier with cost/stats/recipe, recommended build of the own champion highlighted,
-// buy/sell buttons. Buying only works in the own fountain (or while dead); the sim enforces it, the UI mirrors it.
+// Shop panel (P), LoL-like: category filters + search on the left, item tiles by tier in the middle, details on the
+// right (price after owned components, stats, passive/active, build tree, builds into, buy), inventory with sell
+// at the bottom. Buying only works in the own fountain (or while dead); the sim enforces it, the UI mirrors it.
 import './gamePanels.css';
+import './shop.css';
 import type { PlayerHud } from '../sim/snapshot';
 import type { ItemData, ItemStat, ItemTier } from '../sim/items/schema';
 import { ITEMS, ITEM_SLOTS, SELL_RATIO, itemById, recipePrice } from '../sim/items/inventory';
 import { BUILDS } from '../ai/bot/builds';
 import { settings } from '../settings';
 import { t } from '../i18n';
-import { itemIcon, setIcon } from './icons';
+import { itemIcon, setIcon, statIcon } from './icons';
 import { shopLayoutKey } from './shopLayout';
 import './icons.css';
 import { setTip } from './tooltip';
 
-// small tiers first so they share a row (the shop fits a 720p screen without scrolling)
-const TIERS: ItemTier[] = ['starter', 'consumable', 'boots', 'basic', 'component', 'legendary'];
+const TIERS: ItemTier[] = ['starter', 'boots', 'basic', 'component', 'legendary', 'consumable'];
 const PCT: ReadonlySet<ItemStat> = new Set(['asPct', 'critPct', 'lifestealPct', 'msPct', 'hpRegenPct', 'manaRegenPct', 'healShieldPowerPct']);
+/** Stat -> icon key of statIcon (src/ui/icons.ts) for the stat chips. */
+const STAT_ICON: Partial<Record<ItemStat, string>> = {
+  ad: 'ad', lethality: 'ad', ap: 'ap', armor: 'armor', mr: 'mr', hp: 'hp', mana: 'mana', asPct: 'as', critPct: 'crit',
+  msFlat: 'ms', msPct: 'ms', haste: 'haste', lifestealPct: 'hp', hpRegenPct: 'hp', manaRegenPct: 'mana', healShieldPowerPct: 'hp',
+};
+
+type Cat = 'all' | 'rec' | 'ad' | 'ap' | 'def' | 'as' | 'boots' | 'support' | 'jungle' | 'consumable';
+const CATS: [Cat, string | null][] = [
+  ['all', null], ['rec', null], ['ad', 'ad'], ['ap', 'ap'], ['def', 'armor'], ['as', 'as'], ['boots', 'ms'], ['support', 'mana'], ['jungle', null], ['consumable', null],
+];
+
+function inCat(it: ItemData, cat: Cat, rec: ReadonlySet<string>): boolean {
+  const s = it.stats;
+  const tag = (x: ItemData['tags'][number]): boolean => it.tags.includes(x);
+  switch (cat) {
+    case 'all':
+      return true;
+    case 'rec':
+      return rec.has(it.id);
+    case 'ad':
+      return !!(s.ad || s.lethality) || tag('ad') || tag('lethality');
+    case 'ap':
+      return !!s.ap || tag('ap');
+    case 'def':
+      return !!(s.armor || s.mr || s.hp) || tag('tank');
+    case 'as':
+      return !!(s.asPct || s.critPct) || tag('crit') || tag('onhit');
+    case 'boots':
+      return it.tier === 'boots';
+    case 'support':
+      return tag('support') || !!(s.healShieldPowerPct || s.manaRegenPct);
+    case 'jungle':
+      return tag('jungle');
+    case 'consumable':
+      return it.tier === 'consumable';
+  }
+}
 
 export const itemName = (id: string | null | undefined): string => (id ? itemById(id)?.name[settings.lang] ?? id : '');
 /** Short label for 34 px slots. */
@@ -41,11 +79,11 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?:
   return e;
 }
 
-/** Item icon (procedural, src/ui/icons.ts) with the short name as fallback. */
-function iconEl(parent: HTMLElement, id: string): void {
+function iconEl(parent: HTMLElement, id: string, cls = 'sp-icon'): HTMLElement {
   const url = itemIcon(id);
-  const d = el('div', url ? 'abbr item-icon' : 'abbr', parent, url ? '' : itemAbbr(id));
+  const d = el('div', cls, parent, url ? '' : itemAbbr(id));
   setIcon(d, url);
+  return d;
 }
 
 export interface ShopHooks {
@@ -55,16 +93,19 @@ export interface ShopHooks {
 
 export class ShopPanel {
   private selected: string | null = null;
+  private cat: Cat = 'all';
+  private query = '';
   private key = '';
   private gold = -1;
   /** Latest HUD data (click handlers read it, not the snapshot the panel was built from). */
   private me: PlayerHud | null = null;
-  private cards: { el: HTMLElement; it: ItemData }[] = [];
+  private cards: { el: HTMLElement; it: ItemData; price: HTMLElement }[] = [];
   private goldEl: HTMLElement | null = null;
   private buyBtn: { el: HTMLButtonElement; it: ItemData } | null = null;
 
   constructor(private readonly root: HTMLElement, private readonly hooks: ShopHooks) {
     root.textContent = '';
+    root.classList.add('sp-root');
     // clicks inside the panel must not turn into move commands on the canvas
     for (const ev of ['mousedown', 'contextmenu', 'wheel'] as const) root.addEventListener(ev, (e) => e.stopPropagation());
   }
@@ -72,7 +113,7 @@ export class ShopPanel {
   update(me: PlayerHud | null): void {
     if (!me) return;
     this.me = me;
-    const key = shopLayoutKey(me, this.selected, settings.lang);
+    const key = `${shopLayoutKey(me, this.selected, settings.lang)}|${this.cat}|${this.query}`;
     if (key !== this.key) {
       this.key = key;
       this.render(me);
@@ -101,95 +142,184 @@ export class ShopPanel {
     return { ok: true, price };
   }
 
+  private select(id: string): void {
+    this.selected = id;
+    this.key = '';
+    if (this.me) this.update(this.me);
+  }
+
   private render(me: PlayerHud): void {
     const r = this.root;
-    const scroll = [...r.querySelectorAll<HTMLElement>('.shop-list, .shop-detail')].map((e) => e.scrollTop);
+    const scroll = [...r.querySelectorAll<HTMLElement>('.sp-list, .sp-detail')].map((e) => e.scrollTop);
+    const searchFocused = document.activeElement?.classList.contains('sp-search') ?? false;
     r.textContent = '';
     this.cards = [];
     this.buyBtn = null;
     this.gold = Math.floor(me.gold);
-    const head = el('div', 'shop-head', r);
-    el('div', 'ttl', head, t('hud.shop'));
-    this.goldEl = el('div', 'gold', head, String(this.gold));
-    if (!me.inFountain && !me.dead) el('div', 'shop-hint', head, t('shop.notInShop'));
-    el('button', 'btn small shop-close', head, '✕').addEventListener('click', () => r.classList.remove('open'));
-
     const build = BUILDS[me.champ];
-    const rec = new Set<string>(build ? [...build.starter, build.standard.boots, ...build.standard.core] : []);
-    if (build) {
-      const row = el('div', 'shop-rec', r);
-      el('span', 'lbl', row, t('shop.recommended'));
-      for (const id of [...build.starter, build.standard.boots, ...build.standard.core]) this.card(me, id, row, true);
+    const recList = build ? [...build.starter, build.standard.boots, ...build.standard.core] : [];
+    const rec = new Set(recList);
+
+    // ---- header: title, gold, search, close
+    const head = el('div', 'sp-head', r);
+    el('div', 'sp-title', head, t('hud.shop'));
+    const g = el('div', 'sp-gold', head);
+    el('span', 'sp-coin', g);
+    this.goldEl = el('span', '', g, String(this.gold));
+    if (!me.inFountain && !me.dead) el('div', 'sp-hint', head, t('shop.notInShop'));
+    const search = el('input', 'sp-search', head);
+    search.placeholder = t('shop.search');
+    search.value = this.query;
+    search.addEventListener('keydown', (e) => e.stopPropagation()); // typing must not cast abilities
+    search.addEventListener('input', () => {
+      this.query = search.value.trim().toLowerCase();
+      if (this.me) this.update(this.me);
+    });
+    el('button', 'sp-close', head, '✕').addEventListener('click', () => r.classList.remove('open'));
+
+    const body = el('div', 'sp-body', r);
+    // ---- categories
+    const nav = el('div', 'sp-nav', body);
+    for (const [cat, icon] of CATS) {
+      if (cat === 'rec' && !rec.size) continue;
+      const b = el('button', `sp-cat${this.cat === cat ? ' on' : ''}`, nav);
+      const ic = el('span', 'sp-cat-icon', b);
+      const url = icon ? statIcon(icon) : cat === 'jungle' ? itemIcon(ITEMS.find((i) => i.tags.includes('jungle'))?.id ?? '') : cat === 'consumable' ? itemIcon('trank') : null;
+      if (url) setIcon(ic, url);
+      else ic.textContent = cat === 'rec' ? '★' : '◆';
+      b.append(t(`shop.cat.${cat}`));
+      b.addEventListener('click', () => {
+        this.cat = cat;
+        if (this.me) this.update(this.me);
+      });
     }
 
-    const body = el('div', 'shop-body', r);
-    const list = el('div', 'shop-list', body);
+    // ---- item list by tier
+    const list = el('div', 'sp-list', body);
+    const q = this.query;
+    let shown = 0;
     for (const tier of TIERS) {
-      const items = ITEMS.filter((i) => i.tier === tier).sort((a, b) => a.cost - b.cost);
+      const items = ITEMS.filter((i) => i.tier === tier && inCat(i, this.cat, rec) && (!q || i.name[settings.lang].toLowerCase().includes(q))).sort((a, b) => a.cost - b.cost);
       if (!items.length) continue;
-      const sec = el('div', 'shop-sec', list);
-      el('div', 'shop-tier', sec, t(`shop.tier.${tier}`));
-      const grid = el('div', 'shop-grid', sec);
+      el('div', 'sp-tier', list, t(`shop.tier.${tier}`));
+      const grid = el('div', 'sp-grid', list);
       for (const it of items) this.card(me, it.id, grid, rec.has(it.id));
+      shown += items.length;
     }
+    if (!shown) el('div', 'sp-empty', list, t('shop.none'));
 
-    const det = el('div', 'shop-detail', body);
+    // ---- details
+    const det = el('div', 'sp-detail', body);
     const sel = this.selected ? itemById(this.selected) : undefined;
-    if (!sel) el('div', 'shop-empty', det, t('shop.pick'));
-    else {
-      el('div', 'shop-name', det, sel.name[settings.lang]);
-      const q = this.canBuy(me, sel);
-      el('div', 'shop-cost', det, q.price !== sel.cost ? `${q.price} (${sel.cost})` : String(sel.cost));
-      for (const l of statLines(sel)) el('div', 'shop-stat', det, l);
-      if (sel.passive) el('div', 'shop-passive', det, `${sel.passive.name[settings.lang]}: ${sel.passive.desc[settings.lang]}`);
-      if (sel.active) el('div', 'shop-passive', det, `${sel.active.name[settings.lang]}: ${sel.active.desc[settings.lang]}`);
+    if (!sel) {
+      el('div', 'sp-empty', det, t('shop.pick'));
+      if (recList.length) {
+        el('div', 'sp-sub', det, t('shop.recommended'));
+        const rr = el('div', 'sp-grid', det);
+        for (const id of recList) this.card(me, id, rr, true);
+      }
+    } else {
+      const top = el('div', 'sp-dhead', det);
+      iconEl(top, sel.id, 'sp-icon big');
+      const nm = el('div', 'sp-dname', top);
+      el('div', 'sp-name', nm, sel.name[settings.lang]);
+      const qb = this.canBuy(me, sel);
+      const cost = el('div', 'sp-cost', nm);
+      el('span', 'sp-coin', cost);
+      cost.append(String(qb.price));
+      if (qb.price !== sel.cost) el('span', 'sp-full', cost, String(sel.cost));
+      const stats = el('div', 'sp-stats', det);
+      for (const [k, v] of Object.entries(sel.stats) as [ItemStat, number][]) {
+        const s = el('div', 'sp-stat', stats);
+        const ic = el('span', 'sp-stat-icon', s);
+        const url = STAT_ICON[k] ? statIcon(STAT_ICON[k]!) : null;
+        if (url) setIcon(ic, url);
+        s.append(`+${v}${PCT.has(k) ? ' %' : ''} ${t(`stat.${k}`)}`);
+      }
+      if (sel.passive) this.effect(det, t('shop.passive'), sel.passive.name[settings.lang], sel.passive.desc[settings.lang]);
+      if (sel.active) this.effect(det, t('shop.active'), sel.active.name[settings.lang], `${sel.active.desc[settings.lang]} (${sel.active.cooldown} s)`);
       if (sel.from.length) {
-        el('div', 'shop-sub', det, t('shop.recipe'));
-        const from = el('div', 'shop-from', det);
-        for (const c of sel.from) this.card(me, c, from, rec.has(c));
+        el('div', 'sp-sub', det, t('shop.recipe'));
+        this.tree(me, sel, el('div', 'sp-tree', det), 0, [...me.items]);
       }
       const into = ITEMS.filter((i) => i.from.includes(sel.id));
       if (into.length) {
-        el('div', 'shop-sub', det, t('shop.buildsInto'));
-        const g = el('div', 'shop-from', det);
-        for (const i of into) this.card(me, i.id, g, rec.has(i.id));
+        el('div', 'sp-sub', det, t('shop.buildsInto'));
+        const gi = el('div', 'sp-grid', det);
+        for (const i of into) this.card(me, i.id, gi, rec.has(i.id));
       }
-      const b = el('button', 'btn primary shop-buy', det, `${t('shop.buy')} (${q.price})`);
-      b.disabled = !q.ok;
-      if (q.why) b.title = q.why;
+      const b = el('button', 'sp-buy', det, `${t('shop.buy')}  ·  ${qb.price}`);
+      b.disabled = !qb.ok;
+      if (qb.why) b.title = qb.why;
       b.addEventListener('click', () => this.hooks.buy(sel.id));
       this.buyBtn = { el: b, it: sel };
     }
 
-    const inv = el('div', 'shop-inv', r);
-    el('span', 'lbl', inv, t('shop.inventory'));
+    // ---- inventory
+    const inv = el('div', 'sp-inv', r);
+    el('span', 'sp-sub', inv, t('shop.inventory'));
     me.items.slice(0, ITEM_SLOTS).forEach((id, slot) => {
-      const s = el('div', `shop-slot${id ? '' : ' empty'}`, inv);
+      const s = el('div', `sp-slot${id ? '' : ' empty'}`, inv);
       if (!id) return;
       iconEl(s, id);
       setTip(s, `item:${id}`);
-      const sell = el('button', 'btn small', s, `${t('shop.sell')} +${Math.floor((itemById(id)?.cost ?? 0) * SELL_RATIO)}`);
+      s.addEventListener('click', () => this.select(id));
+      const sell = el('button', 'sp-sell', s, `+${Math.floor((itemById(id)?.cost ?? 0) * SELL_RATIO)}`);
+      sell.title = t('shop.sell');
       sell.disabled = !me.inFountain && !me.dead;
-      sell.addEventListener('click', () => this.hooks.sell(slot));
+      sell.addEventListener('click', (e) => (e.stopPropagation(), this.hooks.sell(slot)));
     });
-    // a rebuild (inventory / selection changed) keeps the scroll position
-    [...r.querySelectorAll<HTMLElement>('.shop-list, .shop-detail')].forEach((e, i) => (e.scrollTop = scroll[i] ?? 0));
+
+    // a rebuild (inventory / selection / filter changed) keeps scroll position and search focus
+    [...r.querySelectorAll<HTMLElement>('.sp-list, .sp-detail')].forEach((e, i) => (e.scrollTop = scroll[i] ?? 0));
+    if (searchFocused) {
+      search.focus();
+      search.setSelectionRange(search.value.length, search.value.length);
+    }
+  }
+
+  private effect(parent: HTMLElement, kind: string, name: string, desc: string): void {
+    const d = el('div', 'sp-effect', parent);
+    el('span', 'sp-effect-kind', d, kind);
+    el('span', 'sp-effect-name', d, name);
+    el('div', 'sp-effect-desc', d, desc);
+  }
+
+  /** Build tree: each component with its own components below; owned ones (consumed once each) are checked. */
+  private tree(me: PlayerHud, it: ItemData, parent: HTMLElement, depth: number, pool: (string | null)[]): void {
+    for (const c of it.from) {
+      const sub = itemById(c);
+      if (!sub) continue;
+      const k = pool.indexOf(c);
+      const owned = k >= 0 && k < ITEM_SLOTS;
+      if (owned) pool[k] = null;
+      const row = el('div', `sp-node${owned ? ' owned' : ''}`, parent);
+      row.style.paddingLeft = `${depth * 18}px`;
+      iconEl(row, c, 'sp-icon small');
+      el('span', 'sp-node-name', row, sub.name[settings.lang]);
+      el('span', 'sp-node-cost', row, owned ? '✓' : String(sub.cost));
+      setTip(row, `item:${c}`);
+      row.addEventListener('click', () => this.select(c));
+      row.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        if (this.canBuy(this.me ?? me, sub).ok) this.hooks.buy(c);
+      });
+      if (!owned && sub.from.length) this.tree(me, sub, parent, depth + 1, pool);
+    }
   }
 
   private card(me: PlayerHud, id: string, parent: HTMLElement, rec: boolean): void {
     const it = itemById(id);
     if (!it) return;
     const q = this.canBuy(me, it);
-    const c = el('button', `shop-item${rec ? ' rec' : ''}${q.ok ? ' afford' : ''}${this.selected === id ? ' sel' : ''}${me.items.includes(id) ? ' owned' : ''}`, parent);
+    const owned = me.items.includes(id);
+    const c = el('button', `sp-item tier-${it.tier}${rec ? ' rec' : ''}${q.ok ? ' afford' : ''}${this.selected === id ? ' sel' : ''}${owned ? ' owned' : ''}`, parent);
     iconEl(c, id);
-    el('div', 'price', c, String(q.price));
+    const price = el('div', 'sp-price', c, String(q.price));
+    if (q.price !== it.cost) price.classList.add('reduced');
     setTip(c, `item:${id}`);
-    this.cards.push({ el: c, it });
-    c.addEventListener('click', () => {
-      this.selected = id;
-      this.key = '';
-      this.update(this.me ?? me);
-    });
+    this.cards.push({ el: c, it, price });
+    c.addEventListener('click', () => this.select(id));
     // right click buys directly (like LoL); checked against the latest gold, not the one at build time
     c.addEventListener('contextmenu', (e) => {
       e.preventDefault();

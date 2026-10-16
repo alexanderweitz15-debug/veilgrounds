@@ -413,5 +413,19 @@
   "classic.botDifficulty": "Bot difficulty (all bots)",
   "classic.advanced": "Advanced",
   "classic.rankMixed": "Mixed ranks (set individually under \"Advanced\") – a click above sets all bots again.",
-  "set.castIndicator": "Cast with indicator (hold key to aim, release to cast)"
+  "set.castIndicator": "Cast with indicator (hold key to aim, release to cast)",
+  "shop.search": "Search …",
+  "shop.none": "No items in this category.",
+  "shop.passive": "Passive",
+  "shop.active": "Active",
+  "shop.cat.all": "All",
+  "shop.cat.rec": "Recommended",
+  "shop.cat.ad": "Attack",
+  "shop.cat.ap": "Magic",
+  "shop.cat.def": "Defense",
+  "shop.cat.as": "Speed & crit",
+  "shop.cat.boots": "Boots",
+  "shop.cat.support": "Support",
+  "shop.cat.jungle": "Jungle",
+  "shop.cat.consumable": "Consumables"
 }

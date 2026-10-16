@@ -82,7 +82,19 @@ export type Knob =
   | 'waveSacrifice' // willingness to give up a wave for an objective 0..1
   // jungle (§4.3)
   | 'gankThreshold' // 0.55 +- 0.15 (rank shifts in profile)
-  | 'gankEvalIntervalS';
+  | 'gankEvalIntervalS'
+  // BRAIN-REWORK §4.3 / §5 (A3, additive): harass budget shift and utility style factors (x0.6 .. x1.6)
+  | 'harassRateShift' // autos/min added to the profile harass budget (aggression +-3)
+  | 'utilFarm' // Farm axis x farm value
+  | 'utilTrade' // Aggression x trade / all-in value
+  | 'utilHarass' // Aggression x harass-poke value
+  | 'utilRoam' // Roam axis x roam value
+  | 'utilPush' // Tempo x push / plates value
+  | 'utilRecall' // Tempo x recall value (slow recalls more)
+  | 'utilObjective' // Objective risk x objective value
+  | 'utilVision' // Vision x ward / sweep value
+  | 'utilGroup' // Teamplay x group / siege / end value
+  | 'utilCatchLane'; // Farm x jungler "catch the lane" value
 
 export interface BotParams {
   slot: number;

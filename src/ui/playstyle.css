@@ -54,3 +54,5 @@
 .bot-debug-table .reason { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bot-debug-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bot-debug-table tr.err td.error { color: #ff8a6a; font-weight: 600; }
+.bot-debug-table tr.distracted td.attention { color: #e8c86a; }
+.bot-debug-table .plans, .bot-debug-table .attention { white-space: nowrap; }

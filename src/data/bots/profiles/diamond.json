@@ -55,7 +55,15 @@
     "apmCap": 200,
     "inertia": 0.3,
     "hysteresis": 0.16,
-    "engageHesitationS": 0.52
+    "engageHesitationS": 0.52,
+    "utilityNoisePct": 11,
+    "distractionIntervalS": 16.5,
+    "distractionDurMedianS": 1.0,
+    "distractionDurSigma": 0.5,
+    "minimapGlancePlannedPct": 85,
+    "distractKillFeedPct": 15,
+    "distractShopPct": 20,
+    "distractChatPct": 15
   },
   "notes": {
     "de": "Bestraft CS-Fenster, sneakt Baron und wardet Drache, tracked Flash, contestet Nebelschleicher, Shove-and-Recall, 2–3 feste Kernitems, schnelle Skirmish-Reaktion. Jungle-Pathing noch nicht optimal; Objective-Entscheidungen brauchen 4 s. Erster Baron wird korrekt genutzt.",

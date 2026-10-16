@@ -76,6 +76,30 @@ export interface RankBehavior {
   hysteresis: number;
   /** Visible hesitation before engages, seconds (§8: 0.3-1.0 by rank). */
   engageHesitationS: number;
+
+  // BRAIN-REWORK §4.7: wave-state awareness = waveStateDeliberatePct and shove-and-recall = shoveAndRecallPct (above,
+  // values already match §4.7: Iron 0/5, Gold 30/50, Diamond 80/85, Challenger 98/98). The seven reflex fields
+  // (planHorizonS, windowPrepPct, ...) are added by A1 (lead decision 16 Oct).
+
+  // ---- BRAIN-REWORK §5 utility model (A3 data, consumed by A2). Hysteresis = `hysteresis` above.
+  /** Rank noise on every candidate score: sigma as % of |score| (Iron 40, Gold 20, Challenger 7). */
+  utilityNoisePct: number;
+
+  // ---- BRAIN-REWORK §9 attention model (src/ai/humanize/attention.ts). Target share of distracted time =
+  // errorInjectionPct (Table B); rate x duration below are calibrated to it (tests/attention.test.ts).
+  /** Mean focused seconds between two random distractions (exponential gap after a window ends). */
+  distractionIntervalS: number;
+  /** Random distraction duration: log-normal median (s) and log-space sigma, clamped to attention.json [minS, maxS]. */
+  distractionDurMedianS: number;
+  distractionDurSigma: number;
+  /** Share of minimap glances the bot times into a free moment (no window then), % (Iron 0 .. Challenger 100). */
+  minimapGlancePlannedPct: number;
+  /** Chance a champion kill in the kill feed distracts, % (Iron 60 .. Challenger 5). */
+  distractKillFeedPct: number;
+  /** Chance a gold step (attention.json shopGoldStep) makes the bot look at the shop outside the fountain, %. */
+  distractShopPct: number;
+  /** Chance a team chat line distracts (toxicity setting on), %. */
+  distractChatPct: number;
 }
 
 export interface RankProfile {

@@ -1,0 +1,18 @@
+{
+  "note": "BRAIN-REWORK §9 attention model (src/ai/humanize/attention.ts): rank-independent constants. Per-rank rates and durations live in the rank profiles (distraction*, minimapGlancePlannedPct, distract*Pct); the target share of distracted time is the profile's errorInjectionPct (Table B). Durations in seconds.",
+  "minS": 0.5,
+  "maxS": 3.0,
+  "minimapS": [0.3, 0.8],
+  "killFeedS": [0.4, 1.2],
+  "shopS": [0.6, 1.5],
+  "chatS": [0.8, 2.0],
+  "shopGoldStep": 500,
+  "tiltExtendPct": 30,
+  "reactionPenaltyMs": 150,
+  "historyLen": 12,
+  "myBad": {
+    "fromSkill": 30,
+    "pct": 20,
+    "text": { "de": "Mein Fehler", "en": "my bad" }
+  }
+}

@@ -28,6 +28,8 @@ export interface InputHost {
   onArmedChange(a: Armed): void;
   /** True while a DOM menu/overlay owns the keyboard. */
   menuOpen(): boolean;
+  /** Left click on a unit (eid) or the ground (null): target frame (C3). */
+  select?(eid: number | null): void;
 }
 
 export class InputController {
@@ -139,6 +141,8 @@ export class InputController {
         this.ping(kind, h && kind !== 'danger' ? h.x : g.x, h && kind !== 'danger' ? h.y : g.y, kind !== 'danger' ? h?.id : undefined);
         return;
       }
+      // LoL: a plain left click selects the unit under the cursor for the target frame, ground clears it
+      if (!this.armed) this.host.select?.(this.hover ? this.hover.id : null);
       if (this.armed === 'attackMove') {
         this.send({ t: 'attackMove', x: g.x, y: g.y });
         this.host.world.fx.clickMarker(g.x, g.y, true, now);

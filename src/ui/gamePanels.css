@@ -82,6 +82,33 @@
 .buff-mark.dornenbock { border-color: #4a7ab8; }
 .buff-mark.glutwaechter { border-color: #c0573a; }
 .buff-mark.schleierwaechter { border-color: #9a6fd0; }
+/* C3: buff / CC chips (own buff bar + target frame) */
+.chip { display: inline-flex; align-items: center; gap: 4px; }
+.chip.cc { border-color: #c8553a; color: #ffc6b4; }
+.chip.buff { border-color: #6c9a5a; }
+.chip-ico { width: 16px; height: 16px; background: center / cover no-repeat; border-radius: 3px; }
+.chip-t { color: #d9c79a; font-variant-numeric: tabular-nums; }
+/* target frame (top left, LoL) */
+.target-frame { display: none; position: absolute; left: 10px; top: 10px; transform: scale(var(--ui)); transform-origin: top left; width: 270px; padding: 6px 8px 6px 64px; min-height: 56px; background: rgba(10, 12, 14, 0.9); border: 1px solid #4d4233; border-left: 3px solid #a99f8a; pointer-events: auto; z-index: 6; }
+.target-frame.open { display: block; }
+.target-frame.ally { border-left-color: var(--blue); }
+.target-frame.enemy { border-left-color: var(--red); }
+.tf-pic { position: absolute; left: 8px; top: 6px; width: 48px; height: 48px; display: grid; place-items: center; border: 1px solid #6b5a35; background: #1c1824 center / cover no-repeat; color: #f1e6c8; font: 800 20px sans-serif; }
+.tf-level { position: absolute; left: 40px; top: 40px; min-width: 18px; padding: 0 3px; text-align: center; background: #15120f; border: 1px solid #6b5a35; color: #f3d98c; font: 800 11px sans-serif; }
+.tf-level:empty { display: none; }
+.tf-name { font: 700 14px 'Barlow Condensed', sans-serif; color: #f1e6c8; margin-bottom: 3px; }
+.tf-bar { position: relative; height: 12px; margin-bottom: 2px; background: #1a1612; border: 1px solid #3a3226; overflow: hidden; }
+.tf-bar .fill { position: absolute; left: 0; top: 0; bottom: 0; }
+.tf-bar.hp .fill { background: linear-gradient(#5fb45a, #3d8a38); }
+.target-frame.enemy .tf-bar.hp .fill { background: linear-gradient(#d0584a, #a03a30); }
+.tf-bar.mp .fill { background: linear-gradient(#5a8fd8, #3b65a8); }
+.tf-bar .shield { position: absolute; top: 0; bottom: 0; background: #e8e2d0; }
+.tf-bar .txt { position: absolute; inset: 0; text-align: center; font: 700 10px/12px sans-serif; color: #fff; text-shadow: 0 0 2px #000; }
+.tf-info { font-size: 11.5px; color: #c8bfa8; margin-top: 2px; }
+.tf-info:empty, .tf-items:empty, .tf-chips:empty { display: none; }
+.tf-items { margin-top: 3px; }
+.tf-chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
+.tf-chips .chip { font-size: 11px; padding: 1px 5px; }
 
 /* ---------------------------------------------------------------- shop */
 .panel.shop.open { top: 60px; left: 50%; transform: translateX(-50%); width: min(860px, 96vw); height: auto; max-height: calc(100vh - 230px); overflow-y: auto; border-radius: 0; box-sizing: border-box; }
@@ -132,9 +159,38 @@
 .score-portrait { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 6px; vertical-align: middle; border-radius: 50%; border: 1px solid #6b5a35; background: #1c1824; font-size: 11px; font-weight: 800; color: #f1e6c8; }
 .score-table.ally td.champ { color: #8fb7ea; }
 .score-table.enemy td.champ { color: #e58f7d; }
-.score-table tr.dead { opacity: 0.5; }
 .score-table tr.me td { color: #f3d98c; }
 .score-table .gold-cell { color: #ffd24a; }
+/* C2: portrait greys out with the respawn seconds on top */
+.score-pic { position: relative; display: inline-block; vertical-align: middle; }
+.score-table tr.dead .score-portrait { filter: grayscale(1) brightness(0.6); }
+.score-respawn { position: absolute; left: 0; top: 0; width: 24px; height: 24px; display: grid; place-items: center; color: #fff; font: 800 12px 'Barlow Condensed', sans-serif; text-shadow: 0 0 3px #000, 0 0 2px #000; pointer-events: none; }
+.score-respawn:empty { display: none; }
+/* dead rows: dim the stats but keep portrait + timer readable */
+.score-table tr.dead td:not(.champ) { opacity: 0.55; }
+.score-table tr.dead td.champ { color: #9a948a; }
+/* summoner spells: own cooldown sweep; enemy spells are click-to-time */
+.score-table td.sums { white-space: nowrap; }
+.sb-sum { position: relative; display: inline-block; width: 22px; height: 22px; margin-right: 2px; vertical-align: middle; border: 1px solid #4d4233; background: #15120f center / cover no-repeat; }
+.sb-sum.enemy { cursor: pointer; }
+.sb-sum.enemy:hover { border-color: #c8aa6e; }
+.sb-sum .cd { position: absolute; inset: 0; pointer-events: none; background: conic-gradient(rgba(0, 0, 0, 0.72) calc(var(--p, 0) * 360deg), transparent 0); }
+.sb-sum .num { position: absolute; inset: 0; display: grid; place-items: center; font: 800 10.5px 'Barlow Condensed', sans-serif; color: #fff; text-shadow: 0 0 3px #000, 0 0 2px #000; pointer-events: none; }
+/* objective bar: own team left, enemy right */
+.sb-objectives { display: flex; justify-content: space-between; gap: 12px; margin: 0 0 6px; padding: 4px 6px; background: rgba(255, 255, 255, 0.03); border-bottom: 1px solid #3a3226; }
+.sb-team { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; }
+.sb-team.enemy { flex-direction: row-reverse; }
+.sb-team-name { font: 700 12px 'Barlow Condensed', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--blue); }
+.sb-team.enemy .sb-team-name { color: var(--red); }
+.sb-obj-item { display: inline-flex; align-items: center; gap: 3px; cursor: help; color: #f1e6c8; font-variant-numeric: tabular-nums; }
+.sb-obj-item b { font-weight: 800; }
+.sb-ico { display: inline-block; width: 18px; height: 18px; background: center / cover no-repeat; }
+.sb-ico.lev, .sb-ico.soul { border-radius: 50%; }
+.sb-ico.lev.empty { box-sizing: border-box; width: 14px; height: 14px; margin: 2px; border: 1px dashed rgba(127, 182, 191, 0.5); }
+.sb-ico.soul { width: 22px; height: 22px; box-shadow: 0 0 6px #5fd0d8; }
+.sb-lev .soul-lbl { color: #9fe6ec; }
+.sb-timer { margin-left: 2px; color: #d9c79a; font-size: 11.5px; }
+.sb-schleier .sb-timer { color: #cdb6ff; }
 .mini-item { display: inline-block; min-width: 24px; padding: 1px 2px; margin-right: 2px; font-size: 10px; text-align: center; border: 1px solid #4d4233; background: #15120f; color: #f1e6c8; }
 .mini-item.empty { opacity: 0.3; }
 .mini-item.has-icon { width: 22px; height: 22px; min-width: 0; padding: 0; vertical-align: middle; box-sizing: border-box; }

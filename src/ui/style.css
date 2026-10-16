@@ -94,6 +94,12 @@ h2, h3 { margin: 4px 0; color: #f3d98c; }
 .hud-top .lbl { color: #a99f8a; font-weight: 400; margin-right: 4px; }
 .hud-top .cs { font-size: 13px; color: #d8cfb6; }
 .hud-top .clock { font-variant-numeric: tabular-nums; font-size: 16px; }
+/* epic monster timers below the top bar (C3): countdown, lit while the monster is up */
+.obj-timers { position: absolute; top: calc(40px * var(--ui)); left: 50%; transform: translateX(-50%) scale(var(--ui)); transform-origin: top center; display: flex; gap: 6px; pointer-events: auto; }
+.obj-timer { display: flex; align-items: center; gap: 4px; padding: 2px 8px 2px 3px; background: rgba(14, 12, 18, 0.78); border: 1px solid rgba(201, 162, 78, 0.35); border-top: 0; border-radius: 0 0 6px 6px; font: 700 13px 'Barlow Condensed', sans-serif; color: #d8cfb6; font-variant-numeric: tabular-nums; cursor: help; }
+.obj-timer .ot-ico { width: 18px; height: 18px; border-radius: 50%; background: center / cover no-repeat; filter: grayscale(0.7) brightness(0.8); }
+.obj-timer.up { color: #f3d98c; border-color: rgba(243, 217, 140, 0.7); }
+.obj-timer.up .ot-ico { filter: none; box-shadow: 0 0 5px rgba(243, 217, 140, 0.7); }
 /* Kesselbrut stacks of the own team (grub icon + count), shown from the first grub on */
 .hud-top .kessel { display: none; align-items: center; gap: 3px; font-size: 14px; color: #d9bfff; pointer-events: auto; cursor: help; }
 .hud-top .kessel.show { display: flex; }
@@ -170,12 +176,21 @@ h2, h3 { margin: 4px 0; color: #f3d98c; }
 
 .minimap-wrap { position: absolute; right: 0; bottom: 0; transform: scale(var(--ui)); transform-origin: bottom right; padding: 6px; background: var(--panel); border: 2px solid var(--brass-dim); border-right: 0; border-bottom: 0; border-radius: 8px 0 0 0; }
 .minimap { width: 280px; height: 280px; display: block; cursor: pointer; }
+/* death timers above the minimap (C2): inside .minimap-wrap so they scale with it; soonest respawn first */
+.death-bar { position: absolute; right: 4px; bottom: calc(100% + 4px); display: flex; flex-wrap: wrap-reverse; justify-content: flex-end; gap: 4px; max-width: 288px; pointer-events: none; }
+.death-bar.empty { display: none; }
+.db-item { position: relative; width: 34px; height: 34px; border-radius: 4px; border: 2px solid var(--blue); background: #15121a; box-shadow: 0 1px 3px #000; }
+.db-item.enemy { border-color: var(--red); }
+.db-item.hidden { display: none; }
+.db-pic { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 2px; background: #1c1824 center / cover no-repeat; color: #d8d0bc; font: 800 12px sans-serif; filter: grayscale(1) brightness(0.85); }
+.db-num { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; line-height: 14px; background: rgba(8, 6, 10, 0.72); color: #fff; font: 800 13px 'Barlow Condensed', sans-serif; text-shadow: 0 0 3px #000, 0 0 2px #000, 0 0 1px #000; font-variant-numeric: tabular-nums; }
 
 .respawn, .recall, .nochamp, .pause-overlay, .gameover, .panel { display: none; }
 .respawn.open {
   display: flex; flex-direction: column; align-items: center; position: absolute; top: 64px; left: 50%; transform: translateX(-50%) scale(var(--ui)); transform-origin: top center;
   padding: 6px 26px 8px; background: radial-gradient(ellipse at 50% 40%, rgba(40, 10, 12, 0.85), rgba(12, 8, 10, 0.75)); border: 2px solid #7a2a24; border-radius: 10px; box-shadow: 0 0 24px rgba(0, 0, 0, 0.6);
 }
+.respawn .hint { margin-top: 4px; font-size: 11.5px; color: #c8bfa8; text-shadow: 0 0 3px #000; white-space: nowrap; }
 .respawn .lbl { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #d8b9a8; }
 .respawn .num { font-size: 46px; line-height: 1; font-weight: 900; font-variant-numeric: tabular-nums; color: #ffe2c4; text-shadow: 0 0 12px #c0392b, 0 0 3px #000; }
 /* death: dark vignette over the (still free) camera view */

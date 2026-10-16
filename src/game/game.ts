@@ -13,6 +13,7 @@ import { InputController, type Armed, type Panel } from '../input/controller';
 import { Hud } from '../ui/hud';
 import { Overlay } from '../ui/overlay';
 import { Minimap } from '../ui/minimap';
+import { minimapPingFor } from './minimapPing';
 import { buildSettingsPanel } from '../ui/settingsPanel';
 import { onSettingsChange, settings } from '../settings';
 import { t } from '../i18n';
@@ -130,6 +131,7 @@ export class Game {
         buy: (item) => this.link.send({ t: 'buy', item }),
         sell: (slot) => this.link.send({ t: 'sell', slot }),
         swapTrinket: (id) => this.link.send({ t: 'trinket', id }),
+        say: (text) => this.chat.say(text),
       },
       config?.mode === 'kite' || !config, // sandbox: one merged panel (src/ui/sandboxPanel.ts)
       config?.players ?? [],
@@ -148,11 +150,15 @@ export class Game {
         this.link.send({ t: 'move', x, y });
         this.world.fx.clickMarker(x, y, false, performance.now());
       },
-      (x, y) => this.link.send({ t: 'ping', kind: 'danger', x, y }),
+      (x, y) => {
+        // Alt+click: snaps to a structure / objective pit under the cursor (src/game/minimapPing.ts)
+        const p = minimapPingFor(x, y, this.state.snap?.entities ?? [], this.state.myTeam, [map.objectives.leviathan, map.objectives.kesselbrut]);
+        this.link.send(p.target !== undefined ? { t: 'ping', kind: p.kind, x: p.x, y: p.y, target: p.target } : { t: 'ping', kind: p.kind, x: p.x, y: p.y });
+      },
     );
     const mmWrap = document.createElement('div');
     mmWrap.className = 'minimap-wrap';
-    mmWrap.appendChild(this.minimap.canvas);
+    mmWrap.append(this.hud.deathBar.root, this.minimap.canvas);
     this.hud.root.appendChild(mmWrap);
 
     this.chat = new ChatBox(
@@ -161,6 +167,7 @@ export class Game {
       config?.players.find((p) => p.isHuman)?.slot ?? 0,
       (text) => this.link.send({ t: 'chat', text }),
       () => this.menu.classList.contains('open'),
+      this.state.muted,
     );
     this.menu = document.createElement('div');
     this.menu.className = 'ingame-menu';
@@ -176,6 +183,7 @@ export class Game {
         openMenu: () => this.openMenu(),
         useItem: (i) => this.hud.flashItem(i),
         onArmedChange: (a: Armed) => this.hud.setArmed(a),
+        select: (eid) => this.hud.target.select(eid),
         // the menu, chat input and the victory/defeat screen swallow game input
         menuOpen: () => this.menu.classList.contains('open') || this.chat.typing || this.state.winner !== null,
       },

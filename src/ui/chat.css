@@ -11,6 +11,7 @@
 .chat-line { color: #e8e2d4; text-shadow: 0 1px 2px #000, 0 0 4px #000; transition: opacity 0.6s; }
 .chat-line .who { color: #7fb7ea; font-weight: 600; }
 .chat-line.mine .who { color: #e8c86a; }
+.chat-line.system { color: #d9c79a; font-style: italic; }
 .chat-line.old { opacity: 0; }
 .chat-box.typing .chat-line.old { opacity: 0.85; }
 .chat-box.typing .chat-log { background: rgba(12, 10, 14, 0.55); border-radius: 4px; padding: 4px 6px; overflow-y: auto; pointer-events: auto; }

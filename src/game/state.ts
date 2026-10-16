@@ -1,6 +1,7 @@
 // Client-side view of the match: newest snapshot for positions, accumulated tallies from every snapshot's events.
 import type { SnapEntity, Snapshot } from '../sim/snapshot';
 import { Kind, TICK_HZ, type PingKind, type SimEvent } from '../sim/types';
+import { ObjectiveTracker } from './objectives';
 
 const TICK_MS = 1000 / TICK_HZ;
 /** Moves longer than this in one tick are teleports/respawns: snap, do not sweep across the map. */
@@ -58,6 +59,12 @@ export class ClientState {
    * and announcements. Minion eids get reused; the entry is overwritten when the new unit is seen.
    */
   readonly known = new Map<number, SnapEntity>();
+  /** Slots muted with /mute (chat lines and pings hidden locally; C4). */
+  readonly muted = new Set<number>();
+  /** Tick a champion (eid) was last in the snapshot: minimap "last seen" ghosts (C3). */
+  readonly seenAt = new Map<number, number>();
+  /** Respawn timers, Leviathan/Kesselbrut/Schleierwaechter, inhibitor respawns of both teams (scoreboard, C2). */
+  readonly objectives = new ObjectiveTracker();
 
   /** Ingest one snapshot; returns its events for the fx/HUD dispatch. */
   ingest(s: Snapshot, now: number): SimEvent[] {
@@ -84,6 +91,7 @@ export class ClientState {
     for (const e of s.entities) {
       this.byId.set(e.id, e);
       this.known.set(e.id, e);
+      if (e.kind === Kind.Champion) this.seenAt.set(e.id, s.tick);
     }
     for (const ev of s.events) {
       if (ev.e === 'death') {
@@ -91,8 +99,9 @@ export class ClientState {
         if (ev.kind === Kind.Champion && ev.team <= 1) this.kills[scorer]++;
         if (ev.kind === Kind.Tower && ev.team <= 1) this.towers[scorer]++;
       } else if (ev.e === 'gameOver') this.winner = ev.winner;
-      else if (ev.e === 'ping') this.pings.push({ id: ++this.pingSeq, kind: ev.kind, x: ev.x, y: ev.y, slot: ev.slot, target: ev.target, at: now });
+      else if (ev.e === 'ping' && !this.muted.has(ev.slot)) this.pings.push({ id: ++this.pingSeq, kind: ev.kind, x: ev.x, y: ev.y, slot: ev.slot, target: ev.target, at: now });
     }
+    this.objectives.ingest(s, (eid) => this.known.get(eid));
     return s.events;
   }
 
@@ -129,6 +138,27 @@ export class ClientState {
   /** Entity of this snapshot, else the last one seen with that eid (units that died or vanished into the fog). */
   entity(eid: number): SnapEntity | undefined {
     return this.byId.get(eid) ?? this.known.get(eid);
+  }
+
+  /**
+   * Enemy champions that are alive (scoreboard) but not in the current snapshot, at their last seen position, seen at
+   * most `maxAge` seconds ago (minimap ghosts). Fog-safe: only positions this team actually saw.
+   */
+  lastSeenEnemies(maxAge: number): { champ: string; x: number; y: number; age: number }[] {
+    const snap = this.snap;
+    if (!snap) return [];
+    const out: { champ: string; x: number; y: number; age: number }[] = [];
+    for (const [eid, at] of this.seenAt) {
+      if (this.byId.has(eid)) continue;
+      const e = this.known.get(eid);
+      if (!e || e.kind !== Kind.Champion || e.team === this.myTeam || !e.champ) continue;
+      const age = (snap.tick - at) / TICK_HZ;
+      if (age > maxAge) continue;
+      const row = snap.players.find((p) => p.team === e.team && p.champ === e.champ);
+      if (!row || row.dead) continue;
+      out.push({ champ: e.champ, x: e.x, y: e.y, age });
+    }
+    return out;
   }
 
   me(): SnapEntity | undefined {

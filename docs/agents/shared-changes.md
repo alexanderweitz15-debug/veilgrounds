@@ -147,4 +147,68 @@ All A2 hooks keep flag-off behaviour bit-identical: every changed line is behind
 | A2-3 | 2026-10-16 | src/ai/bot/brain.ts `retreat` | `const goHome = !utilityOn(ctx) && (v.hpPct < lowHp \|\| (mem.mode === 'retreat' && v.hpPct < 0.4) \|\| mem.mode === 'home');` and `if (mem.mode === 'retreat' \|\| (mem.mode === 'home' && !utilityOn(ctx))) mem.mode = 'lane';` | §4.6 "retreat führt nicht mehr automatisch heim": with the flag the flee part stays (survive), the walk home becomes the recall candidate (`recallValue`: stay-death > 0.3 or an item). Measured (Diamond, 8 min, flag on, seed 1): 29 of 34 laner recalls came from this branch ("recall / low hp"), so test 8 cannot hold until it is gated. | proposed |
 | A2-4 | 2026-10-16 | docs/agents/plan-api.md / src/ai/plan.ts (A1) | Second intent kind for reflex filling during a trade disengage (§6.1): `{ kind: 'disengage'; lane: LaneName; from: number /* enemy eid */; back: Pt /* own stand point side */; until: number; harass: boolean }`. Reflex: orbwalk toward `back`, fill free attack periods with autos on minions in reach (or the champion when `harass`), last-hit plans as in laneFarm. A2's trade intent sets it when a trade ends (`endTrade`) for `disengageUntil`. | §6.1 "nach dem Abbruch Disengage per Orbwalk zum Stehpunkt; währenddessen läuft der Angriffs-Scheduler weiter". | proposed (A1 accepted the idea in review-2026-10-16) |
 | A2-5 | 2026-10-16 | A3: profiles + playstyleAxes.json | A2 reads `RankBehavior.utilityNoisePct` (A3-1) and the knobs `utilFarm`, `utilHarass`, `utilTrade`, `utilPush`, `utilRoam`, `utilRecall`, `utilObjective`, `utilVision`, `utilGroup`, `utilCatchLane` (A3-2) when present; fallbacks until merged: `exchangeNoise(skill)` (same numbers) and the axis mappings in values.json `style`. Logged under node `intent` (A3-10, `VALUES.selection.logNode`). | No new shared change; listed so the merge order is clear. | info |
+## 2026-10-16 · C · src/sim/snapshot.ts · public objective + respawn fields (C2) · proposed
+
+Affected: B (owner, B3/B6 add the same kind of data — please use these names or tell C yours), A1–A3 (bots may read
+the same public fields; nothing hidden is added). **Nothing blocks:** C2 already works without these fields through a
+client adapter (`src/game/objectives.ts`, derived from public death events + exported sim constants) and reads each
+field below first (`row.respawnIn ?? derived`), so merging them only makes values exact where the client cannot know
+them (enemy Kesselbrut stacks; ally summoner cooldowns; vision score; damage).
+
+Reason: AGENTS-PLAN §5 C2 (scoreboard objectives, death timers, summoner timers), user report 16.10. All values are
+on-screen information in LoL (respawn timers of all champions, drake/grub counts of both teams, baron timer,
+inhibitor timers, own team's summoner cooldowns).
+
+```diff
+ export interface Snapshot {
+   ...
+   /** Kesselbrut stacks of the viewing team (0-6, HUD indicator); absent while 0 and for spectators. */
+   kesselbrut?: number;
++  /** Public objective state of both teams (index = team). */
++  objectives?: {
++    leviathan: [number, number];
++    kesselbrut: [number, number];
++    /** Seconds left of the Schleierwaechter buff (max over the team's alive holders; 0 = none). */
++    schleierLeft: [number, number];
++    /** Destroyed inhibitors: seconds until respawn. */
++    inhibs: { team: number; lane: LaneId; left: number }[];
++  };
+ }
+
+ export interface ScoreRow {
+   ...
+   itemValue: number;
++  /** Dead champions (both teams): seconds until respawn (Champ.respawnAt - tick) / 30. */
++  respawnIn?: number;
++  /** Own team only: summoner spell cooldowns, same order as PlayerSetup.summoners. */
++  summonerCds?: { left: number; total: number }[];
++  /** Both teams (public in LoL's scoreboard): vision score and damage dealt to champions. */
++  visionScore?: number;
++  champDamage?: number;
+ }
+```
+
+In `scoreRows(sim, team)`:
+
+```diff
+       dead: Unit.alive[e] !== 1,
++      ...(Unit.alive[e] !== 1 && Champ.respawnAt[e]! > 0 ? { respawnIn: Math.max(0, (Champ.respawnAt[e]! - sim.tick) / 30) } : {}),
+       ...(own ? { gold: ..., items: ..., summonerCds: summonerCdHud(sim, e) } : {}),
+```
+
+In `buildSnapshot`: `objectives: { leviathan: [leviathanStacks(sim, 0), leviathanStacks(sim, 1)], kesselbrut:
+[kesselbrutStacks(sim, 0), kesselbrutStacks(sim, 1)], schleierLeft: [...], inhibs: [...] }` from
+`jungleState`/`towers.ts` records. Test proposal: tests/objectives.test.ts already compares the client timer with
+`Champ.respawnAt`; the same test can assert `row.respawnIn` once it exists.
+
+Also related (B6): if Kesselbrut becomes `epic: true` / radius 130, its death events reach both teams and the
+client counts enemy grubs without the `objectives` field. `src/ui/announce.ts` currently assumes grub deaths stay in
+the fog (banner from the own stack count) — C adapts it when B6 lands.
+
+## 2026-10-16 · C · src/settings.ts · settings outside C's area (C7 heads-up) · proposed
+
+`src/settings.ts` is not in C's file list (AGENTS-PLAN §7 lists src/ui, src/game, src/i18n, src/input). C7 needs new
+settings (minimap scale/side, HP-bar style, enemy skillshot outline, quick-cast per key, settings export/import).
+Proposal: allow C to add fields to `Settings`/`DEFAULTS` in `src/settings.ts` (additive only, no renames), or move the
+file to `src/ui/settings.ts`. Until decided, C7 waits.
 

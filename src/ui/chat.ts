@@ -1,7 +1,9 @@
 // In-game team chat (bottom left): bot lines from the sim (spec-bots §9, incl. flame), own messages with Enter.
+// Chat commands (C4): /help, /mute, /unmute, /ff, /all (src/ui/chatCommands.ts); system lines are local only.
 import './chat.css';
 import type { PlayerSetup, SimEvent } from '../sim/types';
 import { champName } from './names';
+import { parseChat } from './chatCommands';
 import { t } from '../i18n';
 
 const SHOW_MS = 12000;
@@ -24,6 +26,8 @@ export class ChatBox {
     private readonly mySlot: number,
     private readonly send: (text: string) => void,
     private readonly blocked: () => boolean,
+    /** Muted slots (shared with ClientState, which drops their pings). */
+    private readonly muted: Set<number> = new Set(),
   ) {
     this.root = document.createElement('div');
     this.root.className = 'chat-box';
@@ -37,7 +41,7 @@ export class ChatBox {
       e.stopPropagation(); // typing must not cast abilities
       if (e.code === 'Enter' || e.code === 'NumpadEnter') {
         const text = this.input.value.trim();
-        if (text) this.send(text);
+        if (text) this.submit(text);
         this.close();
       } else if (e.code === 'Escape') this.close();
     });
@@ -49,6 +53,50 @@ export class ChatBox {
 
   get typing(): boolean {
     return this.root.classList.contains('typing');
+  }
+
+  /** A team chat line from the HUD (objective timer, summoner timer, item ping). */
+  say(text: string): void {
+    this.send(text);
+  }
+
+  private submit(text: string): void {
+    const a = parseChat(text, this.players, this.mySlot);
+    switch (a.kind) {
+      case 'send':
+        return this.send(a.text);
+      case 'help':
+        return this.system(t('chat.help'));
+      case 'mute':
+        if (a.unknown !== undefined) return this.system(t('chat.noPlayer', { name: a.unknown }));
+        for (const s of a.slots) (a.on ? this.muted.add(s) : this.muted.delete(s));
+        return this.system(t(a.on ? 'chat.muted' : 'chat.unmuted', { names: a.slots.map((s) => this.nameOf(s)).join(', ') }));
+      case 'surrender':
+        return this.system(t('chat.ffNo'));
+      case 'all':
+        return this.system(t('chat.allNo'));
+      default:
+        return this.system(t('chat.unknownCmd', { cmd: a.cmd }));
+    }
+  }
+
+  private nameOf(slot: number): string {
+    const p = this.players.find((x) => x.slot === slot);
+    return p ? (p.bot?.name ?? champName(p.champion)) : '?';
+  }
+
+  /** Local line (command feedback), never sent. */
+  system(text: string): void {
+    const line = document.createElement('div');
+    line.className = 'chat-line system';
+    line.textContent = text;
+    this.append(line);
+  }
+
+  private append(line: HTMLElement): void {
+    this.log.appendChild(line);
+    while (this.log.childElementCount > MAX_LINES) this.log.firstElementChild!.remove();
+    setTimeout(() => line.classList.add('old'), SHOW_MS);
   }
 
   private open(): void {
@@ -65,7 +113,7 @@ export class ChatBox {
 
   /** Chat events of the own team (the snapshot already filters to it). */
   onEvent(ev: SimEvent): void {
-    if (ev.e !== 'chat') return;
+    if (ev.e !== 'chat' || this.muted.has(ev.slot)) return;
     const p = this.players.find((x) => x.slot === ev.slot);
     const who = p ? (p.slot === this.mySlot ? t('chat.you') : (p.bot?.name ?? champName(p.champion))) : '?';
     const line = document.createElement('div');
@@ -74,9 +122,7 @@ export class ChatBox {
     name.className = 'who';
     name.textContent = `${who}${p ? ` (${champName(p.champion)})` : ''}: `;
     line.append(name, document.createTextNode(ev.text));
-    this.log.appendChild(line);
-    while (this.log.childElementCount > MAX_LINES) this.log.firstElementChild!.remove();
-    setTimeout(() => line.classList.add('old'), SHOW_MS);
+    this.append(line);
   }
 
   dispose(): void {

@@ -2,6 +2,7 @@
 // English name/description. Shared by the ability icons (src/ui/icons.ts) and the missile colours (src/render/fx.ts).
 // Pure data, no DOM/canvas.
 import { championData } from '../sim/champions';
+import motifData from './abilityMotifs.json';
 
 /** Keyword rules on the ability's English name + description: [pattern, motif, element hue]. First match wins. */
 export const MOTIF_RULES: [RegExp, string, number][] = [
@@ -27,10 +28,17 @@ export const MOTIF_RULES: [RegExp, string, number][] = [
   [/arrow|shot|volley|bow|needle|spear/, 'arrow', 35],
 ];
 
-/** Motif key + element hue of ability `slot` of `champ`: the name decides first, then the description. */
+/** Per-champion motif table (src/render/abilityMotifs.json): Q/W/E/R of one champion never share a motif. */
+const MOTIF_OVERRIDES = (motifData as { champions: Record<string, [string, number][]> }).champions;
+/** Motif keys the icon painter can draw. */
+export const MOTIF_GLYPHS: readonly string[] = (motifData as { glyphs: string[] }).glyphs;
+
+/** Motif key + element hue of ability `slot` of `champ`: the per-champion table first, then the name, then the description. */
 export function abilityTheme(champ: string, slot: number): { motif: string; hue: number } | null {
   const ab = championData(champ)?.abilities[slot];
   if (!ab) return null;
+  const o = MOTIF_OVERRIDES[champ]?.[slot];
+  if (o) return { motif: o[0], hue: o[1] };
   const name = ab.name.en.toLowerCase();
   const text = `${name} ${ab.desc.en.toLowerCase()}`;
   for (const [re, motif, hue] of MOTIF_RULES) if (re.test(name)) return { motif, hue };

@@ -59,6 +59,8 @@ export class ClientState {
    * and announcements. Minion eids get reused; the entry is overwritten when the new unit is seen.
    */
   readonly known = new Map<number, SnapEntity>();
+  /** Slots muted with /mute (chat lines and pings hidden locally; C4). */
+  readonly muted = new Set<number>();
   /** Tick a champion (eid) was last in the snapshot: minimap "last seen" ghosts (C3). */
   readonly seenAt = new Map<number, number>();
   /** Respawn timers, Leviathan/Kesselbrut/Schleierwaechter, inhibitor respawns of both teams (scoreboard, C2). */
@@ -97,7 +99,7 @@ export class ClientState {
         if (ev.kind === Kind.Champion && ev.team <= 1) this.kills[scorer]++;
         if (ev.kind === Kind.Tower && ev.team <= 1) this.towers[scorer]++;
       } else if (ev.e === 'gameOver') this.winner = ev.winner;
-      else if (ev.e === 'ping') this.pings.push({ id: ++this.pingSeq, kind: ev.kind, x: ev.x, y: ev.y, slot: ev.slot, target: ev.target, at: now });
+      else if (ev.e === 'ping' && !this.muted.has(ev.slot)) this.pings.push({ id: ++this.pingSeq, kind: ev.kind, x: ev.x, y: ev.y, slot: ev.slot, target: ev.target, at: now });
     }
     this.objectives.ingest(s, (eid) => this.known.get(eid));
     return s.events;

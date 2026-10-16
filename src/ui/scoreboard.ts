@@ -85,7 +85,12 @@ export class Scoreboard {
   private readonly timers = new SummonerTimers();
   private time = 0;
 
-  constructor(private readonly root: HTMLElement, private readonly players: readonly PlayerSetup[]) {
+  constructor(
+    private readonly root: HTMLElement,
+    private readonly players: readonly PlayerSetup[],
+    /** Team chat line (enemy summoner timer started: "Wren Sprung 12:34", like LoL). */
+    private readonly say: (text: string) => void = () => {},
+  ) {
     root.textContent = '';
   }
 
@@ -231,7 +236,10 @@ export class Scoreboard {
             root.addEventListener('mousedown', (e) => {
               e.stopPropagation();
               e.preventDefault();
-              this.timers.toggle(p.slot, i, id, this.time);
+              if (this.timers.toggle(p.slot, i, id, this.time)) {
+                const left = this.timers.left(p.slot, i, this.time);
+                if (left) this.say(t('chat.sumTimer', { champ: champName(p.champ), spell: summonerName(id), at: mmss(this.time + left.left) }));
+              }
             });
           }
           return { root, cd, num, id };

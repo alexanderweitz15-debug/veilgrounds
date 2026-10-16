@@ -96,6 +96,55 @@ describe('respawn timers', () => {
   });
 });
 
+describe('epic timers (C3 top bar)', () => {
+  const left = (tr: ObjectiveTracker, k: string): number | null | undefined => tr.epicTimers().find((x) => x.kind === k)?.left;
+
+  it('first spawns from the camp schedule, respawn after a kill by anyone', () => {
+    const tr = new ObjectiveTracker();
+    tr.ingest(snap(30 * 60, []));
+    expect(left(tr, 'leviathan')).toBe(240);
+    expect(left(tr, 'kesselbrut')).toBe(300);
+    expect(left(tr, 'schleier')).toBe(1140);
+    tr.ingest(snap(30 * 400, []));
+    expect(left(tr, 'leviathan')).toBeNull(); // up
+    // killed by a minion: no stack, but the camp timer runs
+    tr.ingest(snap(30 * 420 + 1, [monsterKill(OBJ.leviathan, 1, Kind.MinionMelee)]));
+    expect(left(tr, 'leviathan')).toBeCloseTo(300 - 1 / 30, 5); // event in the tick before the snapshot
+    expect(tr.team(1).leviathan).toBe(0);
+  });
+
+  it('Kesselbrut: respawn once all grubs died, gone after it left the pit', () => {
+    const tr = new ObjectiveTracker();
+    const grub = (): ReturnType<typeof monsterKill> => monsterKill(OBJ.kesselbrut, 0);
+    const u = (): { radius: number; variant: string } => ({ radius: 70, variant: 'kesselbrut' });
+    tr.ingest(snap(30 * 400 + 1, [grub(), grub()]), u);
+    expect(left(tr, 'kesselbrut')).toBeNull();
+    tr.ingest(snap(30 * 405 + 1, [grub()]), u);
+    expect(left(tr, 'kesselbrut')).toBeCloseTo(240 - 1 / 30, 5);
+    // a wave killed after lastSpawn - respawn closes the pit
+    tr.ingest(snap(30 * 700 + 1, [grub(), grub(), grub()]), u);
+    expect(left(tr, 'kesselbrut')).toBeUndefined();
+  });
+});
+
+describe('minimap last-seen ghosts', () => {
+  it('lists alive enemy champions out of vision for a while, at their last position', async () => {
+    const { ClientState } = await import('../src/game/state');
+    const st = new ClientState();
+    const foe = { id: 40, serial: 1, kind: Kind.Champion, team: 1, x: 7000, y: 7000, champ: 'wren', slot: 5, alive: true } as Snapshot['entities'][number];
+    st.ingest(snap(100, [], ROWS(), { entities: [foe] }), 0);
+    expect(st.lastSeenEnemies(45)).toEqual([]);
+    st.ingest(snap(100 + 30 * 10, [], ROWS()), 1);
+    expect(st.lastSeenEnemies(45)).toEqual([{ champ: 'wren', x: 7000, y: 7000, age: 10 }]);
+    st.ingest(snap(100 + 30 * 50, [], ROWS()), 2);
+    expect(st.lastSeenEnemies(45)).toEqual([]);
+    const dead = ROWS().map((r) => (r.champ === 'wren' ? { ...r, dead: true } : r));
+    st.ingest(snap(100 + 30 * 51, [], dead, { entities: [foe] }), 3);
+    st.ingest(snap(100 + 30 * 52, [], dead), 4);
+    expect(st.lastSeenEnemies(45)).toEqual([]);
+  });
+});
+
 describe('manual enemy summoner timers', () => {
   it('count down the base cooldown, Teleport late cooldown after 10:00, second click clears', () => {
     const tm = new SummonerTimers();

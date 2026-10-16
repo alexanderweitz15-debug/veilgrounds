@@ -176,6 +176,7 @@ export class Game {
         openMenu: () => this.openMenu(),
         useItem: (i) => this.hud.flashItem(i),
         onArmedChange: (a: Armed) => this.hud.setArmed(a),
+        select: (eid) => this.hud.target.select(eid),
         // the menu, chat input and the victory/defeat screen swallow game input
         menuOpen: () => this.menu.classList.contains('open') || this.chat.typing || this.state.winner !== null,
       },

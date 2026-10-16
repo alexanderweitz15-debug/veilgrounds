@@ -11,13 +11,14 @@ import type { Panel, Armed } from '../input/controller';
 import { CUM_XP } from '../sim/systems/economy';
 import type { PlayerSetup } from '../sim/types';
 import { ShopPanel, itemAbbr } from './shop';
-import { Scoreboard } from './scoreboard';
+import { Scoreboard, mmss } from './scoreboard';
 import { DeathBar } from './deathBar';
+import { TargetFrame, drawChips, unitChips } from './targetFrame';
 import { BotDebugPanel } from './botDebug';
 import { setPortrait } from '../render/portraits';
 import { Announcer } from './announce';
 import { DeathRecap } from './deathRecap';
-import { abilityIcon, itemIcon, kesselbrutIcon, passiveIcon, setIcon, summonerIcon } from './icons';
+import { abilityIcon, itemIcon, kesselbrutIcon, objectiveIcon, passiveIcon, setIcon, summonerIcon } from './icons';
 import { KESSELBRUT_MAX_STACKS, KESSELBRUT_STRUCT_PCT } from '../sim/systems/jungle';
 import { setTip } from './tooltip';
 import { play } from '../audio/sfx';
@@ -98,6 +99,8 @@ export class Hud {
   private readonly kessel: HTMLElement;
   private readonly kesselNum: HTMLElement;
   private kesselSeen = -1;
+  private readonly epics: HTMLElement | null;
+  private epicKey = '';
   private readonly feed: HTMLElement;
   private readonly respawn: HTMLElement;
   private readonly recall: HTMLElement;
@@ -121,12 +124,17 @@ export class Hud {
   readonly deathBar = new DeathBar();
   private itemKey = '';
   private readonly marks: HTMLElement;
+  private buffKey = '';
+  /** Target frame of the left-clicked unit (C3). */
+  readonly target = new TargetFrame();
   private trinketKey = '';
   private trinketSwap: 'schleierward' | 'suchfeuer' | null = null;
 
   private readonly announcer: Announcer;
   private readonly recap: DeathRecap;
   private readonly respawnNum: HTMLElement;
+  /** "Camera is free" hint while dead (C3); shows the current key label. */
+  private readonly respawnHint: HTMLElement;
   private lvlTimer = 0;
 
   constructor(hooks: HudHooks, sandbox: boolean, players: readonly PlayerSetup[] = [], mode?: string) {
@@ -144,6 +152,8 @@ export class Hud {
     this.kesselNum = el('span', 'kessel-num', this.kessel, '0');
     this.cs = el('span', 'cs', top, '');
     this.clock = el('span', 'clock', top, '00:00');
+    // epic monster timers under the top bar (classic schedule only; C3)
+    this.epics = mode === 'classic' ? el('div', 'obj-timers', r) : null;
 
     // ---- kill feed
     this.feed = el('div', 'killfeed', r);
@@ -212,6 +222,7 @@ export class Hud {
     this.respawn = el('div', 'respawn', r);
     el('div', 'lbl', this.respawn, t('hud.respawnLbl'));
     this.respawnNum = el('div', 'num', this.respawn);
+    this.respawnHint = el('div', 'hint', this.respawn);
     this.recap = new DeathRecap(r);
     this.announcer = new Announcer(r, mode);
     this.recall = el('div', 'recall', r);
@@ -238,6 +249,7 @@ export class Hud {
     this.score = new Scoreboard(this.panels.scoreboard, players);
     // active jungle/objective buffs (Dornenbock, Glutwächter, Schleierwächter) above the ability bar
     this.marks = el('div', 'buff-marks', r);
+    r.appendChild(this.target.root);
 
     // ---- sandbox cheats
     if (sandbox) {
@@ -350,6 +362,8 @@ export class Hud {
     this.drawKesselbrut(snap.kesselbrut ?? 0);
     this.score.update(state);
     this.deathBar.update(state);
+    this.drawEpicTimers(state);
+    this.target.update(state);
     const me = snap.me;
     toggle(this.noChamp, 'open', !me);
     if (!me) {
@@ -372,7 +386,9 @@ export class Hud {
     const hi = CUM_XP[me.level + 1];
     setStyle(this.xpRing, '--p', hi === undefined ? '1' : String(Math.min(1, Math.max(0, (me.xp - lo) / Math.max(1, hi - lo)))));
     setText(this.gold, String(Math.floor(me.gold)));
-    this.drawItems(me.items ?? [], me.marks ?? []);
+    this.drawItems(me.items ?? []);
+    // own buff bar: crowd control and ability buffs on the own champion + jungle/objective buffs with seconds left
+    this.buffKey = drawChips(this.marks, meE && !me.dead ? unitChips(meE, snap.tick, me.marks ?? []) : [], this.buffKey);
     this.drawTrinket(me.trinket);
     if (this.panels.shop.classList.contains('open')) this.shop.update(me);
     if (meE) {
@@ -394,7 +410,10 @@ export class Hud {
     // respawn + recall
     toggle(this.respawn, 'open', me.dead);
     toggle(this.root, 'dead', me.dead);
-    if (me.dead) setText(this.respawnNum, String(Math.ceil(me.respawnIn)));
+    if (me.dead) {
+      setText(this.respawnNum, String(Math.ceil(me.respawnIn)));
+      setText(this.respawnHint, t('hud.deadCamHint', { key: keyLabel(binds.centerCamera) }));
+    }
     this.recap.update(me.dead);
     const tp = me.teleportLeft ?? 0; // Teleport channel reuses the recall bar (4 s)
     toggle(this.recall, 'open', me.recallLeft > 0 || tp > 0);
@@ -407,6 +426,22 @@ export class Hud {
     }
   }
 
+  /** Leviathan / Kesselbrut / Schleierwaechter: countdown to the (re)spawn, a lit badge while the monster is up. */
+  private drawEpicTimers(state: ClientState): void {
+    if (!this.epics) return;
+    const list = state.objectives.epicTimers();
+    const key = list.map((x) => `${x.kind}:${x.left === null ? 'up' : Math.ceil(x.left)}`).join(',');
+    if (key === this.epicKey) return;
+    this.epicKey = key;
+    this.epics.textContent = '';
+    for (const x of list) {
+      const chip = el('span', `obj-timer ${x.kind}${x.left === null ? ' up' : ''}`, this.epics);
+      setIcon(el('span', 'ot-ico', chip), x.kind === 'kesselbrut' ? kesselbrutIcon() : objectiveIcon(x.kind));
+      el('span', 'ot-t', chip, x.left === null ? t('hud.epicUp') : mmss(x.left));
+      chip.title = x.left === null ? t(`hud.epic.${x.kind}Up`) : t(`hud.epic.${x.kind}`, { s: mmss(x.left) });
+    }
+  }
+
   /** Kesselbrut stacks of the own team next to the tower score (tooltip explains the structure damage bonus). */
   private drawKesselbrut(n: number): void {
     if (n === this.kesselSeen) return;
@@ -416,9 +451,9 @@ export class Hud {
     setTip(this.kessel, n > 0 ? `text:${t('hud.kesselbrut', { n, max: KESSELBRUT_MAX_STACKS, pct: n * KESSELBRUT_STRUCT_PCT })}` : null);
   }
 
-  /** Item slots (abbreviated names + tooltip) and active jungle/objective buffs. */
-  private drawItems(items: (string | null)[], marks: { id: string; left: number }[]): void {
-    const key = items.join(',') + '|' + marks.map((m) => `${m.id}:${Math.ceil(m.left)}`).join(',');
+  /** Item slots (abbreviated names + tooltip). */
+  private drawItems(items: (string | null)[]): void {
+    const key = items.join(',');
     if (key === this.itemKey) return;
     this.itemKey = key;
     this.items.forEach((s, i) => {
@@ -431,11 +466,6 @@ export class Hud {
       toggle(s, 'filled', !!id);
       setTip(s, id ? `item:${id}` : null);
     });
-    this.marks.textContent = '';
-    for (const m of marks) {
-      const b = el('div', `buff-mark ${m.id}`, this.marks, `${t(`buff.${m.id}`)} ${Math.ceil(m.left)}s`);
-      b.title = t(`buff.${m.id}.desc`);
-    }
   }
 
   /** Trinket slot: short name, charges, recharge / cooldown sweep; gold ring when a swap is possible. */

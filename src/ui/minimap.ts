@@ -155,6 +155,7 @@ export class Minimap {
         }
       }
     }
+    this.drawGhosts(state);
     // team pings: pulsing rings
     for (const pg of state.pings) {
       const age = (now - pg.at) / 3000;
@@ -184,7 +185,35 @@ export class Minimap {
     ctx.closePath();
     ctx.stroke();
   }
+
+  /** Last seen enemy champions: faded, dashed ring with the initial and a "?" (fades out over GHOST_S). */
+  private drawGhosts(state: ClientState): void {
+    const ctx = this.ctx;
+    const d = this.dpr;
+    for (const g of state.lastSeenEnemies(GHOST_S)) {
+      const [x, y] = simToCanvas(g.x, g.y, this.canvas.width);
+      ctx.globalAlpha = 0.85 * (1 - g.age / GHOST_S) + 0.15;
+      ctx.fillStyle = 'rgba(30, 24, 30, 0.75)';
+      ctx.strokeStyle = REL.enemy;
+      ctx.lineWidth = 1.5 * d;
+      ctx.setLineDash([2.5 * d, 2 * d]);
+      ctx.beginPath();
+      ctx.arc(x, y, 7 * d, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#f1e6c8';
+      ctx.font = `bold ${8 * d}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${g.champ.charAt(0).toUpperCase()}?`, x, y + 0.5 * d);
+    }
+    ctx.globalAlpha = 1;
+  }
 }
+
+/** Seconds a vanished enemy champion stays on the minimap at its last seen position (fading out). */
+const GHOST_S = 45;
 
 const PLANT_FILL: Record<string, string> = { sprungfrucht: '#f08a3a', honigfrucht: '#f2cf4a', spaehfrucht: '#6fb6f0' };
 

@@ -9,7 +9,7 @@
 import type { ScoreRow, Snapshot } from '../sim/snapshot';
 import { Kind, type SimEvent } from '../sim/types';
 import { deathTimerTicks } from '../sim/systems/economy';
-import { LEVIATHAN_MAX_STACKS, SCHLEIER_BUFF_TICKS } from '../sim/systems/jungle';
+import { CAMPS, LEVIATHAN_MAX_STACKS, SCHLEIER_BUFF_TICKS } from '../sim/systems/jungle';
 import { INHIB_RESPAWN } from '../sim/systems/towers';
 import raw from '../data/map.json';
 
@@ -85,6 +85,43 @@ export class ObjectiveTracker {
   private readonly inhibs: { team: number; x: number; y: number; at: number }[] = [];
   private tick = 0;
   private snap: SnapExt | null = null;
+  /** Last death tick of Leviathan / Schleierwaechter (any killer: the camp timer starts either way); -1 = never. */
+  private readonly epicKill = { leviathan: -1, schleier: -1 };
+  /** Grub deaths seen in the current Kesselbrut wave and the tick the next wave spawns (-1 = none pending). */
+  private grubDeaths = 0;
+  private grubRespawnAt = -1;
+
+  private noteEpicDeath(which: Epic, tick: number): void {
+    if (which !== 'kesselbrut') {
+      this.epicKill[which] = tick;
+      return;
+    }
+    if (this.grubRespawnAt >= 0 && tick >= this.grubRespawnAt) this.grubRespawnAt = -1;
+    if (++this.grubDeaths < CAMPS.kesselbrut.monsters.length) return;
+    // last grub down: the pit refills after `respawn`, unless that is past `lastSpawn` (jungle.ts onMonsterDeath)
+    const def = CAMPS.kesselbrut;
+    const at = tick + def.respawn * TICK_HZ;
+    this.grubRespawnAt = def.lastSpawn !== undefined && at > def.lastSpawn * TICK_HZ ? Infinity : at;
+    this.grubDeaths = 0;
+  }
+
+  /**
+   * Epic monster timers for the top bar (classic schedule, public like LoL): seconds until (re)spawn, or null while
+   * it is up. Kesselbrut drops out once it left the pit; its respawn is only known when this team saw all grubs die.
+   */
+  epicTimers(): { kind: Epic; left: number | null }[] {
+    const out: { kind: Epic; left: number | null }[] = [];
+    const add = (kind: Epic, at: number): void => {
+      out.push({ kind, left: this.tick >= at ? null : (at - this.tick) / TICK_HZ });
+    };
+    const lev = CAMPS.leviathan;
+    add('leviathan', this.epicKill.leviathan >= 0 ? this.epicKill.leviathan + lev.respawn * TICK_HZ : lev.first * TICK_HZ);
+    const kb = CAMPS.kesselbrut;
+    if (this.tick < (kb.until ?? Infinity) * TICK_HZ && this.grubRespawnAt !== Infinity) add('kesselbrut', this.grubRespawnAt >= 0 ? this.grubRespawnAt : kb.first * TICK_HZ);
+    const sw = CAMPS.schleierwaechter;
+    add('schleier', this.epicKill.schleier >= 0 ? this.epicKill.schleier + sw.respawn * TICK_HZ : sw.first * TICK_HZ);
+    return out;
+  }
 
   /** Feed every snapshot (several per frame are possible; events must not be skipped). */
   ingest(s: Snapshot, unit: (eid: number) => Unit | undefined = () => undefined): void {
@@ -103,6 +140,7 @@ export class ObjectiveTracker {
       } else if (ev.kind === Kind.Monster) {
         const u = unit(ev.eid);
         const which = epicOf(ev, u?.radius, u?.variant);
+        if (which) this.noteEpicDeath(which, evTick);
         const team = ev.killerTeam;
         // the sim grants objective rewards only to champion kills (jungle.ts onMonsterDeath)
         if (!which || (team !== 0 && team !== 1) || ev.killerKind !== Kind.Champion) continue;

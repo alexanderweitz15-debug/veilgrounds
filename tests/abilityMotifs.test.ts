@@ -23,7 +23,8 @@ describe('ability motifs', () => {
 });
 
 describe('passive badge', () => {
-  it('every champion of the roster sends a passive HUD state', () => {
+  // TODO(D): Wren passive HUD state missing (D1 unfinished, docs/agents/d.md); skipped on the user's request (16 Oct) to unblock the deploy.
+  it.skip('every champion of the roster sends a passive HUD state', () => {
     for (const id of ROSTER) {
       const p: PlayerSetup = { slot: 0, team: 0, champion: id, role: 'mid', summoners: ['sprung', 'heilen'], isHuman: true };
       const sim = makeSim({ players: [p] });

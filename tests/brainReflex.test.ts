@@ -19,7 +19,8 @@ const laneAloneConfig = (rank: Rank, seed: number): SimConfig => {
   return { seed, mode: 'laneOnly', minionLanes: [Lane.Mid], players };
 };
 
-describe('reflex layer: scheduler fills the attack timer (test 1)', () => {
+// TODO(A1): Phase 1 gate tests not met yet (reflex layer is off in the game); skipped on the user's request (16 Oct) to unblock the deploy. Re-enable with the Phase 1 merge (docs/agents/a1.md).
+describe.skip('reflex layer: scheduler fills the attack timer (test 1)', () => {
   it('Gold alone in lane, 60 s from 1:40: attack utilisation > 60 %, no move/stop inside an own wind-up except logged orbwalk timing errors', () => {
     const config = laneAloneConfig('gold', 3);
     const sim = createSim(config);
@@ -55,7 +56,7 @@ describe('reflex layer: scheduler fills the attack timer (test 1)', () => {
   }, 300_000);
 });
 
-describe('reflex layer: last hits independent of the decision rate (tests 2, 4)', () => {
+describe.skip('reflex layer: last hits independent of the decision rate (tests 2, 4)', () => {
   it('Iron (2 Hz decisions) alone in lane, 10 min, autos only: >= 70 CS (was ~51)', () => {
     const g = runLaneAlone('iron', { seed: 1 });
     const s = g.stats[0]!;
@@ -72,7 +73,7 @@ describe('reflex layer: last hits independent of the decision rate (tests 2, 4)'
   }, 300_000);
 });
 
-describe('reflex layer: window collisions (test 3)', () => {
+describe.skip('reflex layer: window collisions (test 3)', () => {
   it('Diamond loses fewer last hits to colliding windows than Gold (window preparation 80 % vs 30 %)', () => {
     const lost = (rank: Rank): { coll: number; cs: number } => {
       let coll = 0;
@@ -93,7 +94,7 @@ describe('reflex layer: window collisions (test 3)', () => {
 });
 
 describe('reflex layer: cost and determinism (tests 11, 12)', () => {
-  it('10 bots, 10 min headless: reflex logic < 0.05 ms per bot and tick on average (view reported separately)', () => {
+  it.skip('10 bots, 10 min headless: reflex logic < 0.05 ms per bot and tick on average (view reported separately)', () => {
     const g = runBotGame(botGameConfig(7, 'gold'), 10 * 1800, undefined, { clock: () => performance.now(), noVariance: true });
     const c = g.cost;
     const reflexMs = c.reflexMs / Math.max(1, c.reflexCalls);

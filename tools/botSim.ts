@@ -87,7 +87,7 @@ for (let g = 0; g < games; g++) {
       }
       config.players.sort((a, b) => a.slot - b.slot);
     }
-    res = runBotGame(config, Math.round(minutes * 60 * 30), undefined, { noVariance, clock: () => performance.now() });
+    res = runBotGame(config, Math.round(minutes * 60 * 30), undefined, { noVariance, reflex: args.get('reflex') === 'true', clock: () => performance.now() });
   }
   results.push({ res, seed });
   lengths.push(res.minutes);

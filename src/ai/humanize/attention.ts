@@ -169,8 +169,9 @@ function advance(st: AttentionState, tick: number): void {
 }
 
 /**
- * Feed the triggers a bot noticed (call once per decision, after or before think; reflex may call it every tick -
- * events and glances are handled once): perception minimap glance, kill feed, team chat, gold steps, tilt.
+ * Feed the triggers a bot noticed: perception minimap glance, kill feed, team chat, gold steps, tilt. Call it once per
+ * decision with the think snapshot (its eventTicks dedupe the event buffer). Per-tick reflex code only queries
+ * (isDistracted / attentionProbe): a reflex snapshot without eventTicks would count a re-passed event buffer twice.
  */
 export function observeAttention(mem: BotMemory, ctx: Pick<BotStatic, 'slot' | 'log' | 'params' | 'team' | 'toxic'>, snap: Snapshot): AttentionState {
   const tick = snap.tick;
@@ -179,7 +180,9 @@ export function observeAttention(mem: BotMemory, ctx: Pick<BotStatic, 'slot' | '
   st.tilt = mem.ext?.tilt ?? 0;
   const b = st.b;
   // minimap glance of the perception module (interval or forced by pings / objective spawns); the kill-feed glance is
-  // handled by the kill-feed rule below, the recall glance happens while channelling (planned)
+  // handled by the kill-feed rule below, the recall glance happens while channelling (planned). A glance with reasons
+  // 'interval+killFeed' rolls both (two chances at one moment) - intended and part of the measured calibration, so do
+  // not "fix" the share by changing the intervals for it.
   const ps = mem.ext?.perception;
   if (ps && ps.lastGlance > st.glanceSeen && ps.lastGlance <= tick) {
     st.glanceSeen = ps.lastGlance;

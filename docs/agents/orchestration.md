@@ -25,3 +25,13 @@ main checkout. Therefore:
   thresholds in src/sim/systems/towers.ts). No sim change needed now.
 - Minion death events carry `killer`, `killerKind`, `killerTeam`, x/y (src/sim/damage.ts) - enough for
   csLossByCause in the headless bot-sim (which has full sim access; the brain itself must not).
+
+## Second prompt: docs/AGENTS-PLAN.md (agents B, C, D)
+
+- Running now: A1, A2, A3, B (sim/b-mechanics), C (ui/c-features) + supervisor S (same instance for both prompts).
+  D (art/d-visuals) starts when a worker slot frees (AGENTS-PLAN §1/§8). CPU on this machine is the real limit.
+- Scoreboard / death timers / TP: the lead had started reading for them; they now belong to C (C2) and B (B4).
+- B1 note: the sim already hides enemy Schleierwards (see annex pre-check above). B must reproduce what the
+  user sees (render, minimap, ward events, spectator/bot snapshots, buff expiry) before changing the filter, and
+  unify traps/seeds/wire under one stealth flag as asked.
+- Tests live in tests/ (there is no tests/sim/ yet; B may create it).

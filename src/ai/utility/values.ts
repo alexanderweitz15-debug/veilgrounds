@@ -27,8 +27,7 @@ export function rankCurve(curve: RankCurve, skill: number): number {
 }
 
 interface StyleSpec {
-  knob?: string;
-  invert?: boolean;
+  knobs?: string[];
   axis?: string;
   perStep?: number[];
   clamp?: number[];
@@ -36,17 +35,16 @@ interface StyleSpec {
 
 /**
  * Style factor of a candidate (spec §5: farm axis x farm utility, roam axis x roam utility, aggression x trade ...,
- * 0.6 .. 1.6): an existing knob, or a linear axis mapping from values.json until the knob exists.
+ * 0.6 .. 1.6): the first existing knob of the list (A3's util* knobs), else a linear axis mapping from values.json.
  */
 export function styleFactor(id: string, p: BotParams): number {
   const s = (VALUES.style as Record<string, StyleSpec | string>)[id];
   if (!s || typeof s === 'string') return 1;
   const [lo, hi] = s.clamp ?? [0, 10];
   const clamp = (x: number): number => Math.max(lo!, Math.min(hi!, x));
-  if (s.knob) {
-    const k = (p.knobs as Record<string, number>)[s.knob];
-    if (k === undefined) return 1;
-    return clamp(s.invert ? 1 / Math.max(0.05, k) : k);
+  for (const k of s.knobs ?? []) {
+    const v = (p.knobs as Record<string, number>)[k];
+    if (v !== undefined) return v;
   }
   if (s.axis) {
     const a = p.playstyle[s.axis as PlaystyleAxis] ?? 0;

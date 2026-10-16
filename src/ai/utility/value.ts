@@ -276,7 +276,10 @@ export function recallValue(w: World): CandidateValue | null {
   if (dst(v.self, fountain) < 3000 || n.mem.ext.trade || v.me.recallLeft > 0) return null;
   const gold = spendable(v.me, n.mem);
   const price = nextItemPrice(n.ctx, n.mem);
-  const item = gold >= price ? gold * VALUES.recall.itemValuePerGold : 0;
+  // item term (spec-bots §8): gold for the next item and at least the profile's recall gold threshold (null: Iron
+  // ignores gold)
+  const thr = n.ctx.profile.behavior.recallGoldThreshold;
+  const item = thr !== null && gold >= Math.max(thr, price) ? gold * VALUES.recall.itemValuePerGold : 0;
   const stay = stayDeathProb(w);
   const hp = stay > W.recallStayDeathThreshold ? stay * w.deathCost * W.recallHpValue : 0;
   const manaLow = v.self.maxMana > 0 && v.self.mana / v.self.maxMana < VALUES.recall.manaLowFrac;

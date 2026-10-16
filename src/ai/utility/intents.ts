@@ -10,6 +10,10 @@ import { castSlot } from '../bot/combat';
 import { startTrade, tradeRunCore } from '../bot/trade';
 import { laneLeaf } from '../bot/brain';
 import { recall } from '../bot/macro';
+import { near } from '../bot/perception';
+import { cancelOrbwalk, moveCmd } from '../bot/kite';
+import { VALUES } from './values';
+import { dst } from '../bot/geo';
 import { startRoam, type RoamEval } from '../roams/roam';
 import { startGank, type GankEval } from '../ganks/jungle';
 import type { IntentData, IntentId } from './types';
@@ -57,8 +61,26 @@ function uRecall(n: NodeCtx): NodeResult {
   const d = dataOf(n);
   if (d.shoveFirst) {
     crashWave(n, 'utility: shove before recall');
-    const r = laneLeaf(n);
+    let r = laneLeaf(n);
+    if (r === 'failure' && n.v.self.atkPhase === 0) {
+      // the laning leaf waits for last hits out of reach: walk up and hit the closest enemy lane minion instead
+      const m = d.target ?? n.v.enemyMinions.slice().sort((a, b) => dst(a, n.v.self) - dst(b, n.v.self))[0];
+      if (m && dst(m, n.v.self) < VALUES.lane.farmRadius) {
+        n.out.push({ cmd: { t: 'attack', target: m.id } });
+        n.mem.lastMove = null;
+        r = 'running';
+      }
+    }
+    n.log('recall', 'shove_first', r === 'failure' ? 'nothing to shove: recall' : 'crash the wave before recalling', { lane: n.ctx.lane ?? '' });
     if (r !== 'failure') return r;
+  }
+  // a camp still hitting the bot breaks the channel: walk off first (the classic recall leaf checks champions and
+  // minions only)
+  if (near(n.v.monsters, n.v.self, VALUES.recall.monsterClearRange).some((m) => m.atkTarget === n.v.self.id)) {
+    cancelOrbwalk(n);
+    n.mem.mode = 'home';
+    n.out.push(moveCmd(n.ctx.map.sides[n.ctx.team].fountain));
+    return 'running';
   }
   return recall(n);
 }

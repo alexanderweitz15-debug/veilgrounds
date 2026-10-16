@@ -20,6 +20,14 @@ import { runIntent } from './intents';
 import type { IntentId, Scored, UtilityState } from './types';
 
 const C = VALUES.combat;
+/** Decision-log node of intent choices (A3's F9 overlay reads intent + top-3 candidates from it). */
+export const INTENT_NODE = VALUES.selection.logNode;
+
+/** Rank noise sigma (fraction of |score|): profile utilityNoisePct (A3), else the exchange noise of the skill. */
+export function utilityNoise(n: NodeCtx): number {
+  const pct = (n.p.behavior as { utilityNoisePct?: number }).utilityNoisePct;
+  return pct !== undefined ? pct / 100 : exchangeNoise(n.ctx.params.skill);
+}
 const states = new WeakMap<object, UtilityState>();
 
 export function utilityState(mem: object): UtilityState {
@@ -33,7 +41,7 @@ const r2 = (x: number): number => Math.round(x * 100) / 100;
 /** Score all candidates (fixed candidate order; random draws in that order: deterministic). Best first. */
 export function scoreCandidates(n: NodeCtx, st: UtilityState): Scored[] {
   const w = buildWorld(n);
-  const sigma = exchangeNoise(n.ctx.params.skill);
+  const sigma = utilityNoise(n);
   const h = n.p.hysteresis;
   const out: Scored[] = [];
   for (const c of CANDIDATES) {
@@ -107,14 +115,14 @@ export function utilitySelect(n: NodeCtx): NodeResult {
     const inputs: Record<string, number | string | boolean> = { horizonS: r2(s.value.horizonS), benefit: r2(s.value.benefit), cost: r2(s.value.cost) };
     for (const [k, v] of Object.entries(s.value.terms)) inputs[`t_${k}`] = r2(v);
     if (skipped.length) inputs.skipped = skipped.join(',');
-    n.log('utility', s.id, keepFight && s === fight ? 'teamfight commit' : skipped.length ? 'best runnable' : 'best', inputs, scores);
+    n.log(INTENT_NODE, s.id, keepFight && s === fight ? 'teamfight commit' : skipped.length ? 'best runnable' : 'best', inputs, scores);
     enter(n, st, s.id, s.value.horizonS);
     return r;
   }
   // nothing positive and runnable: idle, with every score in the log (test 7). 'none' = all candidates <= 0;
   // 'wait' = a positive candidate had nothing to do (e.g. farm waiting for the wave) - listed in `skipped`
   const allNeg = scored.every((s) => s.score <= 0);
-  n.log('utility', allNeg ? 'none' : 'wait', allNeg ? 'all candidates <= 0' : 'no runnable intent', skipped.length ? { skipped: skipped.join(',') } : {}, scores);
+  n.log(INTENT_NODE, allNeg ? 'none' : 'wait', allNeg ? 'all candidates <= 0' : 'no runnable intent', skipped.length ? { skipped: skipped.join(',') } : {}, scores);
   enter(n, st, 'none', 0);
   runIntent(n, 'none', undefined);
   return 'running';

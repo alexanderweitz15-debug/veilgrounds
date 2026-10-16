@@ -83,30 +83,30 @@
     "itemValuePerGold": 0.5,
     "stayDeath": { "hpBase": 0.9, "gankRiskWeight": 0.6, "enemyNearWeight": 0.5 },
     "shoveFirst": { "iron": 0, "bronze": 0, "silver": 1, "challenger": 1 },
-    "manaLowFrac": 0.15
+    "manaLowFrac": 0.15,
+    "monsterClearRange": 900
   },
 
   "selection": {
-    "noiseDistribution": "normal, sigma = exchangeNoise(skill) x |score| (Iron 0.40, Gold 0.20, Challenger 0.07; spec §5 = §6 rank noise)",
+    "noiseDistribution": "normal, sigma = profile utilityNoisePct / 100 x |score| (A3 field; fallback exchangeNoise(skill): Iron 0.40, Gold 0.20, Challenger 0.07 = spec §5)",
     "hysteresisSource": "BotParams.hysteresis (profile: Gold 0.25 .. Challenger 0.10)",
-    "noFlipWithinTicks": 6,
-    "logTopN": 12
+    "logNode": "intent"
   },
 
   "style": {
-    "note": "Style factor per candidate (spec §5: 0.6 .. 1.6). 'knob' = an existing BotParams knob; 'axis' = linear in a playstyle axis (perStep [below 0, above 0]) until the knob exists in playstyleAxes.json (proposal in docs/agents/shared-changes.md).",
-    "farm": { "knob": "farmWeight" },
-    "poke": { "knob": "fightWeight" },
-    "trade": { "knob": "fightWeight" },
-    "fight": { "knob": "fightWeight" },
-    "push": { "axis": "tempo", "perStep": [0.06, 0.08], "clamp": [0.6, 1.6] },
-    "roam": { "axis": "roam", "perStep": [0.08, 0.12], "clamp": [0.6, 1.6] },
-    "gank": { "axis": "aggression", "perStep": [0.06, 0.08], "clamp": [0.6, 1.6] },
-    "recall": { "axis": "tempo", "perStep": [-0.06, -0.04], "clamp": [0.6, 1.6] },
-    "objective": { "axis": "objectiveRisk", "perStep": [0.08, 0.12], "clamp": [0.6, 1.6] },
-    "ward": { "knob": "wardIntervalMult", "invert": true, "clamp": [0.6, 1.6] },
-    "group": { "knob": "groupWeight" },
-    "catchLane": { "axis": "teamplay", "perStep": [0.06, 0.08], "clamp": [0.6, 1.6] }
+    "note": "Style factor per candidate (spec §5: 0.6 .. 1.6): the first knob of the list that exists in BotParams.knobs (A3's util* knobs in playstyleAxes.json, brain/a3-humanize), else the fallback axis mapping below (same shape as a playstyleAxes knob).",
+    "farm": { "knobs": ["utilFarm", "farmWeight"] },
+    "poke": { "knobs": ["utilHarass", "fightWeight"] },
+    "trade": { "knobs": ["utilTrade", "fightWeight"] },
+    "fight": { "knobs": ["utilTrade", "fightWeight"] },
+    "push": { "knobs": ["utilPush"], "axis": "tempo", "perStep": [0.08, 0.12], "clamp": [0.6, 1.6] },
+    "roam": { "knobs": ["utilRoam"], "axis": "roam", "perStep": [0.08, 0.12], "clamp": [0.6, 1.6] },
+    "gank": { "knobs": ["utilRoam"], "axis": "roam", "perStep": [0.08, 0.12], "clamp": [0.6, 1.6] },
+    "recall": { "knobs": ["utilRecall"], "axis": "tempo", "perStep": [-0.12, -0.08], "clamp": [0.6, 1.6] },
+    "objective": { "knobs": ["utilObjective"], "axis": "objectiveRisk", "perStep": [0.08, 0.12], "clamp": [0.6, 1.6] },
+    "ward": { "knobs": ["utilVision"], "axis": "vision", "perStep": [0.08, 0.12], "clamp": [0.6, 1.6] },
+    "group": { "knobs": ["utilGroup", "groupWeight"] },
+    "catchLane": { "knobs": ["utilCatchLane"], "axis": "farmPriority", "perStep": [0.08, 0.12], "clamp": [0.6, 1.6] }
   },
 
   "combat": {

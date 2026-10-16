@@ -1,41 +1,68 @@
-# Roadmap (Stand 2026-10-15)
+# Masterplan (Stand 2026-10-16)
 
-## Status pro Phase (2026-10-16)
-| Phase | Stand | Erledigt | Offen |
-|---|---|---|---|
-| 1 Simulation + 1 Champion | abgeschlossen | Map, Grid-Pathing, Wellen/Aggro, Türme/Platten, Gold/XP, Kamera/Steuerung/HUD, Mira, Puppe; Abnahme: 107 Minions bis 10:00, Turmschüsse exakt, Replay bit-identisch | – |
-| 2 Champions, Items, Prägungen, Zauber | ~95 % | 26 Champions inkl. Hooks, Engine, Shop (rekursive Rezepte, Basisstiefel, Legendäre einzigartig), Item-Passiva/Aktive, Prägungs-Effekte + Presets, alle 8 Beschwörerzauber, Wards/Trinkets, LoL-Tooltips | Combo-Abnahme, Telegraph-Audit |
-| 3 Bots Gold | ~85 % | Behavior Tree als JSON, Wahrnehmung ohne Allwissen, Team-KI, Ganks/Roams/Trades/Kiten, F9-Overlay, gedrosseltes Entscheidungs-Log, bot-sim (--vs), vorhersagendes Last-Hitting, Ward-Spots/Kontrollwards/Suchfeuer, Drache/Kesselbrut/Baron + Bannen, Belagern ab 14:00 | CS ~50 % von Tabelle A, Spieldauer 40–45 min → **läuft (Agent Tempo/Balance)** |
-| 4 Ränge + Humanisierung | ~70 % | Rangprofile, 10 Spielstil-Achsen, Reaktionszeiten, Varianz, Pings, Rage-„?“-Pings, Flame-Chat gegen Spieler, Toxizitäts-Schalter, Tilt, alle Fehlerarten injiziert, Bot-Chat in UI-Sprache, eine Schwierigkeit für alle Bots | Siegquoten je Rang (noch 50 %) → **läuft (Agent Tempo/Balance)** |
-| 5 Trainer | ~90 % | Last-Hit- (auch Turm), Ausweich-, Kiting-/Combo-Trainer, Lane-Duell 1v1, Jungle-Duell, Teamkampf-Arena (Bots kämpfen untereinander), Post-Game-Analyse, Sandbox+ | Trainingsplan, Verlauf über mehrere Matches |
-| 6 Politur | ~75 % | Menüs, Enzyklopädie (Splash, Icons), prozeduraler Sound, Vollbild, PWA, gemalte Minions/Monster, Porträts + Splash-Art, Karte komplett überarbeitet (Gouache), Ansagen, Todes-Zusammenfassung, Team-Chat, Barrierefreiheit, Grafikqualität, Code-Splitting, Icons überall, Kesselbrut-Anzeige | Champion-Animationen/Einzigartigkeit → **läuft (Agent Champions)**, Szenario-Trainer, Challenger-Geist |
+Checkliste aller Phasen. `[x]` = fertig und gepusht, `[ ]` = offen, `[~]` = teilweise / läuft.
+Entscheidungen und Zahlen stehen in docs/DECISIONS.md, das Bot-Verhalten in docs/spec-bots.md.
 
-Nutzer-Entscheidung 2026-10-15: zuerst **Phase 2 abschließen**.
+## Phase 1 – Simulation + 1 Champion
+- [x] Deterministische 30-Hz-Sim im Worker (xoshiro128**, Replays bit-identisch, stateHash)
+- [x] Map, Grid-A*-Pathing, Wand-Abstand, Supercover-Sichtlinien
+- [x] Minion-Wellen, Aggro-Prioritäten, Belagerer/Super-Minions
+- [x] Türme, Platten, Inhibitoren, Nexus, Turm-Zielregeln
+- [x] Gold, XP, Kopfgelder, Todestimer
+- [x] Kamera, Steuerung (LoL-Belegung, Strg/Shift+QWER), HUD, Minimap
+- [x] Abnahme: 107 Minions bis 10:00, Skript-Last-Hitter ≥ 60 CS, Turmschüsse exakt
 
-## Umpriorisierung durch den Nutzer (2026-10-15)
-Der Nutzer will zuerst einen **funktionierenden Prototypen: 5v5 gegen Bots**. Deshalb werden die Bots vorgezogen –
-zunächst nur mit **grober Logik**. Die volle Rang-Simulation aus Spec §7/§8 folgt danach.
+## Phase 2 – Champions, Items, Prägungen, Zauber
+- [x] 26 Champions mit Fähigkeits-Engine und Hooks
+- [x] Shop: rekursive Rezepte, Basisstiefel, Legendäre einzigartig, 720p-tauglich
+- [x] Item-Passiva/Aktive, Prägungs-Effekte, Prägungs-Presets je Champion
+- [x] Alle 8 Beschwörerzauber (inkl. Sicht-Prüfung, nicht während Wind-up)
+- [x] Wards, Trinkets, Kontrollwards
+- [x] LoL-Tooltips für Fähigkeiten, Passive, Items, Zauber, Prägungen
+- [ ] Combo-Abnahme je Champion (Signature-Combos aus den Daten ausführbar und getestet)
+- [ ] Telegraph-Audit (jede Fähigkeit zeigt Reichweite/Form korrekt an)
 
-### Bot-Prototyp („grobe Logik“) – jetzt
-- Läuft im Sim-Worker (gleicher Thread), liest nur den fog-gefilterten Snapshot des eigenen Teams, erzeugt normale Commands.
-- Laner: Lane folgen, hinter eigener Welle stehen, grob last-hitten, Gegner-Champion angreifen wenn günstig, Fähigkeiten
-  generisch aus den Champion-Daten nutzen (Reichweite/Typ), bei wenig HP zurückziehen, recallen, nach Tod zurück in die Lane.
-- Jungler: Camps clearen in fester Route, gelegentlich gank (Lane mit wenig HP-Gegner in Reichweite).
-- Support: folgt dem ADC, nutzt Heal/Schild-Fähigkeiten auf Verbündete.
-- Rang: nur wenige Parameter aus `src/data/bots/profiles/*.json` (Reaktionszeit, Entscheidungstakt, Last-Hit-Jitter,
-  Ziel-Fehler, Fehlerinjektion). Keine Cheats, gleicher Fog.
-- Shop: Bots kaufen nach `src/data/builds/<champ>.json` im Brunnen (Item-Stats wirken, Item-Passiva noch nicht).
-- Jungle-Camps + einfache Objectives (Monster mit HP/Angriff/Leash/Respawn, Gold/XP), damit Jungler etwas zu tun haben.
-- Klassik-Modus in der Lobby: Rolle + Champion wählen, Bot-Rang-Schieberegler, Gegner/Mitspieler rollenkonform besetzt.
+## Phase 3 – Bots (Gold-Niveau)
+- [x] Behavior Tree als JSON, Wahrnehmung ohne Allwissen (Fog), Entscheidungs-Log (gedrosselt), F9-Overlay
+- [x] Team-KI, Ganks, Roams, Trades, Kiten, Teamfights
+- [x] Vorhersagendes Last-Hitting, Jungle-Route nach Camp-Timern
+- [x] Ward-Spots je Rolle, Kontrollwards, Suchfeuer
+- [x] Drache, Kesselbrut, Baron mit Gruppenruf, Bannen-Timing
+- [x] Wellen in Turm schieben, Gruppieren/Belagern ab 14:00
+- [x] bot-sim mit CSV und `--vs=<rang>`
+- [~] CS-Kalibrierung gegen Tabelle A (aktuell ~50 %) → Tempo/Balance-Agent
+- [~] Spieldauer 28–35 min, 40–60 Kills, erster Turm 12–16 min (aktuell 40–45 min) → Tempo/Balance-Agent
 
-### Danach (volle Ausbaustufen)
-1. Phase 2 fertig: alle Champion-Hooks (läuft: Agents E/F), Item-Passiva/Aktive, Prägungs-Effekte, Shop-UI.
-2. Phase 3 voll: Team-KI (Desires, Win-Condition), Behavior Trees als JSON, Influence Map, Vision/Wards, Debug-Overlay F9,
-   Bot-Sim-Harness `npm run bot-sim` mit CSV gegen Tabelle A.
-3. Phase 4: alle Rangprofile kalibriert (±10 % Tabelle A), Humanisierung (Tilt, Persönlichkeit, Pings/Chat), Rang-Siege-Quoten.
-4. Phase 5: Trainer (Dodge, Last-Hit, Kiting/Combo, Sandbox komplett, Lane-/Jungle-Duell, Teamfight-Arena), Post-Game-Analyse.
-5. Phase 6: Art-Pass, Sound (prozedural), Barrierefreiheit, PWA, Performance, Szenario-Trainer, „Was ein Challenger getan hätte“.
+## Phase 4 – Ränge + Humanisierung
+- [x] Rangprofile Eisen–Challenger, 10 Spielstil-Achsen, Archetypen, Reaktionszeiten, Varianz
+- [x] Pings (Rad, Alt-Klick), Bots reagieren auf Spieler-Pings
+- [x] Rage-„?“-Pings, Flame-Chat gegen den Spieler, Toxizitäts-Schalter
+- [x] Tilt, Persönlichkeit, alle Fehlerarten je Rang injiziert
+- [x] Team-Chat (Enter), Bot-Chat in UI-Sprache
+- [x] Eine Bot-Schwierigkeit für alle Bots, Einzelwerte unter „Erweitert“
+- [ ] Siegquoten je Rang (Ziel: Gold vs Silber ≳ 65 %, Diamant vs Gold ≳ 80 %; aktuell 50 %)
 
-## Offene Punkte aus Phase 1
-- Abnahme „107 CS in 10 min“: erledigt – 107 Minions kommen an, Skript-Last-Hitter ≥ 60 (tests/phase1.test.ts).
-- Fog: Projektile/Events werden gefiltert; Bots dürfen nur Snapshot-Daten lesen.
+## Phase 5 – Trainer
+- [x] Last-Hit-Trainer (auch Turm), Ausweich-Trainer, Kiting-/Combo-Trainer
+- [x] Lane-Duell 1v1, Jungle-Duell, Teamkampf-Arena
+- [x] Post-Game-Analyse (CS/Gold-Kurven, Tode, Schaden)
+- [x] Sandbox+ (Level, keine CDs, Godmode, Welle, Camps)
+- [ ] Szenario-Trainer (Gank-Flucht, 2v1 am Turm, Drache stehlen, …) – begonnen, pausiert
+- [ ] Trainingsplan, Verlauf über mehrere Matches
+
+## Phase 6 – Politur
+- [x] Menüs, Lobby (Splash-Art, Icons, Rollen-Icons), Enzyklopädie
+- [x] Prozeduraler Sound, Vollbild + Tastensperre, PWA
+- [x] Gemalte Champion-, Minion- und Monster-Sprites, Porträts
+- [x] Karte im Gouache-Stil (Lanes, Klippen, Türme im Team-Stil, Jungle-Lichtungen, Nebel)
+- [x] Jungle-Inhalt: 6 Lager, Kesselbrut, Pflanzen, LoL-Werte
+- [x] Ansagen, Todes-Zusammenfassung, Level-up-Effekt, große Pings, Recall-/Ward-Effekte
+- [x] Barrierefreiheit (Farbenblind, weniger Bewegung, Kontrast, Hinweise), Grafikqualität, Code-Splitting
+- [x] Bughunt: 4 kritische, 12 mittlere, ~20 kleine Bugs behoben (41 Regressionstests)
+- [~] Champion-Animationen und einzigartige Silhouetten → Champion-Agent
+- [ ] „Was ein Challenger getan hätte“ (Schatten-Bot, Zeitleiste im Post-Game)
+- [ ] Mechanik-Feeling auf LoL-Niveau (siehe nächster Abschnitt)
+
+## Mechanik-Feeling vs. League of Legends
+Nutzer-Feedback 2026-10-16: „fühlt sich noch zu scuffed an“, Minions schlagen komisch, Fähigkeits-Animationen
+wirken seltsam. Befunde des Mechanik-Audits folgen hier als Checkliste.

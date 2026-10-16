@@ -54,3 +54,23 @@ Status: proposed (on branch sim/b-mechanics). Affects: brain team (A1-A3, reads 
    your stealth ward is translucent), revealed enemy ones with a reveal ring. Suggested: in `update`, after the
    `disabled` line: `const ghost = own && e.stealth; m.gemMat.opacity = disabled ? 0.35 : ghost ? 0.6 : 0.95;` and for
    `e.stealth && !own` set `m.ringMat.opacity = 0.9`. Same idea for `SnapObject.stealth` in render/groundObjects.ts.
+
+## 2026-10-16 · Agent B · B2 movesWhileCasting (champion data, additive)
+
+Status: proposed (sim/b-mechanics). Affects: brain team (A1: busyUntil), C (none), D (none).
+
+1. Data (B): every ability in `src/data/champions/*.json` has `"movesWhileCasting": true|false` (validator requires
+   it); `src/data/summoners.json` has `castTime` (0) and `movesWhileCasting` (false only for Teleport). Type:
+   `AbilityData.movesWhileCasting` (schema.ts), `SummonerDef.castTime/movesWhileCasting` (summoners.ts).
+   Sim: `movementLocked()` (abilities.ts) replaces `isBusy()` for the walking speed (stats.ts): during the wind-up of a
+   movesWhileCasting ability the champion keeps following its path; autos stay blocked as before. Move commands never
+   cancelled a wind-up, they now also take effect during a moving wind-up. Table: docs/ability-cast-audit.md.
+2. Request for the brain team, `src/ai/bot/brain.ts` `think()` (shared file), so busyUntil no longer freezes bots
+   for casts that do not stop them:
+   ```diff
+        const ab = ctx.champ.abilities[a.cmd.slot];
+   +    // B2: wind-ups of movesWhileCasting abilities do not stop the champion: the bot may keep moving/deciding
+   +    if (ab.movesWhileCasting && !ab.flags?.includes('channel')) continue;
+        const rank = snap.me?.abilities[a.cmd.slot]?.rank ?? 1;
+   ```
+   (During such a wind-up a move takes effect at once; an attack order chases, the auto itself starts after the wind-up.)

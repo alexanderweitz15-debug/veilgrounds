@@ -9,7 +9,7 @@ import { Kind } from '../types';
 import { MAX_ENT } from '../ecs';
 import { canMove, statMods, strongestSlow, tickBuffs } from '../buffs';
 import { championData, passiveHooksOf } from '../champions';
-import { isBusy } from './abilities';
+import { movementLocked } from './abilities';
 import { applySecondaryStats, bonusStats } from '../items/inventory';
 
 const AS_CAP = 2.5;
@@ -110,7 +110,7 @@ export function computeChampionStats(sim: Sim, eid: number, initial: boolean): v
   Stats.windup[eid] = b.windup;
   Stats.tenacity[eid] = Math.min(1, statMods(sim, eid, 'tenacity')[0] / 100);
   const ms = softCapMs(finalMs(sim, eid, b.ms + (it.msFlat ?? 0)) * (1 + (it.msPct ?? 0) / 100));
-  Stats.ms[eid] = !canMove(sim, eid) || isBusy(sim, eid) ? 0 : ms;
+  Stats.ms[eid] = !canMove(sim, eid) || movementLocked(sim, eid) ? 0 : ms;
   for (const h of passiveHooksOf(sim, eid)) h.onComputeStats?.(sim, eid);
 }
 

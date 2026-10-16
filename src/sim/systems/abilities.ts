@@ -328,6 +328,18 @@ export function isBusy(sim: Sim, eid: number): boolean {
   return !!a && a.serial === sim.c.Unit.serial[eid] && (a.cast !== null || (a.channel !== null && a.channel.until > sim.tick));
 }
 
+/**
+ * Busy and standing still: like isBusy, except during the wind-up of an ability with movesWhileCasting (self-buffs,
+ * next-auto empowers, stances, shields, dashes before they launch): the champion keeps walking its path (B2).
+ */
+export function movementLocked(sim: Sim, eid: number): boolean {
+  if (!isBusy(sim, eid)) return false;
+  if (teleporting(sim, eid) || isDisplacing(sim, eid)) return true;
+  const a = (sim.state.abilities as AbilState).champs.get(eid);
+  if (!a || a.serial !== sim.c.Unit.serial[eid] || (a.channel !== null && a.channel.until > sim.tick)) return true;
+  return !(a.cast !== null && abilityOf(sim, eid, a.cast.slot).movesWhileCasting);
+}
+
 export const abilityOf = (sim: Sim, eid: number, slot: number): AbilityData => championData(champIdOf(sim, eid)).abilities[slot]!;
 
 // ------------------------------------------------------------------ casting

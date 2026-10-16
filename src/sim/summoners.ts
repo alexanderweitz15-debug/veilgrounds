@@ -23,6 +23,10 @@ export interface SummonerDef {
   /** Cooldown from 10:00 on (Teleport). */
   cooldownLate?: number;
   range: number;
+  /** Wind-up in seconds (all summoners are instant; Teleport is a channel, TELEPORT_CHANNEL_TICKS). */
+  castTime: number;
+  /** Keeps walking while it is cast (false: Teleport channel stands still). */
+  movesWhileCasting: boolean;
   /** Not implemented yet (e.g. "Phase 2"). */
   todo?: string;
 }

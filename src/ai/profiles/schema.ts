@@ -100,6 +100,19 @@ export interface RankBehavior {
   distractShopPct: number;
   /** Chance a team chat line distracts (toxicity setting on), %. */
   distractChatPct: number;
+  // ---- brain rework §4.7 laning (A1 reflex layer, src/ai/reflex/**)
+  /** How far ahead (s) the per-tick last-hit planner considers kill windows (Iron 1 .. Diamond+ 3). */
+  planHorizonS: number;
+  /** Chance (%) to pull two overlapping kill windows apart with a preparing auto (Gold 30 .. Challenger 100). */
+  windowPrepPct: number;
+  /** Spatial stand-point hysteresis (units): a new move only when the stand point is further away (Iron 220 .. Challenger 90). */
+  standHysteresis: number;
+  /** Orbwalk chance (%) per auto at kiting axis 0 (Iron 20 .. Challenger 97); the kiting axis shifts it. */
+  orbwalkPct: number;
+  /** Harass budget: autos per minute on the enemy laner without trade intent (Iron 2 .. Challenger 12; aggression axis +-3). */
+  harassPerMin: number;
+  /** Chance (%) to time harass into the enemy's CS window (Diamond 50, Challenger 90). */
+  harassCsWindowPct: number;
 }
 
 export interface RankProfile {

@@ -63,7 +63,13 @@
     "minimapGlancePlannedPct": 10,
     "distractKillFeedPct": 50,
     "distractShopPct": 70,
-    "distractChatPct": 45
+    "distractChatPct": 45,
+    "planHorizonS": 1.33,
+    "windowPrepPct": 10,
+    "standHysteresis": 196.67,
+    "orbwalkPct": 31.67,
+    "harassPerMin": 3.33,
+    "harassCsWindowPct": 0
   },
   "notes": {
     "de": "Tradet, sobald eigene Cooldowns bereit sind, nicht wenn der Gegner seine Hauptfähigkeit verbraucht hat. Kein Jungle-Tracking. Kämpft in der gegnerischen Minion-Welle. Bleibt nach dem ersten Turm in der Lane statt zu rotieren. Keine Wards vor dem ersten Recall. Nimmt Baron und wirft dann. Räumt keine Wards.",

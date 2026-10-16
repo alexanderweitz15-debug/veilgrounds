@@ -63,7 +63,13 @@
     "minimapGlancePlannedPct": 96,
     "distractKillFeedPct": 7,
     "distractShopPct": 10,
-    "distractChatPct": 5
+    "distractChatPct": 5,
+    "planHorizonS": 3,
+    "windowPrepPct": 93.33,
+    "standHysteresis": 93.33,
+    "orbwalkPct": 93,
+    "harassPerMin": 11.33,
+    "harassCsWindowPct": 76.67
   },
   "notes": {
     "de": "Wie Challenger mit halbierter Konsistenz und etwas mehr Fehlerinjektion. Spielt Baron als Trade, nicht als Vorsprungsverstärker.",

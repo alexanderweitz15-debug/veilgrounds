@@ -11,6 +11,7 @@ import type { BotAction, BotMemory, BotStatic, Brain, PlayerHud, SnapEntity } fr
 import { near, ticksOfMs, towerCovering, type View } from './perception';
 import { escapeCast, hpPct, offensiveCast, supportCast } from './combat';
 import { jungle, laneSpot, pushTarget, incomingDps, structureToHit } from './laning';
+import { reflexState, setIntent, type LaneIntent } from '../reflex/state';
 import { planLastHit } from './lasthit';
 import { shop, spendable } from './shop';
 import { dst, laneProgress, lanePoint } from './geo';
@@ -327,6 +328,95 @@ function currentLane(n: NodeCtx): LaneName {
   return n.mem.ext.laneOverride ?? n.ctx.lane ?? (['top', 'mid', 'bot'] as const)[Math.floor(n.v.time / (2 * b.macroIntervalS)) % 3]!;
 }
 
+/** Reflex wave label of the tree's wave state (rework §4.5 names; Phase 2 replaces chooseWave). */
+const REFLEX_WAVE: Record<string, LaneIntent['wave']> = { crash: 'push', default: 'neutral', slowPush: 'slowPush', freeze: 'freeze', hold: 'hold' };
+
+/**
+ * Laning decision (rework §3/§4): wave state, gank-risk tier, stand distance and the support's side point become
+ * the lane intent; the reflex layer (src/ai/reflex) executes it every tick: last hits as plans, every free attack
+ * period filled, stand point per tick, orbwalk. No last-hit timing, no attack-timer holding and no move/stop to
+ * free the timer here any more. Returns failure only when a ward is due (vision runs).
+ */
+export function laneLeaf(n: NodeCtx): NodeResult {
+  if (!reflexState(n.mem).enabled) return laneLeafLegacy(n);
+  const { v, ctx, mem, rng } = n;
+  if (mem.mode !== 'fight') mem.mode = 'lane';
+  const melee = ctx.champ.attackType === 'melee';
+  let behind = melee ? 220 : Math.max(250, v.me.stats.range * 0.75);
+  const lane = currentLane(n);
+  let wave: { state: string } = ctx.lane || mem.ext.laneOverride ? chooseWave(n, lane) : { state: 'default' };
+  if (wave.state === 'freeze' || wave.state === 'hold') behind += 200;
+  // L's §4.1 gank-risk tier: shift back, no push, Diamond+ crash first, stay in Flash reach of the tower
+  const safety = laningSafety(mem);
+  behind += safety?.targetShift ?? 0;
+  if (safety?.crashFirst) wave = { state: 'crash' };
+  const pushOk = (safety?.allowPush ?? true) && wave.state !== 'freeze' && wave.state !== 'hold';
+  let farm = true;
+  if (v.enemyMinions.filter((m) => m.atkTarget === v.me.eid).length >= 2) behind += 350;
+  let spot = laneSpot(v, ctx, lane, behind);
+  let side: Pt | undefined;
+  // stay in Flash reach of the tower only while the stand point is on the enemy half (on the own half the bot is
+  // close enough anyway; clamping there pulls it out of last-hit range of a wave in the middle)
+  const half = (pts: Pt[]): boolean => laneProgress(pts, spot).s > laneLength(pts) * 0.5;
+  if (safety?.stayNearTower && half(ctx.map.sides[ctx.team].lanes[lane])) {
+    const tower = v.ownTowers.filter((t) => ctx.map.sides[ctx.team].towers[lane].some((p) => dst(p, t) < 200)).sort((a, b) => dst(a, spot) - dst(b, spot))[0];
+    const d = tower ? dst(tower, spot) : 0;
+    if (tower && d > 1150) side = spot = { x: tower.x + ((spot.x - tower.x) * 1150) / d, y: tower.y + ((spot.y - tower.y) * 1150) / d };
+  }
+  if (ctx.role === 'support' && !mem.ext.laneOverride) {
+    const adcSlot = ctx.players.find((p) => p.team === ctx.team && p.role === 'adc')?.slot;
+    const adc = v.allies.find((a) => a.slot === adcSlot);
+    const home = fountainOf(n);
+    // ponytail: the roam axis loosens this binding in L's roam node (knob supportAdcBinding)
+    if (adc && dst(adc, home) > 2500) {
+      farm = false; // leave the CS to the ADC
+      const pts = ctx.map.sides[ctx.team].lanes[lane];
+      // beside and a little behind the ADC, not on its line: a point straight behind it is walked into (units block
+      // each other) and reads as the support glued to the ADC's back
+      const along = Math.max(0, laneProgress(pts, adc).s - 120);
+      const at = lanePoint(pts, along);
+      const ahead = lanePoint(pts, along + 50);
+      const dl = dst(at, ahead) || 1;
+      const sgn = 1; // same sign for both teams: the lane geometry is point-mirrored, so the offset mirrors too
+      side = spot = { x: at.x - ((ahead.y - at.y) / dl) * 170 * sgn, y: at.y + ((ahead.x - at.x) / dl) * 170 * sgn };
+    }
+  }
+  // a ward is due: yield to the vision node (no lane intent, the reflex layer stays out of the ward walk)
+  if (wardDue(n)) return 'failure';
+  const wardWalk = mem.wardTrip >= 0 && v.tick - mem.wardTrip < 8 * 30;
+  const slowPushOk = wave.state !== 'slowPush' || v.ownMinions.filter((m) => dst(m, spot) < 1200).length - v.enemyMinions.filter((m) => dst(m, spot) < 1200).length >= 2;
+  const intent: LaneIntent = {
+    kind: 'laneFarm',
+    lane,
+    wave: REFLEX_WAVE[wave.state] ?? 'neutral',
+    farm: farm && !wardWalk,
+    pushMinions: farm && !wardWalk && pushOk && slowPushOk,
+    hitStructures: true,
+    harass: false, // Phase 2 (§4.3)
+    behind,
+    ...(side ? { side } : {}),
+    setTick: v.tick,
+  };
+  setIntent(mem, intent);
+  n.log('lane', 'intent', `wave ${intent.wave}`, { farm: intent.farm, push: intent.pushMinions, behind: Math.round(behind) });
+  // §6 ignore_minion_aggro (Iron-Silver): auto-attacks the enemy champion while standing in the enemy wave
+  // (minions switch to the bot); rolled at most every 10 s while the situation lasts
+  if (!mem.ext.trade && v.self.atkPhase !== 1 && v.tick - mem.ext.aggroRollAt > 10 * 30) {
+    const champ = v.enemies.find((e) => dst(e, v.self) <= v.reach + e.radius);
+    if (champ && near(v.enemyMinions, v.self, 500).length >= 2) {
+      mem.ext.aggroRollAt = v.tick;
+      if (rollError('ignore_minion_aggro', n.p, rng)) {
+        n.log('lane', 'harass', 'attacks the champion inside the enemy wave', { target: champ.slot }, { minions: near(v.enemyMinions, v.self, 500).length }, 'ignore_minion_aggro');
+        mem.lastMove = null;
+        n.out.push({ cmd: { t: 'attack', target: champ.id } });
+        return 'running';
+      }
+    }
+  }
+  if (v.self.moving) stuckCheck(n);
+  return 'running';
+}
+
 /** Enemy champion close enough to punish a last hit (§7 last-hitting under pressure). */
 function pressure(n: NodeCtx, lane: LaneName): SnapEntity | null {
   if ((n.pv.gankRisk[lane] ?? 0) >= 0.4) return n.v.self;
@@ -349,7 +439,8 @@ function hitStructure(n: NodeCtx, wait: boolean): boolean {
  * push everything, slow-push = push while ahead), support follows the ADC. Returns failure when there is nothing
  * to do right now (the tree then runs vision / idle).
  */
-export function laneLeaf(n: NodeCtx): NodeResult {
+/** Pre-rework laning (reflex layer off: RunnerOptions.reflex false, the default until the Phase 1 gate is met). */
+function laneLeafLegacy(n: NodeCtx): NodeResult {
   const { v, ctx, mem, rng } = n;
   if (mem.mode !== 'fight') mem.mode = 'lane';
   const melee = ctx.champ.attackType === 'melee';

@@ -63,7 +63,13 @@
     "minimapGlancePlannedPct": 50,
     "distractKillFeedPct": 30,
     "distractShopPct": 50,
-    "distractChatPct": 30
+    "distractChatPct": 30,
+    "planHorizonS": 2,
+    "windowPrepPct": 30,
+    "standHysteresis": 150,
+    "orbwalkPct": 55,
+    "harassPerMin": 6,
+    "harassCsWindowPct": 0
   },
   "notes": {
     "de": "Beim Last-Hitten verwundbar, bestraft gegnerische CS-Fenster nicht. Fürchtet Baron, liebt Drache: Jungler nimmt Drache ohne Lane-Prio, meidet Baron selbst gegen einen Gegner. Kennt Reichweiten, aber keine Flash-Timer. Contestet selten den Nebelschleicher. Lässt Wellen schlecht stehen (ca. halbe Welle pro Zyklus verloren), verpasst Belagerer unter Turm. Reagiert Sekunden verzögert auf Skirmishes. Jagt nach gewonnenem Fight den dritten Kill in den gegnerischen Jungle.",

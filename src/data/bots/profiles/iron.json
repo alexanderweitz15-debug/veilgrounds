@@ -63,7 +63,13 @@
     "minimapGlancePlannedPct": 0,
     "distractKillFeedPct": 60,
     "distractShopPct": 80,
-    "distractChatPct": 50
+    "distractChatPct": 50,
+    "planHorizonS": 1,
+    "windowPrepPct": 0,
+    "standHysteresis": 220,
+    "orbwalkPct": 20,
+    "harassPerMin": 2,
+    "harassCsWindowPct": 0
   },
   "notes": {
     "de": "Castet Fähigkeiten in Freischaltreihenfolge statt als Combo, leert Mana auf Wellen. Schaut kaum auf die Minimap; die Hälfte der Deaths kommt durch sichtbare Ganks. Läuft in ungewardete Büsche, startet zufällige 5v5 im Jungle. Recallt zu spät, stirbt mit 1.200+ Gold. Dived mit 20 % HP nach einem Kill. Sucht nach gewonnenem Fight weitere Kills statt Objectives. Baut zufällig aus der Empfehlung. Verliert Trades und bleibt trotzdem in der Lane.",

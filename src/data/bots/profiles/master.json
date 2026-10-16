@@ -63,7 +63,13 @@
     "minimapGlancePlannedPct": 92,
     "distractKillFeedPct": 10,
     "distractShopPct": 15,
-    "distractChatPct": 10
+    "distractChatPct": 10,
+    "planHorizonS": 3,
+    "windowPrepPct": 86.67,
+    "standHysteresis": 96.67,
+    "orbwalkPct": 89,
+    "harassPerMin": 10.67,
+    "harassCsWindowPct": 63.33
   },
   "notes": {
     "de": "Hohes mechanisches Minimum, inkonsistent: starke Peaks, schließt große Vorsprünge nicht zuverlässig ab. Weniger Rotationen für Teamgold als Challenger, schlechtere Trade-Fenster. Platziert ca. 60 % der Challenger-Vision auf Mid.",

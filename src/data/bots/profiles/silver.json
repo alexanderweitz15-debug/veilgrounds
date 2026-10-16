@@ -63,7 +63,13 @@
     "minimapGlancePlannedPct": 30,
     "distractKillFeedPct": 40,
     "distractShopPct": 60,
-    "distractChatPct": 40
+    "distractChatPct": 40,
+    "planHorizonS": 1.67,
+    "windowPrepPct": 20,
+    "standHysteresis": 173.33,
+    "orbwalkPct": 43.33,
+    "harassPerMin": 4.67,
+    "harassCsWindowPct": 0
   },
   "notes": {
     "de": "Beherrscht Basis-Combos und einfaches Kiting, inkonsistent. Schätzt Reichweiten falsch, zieht Minion-Aggro. Hört um 15:00 auf, Side-Lanes zu farmen, steht Mid. Jagt Low-HP-Gegner in den Fog. Recallt nach gewonnenem Teamfight statt Drache/Turm. Pusht, weil es produktiv wirkt, zerstört Slow-Pushs. Tiltet sichtbar: nach zwei Deaths mehr Aggression. Erste Objective-Contests, oft zur falschen Zeit.",

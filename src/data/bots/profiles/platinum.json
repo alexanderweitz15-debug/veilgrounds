@@ -63,7 +63,13 @@
     "minimapGlancePlannedPct": 65,
     "distractKillFeedPct": 25,
     "distractShopPct": 40,
-    "distractChatPct": 25
+    "distractChatPct": 25,
+    "planHorizonS": 2.33,
+    "windowPrepPct": 46.67,
+    "standHysteresis": 133.33,
+    "orbwalkPct": 65,
+    "harassPerMin": 7.33,
+    "harassCsWindowPct": 16.67
   },
   "notes": {
     "de": "Mechanisch sauber, verliert gewonnene Spiele: zögert an Inhibitoren und Baron, schwaches Wave-Management in unbekannten Matchups, bricht nach einem Death mental ein. Große Varianz. Denkt einen Spielzustand voraus, versteht Teamkompositionen. Deutlich selektivere Trades als Gold.",

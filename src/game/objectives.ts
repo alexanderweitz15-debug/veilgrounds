@@ -54,7 +54,7 @@ export interface TeamObjectives {
  * Which epic monster a death event belongs to: by the last seen radius, else by the death position. Grubs (radius 70)
  * only arrive when the team killed them or saw it.
  */
-export function epicOf(ev: DeathEvent, radius: number | undefined, variant?: string): Epic | null {
+export function epicOf(ev: DeathEvent, radius: number | undefined, variant?: string, time?: number): Epic | null {
   if (ev.kind !== Kind.Monster) return null;
   if (variant === 'kesselbrut') return 'kesselbrut';
   const near = (p: { x: number; y: number }, r: number): boolean => (ev.x - p.x) ** 2 + (ev.y - p.y) ** 2 < r * r;
@@ -64,7 +64,8 @@ export function epicOf(ev: DeathEvent, radius: number | undefined, variant?: str
     return near(OBJ.kesselbrut, 700) ? 'kesselbrut' : null;
   }
   if (near(OBJ.leviathan, 1200)) return 'leviathan';
-  if (near(OBJ.schleierwaechter, 1200)) return 'schleier';
+  // the pit holds the Kesselbrut until the Schleierwaechter's first spawn
+  if (near(OBJ.schleierwaechter, 1200)) return time !== undefined && time < CAMPS.schleierwaechter.first ? 'kesselbrut' : 'schleier';
   return null;
 }
 
@@ -139,7 +140,7 @@ export class ObjectiveTracker {
         this.inhibs.push({ team: ev.team, x: ev.x, y: ev.y, at: evTick + INHIB_RESPAWN });
       } else if (ev.kind === Kind.Monster) {
         const u = unit(ev.eid);
-        const which = epicOf(ev, u?.radius, u?.variant);
+        const which = epicOf(ev, u?.radius, u?.variant, evTick / TICK_HZ);
         if (which) this.noteEpicDeath(which, evTick);
         const team = ev.killerTeam;
         // the sim grants objective rewards only to champion kills (jungle.ts onMonsterDeath)

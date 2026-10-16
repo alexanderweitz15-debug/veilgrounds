@@ -8,7 +8,7 @@ import { clock, formatStat } from './trainerHud';
 import { renderGhostReview } from './ghostReview';
 
 const NS = 'http://www.w3.org/2000/svg';
-const COL = { line: '#c8aa6e', line2: '#7fb2d9', death: '#e0604a', kill: '#7dcf8a', grid: 'rgba(255,255,255,0.08)', axis: '#a09b8c' };
+const COL = { line: '#c8aa6e', line2: '#7fb2d9', death: '#e0604a', kill: '#7dcf8a', grid: 'rgba(255,255,255,0.08)', axis: '#a09b8c', own: '#e3c26a', enemy: '#d0584a' };
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?: HTMLElement, text?: string): HTMLElementTagNameMap[K] => {
   const e = document.createElement(tag);
@@ -54,9 +54,46 @@ function frame(parent: HTMLElement, title: string, duration: number, yMax: numbe
   return { g: root, x, y };
 }
 
+/** Objective moments as small flags along the top edge (own team gold, enemy red). */
+function objectiveFlags(g: SVGElement, d: MatchSummary, x: (t: number) => number): void {
+  for (const o of d.objectives ?? []) {
+    const cx = x(o.t);
+    svg('path', { d: `M${cx} ${PAD.t} l-4 -7 h8 z`, fill: o.own ? COL.own : COL.enemy }, g);
+    svg('title', {}, g.lastElementChild!, `${clock(o.t)} ${t(`post.obj.${o.kind}`)} (${t(o.own ? 'post.ours' : 'post.theirs')})`);
+  }
+}
+
+/** Signed line (item-value lead): zero line, area above green-gold, below red. */
+function leadChart(parent: HTMLElement, title: string, d: MatchSummary): void {
+  const vals = d.samples.map((s) => s.lead ?? 0);
+  const m = niceMax(Math.max(1, ...vals.map(Math.abs)));
+  const box = el('div', 'pg-chart', parent);
+  el('div', 'ttl', box, title);
+  const root = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': title }, box);
+  const x = (s: number): number => PAD.l + (s / Math.max(1, d.duration)) * (W - PAD.l - PAD.r);
+  const y = (v: number): number => PAD.t + ((m - v) / (2 * m)) * (H - PAD.t - PAD.b);
+  for (const v of [-m, -m / 2, 0, m / 2, m]) {
+    svg('line', { x1: PAD.l, x2: W - PAD.r, y1: y(v), y2: y(v), stroke: v === 0 ? COL.axis : COL.grid }, root);
+    svg('text', { x: PAD.l - 6, y: y(v) + 4, 'text-anchor': 'end', fill: COL.axis, 'font-size': 11 }, root, String(Math.round(v)));
+  }
+  const step = d.duration > 1200 ? 300 : d.duration > 300 ? 120 : 60;
+  for (let s = 0; s <= d.duration; s += step) svg('text', { x: x(s), y: H - 6, 'text-anchor': 'middle', fill: COL.axis, 'font-size': 11 }, root, clock(s));
+  if (d.samples.length > 1) {
+    const pts = d.samples.map((s) => `${x(s.t).toFixed(1)},${y(s.lead ?? 0).toFixed(1)}`);
+    for (const [clip, col] of [[`0 0 ${W} ${y(0)}`, COL.own], [`0 ${y(0)} ${W} ${H}`, COL.enemy]] as const) {
+      const [cx, cy, cw, ch] = clip.split(' ').map(Number) as [number, number, number, number];
+      const id = `clip${col.slice(1)}${Math.random().toString(36).slice(2, 7)}`;
+      svg('rect', { x: cx, y: cy, width: cw, height: Math.max(0, ch - cy), fill: 'none' }, svg('clipPath', { id }, root));
+      svg('polygon', { points: `${x(d.samples[0]!.t)},${y(0)} ${pts.join(' ')} ${x(d.samples[d.samples.length - 1]!.t)},${y(0)}`, fill: col, 'fill-opacity': 0.35, stroke: col, 'stroke-width': 1.5, 'clip-path': `url(#${id})` }, root);
+    }
+  }
+  objectiveFlags(root, d, x);
+}
+
 function lineChart(parent: HTMLElement, title: string, d: MatchSummary, pick: (s: StatSample) => number): void {
   const yMax = niceMax(Math.max(1, ...d.samples.map(pick)));
   const { g, x, y } = frame(parent, title, d.duration, yMax);
+  objectiveFlags(g, d, x);
   for (const at of d.deaths) svg('line', { x1: x(at), x2: x(at), y1: PAD.t, y2: H - PAD.b, stroke: COL.death, 'stroke-dasharray': '3 3' }, g);
   for (const at of d.kills) svg('line', { x1: x(at), x2: x(at), y1: PAD.t, y2: H - PAD.b, stroke: COL.kill, 'stroke-dasharray': '2 4' }, g);
   if (d.samples.length > 1) {
@@ -120,10 +157,19 @@ export function renderPostGame(root: HTMLElement, d: MatchSummary, onBack: () =>
   if (d.samples.length > 1) {
     lineChart(charts, t('post.cs'), d, (s) => s.cs);
     lineChart(charts, t('post.gold'), d, (s) => s.gold);
+    if (d.samples.some((s) => s.xp !== undefined)) lineChart(charts, t('post.xp'), d, (s) => s.xp ?? 0);
+    if (d.samples.some((s) => s.lead !== undefined)) leadChart(charts, t('post.lead'), d);
+    if (d.samples.some((s) => s.wards !== undefined)) lineChart(charts, t('post.wards'), d, (s) => s.wards ?? 0);
   } else el('div', 'pg-sub', charts, t('post.none'));
   damageChart(charts, d);
 
   if (d.deaths.length) el('div', 'pg-sub', panel, `${t('post.deaths')}: ${d.deaths.map((s) => clock(s)).join(', ')}`);
+  if (d.objectives?.length) {
+    // objective timeline (C6): what the teams took and when
+    const tl = el('div', 'pg-timeline', panel);
+    el('div', 'ttl', tl, t('post.timeline'));
+    for (const o of d.objectives) el('span', `pg-obj ${o.own ? 'own' : 'enemy'}`, tl, `${clock(o.t)} ${t(`post.obj.${o.kind}`)}`);
+  }
   renderGhostReview(panel, d.ghost); // Challenger-Geist timeline
   const row = el('div', 'row-buttons', panel);
   el('button', 'menu-btn secondary', row, t('menu.quit')).addEventListener('click', onBack);

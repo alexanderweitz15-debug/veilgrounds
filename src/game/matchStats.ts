@@ -4,12 +4,27 @@
 import type { Snapshot } from '../sim/snapshot';
 import type { TrainerHud } from '../sim/trainer';
 import { Kind, type SimConfig } from '../sim/types';
+import { epicOf } from './objectives';
 
 export interface StatSample {
   t: number;
   cs: number;
   gold: number;
   level: number;
+  /** Cumulative XP (C6). */
+  xp?: number;
+  /** Item-value lead of the own team over the enemy team (both public in the scoreboard; C6). */
+  lead?: number;
+  /** Active player wards of the own team (vision proxy until the sim reports a vision score; C6). */
+  wards?: number;
+}
+
+/** Objective moments for the post-game timeline (C6): towers / inhibitors destroyed, epic monsters slain. */
+export interface ObjectiveMark {
+  t: number;
+  kind: 'tower' | 'inhib' | 'leviathan' | 'kesselbrut' | 'schleier';
+  /** Scored by the own team. */
+  own: boolean;
 }
 
 export interface MatchSummary {
@@ -26,6 +41,8 @@ export interface MatchSummary {
   winner: number | null;
   team: number;
   trainer: TrainerHud | null;
+  /** Objective timeline (C6); absent in older summaries. */
+  objectives?: ObjectiveMark[];
   /** Challenger-Geist timeline (src/ai/ghost.ts), absent if the mode has no ghost. */
   ghost?: import('../ai/ghost').GhostMoment[];
 }
@@ -38,6 +55,8 @@ export class MatchStats {
   private latest: StatSample | null = null;
   /** Champion eids seen so far (champion eids are never recycled): the killing blow's target is no longer in the snapshot. */
   private readonly champs = new Set<number>();
+  /** Last seen radius / type per monster eid: tells epic monsters from camps near the pits (objective timeline). */
+  private readonly monsters = new Map<number, { radius: number; variant?: string }>();
 
   constructor(config: SimConfig | null) {
     this.s = {
@@ -53,6 +72,7 @@ export class MatchStats {
       winner: null,
       team: 0,
       trainer: null,
+      objectives: [],
     };
   }
 
@@ -61,13 +81,19 @@ export class MatchStats {
     const s = this.s;
     // match / trainer run over: the stats are final (a few more snapshots arrive before the sim stops)
     if (s.winner !== null || s.trainer?.done) return;
-    for (const e of snap.entities) if (e.kind === Kind.Champion) this.champs.add(e.id);
+    for (const e of snap.entities) {
+      if (e.kind === Kind.Champion) this.champs.add(e.id);
+      else if (e.kind === Kind.Monster) this.monsters.set(e.id, { radius: e.radius, variant: e.variant });
+    }
     for (const ev of snap.events) if (ev.e === 'death' && ev.kind === Kind.Champion) this.champs.add(ev.eid);
     s.duration = snap.time;
     s.team = snap.team;
     if (snap.trainer) s.trainer = snap.trainer;
     if (!me) return;
-    this.latest = { t: snap.time, cs: me.cs, gold: me.totalGold ?? me.gold, level: me.level };
+    let lead = 0;
+    for (const p of snap.players) lead += p.team === snap.team ? p.itemValue : -p.itemValue;
+    const wards = snap.entities.filter((e) => e.kind === Kind.Ward && e.ward && e.alive && e.team === snap.team).length;
+    this.latest = { t: snap.time, cs: me.cs, gold: me.totalGold ?? me.gold, level: me.level, xp: me.xp, lead, wards };
     if (snap.time >= this.nextSample) {
       s.samples.push(this.latest);
       this.nextSample = Math.floor(snap.time / SAMPLE_EVERY) * SAMPLE_EVERY + SAMPLE_EVERY;
@@ -87,6 +113,12 @@ export class MatchStats {
       } else if (ev.e === 'death' && ev.kind === Kind.Champion) {
         if (ev.eid === me.eid) s.deaths.push(snap.time);
         else if (ev.killer === me.eid) s.kills.push(snap.time);
+      } else if (ev.e === 'death' && (ev.kind === Kind.Tower || ev.kind === Kind.Inhibitor) && ev.team <= 1) {
+        s.objectives!.push({ t: snap.time, kind: ev.kind === Kind.Tower ? 'tower' : 'inhib', own: ev.team !== snap.team });
+      } else if (ev.e === 'death' && ev.kind === Kind.Monster && (ev.killerTeam === 0 || ev.killerTeam === 1)) {
+        const m = this.monsters.get(ev.eid);
+        const which = epicOf(ev, m?.radius, m?.variant, snap.time);
+        if (which) s.objectives!.push({ t: snap.time, kind: which, own: ev.killerTeam === snap.team });
       } else if (ev.e === 'gameOver') s.winner = ev.winner;
     }
   }

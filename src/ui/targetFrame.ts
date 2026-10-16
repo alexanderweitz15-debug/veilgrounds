@@ -126,7 +126,7 @@ export class TargetFrame {
     this.hpFill.style.width = `${(100 * Math.max(0, e.hp)) / total}%`;
     this.shield.style.left = `${(100 * Math.max(0, e.hp)) / total}%`;
     this.shield.style.width = `${(100 * e.shield) / total}%`;
-    this.hpText.textContent = `${Math.ceil(Math.max(0, e.hp))} / ${Math.round(e.maxHp)}`;
+    this.hpText.textContent = `${Math.min(Math.round(e.maxHp), Math.ceil(Math.max(0, e.hp)))} / ${Math.round(e.maxHp)}`;
     this.mp.style.display = e.maxMana > 0 ? '' : 'none';
     if (e.maxMana > 0) this.mpFill.style.width = `${(100 * e.mana) / e.maxMana}%`;
     const row = champ ? snap.players.find((p) => p.slot === e.slot) : undefined;

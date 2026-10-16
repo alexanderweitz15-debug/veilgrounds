@@ -145,6 +145,25 @@ describe('minimap last-seen ghosts', () => {
   });
 });
 
+describe('post-game samples and objective timeline (C6)', () => {
+  it('records XP, item-value lead, team wards and objective moments', async () => {
+    const { MatchStats } = await import('../src/game/matchStats');
+    const ms = new MatchStats(null);
+    const me = { eid: 1, champ: 'mira', level: 3, xp: 420, gold: 500, totalGold: 900, cs: 12 } as unknown as Snapshot['me'];
+    const players = ROWS().map((r) => ({ ...r, itemValue: r.team === 0 ? 1000 : 700 }));
+    const ward = { id: 50, kind: Kind.Ward, team: 0, ward: 'veil', alive: true, x: 0, y: 0 } as Snapshot['entities'][number];
+    const lev = { id: 60, kind: Kind.Monster, team: 2, radius: 130, alive: true, x: OBJ.leviathan.x, y: OBJ.leviathan.y } as Snapshot['entities'][number];
+    ms.ingest(snap(30 * 400, [], players, { me, entities: [ward, lev] }));
+    ms.ingest(snap(30 * 410, [death(Kind.Tower, 1, 9000, 6000), death(Kind.Monster, 2, OBJ.leviathan.x, OBJ.leviathan.y, { eid: 60, killerTeam: 1, killerKind: Kind.Champion })], players, { me }));
+    const s = ms.summary();
+    expect(s.samples[0]).toMatchObject({ xp: 420, lead: 600, wards: 1 });
+    expect(s.objectives).toEqual([
+      { t: 410, kind: 'tower', own: true },
+      { t: 410, kind: 'leviathan', own: false },
+    ]);
+  });
+});
+
 describe('manual enemy summoner timers', () => {
   it('count down the base cooldown, Teleport late cooldown after 10:00, second click clears', () => {
     const tm = new SummonerTimers();

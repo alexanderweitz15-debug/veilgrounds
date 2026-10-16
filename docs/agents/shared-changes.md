@@ -74,3 +74,16 @@ Status: proposed (sim/b-mechanics). Affects: brain team (A1: busyUntil), C (none
         const rank = snap.me?.abilities[a.cmd.slot]?.rank ?? 1;
    ```
    (During such a wind-up a move takes effect at once; an attack order chases, the auto itself starts after the wind-up.)
+
+## 2026-10-16 · Agent B · B3 snapshot additions for bots (additive, public info only)
+
+Status: proposed (sim/b-mechanics). Affects: brain team (reads them), C (scoreboard can use kesselbrutTeams).
+
+- `SnapEntity.plates?: number` on outer towers (both teams; 5 -> 0, all fall at 14:00).
+- `SnapEntity.revealed?: true` on enemy units under a reveal of the viewing team; `SnapEntity.exposed?: true` on own
+  units currently revealed to the enemy (Nyx seed, Mira W, own ward under enemy Siegelward/Suchfeuer).
+- `Snapshot.kesselbrutTeams?: [blue, red]` (absent while both 0); the old own-team `kesselbrut` stays.
+- `Snapshot.reveals?: SnapReveal[]` own true-sight areas `{ kind: 'seal' | 'sweep', x, y, r, until? }`.
+- Behaviour change: `SnapEntity.atkTarget` is now masked to -1 when the target is not in the same view (no eid
+  leak, e.g. an enemy champion hitting a camp in the fog). atkPhase/atkStart/atkEnd/atkTarget were already there for
+  every visible unit (minion and tower target choice included).

@@ -128,6 +128,17 @@ export function trueSight(sim: Sim, team: number, x: number, y: number, r = 0): 
   return false;
 }
 
+/** Active true-sight areas of `team` (snapshot `reveals`): own Siegelward circles and running Suchfeuer sweeps. Read-only. */
+export function trueSightAreas(sim: Sim, team: number): { kind: 'seal' | 'sweep'; x: number; y: number; r: number; until?: number }[] {
+  const s = sim.state.wards as WardState | undefined;
+  if (!s || (team !== 0 && team !== 1)) return [];
+  const { Pos } = sim.c;
+  const out: { kind: 'seal' | 'sweep'; x: number; y: number; r: number; until?: number }[] = [];
+  for (const w of s.list) if (w.type === 'seal' && w.team === team && isRef(sim, w.eid, w.serial)) out.push({ kind: 'seal', x: Pos.x[w.eid]!, y: Pos.y[w.eid]!, r: SEAL.revealR });
+  for (const q of s.sweeps) if (q.team === team && q.until > sim.tick) out.push({ kind: 'sweep', x: q.x, y: q.y, r: q.r, until: q.until });
+  return out;
+}
+
 /** Can `team` see this stealthed ground object / zone point right now (true sight or a lingering reveal)? */
 export function stealthPointSeen(sim: Sim, team: number, x: number, y: number, r: number, revealUntil = 0): boolean {
   return revealUntil > sim.tick || trueSight(sim, team, x, y, r);

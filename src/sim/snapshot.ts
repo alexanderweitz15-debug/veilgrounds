@@ -3,16 +3,16 @@
 import { query } from 'bitecs';
 import type { Sim } from './sim';
 import { pointVisible, sees } from './vision';
-import { Kind, VARIANTS, isStructure, type SimEvent, type Variant } from './types';
+import { Kind, VARIANTS, enemyOf, isStructure, type SimEvent, type Variant } from './types';
 import { abilityHud, armedSlot, type AbilityHud } from './systems/abilities';
 import { CHAMPION_DATA, championHooks, champIdOf } from './champions';
 import type { ChampionVisuals, HintMarker, VisualShape } from './champions/hooks';
 import { inFountain, inventory, itemValue } from './items/inventory';
 import { itemCooldownHud } from './items/itemHooks';
 import { champions, kda } from './systems/economy';
-import { buffs } from './buffs';
+import { buffs, isRevealed } from './buffs';
 import { groundObjects } from './summons';
-import { isStealthUnit, stealthPointSeen, trinketHud, trueSight, wardTypeOf, type TrinketId, type WardType } from './wards';
+import { isStealthUnit, stealthPointSeen, trinketHud, trueSight, trueSightAreas, wardTypeOf, type TrinketId, type WardType } from './wards';
 import { ccLevel, ccState } from './buffs';
 import { attackStartTick } from './systems/attack';
 import { projectileSource } from './systems/projectiles';
@@ -46,6 +46,10 @@ export interface SnapEntity {
   slot: number;
   /** 0 idle, 1 windup, 2 backswing. */
   atkPhase: number;
+  /**
+   * Current auto-attack / chase target (minion and tower target choice included); -1 = none or a unit this team cannot
+   * see (masked: no eid leaks).
+   */
   atkTarget: number;
   /**
    * Auto-attack timing (sim ticks, compare with Snapshot.tick; present while atkPhase !== 0). atkStart: tick the
@@ -74,6 +78,12 @@ export interface SnapEntity {
   stealth?: true;
   /** Own team only: vision radius of jungle vision points (river vision, Spähfrucht), for the fog overlay. */
   sight?: number;
+  /** Outer towers: plates left (5 -> 0; all fall at 14:00). Public, both teams. */
+  plates?: number;
+  /** Enemy unit under a reveal of this team (Mira W, Nyx seed / R, Tobin E, Spaehfrucht, Siegelward / Suchfeuer). */
+  revealed?: true;
+  /** Own unit currently revealed to the enemy team (LoL "revealed" indicator; own wards under enemy true sight). */
+  exposed?: true;
   /** Monster / plant type (types.ts VARIANTS): sprite and name. */
   variant?: Variant;
   /** Marks / stack counters on this unit (hook marks + 'mark' buffs): pips above the health bar. */
@@ -197,6 +207,20 @@ export interface Snapshot {
   trainer?: TrainerHud;
   /** Kesselbrut stacks of the viewing team (0-6, HUD indicator); absent while 0 and for spectators. */
   kesselbrut?: number;
+  /** Kesselbrut stacks of both teams [blue, red] (public like LoL void grubs); absent while both are 0. */
+  kesselbrutTeams?: [number, number];
+  /** Active true-sight areas of the viewing team (own Siegelward circles, running Suchfeuer sweeps); absent if none. */
+  reveals?: SnapReveal[];
+}
+
+/** One own true-sight area (stealth rules, wards.ts). */
+export interface SnapReveal {
+  kind: 'seal' | 'sweep';
+  x: number;
+  y: number;
+  r: number;
+  /** Sweeps: tick the sweep ends. */
+  until?: number;
 }
 
 /** One heard (unseen) enemy cast; shape matches PerceptionView.audio in src/ai/contract.ts. */
@@ -257,6 +281,14 @@ function wardFields(sim: Sim, e: number, team: number): { ward?: WardType; visio
   return sim.c.Unit.team[e] === team ? { ward: w, vision: sim.c.Vision.r[e]! } : { ward: w };
 }
 
+/** Reveal state of a visible unit: enemy under this team's reveal, or own unit revealed to the enemy. */
+function revealFields(sim: Sim, e: number, team: number, alive: boolean): { revealed?: true; exposed?: true } {
+  if (!alive || (team !== 0 && team !== 1)) return {};
+  const t = sim.c.Unit.team[e]!;
+  if (t === team) return isRevealed(sim, enemyOf(team), e) ? { exposed: true } : {};
+  return isRevealed(sim, team, e) ? { revealed: true } : {};
+}
+
 /** CC state of a visible unit (fog-safe: only called for entities already in the team's view). */
 function ccFields(sim: Sim, e: number, alive: boolean): { cc?: number; slow?: number; ccEnd?: number } {
   if (!alive) return {};
@@ -302,9 +334,15 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
       alive,
       ...(k === Kind.Ward ? wardFields(sim, e, team) : {}),
       ...(k === Kind.Ward && isStealthUnit(sim, e) ? { stealth: true as const } : {}),
+      ...(k === Kind.Tower && sim.c.Tower.tier[e] === 0 ? { plates: sim.c.Tower.plates[e]! } : {}),
+      ...revealFields(sim, e, team, alive),
       ...(Unit.variant[e] ? { variant: VARIANTS[Unit.variant[e]!] } : {}),
     });
   }
+  // no eid leaks: an attack / chase target outside this view is masked
+  const inView = new Set<number>();
+  for (const s of entities) inView.add(s.id);
+  for (const s of entities) if (s.atkTarget >= 0 && !inView.has(s.atkTarget)) s.atkTarget = -1;
   addVisuals(sim, team, me0(sim, slot), entities);
   const projectiles: SnapProjectile[] = [];
   for (const e of query(sim.world, [Proj])) {
@@ -372,7 +410,13 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
   vis.clear();
   const trainer = trainerHud(sim);
   const kessel = kesselbrutStacks(sim, team);
-  return { tick: sim.tick, time: sim.tick / 30, team, entities, projectiles, objects, me: hud, events, audio, players: scoreRows(sim, team), ...(trainer ? { trainer } : {}), ...(kessel ? { kesselbrut: kessel } : {}) };
+  const kt: [number, number] = [kesselbrutStacks(sim, 0), kesselbrutStacks(sim, 1)];
+  const reveals = trueSightAreas(sim, team);
+  return {
+    tick: sim.tick, time: sim.tick / 30, team, entities, projectiles, objects, me: hud, events, audio, players: scoreRows(sim, team),
+    ...(trainer ? { trainer } : {}), ...(kessel ? { kesselbrut: kessel } : {}), ...(kt[0] || kt[1] ? { kesselbrutTeams: kt } : {}),
+    ...(reveals.length ? { reveals } : {}),
+  };
 }
 
 /** Visuals of the snapshot being built (champion eid -> visuals); module scratch, cleared after each build. */

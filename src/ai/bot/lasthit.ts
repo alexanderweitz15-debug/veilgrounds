@@ -34,6 +34,8 @@ const LAPSE_SHARE = 0.5;
 const prehitChance = (skill: number): number => Math.max(0, Math.min(1, (skill - 5) / 80));
 /** Prediction horizon (ticks). */
 const HORIZON = 75;
+/** Prediction horizon of the reflex planner (ticks): longer, so fillers see follow-up windows in time. */
+const REFLEX_HORIZON = 120;
 
 export interface LastHitMem {
   /** Own attacker id -> last observed wind-up start (recorded tick) and its target. */
@@ -67,14 +69,103 @@ export interface LastHitPlan {
   target?: { id: number; a: number; b: number; land: number };
 }
 
-const windupTicksOf = (windup: number, as: number): number => (windup <= 0 ? 0 : Math.max(1, Math.round((30 * windup) / as)));
-const travelTicks = (d: number, targetRadius: number, speed: number): number => (speed <= 0 ? 0 : Math.max(1, Math.ceil((d - targetRadius) / (speed / 30))));
+export const windupTicksOf = (windup: number, as: number): number => (windup <= 0 ? 0 : Math.max(1, Math.round((30 * windup) / as)));
+export const travelTicks = (d: number, targetRadius: number, speed: number): number => (speed <= 0 ? 0 : Math.max(1, Math.ceil((d - targetRadius) / (speed / 30))));
+
+/** Own auto timing at the current attack speed (ticks). */
+export interface OwnAttack {
+  period: number;
+  windup: number;
+  /** Projectile speed (0 = melee). */
+  proj: number;
+  ms: number;
+  /** Earliest recorded tick the next own wind-up can start. */
+  ready: number;
+}
+
+export function ownAttack(v: View, ctx: BotStatic, mem: LastHitMem): OwnAttack {
+  const T = v.tick;
+  const as = Math.max(0.1, v.me.stats.as);
+  const period = 30 / as;
+  const windup = windupTicksOf(ctx.champ.base.windup, as);
+  const proj = ctx.champ.attackType === 'ranged' ? ctx.champ.base.projectileSpeed ?? 2000 : 0;
+  // attack timer: the snapshot shows the running cycle (backswing end = timer ready); else the last observed swing
+  const s = v.self;
+  let ready = Math.max(T + 1, mem.ownStart + Math.floor(period));
+  if (s.atkPhase === 2 && s.atkEnd !== undefined) ready = Math.max(T + 1, s.atkEnd);
+  else if (s.atkPhase === 1 && s.atkStart !== undefined) ready = Math.max(T + 1, s.atkStart + Math.floor(period));
+  return { period, windup, proj, ms: Math.max(100, v.me.stats.ms), ready };
+}
+
+/** Own auto damage on minion m (armor applied). */
+export const ownHitOn = (v: View, m: SnapEntity): number => (v.me.stats.ad * 100) / (100 + (MINION_STATS[m.kind]?.armor ?? 0));
+
+/** Per-tick prediction of one enemy minion (reflex last-hit planner, §4.2): kill window [a, b) of an own hit
+ *  (unbiased, recorded ticks), the hits it sees, walk ticks to reach and the landing tick of an auto started at
+ *  `start`. */
+export interface MinionWindow {
+  m: SnapEntity;
+  a: number;
+  b: number;
+  dmg: number;
+  hits: { at: number; dmg: number }[];
+  walk: number;
+  /** Ticks from wind-up start to damage (walk + wind-up + flight). */
+  lead: number;
+}
+
+/** Windows of every enemy minion within reach + 700 (the scheduler's follow-up table, §4.1 rule 2). */
+export function predictWindows(v: View, mem: LastHitMem, own: OwnAttack): MinionWindow[] {
+  const out: MinionWindow[] = [];
+  const byTarget = attackersByTarget(v, mem);
+  for (const m of v.enemyMinions) {
+    const d = dst(v.self, m);
+    const reach = v.reach + m.radius;
+    if (d > reach + 700) continue;
+    const dmg = ownHitOn(v, m);
+    const hits = incomingHits(v, mem, m, byTarget, REFLEX_HORIZON);
+    const w = killWindow(m, hits, dmg, v.tick);
+    const walk = d > reach ? Math.ceil((d - reach) / (own.ms / 30)) : 0;
+    const lead = walk + own.windup + Math.max(0, travelTicks(Math.min(d, reach), m.radius, own.proj) - 1);
+    out.push({ m, a: w.a, b: w.b, dmg, hits, walk, lead });
+  }
+  return out.sort((p, q) => p.a - q.a || p.m.id - q.m.id);
+}
+
+/** Damage-only spell last hit for minion m (exported for the reflex planner). */
+export function spellLastHitFor(v: View, ctx: BotStatic, w: MinionWindow, bias: number): BotAction | null {
+  return spellLastHit(v, ctx, w.m, w.hits, bias, ctx.params.playstyle.farmPriority);
+}
+
+/** Pre-hit under the own tower (§4.2): chance per minion by skill (rolled once per minion, technique not attention). */
+export function prehitRoll(mem: LastHitMem, m: SnapEntity, skill: number, rng: Rng): boolean {
+  let r = mem.roll.get(m.id);
+  if (!r) mem.roll.set(m.id, (r = { bias: 0, skip: false, pre: rng.chance(prehitChance(skill)) }));
+  return !!r.pre;
+}
+
+/** Pre-hit check: an auto landing at land1 makes the next auto (land1 + period) land inside the new window. */
+export function prehitFits(w: MinionWindow, land1: number, period: number, bias: number, T: number): boolean {
+  if (land1 >= w.b - 1) return false;
+  const w2 = killWindow(w.m, [...w.hits, { at: land1, dmg: w.dmg }].sort((p, q) => p.at - q.at), w.dmg, T);
+  const land2 = land1 + Math.floor(period);
+  return w2.a > land1 && land2 + bias >= w2.a && land2 + bias < w2.b;
+}
+
+/** Kill window of m after an own hit of `dmg` landing at `land` (filler rule 2). */
+export function windowAfterHit(w: MinionWindow, land: number, T: number): { a: number; b: number } {
+  return killWindow(w.m, [...w.hits, { at: land, dmg: w.dmg }].sort((p, q) => p.at - q.at), w.dmg, T);
+}
 
 /** Read the 'attack' / 'damage' events since the last decision (own minions, towers and own champion). */
 export function observeAttacks(v: View, mem: LastHitMem): void {
   const snap = v.snap;
-  const byId = new Map<number, SnapEntity>();
-  for (const e of snap.entities) byId.set(e.id, e);
+  const cleanup = snap.tick - mem.lastTick > 30 || mem.atk.size > 200;
+  if (!snap.events.length && !cleanup) {
+    if (mem.inflight.length) mem.inflight = mem.inflight.filter((f) => f.land > snap.tick);
+    return;
+  }
+  const byId = entityIndex(snap.entities);
   snap.events.forEach((ev, i) => {
     const at = snap.eventTicks?.[i] ?? snap.tick;
     if (ev.e === 'attack') {
@@ -98,13 +189,45 @@ export function observeAttacks(v: View, mem: LastHitMem): void {
   });
   mem.inflight = mem.inflight.filter((f) => f.land > snap.tick);
   // forget dead attackers / minions
-  if (snap.tick - mem.lastTick > 30 || mem.atk.size > 200) {
+  if (cleanup) {
     for (const id of mem.atk.keys()) if (!byId.get(id)?.alive) mem.atk.delete(id);
     for (const id of mem.dmg.keys()) if (!byId.get(id)?.alive) mem.dmg.delete(id);
     for (const id of mem.roll.keys()) if (!byId.get(id)?.alive) mem.roll.delete(id);
     for (const id of mem.why.keys()) if (!byId.get(id)?.alive) mem.why.delete(id);
     mem.lastTick = snap.tick;
   }
+}
+
+/** id -> entity of a snapshot's entity list, built once per list (the reflex snapshots of a team share one list per
+ *  tick). */
+const INDEX = new WeakMap<readonly SnapEntity[], Map<number, SnapEntity>>();
+export function entityIndex(list: readonly SnapEntity[]): Map<number, SnapEntity> {
+  let m = INDEX.get(list);
+  if (!m) {
+    m = new Map();
+    for (const e of list) m.set(e.id, e);
+    INDEX.set(list, m);
+  }
+  return m;
+}
+
+/** Own minions / towers grouped by the enemy minion they attack (live target or last observed swing). */
+export function attackersByTarget(v: View, mem: LastHitMem): Map<number, SnapEntity[]> {
+  const g = new Map<number, SnapEntity[]>();
+  const add = (id: number, a: SnapEntity): void => {
+    const l = g.get(id);
+    if (l) {
+      if (l[l.length - 1] !== a) l.push(a);
+    } else g.set(id, [a]);
+  };
+  for (const list of [v.ownMinions, v.ownTowers]) {
+    for (const a of list) {
+      if (a.atkTarget >= 0) add(a.atkTarget, a);
+      const rec = mem.atk.get(a.id);
+      if (rec && rec.target !== a.atkTarget) add(rec.target, a);
+    }
+  }
+  return g;
 }
 
 /** Wind-up ticks, projectile flight (ticks after the fire tick), period and damage of an own attacker's swing at m. */
@@ -121,10 +244,10 @@ function swing(a: SnapEntity, m: SnapEntity, T: number, mem: LastHitMem): { wt: 
 }
 
 /** Incoming damage instances (recorded tick, amount) on minion `m` from own minions and towers within the horizon. */
-export function incomingHits(v: View, mem: LastHitMem, m: SnapEntity): { at: number; dmg: number }[] {
+export function incomingHits(v: View, mem: LastHitMem, m: SnapEntity, byTarget?: Map<number, SnapEntity[]>, horizon = HORIZON): { at: number; dmg: number }[] {
   const T = v.tick;
   const out: { at: number; dmg: number }[] = [];
-  const attackers = [...v.ownMinions, ...v.ownTowers];
+  const attackers = byTarget ? byTarget.get(m.id) ?? [] : [...v.ownMinions, ...v.ownTowers];
   for (const a of attackers) {
     const rec = mem.atk.get(a.id);
     const onM = a.atkTarget === m.id;
@@ -148,7 +271,7 @@ export function incomingHits(v: View, mem: LastHitMem, m: SnapEntity): { at: num
       if (a.atkPhase !== 1 && gap > 10) start += Math.ceil(gap / 10); // still walking up (minion speed 300 = 10/tick)
     }
     if (!onM) continue;
-    for (let s = start; s + wt <= T + HORIZON; s += period) {
+    for (let s = start; s + wt <= T + horizon; s += period) {
       const land = Math.ceil(s) + wt + flight;
       if (land > T) out.push({ at: land, dmg: hit });
     }

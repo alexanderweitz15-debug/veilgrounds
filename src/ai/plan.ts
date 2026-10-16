@@ -6,7 +6,7 @@ import type { Command } from '../sim/types';
 
 export type PlanKind = 'lastHit' | 'prehit' | 'prepare' | 'spellLastHit' | 'orbwalkMove';
 
-export type CancelReason = 'minion_died' | 'prediction_drift' | 'out_of_range' | 'overridden_by_dodge' | 'intent_changed' | 'distracted' | 'expired';
+export type CancelReason = 'minion_died' | 'prediction_drift' | 'out_of_range' | 'overridden_by_dodge' | 'intent_changed' | 'distracted' | 'expired' | 'reordered';
 
 export type Precondition = 'targetVisible' | 'targetAlive' | 'inWindow' | 'reachable' | 'notBusy' | 'intentFarm';
 
@@ -25,6 +25,18 @@ export interface Plan {
   biasTicks: number;
   /** Kill window [a, b) (recorded ticks, incl. bias) at the latest validation. */
   window?: { a: number; b: number };
+}
+
+/** F9 overlay row extension (lead decision b): A3 mirrors this structurally in log.ts / botDebug.ts. */
+export interface ReflexDebug {
+  /** 'laneFarm:<lane>:<wave>' or 'none'. */
+  intent: string;
+  /** Active plans with countdown (ticks until execution). */
+  plans: { kind: PlanKind; targetId: number; inTicks: number }[];
+  /** Share 0..1 of the last 30 s with the own attack cycle running. */
+  util30s: number;
+  /** Current stand point (own position data, no fog concern). */
+  stand: { x: number; y: number } | null;
 }
 
 /** Farm-plan kinds: the queue holds at most one of these for the next minion. */

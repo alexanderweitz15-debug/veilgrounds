@@ -55,7 +55,13 @@
     "apmCap": 256,
     "inertia": 0.2,
     "hysteresis": 0.12,
-    "engageHesitationS": 0.37
+    "engageHesitationS": 0.37,
+    "planHorizonS": 3,
+    "windowPrepPct": 93.33,
+    "standHysteresis": 93.33,
+    "orbwalkPct": 93,
+    "harassPerMin": 11.33,
+    "harassCsWindowPct": 76.67
   },
   "notes": {
     "de": "Wie Challenger mit halbierter Konsistenz und etwas mehr Fehlerinjektion. Spielt Baron als Trade, nicht als Vorsprungsverstärker.",

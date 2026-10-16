@@ -169,11 +169,13 @@ interface PendingLoss {
 export interface HarnessOptions extends RunnerOptions {
   /** Drop the bots' ability casts (last-hit trainer "only autos"). */
   autosOnly?: boolean;
+  /** Last-hit trainer: the bot stays in lane (recall and ward commands are dropped, as in the practice tool). */
+  trainer?: boolean;
 }
 
 export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: Sim, inputs: TickInput[], bots: BotRunner) => void, opts: HarnessOptions = {}): GameResult {
   const sim = createSim(config);
-  const bots = new BotRunner(config, undefined, opts);
+  const bots = new BotRunner(config, undefined, opts.autosOnly ? { ...opts, noSpells: true } : opts);
   const { Champ, Unit, Pos, Atk, Stats, Move } = sim.c;
   const stats: ChampStats[] = config.players.map((p) => ({
     slot: p.slot,
@@ -279,6 +281,7 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
 
   while (sim.tick < maxTicks && sim.state.winner === undefined) {
     let inputs = bots.tick(sim);
+    if (opts.trainer) inputs = inputs.filter((i) => i.cmd.t !== 'recall' && i.cmd.t !== 'ward');
     if (opts.autosOnly) {
       inputs = inputs.filter((i) => {
         if (i.cmd.t !== 'cast') return true;
@@ -422,6 +425,7 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
       const b = botBySlot.get(l.s.slot)!;
       const alive = !!Unit.alive[me];
       if (!alive) l.trip = 'dead';
+      else if (Champ.recallAt[me]! > 0 && l.trip !== 'dead' && l.trip !== 'heal') l.trip = 'recall'; // recalling = leaving, even next to the wave
       else if (T % 15 === 0) {
         const nearLane = units.some((u) => isMinion(Unit.kind[u]!) && Unit.lane[u] === l.lane && Math.hypot(Pos.x[u]! - Pos.x[me]!, Pos.y[u]! - Pos.y[me]!) < ABSENT_R);
         if (nearLane && IN_LANE_MODES.has(b.mem.mode)) l.trip = null;
@@ -478,6 +482,7 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
   /** Cause known at the death tick (null: decided 40 ticks later, window collision vs no attack). */
   function lossCause(l: LanerTrack, me: number, m: number, x: number, y: number, killer: number, killerKind: number, T: number): CsCause | null {
     if (!Unit.alive[me]) return 'absent_dead';
+    if (Champ.recallAt[me]! > 0) return 'absent_recall';
     const d = Math.hypot(Pos.x[me]! - x, Pos.y[me]! - y);
     if (d > ABSENT_R) {
       const b = botBySlot.get(l.s.slot)!;
@@ -605,14 +610,15 @@ function liveUnits(sim: Sim): number[] {
 
 /**
  * Last-hit trainer scenario (§4.7 acceptance, gate of Phase 1): one bot alone in the mid lane (laneOnly mode, both
- * teams' mid waves, no enemy champion), autos only. 107 enemy minions arrive by 10:00.
+ * teams' mid waves, no enemy champion), autos only, no recall / no wards (vision axis -5, recall and ward commands
+ * dropped: a practice-tool session). 107 enemy minions arrive by 10:00.
  */
 export function runLaneAlone(rank: Rank, opts: { minutes?: number; seed?: number; champion?: string; autosOnly?: boolean; clock?: () => number; noVariance?: boolean } = {}): GameResult {
   const seed = opts.seed ?? 1;
   const players: PlayerSetup[] = [
-    { slot: 0, team: 0, champion: opts.champion ?? 'mira', role: 'mid', summoners: ['sprung', 'heilen'], isHuman: false, bot: { rank, variance: 'normal' } },
+    { slot: 0, team: 0, champion: opts.champion ?? 'mira', role: 'mid', summoners: ['sprung', 'heilen'], isHuman: false, bot: { rank, variance: 'normal', playstyle: { vision: -5 } } },
   ];
   seedPersonalities(seed, players);
   const config: SimConfig = { seed, mode: 'laneOnly', minionLanes: [Lane.Mid], players };
-  return runBotGame(config, Math.round((opts.minutes ?? 10) * 1800), undefined, { autosOnly: opts.autosOnly ?? true, noVariance: opts.noVariance ?? true, ...(opts.clock ? { clock: opts.clock } : {}) });
+  return runBotGame(config, Math.round((opts.minutes ?? 10) * 1800), undefined, { autosOnly: opts.autosOnly ?? true, trainer: true, noVariance: opts.noVariance ?? true, ...(opts.clock ? { clock: opts.clock } : {}) });
 }

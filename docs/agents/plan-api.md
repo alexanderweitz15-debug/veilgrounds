@@ -177,4 +177,40 @@ merges profile data. Proposal entered in docs/agents/shared-changes.md.
 
 ## Changes
 
-- (none yet)
+Answers to the supervisor review (docs/agents/review-2026-10-16.md) and implementation deviations:
+
+1. **Per-tick snapshot (finding 1).** `buildSnapshot` measured 0.76 ms per call (10 bots x 30 Hz would be
+   ~230 ms per sim second). The reflex snapshot is built by the runner instead: the same fog rule as buildSnapshot
+   (own team, structures, alive units `sees(sim, team, e)`), entity fields only, **once per team and tick** (shared
+   by the team's bots), the bot's own HUD from its latest decision snapshot with the live own values patched in
+   (stats, level, gold, recall, `abilityHud`), events = exactly this tick's fog-filtered team events
+   (`teamEvents`, the same call that fills the think buffer; `b.events` keeps every event since the last decision).
+   It goes through `onPerceive` like the think snapshot, so the fog test covers it. Projectiles, objects, audio and
+   score rows are empty in it (reflex does not use them). Cost reported separately: `RunnerCost.viewMs/views`
+   (view) vs `reflexMs/reflexCalls` (reflex logic). Long-term proposal for agent B: an official
+   `buildSnapshot(sim, team, slot, { lite: true })` (shared-changes.md).
+2. **Follow-up windows (finding 3).** The per-tick planner computes `predictWindows()` (lasthit.ts) for every enemy
+   minion within reach + 700: kill window, hits, walk, lead. The scheduler protects **every** window that opens
+   within the rank's planning horizon and is servable now (not only `plans[0]`): a filler is allowed only if each of
+   them stays servable with the attack timer taken until `T + 1 + period` (plus 3 ticks slack for the prediction
+   error of the closing hit). Rule 2 uses the same table (`windowAfterHit`). Window preparation (`prepare`) checks
+   the first two protected windows. Test 3 covers it.
+3. **Log volume (finding 5).** One entry per plan lifecycle (`lh_cancel` with the reason; executions are not
+   logged), filler/hold decisions as `node: 'reflex'` entries whose chosen+reason repeat (throttled by the 150-tick
+   dedup). No positions in reflex inputs (ids and ticks only).
+4. **`notBusy`** is a scheduler rule, not a precondition: while `busyUntil` runs the reflex layer issues nothing and
+   plans shift (re-aimed every tick); they are dropped only when their window can no longer be served.
+5. **`orbwalkMove`** plans carry `cancelTags: ['orb']`; farm plans carry `['lh', 'orb']` (dodge / retreat use
+   `cancelOrbwalk`, which sets `'orb'`) and are dropped with `overridden_by_dodge`.
+6. **Timing error (minor).** `biasTicks = N(0, lastHitJitterMs) * 30 / 1000`, rolled at plan creation, kept while
+   the plan is re-aimed every tick (the plan follows the prediction, the error stays). No constant reaction share:
+   the human reaction part of the error is modelled by A3's attention windows (+150 ms while distracted, §9). A new
+   roll only on re-creation after a cancel.
+7. **New cancel reason `reordered`**: the next plan is replaced when keeping it would lose an earlier-closing
+   window that the other order serves (or a bigger-gold minion in a true collision).
+8. **Validation re-aims instead of dropping**: a plan's `executeAtTick` follows the per-tick prediction (with the
+   kept bias); `prediction_drift` / `out_of_range` only when no landing inside the (believed) window is possible.
+9. **`ReflexDebug`** type lives in `src/ai/plan.ts`; `BotRunner.debugRows()` returns rows with a `reflex` field
+   (lead decision b). Profile fields `planHorizonS, windowPrepPct, standHysteresis, orbwalkPct, harassPerMin,
+   harassCsWindowPct` are in all ten profile JSONs and `schema.ts` (lead decision a); `reflexParams(ctx)` reads them
+   without code defaults. Orbwalk chance = `orbwalkPct / 100 + (knobs.orbwalkChance - 0.5)` (rank base + kiting axis).

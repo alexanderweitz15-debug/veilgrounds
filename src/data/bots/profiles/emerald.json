@@ -55,7 +55,13 @@
     "apmCap": 173,
     "inertia": 0.35,
     "hysteresis": 0.19,
-    "engageHesitationS": 0.6
+    "engageHesitationS": 0.6,
+    "planHorizonS": 2.67,
+    "windowPrepPct": 63.33,
+    "standHysteresis": 116.67,
+    "orbwalkPct": 75,
+    "harassPerMin": 8.67,
+    "harassCsWindowPct": 33.33
   },
   "notes": {
     "de": "Makro beginnt Mikro zu überwiegen. Konvertiert Tempo nicht: nach einem Kill 15 s Tatenlosigkeit. Wirft Leads: +3.000 Gold bei 20:00, dann schlechter Baron-Force. Jungle-Tracking teilweise (Seite, nicht Camp). Konsistenz ist die Lücke zu Diamant.",

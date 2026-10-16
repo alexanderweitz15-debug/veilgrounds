@@ -3,11 +3,19 @@
 // fog-filtered snapshot; brains get Snapshot + static data (see src/ai/bot/types.ts).
 // Used by the sim worker (merged with the human's inputs, recorded in replays), tests and tools/botSim.ts.
 
-import { buildSnapshot, teamEvents, type Snapshot, type SnapAudio } from '../sim/snapshot';
+import { query } from 'bitecs';
+import { buildSnapshot, teamEvents, type Snapshot, type SnapAudio, type SnapEntity, type PlayerHud } from '../sim/snapshot';
 import type { Sim } from '../sim/sim';
 import { loadMap, type LaneName, type MapData } from '../sim/map';
 import { Rng } from '../sim/rng';
-import type { PlayerSetup, SimConfig, SimEvent, TeamId, TickInput } from '../sim/types';
+import { Kind, isStructure, type PlayerSetup, type SimConfig, type SimEvent, type TeamId, type TickInput } from '../sim/types';
+import { sees } from '../sim/vision';
+import { attackStartTick } from '../sim/systems/attack';
+import { walkedLastTick } from '../sim/systems/movement';
+import { abilityHud } from '../sim/systems/abilities';
+import { reflex } from './reflex/reflex';
+import { clearIntent, reflexDebug, reflexState } from './reflex/state';
+import type { ReflexDebug } from './plan';
 import { CHAMPION_DATA, championData } from '../sim/champions';
 import { botRunes } from '../sim/items/runes';
 import { profileAt, profileOf } from './profiles';
@@ -38,7 +46,14 @@ interface BotSlot {
   events: SimEvent[];
   eventTicks: number[];
   audio: SnapAudio[];
+  /** HUD of the latest decision snapshot (reflex patches its live fields every tick). */
+  hud: PlayerHud | null;
 }
+
+const NO_TAGS: ReadonlySet<string> = new Set();
+
+/** Commands that conflict with a reflex command of the same tick (the decision wins that tick). */
+const ORDER_CMDS = new Set(['move', 'attack', 'attackMove', 'stop', 'cast', 'spell', 'recall', 'ward']);
 
 export const isBotSlot = (p: PlayerSetup): boolean => !p.isHuman && !!p.bot;
 
@@ -49,14 +64,22 @@ export interface RunnerOptions {
   noVariance?: boolean;
   /** Wall clock (ms) for the think / reflex cost metrics. Only read when given; never feeds a decision. */
   clock?: () => number;
+  /** Last-hit trainer scenario "autos only": the reflex layer plans no spell last hits. */
+  noSpells?: boolean;
+  /** Brain rework reflex layer (src/ai/reflex). Off by default until the Phase 1 gate is met (docs/agents/a1.md). */
+  reflex?: boolean;
 }
 
 /** Accumulated brain cost (bot-sim reflexCostMs / thinkCostMs). */
 export interface RunnerCost {
   thinkMs: number;
   thinks: number;
+  /** Reflex logic per bot and tick (excl. the per-tick view). */
   reflexMs: number;
   reflexCalls: number;
+  /** Per-tick fog-filtered reflex view (once per team and tick) + per-bot HUD patch. */
+  viewMs: number;
+  views: number;
 }
 
 export class BotRunner {
@@ -66,16 +89,27 @@ export class BotRunner {
   /** Test hook: sees every snapshot handed to a brain (fog test). */
   onPerceive?: (slot: number, snap: Snapshot) => void;
   private bufferedTick = -1;
+  /** Fog-filtered events of the latest sim tick per team (the reflex layer observes exactly one tick at a time). */
+  private tickEvents: [SimEvent[], SimEvent[]] = [[], []];
   /** Decision log of all bots of this game (spec-bots §1/§10): F9 overlay, Replay.botLog. */
   readonly log = new BotDecisionLog(100_000, 50 * 1024 * 1024, LOG_DEDUP_TICKS);
   /** Team AI per team (spec-bots §8, Agent M): desires re-evaluated at the macro interval. */
   readonly teams: [TeamAI, TeamAI];
   /** Brain cost, only accumulated with RunnerOptions.clock. */
-  readonly cost: RunnerCost = { thinkMs: 0, thinks: 0, reflexMs: 0, reflexCalls: 0 };
+  readonly cost: RunnerCost = { thinkMs: 0, thinks: 0, reflexMs: 0, reflexCalls: 0, viewMs: 0, views: 0 };
+  /** Per-tick team views of the reflex layer: [tick, entities] per team. */
+  private teamView: [number, SnapEntity[]][] = [
+    [-1, []],
+    [-1, []],
+  ];
   private readonly clock: (() => number) | undefined;
+  private readonly noSpells: boolean;
+  private readonly reflexOn: boolean;
 
   constructor(config: SimConfig, private readonly brain: Brain = think, opts: RunnerOptions = {}) {
     this.clock = opts.clock;
+    this.noSpells = !!opts.noSpells;
+    this.reflexOn = !!opts.reflex;
     const rng = new Rng((config.seed ^ 0x5eed_b075) >>> 0);
     this.teams = [new TeamAI(0, staticMap(), config.players, config.seed, this.log), new TeamAI(1, staticMap(), config.players, config.seed, this.log)];
     for (const p of [...config.players].sort((a, b) => a.slot - b.slot)) {
@@ -111,13 +145,17 @@ export class BotRunner {
       ctx.teamAI.register({ slot: p.slot, role: p.role, champion: p.champion, profile, params });
       const interval = decisionTicks(ctx);
       // stagger first decisions so bots do not all think on the same tick
-      this.bots.push({ ctx, mem: newMemory(), rng: new Rng(rng.u32()), interval, next: rng.int(interval), events: [], eventTicks: [], audio: [] });
+      const mem = newMemory();
+      reflexState(mem).enabled = !!opts.reflex;
+      this.bots.push({ ctx, mem, rng: new Rng(rng.u32()), interval, next: rng.int(interval), events: [], eventTicks: [], audio: [], hud: null });
     }
   }
 
-  /** F9 overlay rows: latest decision, scores, injected error, reaction time and perception age per bot. */
-  debugRows(): BotDebugRow[] {
-    return debugRows(
+  /** F9 overlay rows: latest decision, scores, injected error, reaction time and perception age per bot, plus the
+   *  reflex layer (intent, plans with countdown, attack utilisation of the last 30 s; plan-api.md §5). */
+  debugRows(): (BotDebugRow & { reflex: ReflexDebug })[] {
+    const tick = this.bufferedTick;
+    const rows = debugRows(
       this.log,
       this.bots.map((b) => ({
         slot: b.ctx.slot,
@@ -129,6 +167,81 @@ export class BotRunner {
         mode: b.mem.mode,
       })),
     );
+    return rows.map((r) => {
+      const b = this.bots.find((x) => x.ctx.slot === r.slot);
+      return { ...r, reflex: b ? reflexDebug(b.mem, tick) : { intent: 'none', plans: [], util30s: 0, stand: null } };
+    });
+  }
+
+  /**
+   * Per-tick snapshot of the reflex layer: the same fog rule as buildSnapshot (own team, structures, alive units the
+   * team sees) for the entities, built once per team and tick; the bot's own HUD from its latest decision snapshot
+   * with the live own values patched in (own champion data only); events = this tick's fog-filtered team events.
+   * Projectiles / objects / score rows are not part of it (reflex does not use them; buildSnapshot costs ~0.7 ms).
+   */
+  private reflexSnapshot(sim: Sim, b: BotSlot): Snapshot | null {
+    const team = b.ctx.team === 1 ? 1 : 0;
+    const me = sim.slots[b.ctx.slot];
+    if (me === undefined || me < 0 || !b.hud) return null;
+    const { Unit, Champ, Stats } = sim.c;
+    if (!Unit.alive[me]) return null;
+    const tv = this.teamView[team]!;
+    if (tv[0] !== sim.tick) {
+      tv[0] = sim.tick;
+      tv[1] = this.buildTeamEntities(sim, team);
+    }
+    const hud: PlayerHud = {
+      ...b.hud,
+      level: Champ.level[me]!,
+      gold: Champ.gold[me]!,
+      cs: Champ.cs[me]!,
+      dead: false,
+      recallLeft: Champ.recallAt[me]! > sim.tick ? (Champ.recallAt[me]! - sim.tick) / 30 : 0,
+      abilities: abilityHud(sim, me),
+      stats: { ad: Stats.ad[me]!, ap: Stats.ap[me]!, armor: Stats.armor[me]!, mr: Stats.mr[me]!, as: Stats.as[me]!, ms: Stats.ms[me]!, range: Stats.range[me]!, crit: Stats.crit[me]! },
+    };
+    const events = this.tickEvents[team]!;
+    return { tick: sim.tick, time: sim.tick / 30, team, entities: tv[1], projectiles: [], objects: [], me: hud, events, eventTicks: events.map(() => sim.tick), audio: [], players: [] };
+  }
+
+  private buildTeamEntities(sim: Sim, team: number): SnapEntity[] {
+    const { Unit, Pos, Face, Hp, Mana, Champ, Atk } = sim.c;
+    const out: SnapEntity[] = [];
+    for (const e of query(sim.world, [Unit])) {
+      const k = Unit.kind[e]!;
+      if (k === Kind.Projectile) continue;
+      const alive = Unit.alive[e] === 1;
+      const visible = Unit.team[e] === team || isStructure(k) || (alive && sees(sim, team, e));
+      if (!visible) continue;
+      const ci = Unit.champ[e]!;
+      out.push({
+        id: e,
+        serial: Unit.serial[e]!,
+        kind: k,
+        team: Unit.team[e]!,
+        x: Pos.x[e]!,
+        y: Pos.y[e]!,
+        px: Pos.px[e]!,
+        py: Pos.py[e]!,
+        fx: Face.x[e]!,
+        fy: Face.y[e]!,
+        hp: Hp.cur[e]!,
+        maxHp: Hp.max[e]!,
+        shield: Hp.shield[e]!,
+        mana: Mana.cur[e]!,
+        maxMana: Mana.max[e]!,
+        radius: Unit.radius[e]!,
+        level: k === Kind.Champion ? Champ.level[e]! : 0,
+        champ: ci >= 0 ? sim.championIds[ci]! : null,
+        slot: Unit.slot[e]!,
+        atkPhase: Atk.phase[e]!,
+        atkTarget: Atk.target[e]!,
+        ...(Atk.phase[e] ? { atkStart: attackStartTick(sim, e), atkEnd: Atk.phaseEnd[e]! } : {}),
+        moving: alive && walkedLastTick(sim, e),
+        alive,
+      });
+    }
+    return out;
   }
 
   /** Bot is in its own cast wind-up / channel: delayed move/attack orders would break it, drop them. */
@@ -145,10 +258,14 @@ export class BotRunner {
     if (sim.tick !== this.bufferedTick) {
       this.bufferedTick = sim.tick;
       const byTeam = new Map<number, ReturnType<typeof teamEvents>>();
+      this.tickEvents = [[], []];
       if (sim.events.length) {
         for (const b of this.bots) {
           let te = byTeam.get(b.ctx.team);
-          if (!te) byTeam.set(b.ctx.team, (te = teamEvents(sim, b.ctx.team)));
+          if (!te) {
+            byTeam.set(b.ctx.team, (te = teamEvents(sim, b.ctx.team)));
+            this.tickEvents[b.ctx.team === 1 ? 1 : 0] = te.events;
+          }
           for (const ev of te.events) {
             b.events.push(ev);
             b.eventTicks.push(sim.tick);
@@ -157,6 +274,8 @@ export class BotRunner {
         }
       }
     }
+    // what each decision of this tick did, for the reflex pass below
+    const decided = new Map<number, { issued: boolean; cancelled: ReadonlySet<string> }>();
     for (const b of this.bots) {
       if (sim.tick < b.next) continue;
       // jitter the cadence a little (+-20 %) so decisions do not phase-lock with attack timers
@@ -169,25 +288,55 @@ export class BotRunner {
       b.audio = [];
       b.eventTicks = [];
       this.onPerceive?.(b.ctx.slot, snap);
+      b.hud = snap.me;
       const prevMode = b.mem.mode;
+      // the lane intent lives for exactly one decision: the reflex layer executes what this decision chose
+      clearIntent(b.mem);
       const t0 = this.clock?.() ?? 0;
       const actions = this.brain(snap, b.ctx, b.mem, b.rng);
       if (this.clock) {
         this.cost.thinkMs += this.clock() - t0;
         this.cost.thinks++;
       }
+      let cancelled: ReadonlySet<string> = NO_TAGS;
       // drop queued orders whose tag the brain cancelled (orbwalk plans superseded by a dodge / retreat)
       if (b.mem.cancelTags.size) {
         const slot = b.ctx.slot;
         this.queue = this.queue.filter((q) => q.slot !== slot || !q.action.tag || !b.mem.cancelTags.has(q.action.tag));
+        cancelled = new Set(b.mem.cancelTags);
         b.mem.cancelTags.clear();
       }
+      let issued = false;
       for (const a of actions) {
         if (a.delay && a.delay > 0) this.queue.push({ tick: sim.tick + a.delay, slot: b.ctx.slot, action: a });
-        else out.push({ slot: b.ctx.slot, cmd: a.cmd });
+        else {
+          out.push({ slot: b.ctx.slot, cmd: a.cmd });
+          if (ORDER_CMDS.has(a.cmd.t)) issued = true;
+        }
       }
+      decided.set(b.ctx.slot, { issued, cancelled });
       // baseline log entry on every mode switch (behaviour nodes add their own detailed entries via ctx.log)
       if (b.mem.mode !== prevMode) this.log.push({ tick: sim.tick, bot: b.ctx.slot, node: 'mode', inputs: {}, chosen: b.mem.mode, reason: `${prevMode} -> ${b.mem.mode}` });
+    }
+    // reflex layer (rework §3): every tick, every bot, in slot order, after the decisions of this tick
+    for (const b of this.reflexOn ? this.bots : []) {
+      if (!b.hud) continue; // no decision yet
+      const t0 = this.clock?.() ?? 0;
+      const snap = this.reflexSnapshot(sim, b);
+      if (this.clock) {
+        this.cost.viewMs += this.clock() - t0;
+        this.cost.views++;
+      }
+      if (!snap) continue;
+      this.onPerceive?.(b.ctx.slot, snap);
+      const d = decided.get(b.ctx.slot);
+      const t1 = this.clock?.() ?? 0;
+      const acts = reflex(snap, b.ctx, b.mem, b.rng, { thinkIssued: d?.issued ?? false, cancelled: d?.cancelled ?? NO_TAGS, noSpells: this.noSpells });
+      if (this.clock) {
+        this.cost.reflexMs += this.clock() - t1;
+        this.cost.reflexCalls++;
+      }
+      for (const a of acts) out.push({ slot: b.ctx.slot, cmd: a.cmd });
     }
     if (this.queue.length) {
       const keep: typeof this.queue = [];

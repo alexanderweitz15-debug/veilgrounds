@@ -194,7 +194,7 @@ export interface PlayerSetup {
 }
 
 /** Trainer modes (Phase 5). 'lastHit' is also a trainer. */
-export type TrainerKind = 'dodge' | 'kite' | 'laneDuel' | 'jungleDuel' | 'arena';
+export type TrainerKind = 'dodge' | 'kite' | 'laneDuel' | 'jungleDuel' | 'arena' | 'scenario';
 
 export interface TrainerOpts {
   /** Run length in seconds (last-hit, kiting, jungle duel). */
@@ -217,6 +217,8 @@ export interface TrainerOpts {
   cs?: number;
   /** Arena: items bought at the start, by player slot (string key for JSON). */
   items?: Record<string, string[]>;
+  /** Szenario-Trainer: which scenario (src/sim/trainer/scenarios.ts SCENARIO_IDS). */
+  scenario?: string;
 }
 
 export interface SimConfig {

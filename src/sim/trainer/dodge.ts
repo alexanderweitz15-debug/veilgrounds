@@ -8,6 +8,7 @@ import type { Sim } from '../sim';
 import { Team, sec } from '../types';
 import { spawnProjectile } from '../systems/projectiles';
 import { ARENA, humanEid, place, randomDir, runSeconds, type TrainerHud } from './common';
+import { scenarioShotHit } from './scenarios';
 
 /** Projectile payload of trainer shots (src/sim/systems/projectiles.ts dispatches hits to trainerShotHit). */
 export interface TrainerPayload {
@@ -69,6 +70,7 @@ const dodgeState = (sim: Sim): DodgeState | undefined => (sim.state.trainer as {
 export function trainerShotHit(sim: Sim, t: number): void {
   const s = dodgeState(sim);
   if (s && t === humanEid(sim)) registerHit(sim, s, t);
+  else if (!s) scenarioShotHit(sim, t);
 }
 
 function registerHit(sim: Sim, s: DodgeState, me: number): void {

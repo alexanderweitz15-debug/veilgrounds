@@ -58,3 +58,6 @@
 .pg-chart .legend { display: flex; gap: 14px; font-size: 12px; color: var(--text-dim, #a09b8c); margin-top: 4px; }
 .pg-chart .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; vertical-align: -1px; }
 .pg-panel .row-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+/* Szenario-Trainer: description + goal under the scenario select */
+.tr-sc-desc { grid-column: 1 / -1; color: var(--text-dim, #a09b8c); font-size: 13px; line-height: 1.45; }
+.tr-sc-desc .g { color: var(--gold, #c8aa6e); margin-top: 4px; }

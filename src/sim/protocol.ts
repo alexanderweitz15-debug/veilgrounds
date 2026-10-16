@@ -14,4 +14,6 @@ export type ToWorker =
 export type FromWorker =
   | { type: 'snap'; snap: Snapshot }
   | { type: 'replay'; replay: import('../replay/replay').Replay }
-  | { type: 'botDebug'; tick: number; rows: import('../ai/log').BotDebugRow[] };
+  | { type: 'botDebug'; tick: number; rows: import('../ai/log').BotDebugRow[] }
+  /** Challenger-Geist moments (src/ai/ghost.ts), sent when they change. */
+  | { type: 'ghost'; moments: import('../ai/ghost').GhostMoment[] };

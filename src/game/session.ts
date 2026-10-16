@@ -5,6 +5,8 @@ import type { Command, SimConfig } from '../sim/types';
 import { MatchStats, type MatchSummary } from './matchStats';
 import { TrainerPanel } from '../ui/trainerHud';
 import { SandboxPanel } from '../ui/sandboxPanel';
+import type { GhostMoment } from '../ai/ghost';
+import { t } from '../i18n';
 
 export interface SessionResult {
   summary: MatchSummary;
@@ -16,7 +18,7 @@ export interface SessionResult {
 
 export type ExitOpts = Omit<SessionResult, 'summary'>;
 
-const TRAINER_MODES = new Set(['lastHit', 'dodge', 'kite', 'laneDuel', 'jungleDuel', 'arena']);
+const TRAINER_MODES = new Set(['lastHit', 'dodge', 'kite', 'laneDuel', 'jungleDuel', 'arena', 'scenario']);
 export const isTrainerMode = (mode: string | undefined): boolean => !!mode && TRAINER_MODES.has(mode);
 
 export class SessionExtras {
@@ -24,6 +26,7 @@ export class SessionExtras {
   private readonly trainer: TrainerPanel | null = null;
   private readonly sandbox: SandboxPanel | null = null;
   private finished = false;
+  private ghost: GhostMoment[] | null = null;
 
   constructor(
     root: HTMLElement,
@@ -40,7 +43,7 @@ export class SessionExtras {
         retry: () => exit({ retry: true }),
         analysis: () => exit({ analysis: true }),
         quit: () => exit({}),
-      });
+      }, config.mode === 'scenario' ? { title: t(`scenario.${config.trainer?.scenario}.name`), hint: t(`scenario.${config.trainer?.scenario}.goal`) } : undefined);
     }
     if (config?.mode === 'sandbox') this.sandbox = new SandboxPanel(root, (op, value) => send({ t: 'cheat', op, ...(value !== undefined ? { value } : {}) }), arm);
   }
@@ -62,8 +65,15 @@ export class SessionExtras {
     }
   }
 
+  /** Challenger-Geist moments from the worker (latest list wins). */
+  setGhost(m: GhostMoment[]): void {
+    this.ghost = m;
+  }
+
   result(o: ExitOpts = {}): SessionResult {
-    return { summary: this.stats.summary(), ...o };
+    const summary = this.stats.summary();
+    if (this.ghost) summary.ghost = this.ghost;
+    return { summary, ...o };
   }
 
   dispose(): void {

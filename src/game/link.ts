@@ -16,6 +16,8 @@ export interface SimLink {
   onBotDebug?: ((rows: BotDebugRow[], tick: number) => void) | null;
   /** The simulation died (worker error / out of memory): the game cannot continue, the client must say so. */
   onError?: ((message: string) => void) | null;
+  /** Challenger-Geist moments (worker link only). */
+  onGhost?: ((moments: import('../ai/ghost').GhostMoment[]) => void) | null;
 }
 
 export function workerLink(config: SimConfig, slot: number): SimLink {
@@ -33,6 +35,7 @@ export function workerLink(config: SimConfig, slot: number): SimLink {
   worker.onmessage = (ev: MessageEvent<FromWorker>) => {
     if (ev.data.type === 'snap') link.onSnap?.(ev.data.snap);
     else if (ev.data.type === 'botDebug') link.onBotDebug?.(ev.data.rows, ev.data.tick);
+    else if (ev.data.type === 'ghost') link.onGhost?.(ev.data.moments);
   };
   worker.onerror = (ev) => {
     console.error('sim worker error', ev.message);

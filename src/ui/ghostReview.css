@@ -1,0 +1,25 @@
+/* Post-game "Was ein Challenger getan hätte" timeline (src/ui/ghostReview.ts). Own gh- classes. */
+.gh-review { margin-top: 18px; border: 1px solid #2c2c31; background: rgba(255, 255, 255, 0.02); padding: 12px 14px; }
+.gh-head { display: flex; align-items: center; gap: 10px; }
+.gh-head h3 { margin: 0; font-family: var(--font-display, Georgia); color: var(--gold-hi, #f0e6d2); font-weight: 600; font-size: 18px; }
+.gh-info { display: inline-grid; place-items: center; width: 18px; height: 18px; border: 1px solid var(--gold, #c8aa6e); border-radius: 50%; color: var(--gold, #c8aa6e); font-size: 12px; cursor: help; }
+.gh-sub, .gh-empty { color: var(--text-dim, #a09b8c); margin: 4px 0 10px; font-size: 13px; }
+.gh-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.gh-item { display: grid; grid-template-columns: 64px 1fr; gap: 12px; padding: 8px 10px; border-left: 3px solid var(--gold, #c8aa6e); background: rgba(0, 0, 0, 0.18); }
+.gh-item.gh-retreat, .gh-item.gh-recall, .gh-item.gh-flash { border-left-color: #e0604a; }
+.gh-item.gh-objective { border-left-color: #7fb2d9; }
+.gh-item.gh-lastHit { border-left-color: #c8aa6e; }
+.gh-item.gh-allin { border-left-color: #7dcf8a; }
+.gh-time .clk { font-family: var(--font-display, Georgia); font-size: 18px; color: var(--gold-hi, #f0e6d2); font-variant-numeric: tabular-nums; }
+.gh-impact { margin-top: 6px; height: 5px; background: rgba(255, 255, 255, 0.08); position: relative; cursor: help; }
+.gh-impact::after { content: ''; position: absolute; inset: 0 auto 0 0; width: calc(var(--impact, 0.5) * 100%); background: linear-gradient(90deg, #c8aa6e, #e0604a); }
+.gh-sit { color: #e8e0cc; margin-bottom: 4px; }
+.gh-row { display: grid; grid-template-columns: 96px 1fr; gap: 8px; font-size: 13px; line-height: 1.4; }
+.gh-row .k { color: var(--text-dim, #a09b8c); text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; padding-top: 2px; }
+.gh-row.you .v { color: #e8a090; }
+.gh-row.ghost .v { color: #9fd8a8; }
+.gh-row.why .v { color: var(--text-dim, #a09b8c); font-style: italic; }
+@media (max-width: 600px) {
+  .gh-item { grid-template-columns: 1fr; }
+  .gh-row { grid-template-columns: 1fr; gap: 0; }
+}

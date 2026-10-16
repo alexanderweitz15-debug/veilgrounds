@@ -26,6 +26,8 @@ export interface MatchSummary {
   winner: number | null;
   team: number;
   trainer: TrainerHud | null;
+  /** Challenger-Geist timeline (src/ai/ghost.ts), absent if the mode has no ghost. */
+  ghost?: import('../ai/ghost').GhostMoment[];
 }
 
 const SAMPLE_EVERY = 5; // seconds

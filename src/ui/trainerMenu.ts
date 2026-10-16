@@ -5,6 +5,7 @@ import './trainer.css';
 import { TRAINER_MODES, type TrainerMode, type TrainerSetup } from '../game/modes';
 import { RANKS, type Rank } from '../ai/profiles/schema';
 import { t } from '../i18n';
+import { SCENARIO_IDS, type ScenarioId } from '../sim/trainer/scenarios';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?: HTMLElement, text?: string): HTMLElementTagNameMap[K] => {
   const e = document.createElement(tag);
@@ -45,6 +46,8 @@ export function defaultSetup(mode: TrainerMode): TrainerSetup {
       return { mode, opts: { durationSec: 300 }, botRank: 'gold' };
     case 'arena':
       return { mode, opts: { level: 11, rounds: 3, roundSec: 45 }, botRank: 'gold', teamSize: 3 };
+    case 'scenario':
+      return { mode, opts: { scenario: SCENARIO_IDS[0] }, botRank: 'gold' };
   }
 }
 
@@ -102,6 +105,23 @@ export function trainerOptions(setup: TrainerSetup): (parent: HTMLElement) => vo
         select(box, t('trainer.opt.rounds'), [2, 3, 5], o.rounds, String, (v) => (o.rounds = v));
         select(box, t('trainer.opt.level'), [6, 11, 16], o.level, String, (v) => (o.level = v));
         break;
+      case 'scenario': {
+        // scenario list + its German description and goal; opponents are bots of the chosen rank
+        const desc = el('div', 'tr-sc-desc');
+        const show = (id: string): void => {
+          desc.textContent = '';
+          el('div', 'd', desc, t(`scenario.${id}.desc`));
+          el('div', 'g', desc, `${t('scenario.goalLabel')}: ${t(`scenario.${id}.goal`)}`);
+        };
+        select(box, t('trainer.opt.scenario'), SCENARIO_IDS, (o.scenario ?? SCENARIO_IDS[0]) as ScenarioId, (id) => t(`scenario.${id}.name`), (id) => {
+          o.scenario = id;
+          show(id);
+        });
+        rank();
+        box.appendChild(desc);
+        show(o.scenario ?? SCENARIO_IDS[0]);
+        break;
+      }
     }
   };
 }

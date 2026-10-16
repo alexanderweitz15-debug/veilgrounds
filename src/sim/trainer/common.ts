@@ -26,6 +26,9 @@ export interface TrainerHud {
   score: number;
   grade: string;
   stats: TrainerStat[];
+  /** Szenario-Trainer: scenario id and why it ended (i18n scenario.why.<why>). */
+  scenario?: string;
+  why?: string;
 }
 
 /** Open, walkable area far from towers and camps (blue top corner) used by the dodge and kiting trainers. */

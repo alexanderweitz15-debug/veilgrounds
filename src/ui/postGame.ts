@@ -5,6 +5,7 @@ import type { MatchSummary, StatSample } from '../game/matchStats';
 import { champName } from './names';
 import { t } from '../i18n';
 import { clock, formatStat } from './trainerHud';
+import { renderGhostReview } from './ghostReview';
 
 const NS = 'http://www.w3.org/2000/svg';
 const COL = { line: '#c8aa6e', line2: '#7fb2d9', death: '#e0604a', kill: '#7dcf8a', grid: 'rgba(255,255,255,0.08)', axis: '#a09b8c' };
@@ -114,7 +115,8 @@ export function renderPostGame(root: HTMLElement, d: MatchSummary, onBack: () =>
   tile(t('post.dealt'), String(Math.round(sum(d.dealtChamp))));
   tile(t('post.taken'), String(Math.round(sum(d.taken))));
 
-  const charts = el('div', 'pg-charts', panel);
+  // scenarios are seconds long and start at a set match time: curves over the whole clock say nothing there
+  const charts = el('div', 'pg-charts', d.mode === 'scenario' ? document.createElement('div') : panel);
   if (d.samples.length > 1) {
     lineChart(charts, t('post.cs'), d, (s) => s.cs);
     lineChart(charts, t('post.gold'), d, (s) => s.gold);
@@ -122,6 +124,7 @@ export function renderPostGame(root: HTMLElement, d: MatchSummary, onBack: () =>
   damageChart(charts, d);
 
   if (d.deaths.length) el('div', 'pg-sub', panel, `${t('post.deaths')}: ${d.deaths.map((s) => clock(s)).join(', ')}`);
+  renderGhostReview(panel, d.ghost); // Challenger-Geist timeline
   const row = el('div', 'row-buttons', panel);
   el('button', 'menu-btn secondary', row, t('menu.quit')).addEventListener('click', onBack);
   if (onRetry) el('button', 'menu-btn', row, t('trainer.retry')).addEventListener('click', onRetry);

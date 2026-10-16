@@ -4,6 +4,7 @@ import { Lane, type PlayerSetup, type SimConfig, type TrainerOpts } from '../sim
 import { CHAMPION_DATA } from '../sim/champions';
 import { BUILDS } from '../ai/bot/builds';
 import type { Rank } from '../ai/profiles/schema';
+import { scenarioConfig } from './scenarioConfig';
 
 /** Champion id of Mira Quell (src/data/champions/mira.json). */
 export const MIRA_ID = 'mira';
@@ -49,8 +50,8 @@ export function configFor(mode: 'lane' | 'sandbox', runes?: RuneChoice, champion
 // ---------------------------------------------------------------- Phase 5 trainers
 
 /** Trainer modes selectable from the trainer menu. */
-export type TrainerMode = 'lastHit' | 'dodge' | 'kite' | 'laneDuel' | 'jungleDuel' | 'arena';
-export const TRAINER_MODES: TrainerMode[] = ['lastHit', 'dodge', 'kite', 'laneDuel', 'jungleDuel', 'arena'];
+export type TrainerMode = 'lastHit' | 'dodge' | 'kite' | 'laneDuel' | 'jungleDuel' | 'arena' | 'scenario';
+export const TRAINER_MODES: TrainerMode[] = ['lastHit', 'dodge', 'kite', 'laneDuel', 'jungleDuel', 'arena', 'scenario'];
 
 export interface TrainerSetup {
   mode: TrainerMode;
@@ -107,6 +108,8 @@ export function trainerConfig(t: TrainerSetup, pick: TrainerPick, seed = (Math.r
       const [enemy] = botChampions(seed, 'jungle', [pick.champion], 1);
       return { seed, mode: 'jungleDuel', players: [player, bot(5, 1, enemy!, 'jungle')], minionsEnabled: false, trainer };
     }
+    case 'scenario':
+      return scenarioConfig(t.opts, pick, rank, seed);
     case 'arena': {
       const n = Math.max(1, Math.min(5, t.teamSize ?? 3));
       const champs = botChampions(seed, 'mid', [pick.champion], n * 2 - 1);

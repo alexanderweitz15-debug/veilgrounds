@@ -11,6 +11,7 @@ import { duelHud, initDuel, updateDuel, type DuelState } from './duel';
 import { initKite, kiteHud, updateKite, type KiteState } from './kite';
 import { initLastHit, lastHitHud, updateLastHit, type LastHitState } from './lastHit';
 import { updateSandbox } from './sandbox';
+import { initScenario, scenarioHud, updateScenario, type ScenarioState } from './scenarios';
 import type { TrainerHud } from './common';
 
 export type { TrainerHud, TrainerStat } from './common';
@@ -21,6 +22,7 @@ export interface TrainerState {
   kite?: KiteState;
   duel?: DuelState;
   arena?: ArenaState;
+  scenario?: ScenarioState;
 }
 
 export const trainerState = (sim: Sim): TrainerState | undefined => sim.state.trainer as TrainerState | undefined;
@@ -43,6 +45,9 @@ export const trainerSystem: System = {
       case 'jungleDuel':
         st.duel = initDuel(sim);
         break;
+      case 'scenario':
+        st.scenario = initScenario(sim);
+        break;
       case 'arena':
         st.arena = initArena(sim);
         break;
@@ -60,6 +65,7 @@ export const trainerSystem: System = {
     if (st.kite) updateKite(sim, st.kite);
     if (st.duel) updateDuel(sim, st.duel);
     if (st.arena) updateArena(sim, st.arena);
+    if (st.scenario) updateScenario(sim, st.scenario);
   },
 };
 
@@ -72,5 +78,6 @@ export function trainerHud(sim: Sim): TrainerHud | null {
   if (st.kite) return kiteHud(sim, st.kite);
   if (st.duel) return duelHud(sim, st.duel);
   if (st.arena) return arenaHud(sim, st.arena);
+  if (st.scenario) return scenarioHud(sim, st.scenario);
   return null;
 }

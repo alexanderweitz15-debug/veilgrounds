@@ -106,6 +106,7 @@ export class Game {
     this.link.pause(true); // sim builds in the worker meanwhile but does not tick until the sprites are baked
     this.link.onBotDebug = (rows, tick) => this.hud.botDebug.update(rows, tick);
     this.link.onError = (msg) => this.showSimError(msg);
+    this.link.onGhost = (m) => this.extras.setGhost(m); // Challenger-Geist timeline for the post-game screen
     this.link.onSnap = (s) => {
       const now = performance.now();
       this.snapsThisSec++;

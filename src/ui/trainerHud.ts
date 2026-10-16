@@ -47,12 +47,16 @@ export class TrainerPanel {
   private result: HTMLElement | null = null;
   private lastKey = '';
 
-  constructor(parent: HTMLElement, private readonly kind: string, private readonly actions: TrainerResultActions) {
+  /** Title of the panel and the result dialog (scenarios: the scenario name). */
+  private readonly title: string;
+
+  constructor(parent: HTMLElement, private readonly kind: string, private readonly actions: TrainerResultActions, labels?: { title: string; hint: string }) {
+    this.title = labels?.title ?? t(`trainer.mode.${kind}`);
     this.root = el('div', 'tr-panel', parent);
-    el('div', 'tr-title', this.root, t(`trainer.mode.${kind}`));
+    el('div', 'tr-title', this.root, this.title);
     this.clockEl = el('div', 'tr-clock', this.root, '0:00');
     this.stats = el('div', 'tr-stats', this.root);
-    el('div', 'tr-hint', this.root, t(`trainer.hint.${kind}`));
+    el('div', 'tr-hint', this.root, labels?.hint ?? t(`trainer.hint.${kind}`));
   }
 
   /** Called every frame with the newest trainer state. Returns true once the run is over (dialog shown). */
@@ -76,7 +80,8 @@ export class TrainerPanel {
     const wrap = el('div', 'tr-result', this.root.parentElement ?? document.body);
     this.result = wrap;
     const box = el('div', 'tr-box', wrap);
-    el('h2', '', box, `${t(`trainer.mode.${this.kind}`)} – ${t('trainer.result')}`);
+    el('h2', '', box, `${this.title} – ${t('trainer.result')}`);
+    if (h.why) el('div', 'tr-score', box, t(`scenario.why.${h.why}`));
     if (h.won !== undefined) el('div', 'tr-score', box, h.won ? t('trainer.won') : t('trainer.lost'));
     if (h.grade) el('div', 'tr-grade', box, h.grade);
     el('div', 'tr-score', box, this.kind === 'dodge' ? `${t('trainer.stat.survived')}: ${clock(h.score)}` : `${t('trainer.score')}: ${Math.round(h.score)}`);

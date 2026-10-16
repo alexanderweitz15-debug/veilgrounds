@@ -4,7 +4,7 @@
 // the whole channel) and arrives that much later. Dashes/blinks relocate, so for them only the wind-up walk is checked.
 // Audit table: docs/ability-cast-audit.md.
 import { describe, expect, it } from 'vitest';
-import { step, type Sim } from '../../src/sim/sim';
+import { step } from '../../src/sim/sim';
 import { sec, type Command, type PlayerSetup } from '../../src/sim/types';
 import { CHAMPION_DATA, championData } from '../../src/sim/champions';
 import { champAbil, isDisplacing, levelAbility } from '../../src/sim/systems/abilities';
@@ -120,7 +120,8 @@ describe('B2 walk 600, cast at 300: arrival time per ability', () => {
           if (!r.relocated && r.windup > 0 && r.msAfter <= r.ms + 0.5) expect([tag, r.arrival - b.arrival >= r.windup + channel - 2]).toEqual([tag, true]);
         }
       }
-      if (process.env.B2_AUDIT) console.log(rows.join('\n'));
+      // B2_AUDIT=1 prints the rows of docs/ability-cast-audit.md
+      if ((globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env.B2_AUDIT) console.log(rows.join('\n'));
     });
   }
 });

@@ -2,33 +2,46 @@
 // attack, nothing else damages them: damage.ts). Jungle river vision (jungle.ts) also uses Kind.Ward but is not a
 // player ward: only entities in this registry are.
 // - Schleierward (trinket, free): 2 charges, recharge 240 -> 120 s by champion level, 90 s lifetime, max 3 per player,
-//   invisible to enemies unless revealed.
+//   stealthed: invisible to enemies unless revealed.
 // - Siegelward (75 gold consumable, item command -> placeSealWard): permanent, visible, max 1 per player; reveals and
-//   disables enemy Schleierwards within its radius.
+//   disables enemy Schleierwards within SEAL.revealR (450).
 // - Suchfeuer (trinket swap from level 9): sweeps an area for a few seconds, revealing and disabling enemy wards.
 // Vision Score inputs per player slot live in sim.state.wards.stats (post-game, later).
-// All state in sim.state.wards; ward records keyed by eid + serial.
+// All state in sim.state.wards; ward records keyed by eid + serial. Numbers: src/data/wards.json.
+//
+// Stealth (one rule for everything hidden from the enemy, AGENTS-PLAN B1): stealthed units (Schleierwards: the
+// 'invisible' stat buff with id STEALTH_BUFF), stealthed ground objects (GroundObject.stealth: Nyx seeds, Grimald
+// traps) and stealthed zones (ability flag 'stealth': Lysa E wire) are hidden from the enemy team unless
+//   (a) an enemy Siegelward is within SEAL.revealR, (b) an enemy Suchfeuer covers them (trueSight), or
+//   (c) a Spaehfrucht pop / Nyx R revealed them within the last STEALTH_LINGER ticks (revealStealthArea).
+// Siegelwards are never stealthed (like LoL control wards).
 
 import type { Sim } from './sim';
 import type { System } from './systems/index';
 import { despawn, isRef, spawnUnit } from './sim';
 import { Kind, enemyOf, sec } from './types';
-import { addBuff, canAttack, reveal } from './buffs';
+import { addBuff, buffs, canAttack, reveal } from './buffs';
 import { dist2 } from './vec';
 import { nearestWalkable, walkable } from './map';
 import { champions } from './systems/economy';
 import { canShop } from './items/inventory';
+import { groundObjects } from './summons';
+import WARDS from '../data/wards.json';
 
 export type WardType = 'veil' | 'seal';
 export type TrinketId = 'schleierward' | 'suchfeuer';
 
-export const WARD_RADIUS = 25;
-export const WARD_PLACE_RANGE = 600;
-export const WARD_VISION = 900;
-export const VEIL = { hp: 3, ticks: sec(90), maxPerPlayer: 3 };
-export const SEAL = { hp: 4, maxPerPlayer: 1, revealR: 900 };
-export const TRINKET = { maxCharges: 2, startCharges: 1, rechargeS: [240, 120] as [number, number] };
-export const SWEEP = { unlockLevel: 9, range: 600, r: 450, ticks: sec(6), cooldownS: [90, 60] as [number, number] };
+export const WARD_RADIUS = WARDS.wardRadius;
+export const WARD_PLACE_RANGE = WARDS.placeRange;
+export const WARD_VISION = WARDS.vision;
+export const VEIL = { hp: WARDS.veil.hp, ticks: sec(WARDS.veil.lifeS), maxPerPlayer: WARDS.veil.maxPerPlayer, stealth: WARDS.veil.stealth };
+export const SEAL = { hp: WARDS.seal.hp, maxPerPlayer: WARDS.seal.maxPerPlayer, revealR: WARDS.seal.revealR, stealth: WARDS.seal.stealth };
+export const TRINKET = { maxCharges: WARDS.trinket.maxCharges, startCharges: WARDS.trinket.startCharges, rechargeS: WARDS.trinket.rechargeS as [number, number] };
+export const SWEEP = { unlockLevel: WARDS.sweep.unlockLevel, range: WARDS.sweep.range, r: WARDS.sweep.r, ticks: sec(WARDS.sweep.durationS), cooldownS: WARDS.sweep.cooldownS as [number, number] };
+/** Reveal linger after a Spaehfrucht pop / Nyx R on stealthed things (ticks). */
+export const STEALTH_LINGER = sec(WARDS.stealth.revealLingerS);
+/** Buff id of the stealth flag on units ('invisible' stat buff; champion invisibility uses other ids). */
+export const STEALTH_BUFF = 'stealth';
 
 interface WardRec {
   eid: number;
@@ -87,6 +100,68 @@ function wardState(sim: Sim): WardState {
   let s = sim.state.wards as WardState | undefined;
   if (!s) sim.state.wards = s = { list: [], trinkets: new Map(), sweeps: [], stats: new Map(), revealed: new Set() };
   return s;
+}
+
+/** Stealthed unit (Schleierward): carries the STEALTH_BUFF 'invisible' flag. */
+export function isStealthUnit(sim: Sim, eid: number): boolean {
+  for (const b of buffs(sim, eid)) if (b.kind === 'stat' && b.stat === 'invisible' && b.id === STEALTH_BUFF && b.until > sim.tick) return true;
+  return false;
+}
+
+/**
+ * True sight of `team` on a circle (x, y, r): an own Siegelward within SEAL.revealR or an own Suchfeuer overlaps it.
+ * Read-only (snapshots call it).
+ */
+export function trueSight(sim: Sim, team: number, x: number, y: number, r = 0): boolean {
+  const s = sim.state.wards as WardState | undefined;
+  if (!s) return false;
+  const { Pos } = sim.c;
+  for (const w of s.list) {
+    if (w.type !== 'seal' || w.team !== team || !isRef(sim, w.eid, w.serial)) continue;
+    const rr = SEAL.revealR + r;
+    if (dist2(Pos.x[w.eid]!, Pos.y[w.eid]!, x, y) <= rr * rr) return true;
+  }
+  for (const q of s.sweeps) {
+    const rr = q.r + r;
+    if (q.team === team && q.until > sim.tick && dist2(q.x, q.y, x, y) <= rr * rr) return true;
+  }
+  return false;
+}
+
+/** Active true-sight areas of `team` (snapshot `reveals`): own Siegelward circles and running Suchfeuer sweeps. Read-only. */
+export function trueSightAreas(sim: Sim, team: number): { kind: 'seal' | 'sweep'; x: number; y: number; r: number; until?: number }[] {
+  const s = sim.state.wards as WardState | undefined;
+  if (!s || (team !== 0 && team !== 1)) return [];
+  const { Pos } = sim.c;
+  const out: { kind: 'seal' | 'sweep'; x: number; y: number; r: number; until?: number }[] = [];
+  for (const w of s.list) if (w.type === 'seal' && w.team === team && isRef(sim, w.eid, w.serial)) out.push({ kind: 'seal', x: Pos.x[w.eid]!, y: Pos.y[w.eid]!, r: SEAL.revealR });
+  for (const q of s.sweeps) if (q.team === team && q.until > sim.tick) out.push({ kind: 'sweep', x: q.x, y: q.y, r: q.r, until: q.until });
+  return out;
+}
+
+/** Can `team` see this stealthed ground object / zone point right now (true sight or a lingering reveal)? */
+export function stealthPointSeen(sim: Sim, team: number, x: number, y: number, r: number, revealUntil = 0): boolean {
+  return revealUntil > sim.tick || trueSight(sim, team, x, y, r);
+}
+
+/**
+ * Spaehfrucht pop / Nyx R: enemy stealthed units and ground objects overlapping the circle stay revealed to `team`
+ * for `ticks` (rule (c)). Units go through buffs.reveal, ground objects keep their own per-team end tick.
+ */
+export function revealStealthArea(sim: Sim, team: number, x: number, y: number, r: number, ticks: number): void {
+  if (team !== 0 && team !== 1) return;
+  const { Pos, Unit } = sim.c;
+  const s = sim.state.wards as WardState | undefined;
+  for (const w of s?.list ?? []) {
+    if (w.team === team || !isRef(sim, w.eid, w.serial) || !isStealthUnit(sim, w.eid)) continue;
+    const rr = r + Unit.radius[w.eid]!;
+    if (dist2(Pos.x[w.eid]!, Pos.y[w.eid]!, x, y) <= rr * rr) reveal(sim, team, w.eid, ticks);
+  }
+  for (const o of groundObjects(sim)) {
+    if (!o.stealth || o.team === team) continue;
+    const rr = r + o.r;
+    if (dist2(o.x, o.y, x, y) <= rr * rr) o.revealUntil[team] = Math.max(o.revealUntil[team], sim.tick + ticks);
+  }
 }
 
 /** Linear by champion level 1..18. */
@@ -155,7 +230,8 @@ function spawnWard(sim: Sim, eid: number, type: WardType, x: number, y: number):
   Hp.max[w] = Hp.cur[w] = hp;
   Vision.r[w] = WARD_VISION;
   const until = type === 'veil' ? sim.tick + VEIL.ticks : -1;
-  if (type === 'veil') addBuff(sim, w, { kind: 'stat', stat: 'invisible', id: 'schleierward', src: eid, ticks: VEIL.ticks + 1 });
+  // stealth flag for the whole lifetime (+1: the buff outlives the expiry tick, no visible last tick)
+  if (type === 'veil' ? VEIL.stealth : SEAL.stealth) addBuff(sim, w, { kind: 'stat', stat: 'invisible', id: STEALTH_BUFF, src: eid, ticks: type === 'veil' ? VEIL.ticks + 1 : 1 << 29 });
   s.list.push({ eid: w, serial: Unit.serial[w]!, type, owner: eid, slot: Unit.slot[eid]!, team, placed: sim.tick, until });
   return w;
 }
@@ -273,13 +349,15 @@ export const wardsSystem: System = {
       } else if (!isRef(sim, w.eid, w.serial) || (w.until >= 0 && sim.tick >= w.until)) removeWard(sim, w); // expired / gone
     }
     s.sweeps = s.sweeps.filter((sw) => sim.tick < sw.until);
-    // seal wards and sweeps reveal enemy wards; a revealed Schleierward is also disabled (no vision)
+    // seal wards and sweeps reveal enemy wards (true sight, same circle test as trueSight); a revealed Schleierward
+    // is also disabled (no vision)
     const seals = s.list.filter((w) => w.type === 'seal');
+    const sealR = SEAL.revealR + WARD_RADIUS;
     for (const w of s.list) {
       const x = Pos.x[w.eid]!;
       const y = Pos.y[w.eid]!;
       const enemy = enemyOf(w.team);
-      const seal = w.type === 'veil' ? seals.find((o) => o.team === enemy && dist2(Pos.x[o.eid]!, Pos.y[o.eid]!, x, y) <= SEAL.revealR * SEAL.revealR) : undefined;
+      const seal = w.type === 'veil' ? seals.find((o) => o.team === enemy && dist2(Pos.x[o.eid]!, Pos.y[o.eid]!, x, y) <= sealR * sealR) : undefined;
       const sw = s.sweeps.find((q) => q.team === enemy && dist2(q.x, q.y, x, y) <= (q.r + WARD_RADIUS) * (q.r + WARD_RADIUS));
       const found = !!seal || !!sw;
       if (found) {

@@ -13,8 +13,8 @@ describe('snapshot fog for ground objects', () => {
     const blue = sim.slots[0]!;
     const red = sim.slots[5]!;
     const { Pos } = sim.c;
-    // trap inside red's vision but not under anyone (red sees the spot, yet traps are invisible to enemies)
-    addGroundObject(sim, { owner: blue, tag: 'grimald_trap', x: Pos.x[red]! - 600, y: Pos.y[red]! - 600, r: 75, ticks: 900 });
+    // stealthed trap inside red's vision but not under anyone (red sees the spot, yet stealth hides it from enemies)
+    addGroundObject(sim, { owner: blue, tag: 'grimald_trap', x: Pos.x[red]! - 600, y: Pos.y[red]! - 600, r: 75, ticks: 900, stealth: true });
     // red blade far away from any blue vision
     addGroundObject(sim, { owner: red, tag: 'renn_blade', x: 8000, y: 8000, r: 40, ticks: 900 });
     step(sim);

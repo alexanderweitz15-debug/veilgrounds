@@ -30,7 +30,7 @@ export const ABILITY_TYPES = [
   'summon',
 ] as const;
 export const COMBO_TOKENS = ['Q', 'W', 'E', 'R', 'AA', 'FLASH'] as const;
-const FLAGS = ['blocked_by_minions', 'pierce', 'unstoppable', 'recast', 'ground_target', 'ally_target', 'auto_reset', 'channel', 'mobility'];
+const FLAGS = ['blocked_by_minions', 'pierce', 'unstoppable', 'recast', 'ground_target', 'ally_target', 'auto_reset', 'channel', 'mobility', 'stealth'];
 const COST_TYPES = ['mana', 'energy', 'hp', 'none'];
 const RESOURCES = ['mana', 'energy', 'none'];
 const TARGETS = ['hit', 'self', 'ally', 'allies', 'enemies'];
@@ -48,7 +48,7 @@ const BASE_KEYS = [
   'hp', 'hpGrowth', 'hpRegen', 'hpRegenGrowth', 'mana', 'manaGrowth', 'manaRegen', 'manaRegenGrowth', 'ad', 'adGrowth',
   'armor', 'armorGrowth', 'mr', 'mrGrowth', 'as', 'asGrowth', 'range', 'ms', 'windup', 'radius',
 ];
-const ABILITY_REQUIRED = ['id', 'name', 'desc', 'type', 'castTime', 'range', 'cooldown', 'cost', 'costType', 'effects'];
+const ABILITY_REQUIRED = ['id', 'name', 'desc', 'type', 'castTime', 'movesWhileCasting', 'range', 'cooldown', 'cost', 'costType', 'effects'];
 const ABILITY_OPTIONAL = ['width', 'speed', 'radius', 'angle', 'delay', 'duration', 'distance', 'flags', 'line'];
 const SCALING_KEYS = ['base', 'ad', 'bonusAd', 'ap', 'maxHp', 'bonusHp', 'targetMaxHp', 'targetMissingHp', 'byLevel'];
 
@@ -238,6 +238,7 @@ export function validateChampion(raw: unknown, where = 'champion'): string[] {
       if (!ABILITY_TYPES.includes(a.type as (typeof ABILITY_TYPES)[number])) err(`${path}.type`, `invalid type "${String(a.type)}"`);
       if (a.type === 'dash') dashes++;
       if (typeof a.castTime !== 'number' || a.castTime < 0 || a.castTime > 0.5) err(`${path}.castTime`, 'expected 0..0.5');
+      if (typeof a.movesWhileCasting !== 'boolean') err(`${path}.movesWhileCasting`, 'expected boolean');
       ranked(a.range, `${path}.range`, len);
       ranked(a.cooldown, `${path}.cooldown`, len);
       ranked(a.cost, `${path}.cost`, len);

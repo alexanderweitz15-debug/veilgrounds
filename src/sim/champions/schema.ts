@@ -56,6 +56,12 @@ export interface AbilityData {
   type: AbilityType;
   /** Wind-up in seconds (0.2-0.45 for most abilities; 0 = instant). */
   castTime: number;
+  /**
+   * The caster keeps walking during the wind-up (self-buffs, next-auto empowers, stances, pet commands, shields and
+   * ally buffs, dashes/blinks). false: stands still for the wind-up (targeted casts, skillshots, self AoEs) or for the
+   * whole channel. Audit: docs/ability-cast-audit.md. Bots read it to keep moving while casting.
+   */
+  movesWhileCasting: boolean;
   range: Ranked;
   cooldown: Ranked;
   cost: Ranked;
@@ -78,7 +84,7 @@ export interface AbilityData {
    *  (then up to the cursor). */
   distance?: number;
   /** mobility: a non-dash/blink ability whose hook relocates the caster (leap); like dashes it is blocked by roots. */
-  flags?: ('blocked_by_minions' | 'pierce' | 'unstoppable' | 'recast' | 'ground_target' | 'ally_target' | 'auto_reset' | 'channel' | 'mobility')[];
+  flags?: ('blocked_by_minions' | 'pierce' | 'unstoppable' | 'recast' | 'ground_target' | 'ally_target' | 'auto_reset' | 'channel' | 'mobility' | 'stealth')[];
   effects: Effect[];
 }
 

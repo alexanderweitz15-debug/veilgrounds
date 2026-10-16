@@ -7,6 +7,7 @@ import { dist2 } from '../vec';
 import { seenByOthers } from '../vision';
 import { fireAbilityProjectile } from '../systems/projectiles';
 import { addGroundObject, groundObjects, removeGroundObject } from '../summons';
+import { STEALTH_LINGER, revealStealthArea } from '../wards';
 import type { ChampionHooks, ChampionVisuals } from './hooks';
 import { hookState, peekState } from './util';
 
@@ -62,7 +63,7 @@ export const hooks: ChampionHooks = {
         for (const m of query(sim.world, [Unit])) {
           if (m !== victim && Unit.alive[m] && Unit.kind[m] === Kind.Monster && dist2(Pos.x[m]!, Pos.y[m]!, x, y) <= 600 * 600) return;
         }
-        addGroundObject(sim, { owner: eid, tag: SEED, x, y, r: 100, ticks: sec(90) });
+        addGroundObject(sim, { owner: eid, tag: SEED, x, y, r: 100, ticks: sec(90), stealth: true });
       },
       // R: +15 % damage to enemy champions no other ally currently sees.
       modifyDamage(sim, eid, target, amount) {
@@ -100,8 +101,10 @@ export const hooks: ChampionHooks = {
         break;
       }
     }
-    // R: enemies within 1200 of Nyx stay visible to her team for the whole duration
+    // R: enemies within 1200 of Nyx stay visible to her team for the whole duration; stealthed wards / traps / seeds
+    // in range stay revealed STEALTH_LINGER (3 s) after leaving it or after R ends (stealth rule (c), wards.ts)
     if (sim.tick < state(sim, eid).rUntil && Unit.alive[eid]) {
+      revealStealthArea(sim, team, Pos.x[eid]!, Pos.y[eid]!, R_RANGE, STEALTH_LINGER);
       for (const e of query(sim.world, [Unit])) {
         const k = Unit.kind[e]!;
         if (!Unit.alive[e] || Unit.team[e] === team || Unit.team[e] > 1 || isStructure(k) || k === Kind.Projectile) continue;

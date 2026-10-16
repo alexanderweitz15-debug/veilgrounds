@@ -2,7 +2,7 @@
 
 Checkliste aller Phasen. `[x]` = fertig und gepusht, `[~]` = teilweise / läuft, `[ ]` = offen.
 Zahlen und Begründungen: [docs/DECISIONS.md](DECISIONS.md) · Bot-Spezifikation: [docs/spec-bots.md](spec-bots.md) ·
-Ist-Zustand mit Screenshots: [docs/IST-ZUSTAND.md](IST-ZUSTAND.md) · Live: https://alexanderweitz15-debug.github.io/veilgrounds/
+Ist-Zustand mit Screenshots: [docs/IST-ZUSTAND.md](IST-ZUSTAND.md) · Bot-Gehirn: [docs/BRAIN-IST.md](BRAIN-IST.md) · Live: https://alexanderweitz15-debug.github.io/veilgrounds/
 
 ## Jetzt in Arbeit
 | Agent | Aufgabe |
@@ -25,6 +25,10 @@ Ist-Zustand mit Screenshots: [docs/IST-ZUSTAND.md](IST-ZUSTAND.md) · Live: http
 - [~] Kills ~34 statt 40–60, erster Turm ~18 min statt 12–16
 - [~] CS der Bots ~40 % von Tabelle A in Partien (allein auf der Lane 5,6–7,8 CS/min; Verluste durch Abwesenheit)
 - [ ] Trainingsplan + Verlauf über mehrere Matches (Phase 5)
+- [ ] Großes Bot-Gehirn-Rework (Farm: Bots stehen zwischen Last-Hits herum, siehe BRAIN-IST.md §9) – Prompt vom Nutzer folgt
+- [ ] Scoreboard: Drachen/Seele/Objective-Übersicht; tote Gegner/Verbündete mit Timer über der Minimap
+- [ ] Manche Fähigkeiten halten den Champion fälschlich an (z. B. W-artige Fähigkeiten, die im Laufen gehen sollten)
+- [ ] Toplane: nach 1500 Gold aus Minions Teleport als 3. Beschwörerzauber
 
 ---
 

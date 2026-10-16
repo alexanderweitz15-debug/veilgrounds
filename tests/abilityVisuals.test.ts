@@ -6,6 +6,7 @@ import { levelAbility } from '../src/sim/systems/abilities';
 import { CHAMPION_DATA, CHAMPION_HOOKS, missingHooks } from '../src/sim/champions';
 import { buildSnapshot } from '../src/sim/snapshot';
 import { addGroundObject } from '../src/sim/summons';
+import { buffs } from '../src/sim/buffs';
 import { sec, type Command, type PlayerSetup } from '../src/sim/types';
 import { CX, CY, cmd, makeSim, place, steps } from './combat-helpers';
 
@@ -82,5 +83,18 @@ describe('Renn E blade hints', () => {
     const hints = buildSnapshot(sim, 0, 0).me!.hints!;
     expect(hints.map((h) => [h.slot, h.ok])).toEqual([[2, true], [2, false]]);
     expect(buildSnapshot(sim, 0, 0).me!.passive?.stacks).toBe(2);
+  });
+});
+
+describe('Seraphyne passive', () => {
+  it('+15 % MS after every ability refreshes instead of stacking, HUD badge glows', () => {
+    const { sim, m } = setup('seraphyne');
+    cmd(sim, cast(0, CX + 300, CY));
+    steps(sim, 20);
+    cmd(sim, cast(2, CX + 300, CY));
+    steps(sim, 20);
+    const ms = buffs(sim, m).filter((b) => b.kind === 'stat' && b.stat === 'ms' && b.until > sim.tick);
+    expect(ms.map((b) => [b.id, b.pct])).toEqual([['seraphyne_p_electrified', 15]]);
+    expect(buildSnapshot(sim, 0, 0).me!.passive?.ready).toBe(true);
   });
 });

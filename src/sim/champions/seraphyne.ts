@@ -1,5 +1,5 @@
 // Seraphyne Sturm hooks. Contract: ./hooks.ts, behaviour list: docs/champion-hooks.md.
-// Her passive (+15 % MS after abilities) is plain data (self ms buffs), so this file only owns R.
+// Passive: +15 % MS for 3 s after every ability (onCast, one refreshing buff); R: three strikes.
 import type { Sim } from '../sim';
 import { sec } from '../types';
 import { addBuff, buffs } from '../buffs';
@@ -24,6 +24,8 @@ const strikes = (sim: Sim, eid: number): Strike[] => {
 };
 
 const GAP = sec(0.8);
+/** Passive move speed buff id (aura colour: passive). */
+const PASSIVE_MS = 'seraphyne_p_electrified';
 
 function strike(sim: Sim, ctx: EffectCtx, hits: number[], third: boolean): void {
   applyEffects(sim, { ...ctx, hits }, 'hit');
@@ -33,14 +35,18 @@ function strike(sim: Sim, ctx: EffectCtx, hits: number[], third: boolean): void 
 export const hooks: ChampionHooks = {
   ownsHits: ['seraphyne_r'],
   passive: {
-    // The +15 % MS itself is data (self ms buff on every ability); this id makes the passive explicit (HUD badge).
-    seraphyne_electrified: {},
+    // Every ability: +15 % MS for 3 s; one buff id, so casts refresh it instead of stacking.
+    seraphyne_electrified: {
+      onCast(sim, eid) {
+        addBuff(sim, eid, { kind: 'stat', stat: 'ms', id: PASSIVE_MS, src: eid, pct: 15, ticks: sec(3) });
+      },
+    },
   },
   // HUD: the passive badge glows while the move speed bonus runs (timer = longest remaining ability ms buff).
   visuals(sim, eid) {
     let until = 0;
     let start = 0;
-    for (const b of buffs(sim, eid)) if (b.kind === 'stat' && b.stat === 'ms' && b.id.startsWith('seraphyne_') && b.until > until) (until = b.until), (start = b.start);
+    for (const b of buffs(sim, eid)) if (b.kind === 'stat' && b.stat === 'ms' && b.id === PASSIVE_MS && b.until > until) (until = b.until), (start = b.start);
     const left = until - sim.tick;
     return { passive: left > 0 ? { ready: true, cdLeft: left, cdTotal: until - start } : { ready: false } };
   },

@@ -130,7 +130,8 @@ export class GroundObjects {
       let n = 0;
       if (e.auras?.length) {
         const [champ, key] = e.auras[0]!.split('_');
-        const hue = champ && key ? abilityHue(champ, SLOT[key[0]!] ?? 0) : null;
+        const slot = key ? SLOT[key[0]!] : undefined;
+        const hue = champ && slot !== undefined ? abilityHue(champ, slot) : key?.startsWith('p') ? 48 : null; // passive: gold
         const m = v.part(n++);
         m.geometry = GEO.ring;
         m.position.set(x, 4, -y);

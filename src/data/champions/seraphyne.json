@@ -34,8 +34,8 @@
   "passive": {
     "name": { "de": "Elektrisiert", "en": "Electrified" },
     "desc": {
-      "de": "Jede Fähigkeit gibt ihr 3 s +15 % Bewegung (als Buff-Effekt in jeder Fähigkeit hinterlegt).",
-      "en": "Every ability grants her +15% move speed for 3 s (stored as a buff effect on each ability)."
+      "de": "Jede Fähigkeit gibt ihr 3 s lang +15 % Lauftempo (erneuert sich, stapelt nicht).",
+      "en": "Every ability grants her +15% move speed for 3 s (refreshes, does not stack)."
     },
     "hooks": ["seraphyne_electrified"]
   },
@@ -54,8 +54,7 @@
       "speed": 1800,
       "flags": ["pierce"],
       "effects": [
-        { "kind": "damage", "type": "magic", "amount": { "base": [60, 95, 130, 165, 200], "ap": 0.65 } },
-        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 3, "target": "self" }
+        { "kind": "damage", "type": "magic", "amount": { "base": [60, 95, 130, 165, 200], "ap": 0.65 } }
       ]
     },
     {
@@ -76,8 +75,7 @@
       "flags": ["ground_target"],
       "effects": [
         { "kind": "damage", "type": "magic", "amount": { "base": [20, 35, 50, 65, 80], "ap": 0.2 } },
-        { "kind": "slow", "pct": 20, "duration": 0.5 },
-        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 3, "target": "self" }
+        { "kind": "slow", "pct": 20, "duration": 0.5 }
       ]
     },
     {
@@ -97,8 +95,7 @@
       "distance": 350,
       "flags": ["ground_target"],
       "effects": [
-        { "kind": "buff", "stat": "dmgReduction", "pct": 10, "duration": 1, "target": "self" },
-        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 3, "target": "self" }
+        { "kind": "buff", "stat": "dmgReduction", "pct": 10, "duration": 1, "target": "self" }
       ]
     },
     {
@@ -118,8 +115,7 @@
       "flags": ["ground_target"],
       "effects": [
         { "kind": "damage", "type": "magic", "amount": { "base": [120, 200, 280], "ap": 0.5 } },
-        { "kind": "hook", "id": "seraphyne_r_three_strikes" },
-        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 3, "target": "self" }
+        { "kind": "hook", "id": "seraphyne_r_three_strikes" }
       ]
     }
   ],

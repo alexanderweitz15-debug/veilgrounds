@@ -29,7 +29,7 @@ export const MOTIF_RULES: [RegExp, string, number][] = [
 ];
 
 /** Per-champion motif table (src/render/abilityMotifs.json): Q/W/E/R of one champion never share a motif. */
-const MOTIF_OVERRIDES = (motifData as { champions: Record<string, [string, number][]> }).champions;
+const MOTIF_OVERRIDES = (motifData as unknown as { champions: Record<string, [string, number][]> }).champions;
 /** Motif keys the icon painter can draw. */
 export const MOTIF_GLYPHS: readonly string[] = (motifData as { glyphs: string[] }).glyphs;
 

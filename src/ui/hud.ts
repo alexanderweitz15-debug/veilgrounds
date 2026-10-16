@@ -19,6 +19,7 @@ import { DeathRecap } from './deathRecap';
 import { abilityIcon, itemIcon, kesselbrutIcon, setIcon, summonerIcon } from './icons';
 import { KESSELBRUT_MAX_STACKS, KESSELBRUT_STRUCT_PCT } from '../sim/systems/jungle';
 import { setTip } from './tooltip';
+import { play } from '../audio/sfx';
 
 const KILLFEED_MS = 9000;
 
@@ -97,6 +98,8 @@ export class Hud {
   private readonly over: HTMLElement;
   private readonly overTitle: HTMLElement;
   private readonly armedHint: HTMLElement;
+  private readonly castFail: HTMLElement;
+  private castFailAt = -1e9;
   private readonly panels: Record<Panel, HTMLElement>;
   readonly debugText: HTMLElement;
   /** F9 bot overlay (src/ui/botDebug.ts), filled by Game from the worker's bot rows. */
@@ -188,6 +191,7 @@ export class Hud {
     this.gold = el('div', 'gold', inv, '0');
     this.gold.addEventListener('mousedown', (e) => (e.stopPropagation(), this.togglePanel('shop')));
     this.armedHint = el('div', 'armed-hint', bottom);
+    this.castFail = el('div', 'cast-fail', bottom);
 
     // ---- centre overlays
     this.respawn = el('div', 'respawn', r);
@@ -269,6 +273,16 @@ export class Hud {
   onEvent(ev: SimEvent, state: ClientState, now: number): void {
     this.announcer.onEvent(ev, state);
     this.recap.onEvent(ev, state);
+    if (ev.e === 'castFail' && ev.src === state.snap?.me?.eid && ev.reason !== 'busy') {
+      // LoL: "Nicht genug Mana" / "Außer Reichweite" … over the ability bar, with a short error tone (debounced)
+      const msg = t(`castFail.${ev.reason}`);
+      setText(this.castFail, msg);
+      this.castFail.classList.remove('show');
+      void this.castFail.offsetWidth;
+      this.castFail.classList.add('show');
+      if (now - this.castFailAt > 400) play('ui');
+      this.castFailAt = now;
+    }
     if (ev.e === 'level' && ev.eid === state.snap?.me?.eid) {
       // level-up: the '+' buttons glow brighter for a moment
       toggle(this.root, 'lvlup', true);

@@ -1,6 +1,7 @@
 // One 2D canvas over the WebGL canvas: health bars, floating damage numbers, gold popups, level-up text.
 // A single canvas is far cheaper than ~100 DOM nodes moving every frame.
 import type { ClientState } from '../game/state';
+import type { SnapEntity } from '../sim/snapshot';
 import type { World } from '../render/world';
 import { Kind, type SimEvent } from '../sim/types';
 import { REL } from '../render/palette';
@@ -21,6 +22,17 @@ interface Floater {
   drift: number;
 }
 
+/** CC bits (src/sim/buffs.ts CC_BIT; not imported to keep the sim out of the UI bundle), strongest first. */
+const CC_ORDER: [number, string, string][] = [
+  [128, 'stasis', '#f2f2f2'],
+  [64, 'suppress', '#f0d24a'],
+  [16, 'airborne', '#f0d24a'],
+  [1, 'stun', '#f0d24a'],
+  [2, 'root', '#e09a4a'],
+  [8, 'silence', '#b98cff'],
+  [32, 'blind', '#a8a8a8'],
+  [4, 'slow', '#8fd0ff'],
+];
 /** HP-bar damage trail: hold the lost chunk, then drain at this rate (ms for a full bar). */
 const TRAIL_HOLD_MS = 350;
 const TRAIL_DRAIN_MS = 900;
@@ -33,6 +45,8 @@ export class Overlay {
   /** Per-eid damage trail of the HP bars (eid reuse: reset when unseen for 1 s). */
   private readonly trail = new Map<number, { hp: number; shown: number; at: number; seen: number }>();
   private lastDraw = 0;
+  /** Own CC timer: total length seen when the current CC (ccEnd) started. */
+  private readonly ccTimer = new Map<number, { end: number; total: number }>();
   private w = 1;
   private h = 1;
   private dpr = 1;
@@ -77,6 +91,37 @@ export class Overlay {
   }
 
   /** Small outlined name label, bottom-centred at (x, y). */
+  /**
+   * Crowd control above the HP bar (LoL: status text over the unit): strongest effect as a coloured chip; the own
+   * champion also gets a draining CC timer bar under its HP bar.
+   */
+  private drawCc(e: SnapEntity, x: number, y: number, bw: number, bh: number, champ: boolean, mine: boolean, tick: number): void {
+    const mask = e.cc ?? 0;
+    const hit = CC_ORDER.find(([bit]) => mask & bit);
+    if (!hit) return;
+    const [, key, color] = hit;
+    const text = key === 'slow' ? `${t('cc.slow')} ${Math.round(e.slow ?? 0)} %` : t(`cc.${key}`);
+    const ctx = this.ctx;
+    ctx.font = `700 ${champ ? 12 : 10}px system-ui, sans-serif`;
+    const w = ctx.measureText(text).width + 10;
+    const cy = champ ? y - 32 : y - 14;
+    ctx.fillStyle = 'rgba(12,10,8,0.85)';
+    ctx.fillRect(x + bw / 2 - w / 2, cy - 8, w, 16);
+    ctx.fillStyle = color;
+    ctx.fillRect(x + bw / 2 - w / 2, cy + 6, w, 2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x + bw / 2, cy);
+    if (mine && e.ccEnd !== undefined && e.ccEnd > tick) {
+      let tm = this.ccTimer.get(e.id);
+      if (!tm || tm.end !== e.ccEnd) this.ccTimer.set(e.id, (tm = { end: e.ccEnd, total: Math.max(1, e.ccEnd - tick) }));
+      ctx.fillStyle = 'rgba(12,10,8,0.85)';
+      ctx.fillRect(x, y + bh + 5, bw, 4);
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y + bh + 5, (bw * (e.ccEnd - tick)) / tm.total, 4);
+    }
+  }
+
   private label(text: string, x: number, y: number, color: string): void {
     const ctx = this.ctx;
     ctx.font = '600 12px system-ui, sans-serif';
@@ -178,6 +223,7 @@ export class Overlay {
           ctx.fillText(name, x + bw / 2, y - 5);
         }
         if (monster && e.id === hoverId) this.label(variantName(e.variant, e.kind), a.sx, y - 5, '#f3e6c4');
+        if (e.cc) this.drawCc(e, x, y, bw, bh, champ, e.id === myEid, snap.tick);
         if (dummy) {
           ctx.fillStyle = '#fff';
           ctx.font = 'bold 11px system-ui, sans-serif';

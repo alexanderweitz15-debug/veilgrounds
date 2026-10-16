@@ -427,5 +427,20 @@
   "shop.cat.boots": "Boots",
   "shop.cat.support": "Support",
   "shop.cat.jungle": "Jungle",
-  "shop.cat.consumable": "Consumables"
+  "shop.cat.consumable": "Consumables",
+  "cc.stasis": "Stasis",
+  "cc.suppress": "Suppressed",
+  "cc.airborne": "Airborne",
+  "cc.stun": "Stunned",
+  "cc.root": "Rooted",
+  "cc.silence": "Silenced",
+  "cc.blind": "Blinded",
+  "cc.slow": "Slowed",
+  "castFail.cooldown": "Not ready yet",
+  "castFail.mana": "Not enough mana",
+  "castFail.range": "Out of range",
+  "castFail.cc": "Can't cast right now",
+  "castFail.busy": "Busy",
+  "castFail.target": "No valid target",
+  "castFail.unlearned": "Ability not learned"
 }

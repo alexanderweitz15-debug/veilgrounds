@@ -427,5 +427,20 @@
   "shop.cat.boots": "Stiefel",
   "shop.cat.support": "Unterstützung",
   "shop.cat.jungle": "Dschungel",
-  "shop.cat.consumable": "Verbrauch"
+  "shop.cat.consumable": "Verbrauch",
+  "cc.stasis": "Stasis",
+  "cc.suppress": "Unterdrückt",
+  "cc.airborne": "In der Luft",
+  "cc.stun": "Betäubt",
+  "cc.root": "Festgehalten",
+  "cc.silence": "Verstummt",
+  "cc.blind": "Geblendet",
+  "cc.slow": "Verlangsamt",
+  "castFail.cooldown": "Noch nicht bereit",
+  "castFail.mana": "Nicht genug Mana",
+  "castFail.range": "Außer Reichweite",
+  "castFail.cc": "Kann gerade nicht wirken",
+  "castFail.busy": "Beschäftigt",
+  "castFail.target": "Kein gültiges Ziel",
+  "castFail.unlearned": "Fähigkeit nicht erlernt"
 }

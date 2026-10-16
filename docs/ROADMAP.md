@@ -168,7 +168,7 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
   Beschwörerzauber; Abbruch durch Befehle; Test mechanics.test.ts „walk into range“) abilities.ts `castAbility`: `if (tgt < 0) return; //
   ponytail: LoL walks into range first`. LoL: Champion läuft in Reichweite und wirkt dann. Fix: ausstehenden Cast
   merken, wie Modus 2 verfolgen, bei Reichweite auslösen (Abbruch durch Bewegungsbefehl).
-- [~] **Fehlgeschlagene Casts ohne Rückmeldung.** (Sim-Seite erledigt: Event `castFail {src, slot, reason,
+- [x] **Fehlgeschlagene Casts ohne Rückmeldung.** (erledigt: Client-Anzeige) (Sim-Seite erledigt: Event `castFail {src, slot, reason,
   summoner?}` nur für den Wirkenden; Ton/Text/HUD-Klasse → Lead) `castAbility` bricht bei Abklingzeit, Mana, Reichweite, CC oder
   „busy“ ohne Event ab; HUD kennt nur `cooling`/`unlearned` (hud.ts), kein „zu wenig Mana“. LoL: Symbol blau getönt,
   Fehlerton, „Nicht genug Mana“. Fix: Sim-Event `castFail` mit Grund (nur eigenes Team) → Ton + Text; HUD-Klasse
@@ -197,7 +197,7 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
 
 ### Kampf-Lesbarkeit
 **Kritisch**
-- [~] **CC und Buffs an Einheiten unsichtbar.** (Sim-Seite erledigt: `SnapEntity.cc` Bitmaske buffs.ts `CC_BIT`,
+- [x] **CC und Buffs an Einheiten unsichtbar.** (erledigt: Client-Anzeige) (Sim-Seite erledigt: `SnapEntity.cc` Bitmaske buffs.ts `CC_BIT`,
   `slow`, `ccEnd`; Anzeige → Lead) `SnapEntity` hat kein CC-/Buff-Feld; `ccLevel` steht nur in
   `PlayerHud.cc` und wird nur von Bots gelesen (keine Fundstelle in src/render, src/ui). Betäubung, Festhalten,
   Verlangsamung, Stille, Airborne sind weder bei Gegnern noch beim eigenen Champion zu sehen. LoL: CC-Partikel,

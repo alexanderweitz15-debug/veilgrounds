@@ -613,12 +613,12 @@ function liveUnits(sim: Sim): number[] {
  * teams' mid waves, no enemy champion), autos only, no recall / no wards (vision axis -5, recall and ward commands
  * dropped: a practice-tool session). 107 enemy minions arrive by 10:00.
  */
-export function runLaneAlone(rank: Rank, opts: { minutes?: number; seed?: number; champion?: string; autosOnly?: boolean; clock?: () => number; noVariance?: boolean } = {}): GameResult {
+export function runLaneAlone(rank: Rank, opts: { minutes?: number; seed?: number; champion?: string; autosOnly?: boolean; clock?: () => number; noVariance?: boolean; reflex?: boolean } = {}): GameResult {
   const seed = opts.seed ?? 1;
   const players: PlayerSetup[] = [
     { slot: 0, team: 0, champion: opts.champion ?? 'mira', role: 'mid', summoners: ['sprung', 'heilen'], isHuman: false, bot: { rank, variance: 'normal', playstyle: { vision: -5 } } },
   ];
   seedPersonalities(seed, players);
   const config: SimConfig = { seed, mode: 'laneOnly', minionLanes: [Lane.Mid], players };
-  return runBotGame(config, Math.round((opts.minutes ?? 10) * 1800), undefined, { autosOnly: opts.autosOnly ?? true, trainer: true, noVariance: opts.noVariance ?? true, ...(opts.clock ? { clock: opts.clock } : {}) });
+  return runBotGame(config, Math.round((opts.minutes ?? 10) * 1800), undefined, { autosOnly: opts.autosOnly ?? true, trainer: true, noVariance: opts.noVariance ?? true, reflex: opts.reflex ?? true, ...(opts.clock ? { clock: opts.clock } : {}) });
 }

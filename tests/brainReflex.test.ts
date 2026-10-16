@@ -19,12 +19,13 @@ const laneAloneConfig = (rank: Rank, seed: number): SimConfig => {
   return { seed, mode: 'laneOnly', minionLanes: [Lane.Mid], players };
 };
 
-// TODO(A1): Phase 1 gate tests not met yet (reflex layer is off in the game); skipped on the user's request (16 Oct) to unblock the deploy. Re-enable with the Phase 1 merge (docs/agents/a1.md).
-describe.skip('reflex layer: scheduler fills the attack timer (test 1)', () => {
+// The reflex layer is opt-in (RunnerOptions.reflex, off in the game); these tests enable it explicitly.
+// TODO(A1): tests 2 and 4 skipped (user request, 16 Oct): Iron lane-alone 69 < 70, Gold 2 out_of_range cancels > 0 (docs/agents/a1.md open items 1-2).
+describe('reflex layer: scheduler fills the attack timer (test 1)', () => {
   it('Gold alone in lane, 60 s from 1:40: attack utilisation > 60 %, no move/stop inside an own wind-up except logged orbwalk timing errors', () => {
     const config = laneAloneConfig('gold', 3);
     const sim = createSim(config);
-    const bots = new BotRunner(config, undefined, { noVariance: true, noSpells: true });
+    const bots = new BotRunner(config, undefined, { noVariance: true, noSpells: true, reflex: true });
     const me = sim.slots[0]!;
     let den = 0;
     let num = 0;
@@ -73,7 +74,7 @@ describe.skip('reflex layer: last hits independent of the decision rate (tests 2
   }, 300_000);
 });
 
-describe.skip('reflex layer: window collisions (test 3)', () => {
+describe('reflex layer: window collisions (test 3)', () => {
   it('Diamond loses fewer last hits to colliding windows than Gold (window preparation 80 % vs 30 %)', () => {
     const lost = (rank: Rank): { coll: number; cs: number } => {
       let coll = 0;
@@ -94,8 +95,8 @@ describe.skip('reflex layer: window collisions (test 3)', () => {
 });
 
 describe('reflex layer: cost and determinism (tests 11, 12)', () => {
-  it.skip('10 bots, 10 min headless: reflex logic < 0.05 ms per bot and tick on average (view reported separately)', () => {
-    const g = runBotGame(botGameConfig(7, 'gold'), 10 * 1800, undefined, { clock: () => performance.now(), noVariance: true });
+  it('10 bots, 10 min headless: reflex logic < 0.05 ms per bot and tick on average (view reported separately)', () => {
+    const g = runBotGame(botGameConfig(7, 'gold'), 10 * 1800, undefined, { clock: () => performance.now(), noVariance: true, reflex: true });
     const c = g.cost;
     const reflexMs = c.reflexMs / Math.max(1, c.reflexCalls);
     const viewMs = c.viewMs / Math.max(1, c.views);

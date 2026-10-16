@@ -93,6 +93,9 @@ function wrenVisuals(sim: Sim, eid: number): ChampionVisuals {
     const b = buffs(sim, t).find((x) => x.kind === 'dot' && x.id === BURN && x.src === eid && x.until > sim.tick);
     if (b) (v.marks ??= []).push({ target: t, id: BURN, left: b.until - sim.tick });
   }
+  // passive badge: number of enemies burning from Wren's embers (+10 % auto damage on them); glows while any burns
+  const burning = v.marks?.length ?? 0;
+  v.passive = { stacks: burning, max: 5, ready: burning > 0 };
   return v;
 }
 

@@ -137,9 +137,14 @@ const ABSENT_R = 1400;
 const LANER_LANE: Partial<Record<string, number>> = { top: Lane.Top, mid: Lane.Mid, adc: Lane.Bot };
 const LANE_NAME = ['top', 'mid', 'bot'] as const;
 
+/** Absence trip of a laner: why it left the lane (first reason; the trip lasts until it is back near its lane's
+ *  minions in lane mode). A laner in lane mode far from a dying minion (holding back from the enemy tower, wave
+ *  crashing elsewhere) is not absent: its losses get the in-lane causes. */
 type Trip = 'recall' | 'heal' | 'roam' | 'dead' | null;
 const tripOfMode = (mode: string): Exclude<Trip, null> =>
   mode === 'recall' || mode === 'shop' ? 'recall' : mode === 'home' || mode === 'heal' || mode === 'retreat' ? 'heal' : mode === 'dead' ? 'dead' : 'roam';
+/** Modes in which a far laner is still "in lane" (no trip starts). */
+const IN_LANE_MODES = new Set(['lane', 'start']);
 
 interface LanerTrack {
   s: ChampStats;
@@ -274,7 +279,15 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
 
   while (sim.tick < maxTicks && sim.state.winner === undefined) {
     let inputs = bots.tick(sim);
-    if (opts.autosOnly) inputs = inputs.filter((i) => i.cmd.t !== 'cast');
+    if (opts.autosOnly) {
+      inputs = inputs.filter((i) => {
+        if (i.cmd.t !== 'cast') return true;
+        // the brain set busyUntil for the cast it believes it made: the dropped cast must not freeze the bot
+        const b = botBySlot.get(i.slot);
+        if (b) (b.mem.busyUntil = 0), (b.mem.busySlot = -1);
+        return false;
+      });
+    }
     step(sim, inputs);
     const T = sim.tick;
     for (const i of inputs) {
@@ -411,9 +424,8 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
       if (!alive) l.trip = 'dead';
       else if (T % 15 === 0) {
         const nearLane = units.some((u) => isMinion(Unit.kind[u]!) && Unit.lane[u] === l.lane && Math.hypot(Pos.x[u]! - Pos.x[me]!, Pos.y[u]! - Pos.y[me]!) < ABSENT_R);
-        if (nearLane && b.mem.mode === 'lane') l.trip = null;
-        else if (!nearLane && l.trip === null) l.trip = Champ.recallAt[me]! > 0 ? 'recall' : tripOfMode(b.mem.mode);
-        else if (l.trip === 'roam' && Champ.recallAt[me]! > 0) l.trip = 'recall';
+        if (nearLane && IN_LANE_MODES.has(b.mem.mode)) l.trip = null;
+        else if (!nearLane && l.trip === null && (Champ.recallAt[me]! > 0 || !IN_LANE_MODES.has(b.mem.mode))) l.trip = Champ.recallAt[me]! > 0 ? 'recall' : tripOfMode(b.mem.mode);
       }
       if (!alive || T < UTIL_FROM || T >= UTIL_TO || Champ.recallAt[me]! > 0) {
         l.idle = null;
@@ -469,8 +481,9 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
     const d = Math.hypot(Pos.x[me]! - x, Pos.y[me]! - y);
     if (d > ABSENT_R) {
       const b = botBySlot.get(l.s.slot)!;
-      const trip = l.trip ?? (Champ.recallAt[me]! > 0 ? 'recall' : tripOfMode(b.mem.mode));
-      return trip === 'recall' ? 'absent_recall' : trip === 'heal' ? 'absent_heal' : trip === 'dead' ? 'absent_dead' : 'absent_roam';
+      if (l.trip === null && (Champ.recallAt[me]! > 0 || !IN_LANE_MODES.has(b.mem.mode))) l.trip = Champ.recallAt[me]! > 0 ? 'recall' : tripOfMode(b.mem.mode);
+      const trip = l.trip;
+      if (trip !== null) return trip === 'recall' ? 'absent_recall' : trip === 'heal' ? 'absent_heal' : trip === 'dead' ? 'absent_dead' : 'absent_roam';
     }
     if (killerKind === Kind.Champion) return 'ally_took';
     if ((l.atkOn.get(m) ?? -1e9) >= T - 45 || (l.dmgOn.get(m) ?? -1e9) >= T - 90) return 'timing_miss';

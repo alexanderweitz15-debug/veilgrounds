@@ -8,7 +8,7 @@
 //
 // UVs follow three.js CanvasTexture defaults (flipY = true: v = 1 at the canvas top). Mirrored directions
 // (W, SW, NW when opts.mirror) reuse the E/SE/NE cells with u0/u1 swapped and flip = true.
-import { Painter, Stage, TAU, project, type View } from './core';
+import { LIGHT, Painter, Stage, TAU, dirOf, len, lerp3, madd, norm, project, sub, type V3, type View } from './core';
 import { ATTACK_HIT, CAST_FLEX, CAST_RELEASE, CHAMP_FPS, FPS, FRAMES, LOOP, poseFor } from './anim';
 import { bodyOf, drawHumanoid, solveRig } from './humanoid';
 import { KITS } from './kits';
@@ -135,10 +135,230 @@ export function championKit(id: string): Kit | undefined {
 }
 
 // ------------------------------------------------------------------------------------------------ frame render
-let scratch: { fig: AnyCanvas; ink: AnyCanvas; out: AnyCanvas; size: number } | null = null;
+let scratch: { fig: AnyCanvas; ink: AnyCanvas; out: AnyCanvas; tmp: AnyCanvas; rim: AnyCanvas; size: number } | null = null;
 function canvases(size: number) {
-  if (!scratch || scratch.size !== size) scratch = { fig: newCanvas(size), ink: newCanvas(size), out: newCanvas(size), size };
+  if (!scratch || scratch.size !== size) scratch = { fig: newCanvas(size), ink: newCanvas(size), out: newCanvas(size), tmp: newCanvas(size), rim: newCanvas(size), size };
   return scratch;
+}
+
+// ------------------------------------------------------------------------------------------------ figure finish
+// Sprite revision (docs/style/sprite-research.md, "Was wir übernehmen"): figure-level passes after the parts are
+// painted. Everything stays inside the silhouette or is opaque: the game draws sprites with alphaTest 0.5.
+/** screen direction toward the low evening sun (behind-right): the warm rim sits on head, shoulders, right edges */
+const SUN_RIM = (() => {
+  const l = Math.hypot(0.42, 0.91);
+  return { x: 0.42 / l, y: -0.91 / l };
+})();
+/** violet sky fill from the upper left: thin cool edge on the opposite side */
+const SKY_RIM = (() => {
+  const l = Math.hypot(0.85, 0.5);
+  return { x: -0.85 / l, y: -0.5 / l };
+})();
+const RIM_WARM = '#ffcf8c';
+const RIM_COOL = '#9a8cf0';
+/** attack styles whose strike frame gets a smear arc (fast melee swings/stabs) */
+const SMEAR: Partial<Record<string, 'arc' | 'stab'>> = { chop: 'arc', slash: 'arc', swipe: 'arc', bash: 'arc', thrust: 'stab' };
+
+interface Focal {
+  x: number;
+  y: number;
+  r: number;
+  a: number;
+}
+type Pt = { x: number; y: number };
+
+/** topmost and lowest opaque rows of the painted figure */
+function figureRows(c: AnyCanvas, res: number): { top: number; bot: number } {
+  const d = ctx2d(c).getImageData(0, 0, res, res).data;
+  let top = -1;
+  let bot = -1;
+  for (let y = 0; y < res && top < 0; y += 2) for (let x = 0; x < res; x += 2) if (d[(y * res + x) * 4 + 3]! > 60) { top = y; break; }
+  for (let y = res - 1; y >= 0 && bot < 0; y -= 2) for (let x = 0; x < res; x += 2) if (d[(y * res + x) * 4 + 3]! > 60) { bot = y; break; }
+  if (top < 0) return { top: res * 0.2, bot: res * 0.9 };
+  return { top, bot: Math.max(bot, top + 8) };
+}
+
+/** Thin band of the figure along its edge facing `dir`, tinted; composited onto `dst` (inside the silhouette). */
+function edgeLight(dst: CanvasRenderingContext2D, src: AnyCanvas, rim: AnyCanvas, res: number, dir: Pt, w: number, color: string, alpha: number, top: number, bot: number, fade: number): void {
+  const r = ctx2d(rim);
+  r.globalCompositeOperation = 'source-over';
+  r.globalAlpha = 1;
+  r.clearRect(0, 0, res, res);
+  r.drawImage(src, 0, 0);
+  r.globalCompositeOperation = 'source-in';
+  r.fillStyle = color;
+  r.fillRect(0, 0, res, res);
+  // keep only pixels whose neighbour toward the light is outside the figure
+  r.globalCompositeOperation = 'destination-out';
+  r.drawImage(src, -dir.x * w, -dir.y * w);
+  // brightest at the head, calmer toward the feet
+  r.globalCompositeOperation = 'destination-in';
+  const g = r.createLinearGradient(0, top, 0, bot);
+  g.addColorStop(0, 'rgba(0,0,0,1)');
+  g.addColorStop(0.45, 'rgba(0,0,0,0.85)');
+  g.addColorStop(1, `rgba(0,0,0,${fade})`);
+  r.fillStyle = g;
+  r.fillRect(0, 0, res, res);
+  r.globalCompositeOperation = 'source-over';
+  dst.save();
+  dst.globalCompositeOperation = 'source-atop';
+  dst.globalAlpha = alpha;
+  dst.drawImage(rim, 0, 0);
+  dst.restore();
+}
+
+/**
+ * Value/saturation hierarchy, focal light, two-sided rim and the shadow-weighted outer contour; returns `out`.
+ * Dota 2 art guide: brightest and most saturated at head/hands/weapon, darker and greyer toward the feet.
+ */
+function finishFigure(res: number, s: number, inkMul: number, focal: Focal[], smear: Pt[][] | null): AnyCanvas {
+  const { fig, ink, out, tmp, rim } = canvases(res);
+  const { top, bot } = figureRows(fig, res);
+  const H = bot - top;
+  const t = ctx2d(tmp);
+  t.setTransform(1, 0, 0, 1, 0, 0);
+  t.globalAlpha = 1;
+  t.globalCompositeOperation = 'source-over';
+  t.clearRect(0, 0, res, res);
+  t.drawImage(fig, 0, 0);
+  // legs and feet lose saturation (blend mode paints everywhere: restore the alpha with destination-in)
+  t.globalCompositeOperation = 'saturation';
+  const ds = t.createLinearGradient(0, top + H * 0.58, 0, bot);
+  ds.addColorStop(0, 'rgba(128,128,128,0)');
+  ds.addColorStop(1, 'rgba(128,128,128,0.42)');
+  t.fillStyle = ds;
+  t.fillRect(0, 0, res, res);
+  t.globalCompositeOperation = 'destination-in';
+  t.drawImage(fig, 0, 0);
+  t.globalCompositeOperation = 'source-atop';
+  // value: warm light on the upper body, cool dark toward the feet, contact darkening at the soles
+  const vg = t.createLinearGradient(0, top, 0, bot);
+  vg.addColorStop(0, 'rgba(255,226,180,0.12)');
+  vg.addColorStop(0.32, 'rgba(255,226,180,0)');
+  vg.addColorStop(0.5, 'rgba(30,20,50,0)');
+  vg.addColorStop(0.84, 'rgba(30,20,50,0.24)');
+  vg.addColorStop(0.95, 'rgba(24,16,40,0.4)');
+  vg.addColorStop(1, 'rgba(18,12,30,0.6)');
+  t.fillStyle = vg;
+  t.fillRect(0, 0, res, res);
+  // focal light on the head and weapon hand
+  for (const f of focal) {
+    const rg = t.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r);
+    rg.addColorStop(0, `rgba(255,232,196,${f.a})`);
+    rg.addColorStop(1, 'rgba(255,232,196,0)');
+    t.fillStyle = rg;
+    t.fillRect(f.x - f.r, f.y - f.r, f.r * 2, f.r * 2);
+  }
+  t.globalCompositeOperation = 'source-over';
+  // silhouette rim: warm toward the evening sun, thin violet sky edge on the other side
+  edgeLight(t, fig, rim, res, SUN_RIM, 2.6 * s, RIM_WARM, 0.78, top, bot, 0.35);
+  edgeLight(t, fig, rim, res, SKY_RIM, 1.4 * s, RIM_COOL, 0.26, top, bot, 0);
+
+  // outer contour: the figure's own colours darkened, dilated under it, heavier on the shadow side (lower left)
+  const ictx = ctx2d(ink);
+  ictx.globalCompositeOperation = 'source-over';
+  ictx.clearRect(0, 0, res, res);
+  ictx.drawImage(tmp, 0, 0);
+  ictx.globalCompositeOperation = 'source-atop';
+  ictx.fillStyle = 'rgba(24,16,34,0.82)';
+  ictx.fillRect(0, 0, res, res);
+  ictx.globalCompositeOperation = 'source-over';
+  const octx = ctx2d(out);
+  octx.clearRect(0, 0, res, res);
+  const R = 2.5 * s * inkMul;
+  const ox = -LIGHT.x * R * 0.42;
+  const oy = -LIGHT.y * R * 0.42;
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * TAU;
+    octx.drawImage(ink, ox + Math.cos(a) * R, oy + Math.sin(a) * R);
+  }
+  octx.drawImage(tmp, 0, 0);
+  if (smear) paintSmear(octx, smear, s);
+  return out;
+}
+
+/** Opaque smear arc (alphaTest-safe): pale warm crescent with a brighter core and a thin ink lip. */
+function paintSmear(c: CanvasRenderingContext2D, [outer, inner, core]: Pt[][], s: number): void {
+  const poly = (a: Pt[], b: Pt[]) => {
+    const p = new Path2D();
+    a.forEach((q, i) => (i ? p.lineTo(q.x, q.y) : p.moveTo(q.x, q.y)));
+    for (let i = b.length - 1; i >= 0; i--) p.lineTo(b[i]!.x, b[i]!.y);
+    p.closePath();
+    return p;
+  };
+  const band = poly(outer!, inner!);
+  c.save();
+  c.lineJoin = 'round';
+  c.strokeStyle = 'rgba(40,24,40,0.75)';
+  c.lineWidth = 1.6 * s;
+  c.stroke(band);
+  c.fillStyle = 'rgba(255,214,150,0.86)';
+  c.fill(band);
+  c.fillStyle = 'rgba(255,250,236,0.95)';
+  c.fill(poly(outer!, core!));
+  c.restore();
+}
+
+/** Smear polygons (outer edge, inner edge, bright core edge) between the coil and the strike weapon positions. */
+function smearShape(view: View, from: { tip: V3; grip: V3 }, to: { tip: V3; grip: V3 }, kind: 'arc' | 'stab', s: number): Pt[][] | null {
+  const N = 12;
+  const P = (v: V3) => project(view, v);
+  const T: Pt[] = [];
+  const G: Pt[] = [];
+  const d0 = sub(from.tip, from.grip);
+  const d1 = sub(to.tip, to.grip);
+  const l0 = len(d0);
+  const l1 = len(d1);
+  for (let i = 0; i <= N; i++) {
+    // only the last part of the coil -> strike path: the trail hugs the weapon instead of spanning the whole swing
+    const u = 0.45 + 0.55 * (i / N);
+    const grip = lerp3(from.grip, to.grip, u);
+    let d = norm(lerp3(norm(d0), norm(d1), u));
+    if (!Number.isFinite(d[0])) d = norm(d1);
+    T.push(P(madd(grip, d, l0 + (l1 - l0) * u)));
+    G.push(P(grip));
+  }
+  const span = Math.hypot(T[N]!.x - T[0]!.x, T[N]!.y - T[0]!.y);
+  if (span < 6 * s) return null;
+  const outer: Pt[] = [];
+  const inner: Pt[] = [];
+  const core: Pt[] = [];
+  for (let i = 0; i <= N; i++) {
+    const u = i / N;
+    const a = T[Math.max(0, i - 1)]!;
+    const b = T[Math.min(N, i + 1)]!;
+    let nx = -(b.y - a.y);
+    let ny = b.x - a.x;
+    const nl = Math.hypot(nx, ny) || 1;
+    nx /= nl;
+    ny /= nl;
+    const q = T[i]!;
+    // normal pointing away from the grip (outside of the swing)
+    if (nx * (q.x - G[i]!.x) + ny * (q.y - G[i]!.y) < 0) {
+      nx = -nx;
+      ny = -ny;
+    }
+    const w = Math.pow(u, 1.3);
+    if (kind === 'stab') {
+      const hw = 4.2 * s * w;
+      outer.push({ x: q.x + nx * hw, y: q.y + ny * hw });
+      inner.push({ x: q.x - nx * hw, y: q.y - ny * hw });
+      core.push({ x: q.x - nx * hw * 0.2, y: q.y - ny * hw * 0.2 });
+    } else {
+      const frac = 0.55 * w;
+      outer.push({ x: q.x + nx * 1.4 * s * w, y: q.y + ny * 1.4 * s * w });
+      inner.push({ x: q.x + (G[i]!.x - q.x) * frac, y: q.y + (G[i]!.y - q.y) * frac });
+      core.push({ x: q.x + (G[i]!.x - q.x) * frac * 0.35, y: q.y + (G[i]!.y - q.y) * frac * 0.35 });
+    }
+  }
+  return [outer, inner, core];
+}
+
+/** Weapon tip/grip of a rig (props report it through Stage.tip; fallback: along the main-hand aim). */
+function weaponOf(st: Stage, rig: ReturnType<typeof solveRig>, pose: ReturnType<typeof poseFor>): { tip: V3; grip: V3 } {
+  if (st.tip) return st.tip;
+  const grip = rig.handR.o;
+  return { grip, tip: madd(grip, norm(dirOf(rig.chest, pose.aim)), rig.body.H * 0.3) };
 }
 
 /**
@@ -146,7 +366,7 @@ function canvases(size: number) {
  * the next call). Feet stand at (res/2, res*0.92), figure faces per `yaw`.
  */
 export function renderMaster(id: string, anim: Anim, yaw: number, frame: number, res = 256): AnyCanvas {
-  const { fig, ink, out } = canvases(res);
+  const { fig } = canvases(res);
   const s = res / 256;
   const fctx = ctx2d(fig);
   fctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -155,6 +375,8 @@ export function renderMaster(id: string, anim: Anim, yaw: number, frame: number,
   fctx.lineCap = 'round';
   const painter = new Painter(fctx, s);
   const drawer = DRAWERS[id];
+  const focal: Focal[] = [];
+  let smear: Pt[][] | null = null;
   if (id === 'hark') {
     const view: View = { yaw, elev: 0.42, cx: res / 2, cy: res * 0.9, k: s, fall: 0, lift: 0 };
     drawWolf(new Stage(view), painter, anim, frame);
@@ -181,36 +403,24 @@ export function renderMaster(id: string, anim: Anim, yaw: number, frame: number,
     drawHumanoid(st, rig, pose, kit);
     for (const prop of kit.props) prop({ st, rig, pose, kit });
     st.render(painter);
+    if (pose.fall < 0.01) {
+      const hq = project(view, rig.head.o);
+      focal.push({ x: hq.x, y: hq.y, r: rig.body.headR * view.k * 2.6, a: 0.16 });
+      const w = weaponOf(st, rig, pose);
+      const wq = project(view, lerp3(w.grip, w.tip, 0.5));
+      focal.push({ x: wq.x, y: wq.y, r: rig.body.H * 0.16 * view.k, a: 0.1 });
+    }
+    // smear arc on the strike frame of fast melee attacks: coil -> strike path of the weapon tip
+    const style = kit.attack ? SMEAR[kit.attack] : undefined;
+    if (style && anim === 'attack' && frame > 0 && frame === hitOf(id)) {
+      const pose0 = poseFor(kit, anim, frame - 1);
+      const rig0 = solveRig(kit, pose0);
+      const st0 = new Stage(view);
+      for (const prop of kit.props) prop({ st: st0, rig: rig0, pose: pose0, kit });
+      smear = smearShape(view, weaponOf(st0, rig0, pose0), weaponOf(st, rig, pose), style, s);
+    }
   }
-  // value gradient head → feet (Dota rule: brightest at the top, calmer toward the feet)
-  fctx.save();
-  fctx.setTransform(1, 0, 0, 1, 0, 0);
-  fctx.globalCompositeOperation = 'source-atop';
-  const vg = fctx.createLinearGradient(0, res * 0.25, 0, res * 0.95);
-  vg.addColorStop(0, 'rgba(255,220,170,0.06)');
-  vg.addColorStop(0.5, 'rgba(30,20,50,0)');
-  vg.addColorStop(1, 'rgba(30,20,50,0.3)');
-  fctx.fillStyle = vg;
-  fctx.fillRect(0, 0, res, res);
-  fctx.restore();
-  // outer contour: the figure's own colours darkened (dark local hue, not uniform black), dilated under it
-  const ictx = ctx2d(ink);
-  ictx.globalCompositeOperation = 'source-over';
-  ictx.clearRect(0, 0, res, res);
-  ictx.drawImage(fig, 0, 0);
-  ictx.globalCompositeOperation = 'source-atop';
-  ictx.fillStyle = 'rgba(24,16,34,0.8)';
-  ictx.fillRect(0, 0, res, res);
-  ictx.globalCompositeOperation = 'source-over';
-  const octx = ctx2d(out);
-  octx.clearRect(0, 0, res, res);
-  const R = 2.3 * s * (drawer?.ink ?? kitOf(id)?.ink ?? 1);
-  for (let i = 0; i < 12; i++) {
-    const a = (i / 12) * TAU;
-    octx.drawImage(ink, Math.cos(a) * R, Math.sin(a) * R);
-  }
-  octx.drawImage(fig, 0, 0);
-  return out;
+  return finishFigure(res, s, drawer?.ink ?? kitOf(id)?.ink ?? 1, focal, smear);
 }
 
 /** Head centre and radius (master px) of a humanoid's idle frame 0 as rendered by renderMaster (portrait crops). */

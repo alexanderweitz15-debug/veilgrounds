@@ -39,6 +39,11 @@ export const COPPER = m('#c06a3a', 'metal');
 export const LEATHER = m('#6a4428', 'leather');
 export const ROPE = '#c7ae7a';
 
+/** Reports the main weapon (grip -> tip) for the smear arc of the strike frame; the first prop to call it wins. */
+export const markTip = (c: PropCtx, grip: V3, tip: V3): void => {
+  c.st.tip ??= { grip, tip };
+};
+
 /** world direction of the main-hand aim */
 export const aimW = (c: PropCtx): V3 => norm(dirOf(c.rig.chest, c.pose.aim));
 export const aimLW = (c: PropCtx): V3 => norm(dirOf(c.rig.chest, c.pose.aimL));
@@ -259,6 +264,7 @@ export function heldBlade(c: PropCtx, o: { len: number; w: number; curve: number
   const hand = o.off ? rig.handL : rig.handR;
   const dir = o.off ? aimLW(c) : aimW(c);
   const b = frameYZ(hand.o, dir, cross(dir, rig.chest.y));
+  if (!o.off) markTip(c, hand.o, madd(hand.o, dir, o.len + 6));
   st.add(madd(hand.o, dir, 6), 3.3, (p) => {
     p.fill(st.capsule(madd(hand.o, dir, -6), madd(hand.o, dir, 4), 2.3, 2.3), m('#2a2228', 'leather'), { lw: 1.3, rim: false });
     p.fill(st.hull([at(b, [-5.5, 4, -1.4]), at(b, [5.5, 4, -1.4]), at(b, [5.5, 6.5, 1.4]), at(b, [-5.5, 6.5, 1.4])]), BRASS, { lw: 1.3 });
@@ -327,6 +333,7 @@ export function glassArm(c: PropCtx): void {
   const hand = rig.handR;
   const dir = norm(sub(hand.o, el));
   const b = frameYZ(el, dir, rig.chest.z);
+  markTip(c, hand.o, madd(hand.o, dir, 30));
   st.add(madd(hand.o, dir, 10), 3.5, (p) => {
     // gauntlet of glass shards encasing the forearm and running out into a long blade
     const shard = (o: V3, d: V3, l: number, w: number, side: number) => {

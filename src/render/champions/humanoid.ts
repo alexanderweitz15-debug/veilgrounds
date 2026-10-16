@@ -49,8 +49,19 @@ export const DEFAULT_BODY: BodySpec = {
   float: 0,
 };
 
+/**
+ * Gameplay-size exaggeration (sprite revision, docs/style/sprite-research.md rule d): champions get a larger head and
+ * hands so faces, hair and grips survive the 112 px cell. Minions (legacy frame layout, `kit.frames`) are already
+ * chunky and keep their proportions.
+ */
+export const HEAD_EXAG = 1.1;
+export const HAND_EXAG = 1.15;
+const exagOf = (kit: Kit): number => (kit.frames ? 0 : 1);
+
 export function bodyOf(kit: Kit): BodySpec {
-  return { ...DEFAULT_BODY, ...kit.body };
+  const b = { ...DEFAULT_BODY, ...kit.body };
+  b.headR *= 1 + (HEAD_EXAG - 1) * exagOf(kit);
+  return b;
 }
 
 const rotYXZ = (v: V3, yaw: number, pitch: number, roll: number): V3 => rotY(rotX(rotZ(v, roll), pitch), yaw);
@@ -142,7 +153,7 @@ export function solveRig(kit: Kit, pose: Pose): Rig {
     fore,
     thigh,
     shin,
-    limb: { ua: 6.6 * g, fa: 5.6 * g, th: 9 * g, sh: 6.6 * g, hand: 5.4 * g },
+    limb: { ua: 6.6 * g, fa: 5.6 * g, th: 9 * g, sh: 6.6 * g, hand: 5.4 * g * (1 + (HAND_EXAG - 1) * exagOf(kit)) },
     waistY: torso,
   };
 }

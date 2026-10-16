@@ -207,7 +207,7 @@ export function tones(mat: Mat): Tones {
     default:
       t = {
         hi: '',
-        lit: mix(b, WARM_LIGHT, mat.k === 'hair' || mat.k === 'fur' ? 0.2 : 0.18),
+        lit: mix(b, WARM_LIGHT, mat.k === 'hair' || mat.k === 'fur' ? 0.24 : 0.23),
         mid: b,
         shd: mix(mix(b, '#000000', 0.45), SHADOW_VIOLET, 0.32),
         term: saturate(mix(b, '#000000', 0.18), 0.55),
@@ -350,6 +350,11 @@ export interface FillOpts {
   rule?: CanvasFillRule;
 }
 
+/** Sprite revision (docs/style/sprite-research.md): texture/decoration only on parts at least this many master px
+ *  across (≈ 6 px in the 112 px game cell); inner ink lines at 0.72 of their nominal width (outer contour stays heavy). */
+const DETAIL = 10;
+const INNER_LW = 0.72;
+
 const BIG = (() => {
   const p = new Path2D();
   p.rect(-2000, -2000, 5000, 5000);
@@ -459,12 +464,12 @@ export class Painter {
         paint(-lx * rw, -ly * rw, t.rim, 0.55);
       }
       ctx.restore();
-      if (o.grain) this.grain(sh, rule, o.grain, t.line);
-      if (o.folds) this.lines(sh, rule, o.folds, t.shd, 1.4 * s);
+      if (o.grain && size > DETAIL * s) this.grain(sh, rule, o.grain, t.line);
+      if (o.folds && size > DETAIL * 0.7 * s) this.lines(sh, rule, o.folds, t.shd, 1.4 * s);
       if (o.sheen) this.lines(sh, rule, o.sheen, mix(t.lit, '#ffffff', 0.3), 1.6 * s);
       if (mat.k === 'metal' || mat.k === 'glass') this.spec(sh, rule, mat.k === 'glass');
-      if (mat.k === 'metal' && size > 6 * s) this.scratches(sh, rule, t.line, mat.c);
-      if (o.stitch) this.stitch(sh, rule, mix(mat.c, '#fff0d0', 0.45));
+      if (mat.k === 'metal' && size > DETAIL * 1.4 * s) this.scratches(sh, rule, t.line, mat.c);
+      if (o.stitch && size > DETAIL * 1.2 * s) this.stitch(sh, rule, mix(mat.c, '#fff0d0', 0.45));
     } else if (mat.k === 'glow') {
       ctx.save();
       ctx.clip(sh.path, rule);
@@ -476,8 +481,8 @@ export class Painter {
       ctx.fill();
       ctx.restore();
     }
-    const lw = (o.lw ?? 1.5) * s * 0.85;
-    if (lw > 0 && !o.under) {
+    const lw = (o.lw ?? 1.5) * s * INNER_LW;
+    if (lw > 0 && !o.under && size > 3.2 * s) {
       ctx.strokeStyle = t.line;
       ctx.lineWidth = lw;
       ctx.stroke(sh.path);
@@ -654,6 +659,8 @@ export interface Part {
 /** Collects parts in 3D, projects them with the current view, sorts by depth and paints. */
 export class Stage {
   readonly parts: Part[] = [];
+  /** main weapon tip and grip (character space), set by weapon props: the smear arc on the strike frame follows it */
+  tip: { tip: V3; grip: V3 } | null = null;
   constructor(readonly view: View) {}
 
   p(v: V3): P2 {

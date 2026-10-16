@@ -1,6 +1,6 @@
 // Signature props for the remaining champions (weapons, tools, back items). Same primitives as props.ts.
 import { add, at, cross, frameYZ, frameZY, INK, lerp3, m, madd, mix, norm, ring, scl, sub, TAU, type Basis, type Mat, type V3 } from './core';
-import { aimLW, aimW, backFrame, BRASS, bladePts, COPPER, cyl, disc, donut, fillBox, glowOrb, heldBlade, hipFrame, IRON, LEATHER, ribbon, ROPE, STEEL, WOOD, WOOD_DARK } from './props';
+import { aimLW, aimW, markTip, backFrame, BRASS, bladePts, COPPER, cyl, disc, donut, fillBox, glowOrb, heldBlade, hipFrame, IRON, LEATHER, ribbon, ROPE, STEEL, WOOD, WOOD_DARK } from './props';
 import type { PropCtx, Rig } from './types';
 
 /** frame for a one-handed pole: y along `dir`, z toward the character's forward */
@@ -19,6 +19,7 @@ export function rootAxe(c: PropCtx): void {
   const d = axis2(c);
   const a = madd(rig.handL.o, d, -14);
   const b = madd(rig.handR.o, d, 86);
+  markTip(c, rig.handR.o, madd(b, d, 6));
   pole(c, a, b, 3.6, WOOD_DARK, 3.3);
   // roots wrapped around the haft
   st.add(lerp3(a, b, 0.6), 3.35, (p) => {
@@ -55,6 +56,7 @@ export function banner(c: PropCtx, o: { cloth: Mat; emblem: string }): void {
   const dir = aimW(c);
   const base = madd(rig.handR.o, dir, -40);
   const top = madd(rig.handR.o, dir, 128);
+  markTip(c, rig.handR.o, top);
   pole(c, base, top, 2.8, WOOD_DARK);
   const cross1 = norm(add(scl(rig.chest.x, 0.6), scl(rig.chest.z, -0.8)));
   const barA = madd(madd(top, dir, -8), cross1, 3);
@@ -174,6 +176,7 @@ export function claws(c: PropCtx): void {
   for (const off of [false, true]) {
     const hand = off ? rig.handL : rig.handR;
     const dir = off ? aimLW(c) : aimW(c);
+    if (!off) markTip(c, hand.o, madd(hand.o, dir, 16));
     const side = norm(cross(dir, rig.chest.y));
     st.add(madd(hand.o, dir, 8), 3.7, (p) => {
       for (let i = -1; i <= 1; i++) {
@@ -226,6 +229,7 @@ export function maul(c: PropCtx, o: { len: number; head: Mat; ram?: boolean }): 
   const dir = aimW(c);
   const a = madd(rig.handR.o, dir, -8);
   const b = madd(rig.handR.o, dir, o.len);
+  markTip(c, rig.handR.o, madd(b, dir, 10));
   pole(c, a, b, 2.8, WOOD_DARK, 3.35);
   const hf = frameYZ(b, dir, rig.chest.z);
   st.add(b, 3.45, (p) => {
@@ -240,6 +244,7 @@ export function stormSpear(c: PropCtx): void {
   const dir = aimW(c);
   const a = madd(rig.handR.o, dir, -50);
   const b = madd(rig.handR.o, dir, 100);
+  markTip(c, rig.handR.o, madd(b, dir, 30));
   pole(c, a, b, 2.4, m('#3a3440', 'wood'));
   const f = poleFrame(b, dir, rig);
   st.add(b, 3.4, (p) => {
@@ -287,6 +292,7 @@ export function smithHammer(c: PropCtx): void {
   const dir = aimW(c);
   const a = madd(rig.handR.o, dir, -8);
   const b = madd(rig.handR.o, dir, 34);
+  markTip(c, rig.handR.o, madd(b, dir, 8));
   pole(c, a, b, 2.4, WOOD, 3.35);
   const hf = frameYZ(b, dir, rig.chest.z);
   st.add(b, 3.45, (p) => {
@@ -670,6 +676,7 @@ export function lightLance(c: PropCtx): void {
   const dir = aimW(c);
   const a = madd(rig.handR.o, dir, -40);
   const b = madd(rig.handR.o, dir, 104);
+  markTip(c, rig.handR.o, madd(b, dir, 30));
   pole(c, a, b, 2.2, BRASS);
   const f = poleFrame(b, dir, rig);
   st.add(b, 3.4, (p) => {

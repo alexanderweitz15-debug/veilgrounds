@@ -11,7 +11,7 @@ describe('map', () => {
     // red top lane is the physical top lane (y high) and mirrors blue's bot lane
     expect(r.towers.top[0]!.y).toBeGreaterThan(14000);
     expect(b.towers.top[0]!.x).toBeLessThan(2000);
-    expect(map.bushes.length).toBe(18);
+    expect(map.bushes.length).toBe(26);
   });
 
   it('nexus-to-nexus distance along mid is about 17000', () => {

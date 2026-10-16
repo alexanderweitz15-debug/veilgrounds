@@ -152,7 +152,7 @@ export class Game {
     );
     const mmWrap = document.createElement('div');
     mmWrap.className = 'minimap-wrap';
-    mmWrap.appendChild(this.minimap.canvas);
+    mmWrap.append(this.hud.deathBar.root, this.minimap.canvas);
     this.hud.root.appendChild(mmWrap);
 
     this.chat = new ChatBox(

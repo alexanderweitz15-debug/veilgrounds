@@ -12,6 +12,7 @@ import { CUM_XP } from '../sim/systems/economy';
 import type { PlayerSetup } from '../sim/types';
 import { ShopPanel, itemAbbr } from './shop';
 import { Scoreboard } from './scoreboard';
+import { DeathBar } from './deathBar';
 import { BotDebugPanel } from './botDebug';
 import { setPortrait } from '../render/portraits';
 import { Announcer } from './announce';
@@ -116,6 +117,8 @@ export class Hud {
   private champ = '';
   private readonly shop: ShopPanel;
   private readonly score: Scoreboard;
+  /** Dead champions of both teams with respawn seconds; mounted above the minimap by Game (src/game/game.ts). */
+  readonly deathBar = new DeathBar();
   private itemKey = '';
   private readonly marks: HTMLElement;
   private trinketKey = '';
@@ -345,7 +348,8 @@ export class Hud {
     setText(this.towers[0], String(state.towers[0]));
     setText(this.towers[1], String(state.towers[1]));
     this.drawKesselbrut(snap.kesselbrut ?? 0);
-    this.score.update(snap);
+    this.score.update(state);
+    this.deathBar.update(state);
     const me = snap.me;
     toggle(this.noChamp, 'open', !me);
     if (!me) {

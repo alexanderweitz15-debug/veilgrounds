@@ -170,6 +170,14 @@ h2, h3 { margin: 4px 0; color: #f3d98c; }
 
 .minimap-wrap { position: absolute; right: 0; bottom: 0; transform: scale(var(--ui)); transform-origin: bottom right; padding: 6px; background: var(--panel); border: 2px solid var(--brass-dim); border-right: 0; border-bottom: 0; border-radius: 8px 0 0 0; }
 .minimap { width: 280px; height: 280px; display: block; cursor: pointer; }
+/* death timers above the minimap (C2): inside .minimap-wrap so they scale with it; soonest respawn first */
+.death-bar { position: absolute; right: 4px; bottom: calc(100% + 4px); display: flex; flex-wrap: wrap-reverse; justify-content: flex-end; gap: 4px; max-width: 288px; pointer-events: none; }
+.death-bar.empty { display: none; }
+.db-item { position: relative; width: 30px; height: 30px; border-radius: 4px; border: 2px solid var(--blue); background: #15121a; box-shadow: 0 1px 3px #000; }
+.db-item.enemy { border-color: var(--red); }
+.db-item.hidden { display: none; }
+.db-pic { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 2px; background: #1c1824 center / cover no-repeat; color: #d8d0bc; font: 800 12px sans-serif; filter: grayscale(1) brightness(0.55); }
+.db-num { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font: 800 14px 'Barlow Condensed', sans-serif; text-shadow: 0 0 3px #000, 0 0 2px #000, 0 0 1px #000; font-variant-numeric: tabular-nums; }
 
 .respawn, .recall, .nochamp, .pause-overlay, .gameover, .panel { display: none; }
 .respawn.open {

@@ -745,6 +745,31 @@ export function statIcon(stat: string): string | null {
   });
 }
 
+/**
+ * Scoreboard objective badges (C2): Leviathan stack (teal wave crest; `soul` = gold frame and glowing core),
+ * Schleierwaechter buff (veiled violet eye), tower and inhibitor (team-neutral stone shapes; CSS tints them).
+ */
+export function objectiveIcon(kind: 'leviathan' | 'soul' | 'schleier' | 'tower' | 'inhib'): string {
+  return cached(`obj:${kind}`, (g) => {
+    if (kind === 'leviathan' || kind === 'soul') {
+      backdrop(g, kind === 'soul' ? '#5fd0d8' : '#2f8a9c', '#0b2630');
+      MOTIF.wave!(g, kind === 'soul' ? '#fff3c4' : '#c8f2f4');
+      frame(g, kind === 'soul' ? GOLD : '#7fb6bf', kind === 'soul' ? 5 : 3);
+    } else if (kind === 'schleier') {
+      backdrop(g, '#6a48a8', '#170d2a');
+      GLYPHS.eye!(g, '#e2d2ff');
+      frame(g, '#a58ad8', 3);
+    } else if (kind === 'tower') {
+      g.clearRect(0, 0, S, S);
+      shape(g, '#d8cfb8', () => (g.moveTo(22, 58), g.lineTo(26, 22), g.lineTo(20, 22), g.lineTo(20, 10), g.lineTo(44, 10), g.lineTo(44, 22), g.lineTo(38, 22), g.lineTo(42, 58), g.closePath()));
+    } else {
+      g.clearRect(0, 0, S, S);
+      shape(g, '#d8cfb8', () => (g.moveTo(32, 6), g.lineTo(56, 32), g.lineTo(32, 58), g.lineTo(8, 32), g.closePath()));
+      shape(g, '#8fd0ff', () => g.arc(32, 32, 8, 0, 7), undefined, 2);
+    }
+  });
+}
+
 /** Kesselbrut (grub objective): a curled, segmented violet grub with ember mandibles on a transparent ground. */
 export function kesselbrutIcon(): string {
   return cached('obj:kesselbrut', (g) => {

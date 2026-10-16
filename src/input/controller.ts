@@ -11,7 +11,8 @@ import { Kind, type PingKind } from '../sim/types';
 
 const EDGE_PX = 10;
 const EDGE_SPEED = 2600; // units per second at cameraSpeed 1
-const HOLD_MOVE_MS = 140;
+// held right button: re-path every 50 ms (smooth steering; 140 ms felt like 7 Hz steps)
+const HOLD_MOVE_MS = 50;
 
 export type Panel = 'scoreboard' | 'shop' | 'debug';
 export type Armed = 'attackMove' | 'teleport' | 'spawnDummy' | null;
@@ -41,6 +42,8 @@ export class InputController {
   private centerHeld = false;
   private rightHeld = false;
   private lastHoldMove = 0;
+  /** Enemy already ordered to attack while the right button is held (-1 = none). */
+  private heldAttack = -1;
   private dragFrom: { x: number; y: number } | null = null;
   private armed: Armed = null;
   private inside = false;
@@ -153,6 +156,16 @@ export class InputController {
       this.rightHeld = false;
       return;
     }
+    // LoL: sweeping the held right button over an enemy attacks it (once per target, not every repath)
+    if (enemy) {
+      if (this.heldAttack !== enemy.id) {
+        this.heldAttack = enemy.id;
+        this.send({ t: 'attack', target: enemy.id });
+      }
+      this.lastHoldMove = now;
+      return;
+    }
+    this.heldAttack = -1;
     const g = this.cursorGround();
     if (!g) return;
     this.send({ t: 'move', x: g.x, y: g.y });

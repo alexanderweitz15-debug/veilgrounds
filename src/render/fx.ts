@@ -376,6 +376,16 @@ export class Fx {
       case 'death':
         if (!settings.reduceMotion) this.pulse(ev.x, ev.y, '#c8c4bc', 30, 140, 600, now, true, 0.5);
         break;
+      case 'damage': {
+        // auto-attack impact at the target (LoL hit spark), coloured by damage type; champion fights only (waves stay calm)
+        if (!ev.auto || settings.reduceMotion) break;
+        const dst = state.byId.get(ev.dst);
+        const src = state.byId.get(ev.src);
+        if (!dst || (dst.kind !== Kind.Champion && src?.kind !== Kind.Champion)) break;
+        const col = ev.type === 'magic' ? '#b98cff' : ev.type === 'true' ? '#ffffff' : ev.crit ? '#ffd24a' : '#ffb35c';
+        this.pulse(state.x(dst), state.y(dst), col, dst.radius * 0.4, dst.radius * (ev.crit ? 1.6 : 1.15), ev.crit ? 260 : 170, now, false, 0.95);
+        break;
+      }
       case 'level': {
         const e = state.byId.get(ev.eid);
         if (e?.alive) this.levelUp(ev.eid, e.x, e.y, now);

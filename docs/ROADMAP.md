@@ -112,7 +112,7 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
   Abschuss/Einschlag; Minion-Autos sind stumm, Einschläge auch. LoL: Schuss-Sound beim Abschuss, Einschlag-Sound am
   Ziel. Fix: Sim-Event beim Abschuss in attack.ts `fire()` (gibt es heute nicht) bzw. Phase 1→2 im Client, Einschlag
   an `damage` mit `auto: true`.
-- [ ] **Kein Einschlag-Effekt.** Am Ziel nur 140 ms Aufhellung ×1,6 (units.ts `FLASH_MS`) + neu 9 Einheiten Zucken.
+- [x] **Kein Einschlag-Effekt.** (erledigt: Treffer-Funke am Ziel nach Schadensart, Krit größer; nur Champion-Kämpfe) Am Ziel nur 140 ms Aufhellung ×1,6 (units.ts `FLASH_MS`) + neu 9 Einheiten Zucken.
   LoL: Treffer-Funken/Partikel je Champion. Fix: kleiner Impact-Sprite am Projektil-Ende, nach Schadensart gefärbt.
 - [ ] **Projektile alle gleich.** fx.ts `update`: jedes zielsuchende Projektil (Champion-Autos, Caster-Bolzen,
   Belagerer, Turm, gezielte Fähigkeiten) ist derselbe Ikosaeder-Klecks in Teamfarbe auf Höhe 110, gerade Linie, ohne
@@ -133,7 +133,7 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
   hoher AS nötig ist.
 - [ ] Angriffsbewegung nimmt den nächsten Gegner zum Champion (Reichweite + 200, `ACQUIRE_EXTRA`); LoL hat zusätzlich
   „Ziel am Cursor“ und die Taste „Nur Champions anvisieren“.
-- [ ] Rechte Maustaste gedrückt über einem Gegner greift nicht an (controller.ts `rightClick` nur bei frischem
+- [x] Rechte Maustaste gedrückt über einem Gegner greift nicht an (erledigt: Überstreichen greift an) (controller.ts `rightClick` nur bei frischem
   Klick); in LoL schon.
 
 ### Bewegung
@@ -150,7 +150,7 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
 **Nice-to-have**
 - [ ] Blickrichtung springt in einem Tick um 180° (headless: `Face.x` +1 → −1), Sprite rastet auf 8 Richtungen.
   LoL dreht sichtbar (sehr schnell). Fix: Render-seitig Winkel über ~80 ms glätten vor `dirFromAngle`.
-- [ ] Gedrückte rechte Maustaste pfadet nur alle 140 ms neu (controller.ts `HOLD_MOVE_MS`) → Lenken in ~7-Hz-Stufen.
+- [x] Gedrückte rechte Maustaste pfadet nur alle 140 ms neu (erledigt: 50 ms) (controller.ts `HOLD_MOVE_MS`) → Lenken in ~7-Hz-Stufen.
 - Geprüft, OK: Befehl → Bewegung im selben Tick (headless), im Browser 2–41 ms bis zum ersten bewegten Snapshot;
   Stopp exakt (7-Einheiten-Klick endet bei 7,00); Pfade mit String-Pulling, Wandgleiten.
 

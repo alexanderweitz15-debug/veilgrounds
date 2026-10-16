@@ -8,6 +8,14 @@ export const dist2 = (ax: number, ay: number, bx: number, by: number): number =>
 
 export const dist = (ax: number, ay: number, bx: number, by: number): number => Math.sqrt(dist2(ax, ay, bx, by));
 
+/**
+ * Nearest-candidate comparison for target picks: d (squared distance) beats bestD if clearly smaller; equal within
+ * rounding (mirrored positions compute 16000 - x and round differently) the lower spawn serial wins. Eid order is
+ * not used: eids are recycled, so mirrored units do not share it, and blue's lower eids decided every tie.
+ */
+export const nearer = (d: number, serial: number, bestD: number, bestSerial: number): boolean =>
+  d < bestD - bestD * 1e-9 || (d <= bestD + bestD * 1e-9 && serial < bestSerial);
+
 export const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
 
 /** Distance from point P to segment AB, squared. */

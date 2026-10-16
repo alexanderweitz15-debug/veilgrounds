@@ -28,7 +28,10 @@ describe('ward spots', () => {
     const objB = sb.filter((q) => q.kind === 'objective');
     const objR = sr.filter((q) => q.kind === 'objective');
     expect(objB.length).toBeGreaterThanOrEqual(4);
-    for (const q of objB) expect(objR.some((r) => Math.abs(r.x - (MAP.size - q.x)) < 1 && Math.abs(r.y - (MAP.size - q.y)) < 1)).toBe(true);
+    // reflected across the river diagonal: lane and objective identity are kept (red's Leviathan wards at the Leviathan)
+    for (const q of objB) expect(objR.some((r) => Math.abs(r.x - (MAP.size - q.y)) < 1 && Math.abs(r.y - (MAP.size - q.x)) < 1)).toBe(true);
+    const near = (q: { x: number; y: number; obj?: string }): number => Math.hypot(q.x - MAP.objectives[q.obj as 'leviathan'].x, q.y - MAP.objectives[q.obj as 'leviathan'].y);
+    for (const q of [...objB, ...objR]) expect(near(q)).toBeLessThan(2000);
   });
 });
 

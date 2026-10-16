@@ -89,7 +89,7 @@ describe('structures', () => {
     expect(towerBaseDamage(0, sec(40 * 60))).toBe(320);
     const sim = newSim(false);
     const t = outer(sim, 0, Lane.Mid);
-    const c = spawnChamp(sim, 1, 6800, 6800);
+    const c = spawnChamp(sim, 1, 7050, 7050);
     const shots = [0, 1, 2, 3, 4].map(() => towerShotDamage(sim, t, c).amount);
     expect(shots.map((x) => Math.round(x))).toEqual([170, 238, 306, 374, 374]);
     expect(towerShotDamage(sim, t, c).type).toBe('phys');
@@ -211,10 +211,10 @@ describe('plates', () => {
 describe('tower targeting', () => {
   it('prefers minions, switches at once to a champion attacking an allied champion within 1400', () => {
     const sim = newSim(false);
-    const t = outer(sim, 0, Lane.Mid); // blue mid outer at (6400, 6400)
-    const minion = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Mid, 6900, 6900);
-    const enemy = spawnChamp(sim, 1, 6750, 6750);
-    const ally = spawnChamp(sim, 0, 6600, 6600);
+    const t = outer(sim, 0, Lane.Mid); // blue mid outer at (6650, 6650)
+    const minion = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Mid, 7150, 7150);
+    const enemy = spawnChamp(sim, 1, 7000, 7000);
+    const ally = spawnChamp(sim, 0, 6850, 6850);
     stepA(sim); // vision
     towersSystem.update(sim);
     expect(sim.c.Atk.target[t]).toBe(minion);
@@ -229,9 +229,9 @@ describe('tower targeting', () => {
   it('ignores champion fights further than 1400 away and shoots champions only without minions', () => {
     const sim = newSim(false);
     const t = outer(sim, 0, Lane.Mid);
-    const minion = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Mid, 6900, 6900);
-    const enemy = spawnChamp(sim, 1, 6750, 6750);
-    const ally = spawnChamp(sim, 0, 5000, 5000); // ~2000 from the tower
+    const minion = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Mid, 7150, 7150);
+    const enemy = spawnChamp(sim, 1, 7000, 7000);
+    const ally = spawnChamp(sim, 0, 5250, 5250); // ~2000 from the tower
     stepA(sim);
     noteAggression(sim, enemy, ally);
     towersSystem.update(sim);

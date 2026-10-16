@@ -53,6 +53,7 @@
   "hud.gold": "Gold",
   "hud.level": "Stufe",
   "hud.cs": "CS",
+  "hud.recast": "Erneut",
   "hud.csMin": "CS/Min",
   "hud.towers": "Türme",
   "hud.paused": "Pausiert",

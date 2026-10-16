@@ -37,6 +37,10 @@ export interface AbilityHud {
   cdTotal: number;
   cost: number;
   canLevel: boolean;
+  /** Open recast window (hook openRecast): seconds until it opens (0 = open now), seconds left, window length. */
+  recast?: { opensIn: number; left: number; total: number };
+  /** Next auto empowered by this slot (armNextAuto / *_next_auto): seconds left. */
+  armed?: number;
 }
 
 /** Payload of an ability projectile (line skillshot or homing targeted ability). */
@@ -1090,6 +1094,18 @@ export function castSummoner(sim: Sim, eid: number, slot: number, x: number, y: 
 // ------------------------------------------------------------------ HUD
 
 /** Q W E R then D F. */
+function recastHud(sim: Sim, a: ChampAbil, slot: number): { recast?: AbilityHud['recast'] } {
+  const w = a.recast[slot]!;
+  if (w.until < sim.tick) return {};
+  return { recast: { opensIn: Math.max(0, w.from - sim.tick) / 30, left: (w.until - sim.tick) / 30, total: Math.max(1, w.until - Math.max(w.from, 0)) / 30 } };
+}
+
+/** Slot of the armed next-auto empowerment (read-only, no state creation), -1 = none. Snapshot: weapon glow. */
+export function armedSlot(sim: Sim, eid: number): number {
+  const a = (sim.state.abilities as AbilState | undefined)?.champs.get(eid);
+  return a && a.serial === sim.c.Unit.serial[eid] && a.armed && a.armed.until >= sim.tick ? a.armed.slot : -1;
+}
+
 export function abilityHud(sim: Sim, eid: number): AbilityHud[] {
   if (eid < 0 || sim.c.Unit.kind[eid] !== Kind.Champion) return [];
   const a = champAbil(sim, eid);
@@ -1104,6 +1120,8 @@ export function abilityHud(sim: Sim, eid: number): AbilityHud[] {
       cdTotal: (a.cdTotal[slot] || sec(rv(ab.cooldown, Math.max(1, rank)))) / 30,
       cost: rv(ab.cost, Math.max(1, rank)),
       canLevel: canLevelSlot(sim, eid, slot),
+      ...recastHud(sim, a, slot),
+      ...(a.armed && a.armed.slot === slot && a.armed.until >= sim.tick ? { armed: (a.armed.until - sim.tick) / 30 } : {}),
     };
   });
   for (let i = 0; i < 2; i++) {

@@ -32,8 +32,10 @@ export function spawnChampion(sim: Sim, p: PlayerSetup): number {
   const d = championData(id);
   const f = sim.map.sides[p.team === 1 ? 1 : 0].fountain;
   const [ox, oy] = SLOT_OFFSETS[p.slot % 5]!;
-  const sign = p.team === 1 ? -1 : 1; // red fountain is point-mirrored
-  const pos = nearestWalkable(sim.map.nav, f.x + sign * ox, f.y + sign * oy);
+  // red reflects the offsets across the river diagonal ((x, y) -> (-y, -x)), the map's role symmetry: blue's jungler
+  // stands nearer its bot-side buff, so red's does too (a point mirror put red's nearer its top-side buff and the two
+  // junglers started on opposite sides of the map)
+  const pos = p.team === 1 ? nearestWalkable(sim.map.nav, f.x - oy, f.y - ox) : nearestWalkable(sim.map.nav, f.x + ox, f.y + oy);
   const eid = spawnUnit(sim, Kind.Champion, p.team, pos.x, pos.y, d.base.radius || (d.attackType === 'melee' ? 65 : 55));
   addComp(sim, sim.c.Champ, eid);
   const { Unit, Champ, Vision } = sim.c;

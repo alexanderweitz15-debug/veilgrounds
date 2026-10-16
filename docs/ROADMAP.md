@@ -12,16 +12,16 @@ Ist-Zustand mit Screenshots: [docs/IST-ZUSTAND.md](IST-ZUSTAND.md) · Live: http
 | Fähigkeiten-Audit | Jede Fähigkeit/Passive aller 26 Champions sichtbar und lesbar: Recast-Anzeige (Isolde Q/E …), Kreise für Renns Klingen, Isoldes Draht, Fallen/Banner/Glocken, Passiv-Symbol + Stapel im HUD |
 
 ## Offen (Nutzer-Feedback und Messungen)
-- [ ] Seiten-Ungleichgewicht: Blau gewann 20 von 24 Bot-Partien → Balance-Agent
-- [ ] Höherer Rang gewinnt nicht klar (Gold vs Silber 5/8, Diamant vs Gold 3/8; Ziel ≳ 65 % / ≳ 80 %) → Balance-Agent
-- [ ] Lanes zu lang: äußere Türme Mid 4525 / Seite 5798 auseinander (LoL ca. 3800 / 4800) → Balance-Agent
-- [ ] Toplane hat zu wenig Terrain (Isoldes E braucht Wände) → Balance-Agent
-- [ ] Minions jagen zu lange hinterher (LEASH_RANGE 1000 vom Minion aus) → Balance-Agent
-- [ ] Champions bleiben an stehenden Verbündeten hängen statt vorbeizugleiten → Balance-Agent
-- [ ] Recast nicht sichtbar (Isolde Q hat einen, man sieht ihn nicht), Recast-Reichweite als Kreis → Fähigkeiten-Audit
-- [ ] Renn: Kreis an jeder Klinge „E kann hierhin dashen“ → Fähigkeiten-Audit
-- [ ] Isolde E: sichtbarer Draht beim Ranziehen → Fähigkeiten-Audit
-- [ ] Alle Champions mit sichtbarer, funktionierender Passive → Fähigkeiten-Audit
+- [x] Seiten-Ungleichgewicht: Sim jetzt spiegelsymmetrisch (Test), Bot-Seitenfehler behoben (Ward-Spots, Jungle-Start, Spawn); Seitentausch-Messung Blau 12/24 (DECISIONS „Seiten-Fairness“)
+- [ ] Höherer Rang gewinnt nicht klar (Gold vs Silber 5/8, Diamant vs Gold 3/8; Ziel ≳ 65 % / ≳ 80 %) → nach Seiten-Fix weiter offen: Team-Zusammenstellung entscheidet (gleiche Aufstellung gewinnt meist beide Seiten); Profil-Tuning noch nicht gemacht
+- [x] Lanes zu lang: Außen-/Innentürme Richtung Fluss, jetzt 3818 / 4808 (DECISIONS „Seiten-Fairness“)
+- [x] Toplane (und Botlane, gespiegelt) mit Klippe am Kartenrand + 2 Lane-Büschen, Lane 1300–1400 breit
+- [x] Minions jagen Champions höchstens 650 von der Lane weg (CHASE_LEASH), dann zurück
+- [x] Champions gleiten an stehenden Einheiten vorbei (tangentiale Kollision)
+- [x] Recast nicht sichtbar (Isolde Q hat einen, man sieht ihn nicht), Recast-Reichweite als Kreis → Fähigkeiten-Audit
+- [x] Renn: Kreis an jeder Klinge „E kann hierhin dashen“ → Fähigkeiten-Audit
+- [x] Isolde E: sichtbarer Draht beim Ranziehen → Fähigkeiten-Audit
+- [~] Alle Champions mit sichtbarer, funktionierender Passive → Fähigkeiten-Audit
 - [~] Kills ~34 statt 40–60, erster Turm ~18 min statt 12–16
 - [~] CS der Bots ~40 % von Tabelle A in Partien (allein auf der Lane 5,6–7,8 CS/min; Verluste durch Abwesenheit)
 - [ ] Trainingsplan + Verlauf über mehrere Matches (Phase 5)
@@ -116,4 +116,33 @@ Noch offen:
 - [ ] Optional: Fernkampf-Radius 55 → 65 wie in LoL; Angriffsbewegung mit „Ziel am Cursor“
 
 ## Fähigkeiten-Anzeige (Audit)
-Wird vom Fähigkeiten-Audit-Agent gefüllt (Champion, Fähigkeit, was fehlte, behoben?).
+Neue Grundlage (gilt für alle Champions): `ChampionHooks.visuals` (nur Snapshot, read-only) liefert Objekte auf der Karte
+(Form, Linie/Folge-Einheit, Timer, Anzahl), Hinweis-Kreise für den eigenen Champion (`PlayerHud.hints`), Marken mit Stapeln
+auf Einheiten und den Passiv-Zustand (`PlayerHud.passive`). Generisch aus dem Sim: offene Recast-Fenster je Slot
+(`AbilityHud.recast`: „öffnet in“ / Restzeit), verstärkter nächster Angriff (`AbilityHud.armed`, `SnapEntity.emp`),
+Fähigkeits-Selbstbuffs/Schilde als Aura (`SnapEntity.auras`), `mark`-Buffs als Marken. Darstellung: HUD-Slot mit
+türkisem Leuchtrand + ablaufendem Ring + „Erneut x,x“ (bzw. gedimmt „öffnet in“), goldener Rand bei verstärktem Angriff,
+Passiv-Symbol unten links am Porträt (Tooltip `passive:<champ>`, Abklingzeit-Sweep, Stapelzahl, Bereit-Leuchten);
+Welt: `src/render/groundObjects.ts` (Formen in Teamfarbe + Fähigkeitsfarbe, Timer-Bogen, Hinweis-Kreise, Aura-Ring,
+goldener Ring bei verstärktem Angriff), Overlay: Marken-Pips rechts am Lebensbalken, goldener Funke bei `emp`.
+Test: `tests/abilityVisuals.test.ts` (Passiven aller 26 vorhanden + Hooks exportiert, Isolde-Q/E-Recast, Renn-Klingen-Kreise).
+
+| Champion | Fähigkeit | Was fehlte | Behoben? |
+|---|---|---|---|
+| alle | Recast (openRecast) | HUD zeigte keinen Recast | ja – generisch (Slot-Leuchten, Ring, Restzeit) |
+| alle | Nächster Angriff verstärkt (`*_next_auto`: Brom W, Dagny Q, Gorvam W, Harrow W, Lio W, Tobin W, Vessa W, Wren Q, Isolde Q) | keine Anzeige | ja – generisch (goldener Slot-Rand, Ring + Funke am Champion, auch für Gegner sichtbar) |
+| alle | Selbstbuffs/Schilde aus Fähigkeiten | keine Aura | ja – generisch (Aura-Ring in Fähigkeitsfarbe) |
+| alle | Passive | kein eigenes HUD-Element | ja – Passiv-Symbol am Porträt mit Tooltip; Stapel/Abklingzeit nur wo `visuals` sie liefert (s. u.) |
+| Isolde | Q Schnitt/Bruch | Recast (1,5–3,5 s) unsichtbar | ja – „öffnet in“, dann Leuchtrand + ablaufender Ring „Erneut x,x“ (Browser + Test geprüft) |
+| Isolde | E Draht | Draht beim Ranziehen unsichtbar, Recast-Reichweite fehlte | ja – Drahtlinie Wand↔Isolde während des Zugs, Ankerpunkt mit Timer, 400er-Kreis um sie im Recast-Fenster (Code + Test; Test findet nur eine Wand, wenn eine nahe am Testpunkt liegt) |
+| Isolde | R Glaskuppel | Kuppel (blockiertes Terrain) nicht gezeichnet | ja – Kuppelring r 450 mit Timer (nur Code) |
+| Isolde | Passiv Temperglas | kein Zustand sichtbar | ja – Abklingzeit-Sweep, Bereit-Leuchten (Browser geprüft); Schild als Aura (nur Code) |
+| Renn | E auf Klinge | kein Kreis an den Klingen | ja – Kreis (Klick-Toleranz 200) an jeder eigenen Klinge mit Linie, gedimmt wenn E auf Abklingzeit/außer Reichweite (725) (Test geprüft) |
+| Renn | Klingen (Q/W/R) | nur graue Box | ja – schwebende Klinge + Teamring + Timer-Bogen (4 s) |
+| Renn | Passiv | – | ja – Klingenzahl am Passiv-Symbol |
+| Seraphyne | Passiv Elektrisiert | keine Passive-Hook-ID (nur Daten-Buffs) | teils – `seraphyne_electrified`, Passiv-Symbol leuchtet mit Restzeit (nur Code). Offen: die 4 Ability-MS-Buffs haben verschiedene IDs und stapeln (Q+W = +30 % statt 15 %), Beschreibung erwähnt noch „als Buff-Effekt hinterlegt“ |
+| Grimald | Fallen | Ring ohne Form | ja – X-Form + Teamring (für Gegner weiter unsichtbar) |
+| Nyx | Samen | – | ja – Scheibe + Teamring |
+| Gorvam | Q Recast | nur Abbruch in der Ausholzeit (kein Fenster) | nichts nötig – keine Anzeige korrekt |
+| Aurel, Brom, Corvin, Dagny, Ferris, Gorvam, Grimald, Hagen, Harrow, Ilvane, Kaelen, Kiran, Lio, Lysa, Mira, Nyx, Oda, Oleth, Ottilie, Thessaly, Tobin, Vessa, Wren | Einzel-Audit Q/W/E/R/Passiv | nicht einzeln geprüft (Zeit) | offen – fehlende `visuals` für Hook-Zustände: Oleth-Mauern/Banner, Dagny-Wand, Hagen-Glocken, Corvin-Fass-Ring, Marken-Stapel (z. B. Brom-Blutung, Gorvam 4. Angriff), Passiv-Stapel/Abklingzeiten |
+

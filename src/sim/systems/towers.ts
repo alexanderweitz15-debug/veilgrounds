@@ -22,7 +22,7 @@ import { addComp, isRef, spawnUnit } from '../sim';
 import type { System } from './index';
 import { Kind, enemyOf, isMinion, sec, type DamageType, type LaneId } from '../types';
 import { LANES } from '../map';
-import { dist2 } from '../vec';
+import { dist2, nearer } from '../vec';
 import { sees } from '../vision';
 import { MINION_STATS, recentVictim, targetLists, type TargetLists } from './minions';
 import { champions, reward } from './economy';
@@ -229,7 +229,7 @@ function defendTarget(sim: Sim, tower: number, champs: number[]): number {
     if (v < 0 || Unit.kind[v] !== Kind.Champion || Unit.team[v] !== team) continue;
     if (dist2(Pos.x[v]!, Pos.y[v]!, Pos.x[tower]!, Pos.y[tower]!) > TOWER_DEFEND_RANGE * TOWER_DEFEND_RANGE) continue;
     const d = dist2(Pos.x[c]!, Pos.y[c]!, Pos.x[tower]!, Pos.y[tower]!);
-    if (d < bestD) {
+    if (best < 0 || nearer(d, Unit.serial[c]!, bestD, Unit.serial[best]!)) {
       best = c;
       bestD = d;
     }
@@ -237,14 +237,16 @@ function defendTarget(sim: Sim, tower: number, champs: number[]): number {
   return best;
 }
 
+/** Nearest unit in reach; exact ties go to the older unit (spawn serial, not eid: eids are recycled, serials keep
+ *  mirrored waves in mirrored order). */
 function nearestShootable(sim: Sim, tower: number, list: number[]): number {
-  const { Pos } = sim.c;
+  const { Pos, Unit } = sim.c;
   let best = -1;
   let bestD = Infinity;
   for (const t of list) {
     if (!inReach(sim, tower, t)) continue;
     const d = dist2(Pos.x[t]!, Pos.y[t]!, Pos.x[tower]!, Pos.y[tower]!);
-    if (d < bestD) {
+    if (best < 0 || nearer(d, Unit.serial[t]!, bestD, Unit.serial[best]!)) {
       best = t;
       bestD = d;
     }

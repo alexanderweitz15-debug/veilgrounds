@@ -122,6 +122,60 @@ export class Overlay {
     }
   }
 
+  /**
+   * Marks / stacks on the unit (right of the bar: pips n/max, or a diamond with the stack count) and the empowered
+   * next auto (golden spark left of the bar).
+   */
+  private drawMarks(e: SnapEntity, x: number, y: number, bw: number, bh: number): void {
+    const ctx = this.ctx;
+    let mx = x + bw + 6;
+    const cy = y + bh / 2;
+    for (const m of e.marks ?? []) {
+      if (m.max && m.max <= 6) {
+        for (let i = 0; i < m.max; i++) {
+          ctx.fillStyle = 'rgba(12,10,8,0.9)';
+          ctx.fillRect(mx - 1, cy - 5, 8, 10);
+          ctx.fillStyle = i < (m.n ?? 0) ? (m.n === m.max ? '#ff6a4a' : '#ffd36a') : '#3a3229';
+          ctx.fillRect(mx, cy - 4, 6, 8);
+          mx += 8;
+        }
+        mx += 4;
+        continue;
+      }
+      ctx.save();
+      ctx.translate(mx + 7, cy);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = 'rgba(12,10,8,0.9)';
+      ctx.fillRect(-7, -7, 14, 14);
+      ctx.fillStyle = '#c99bff';
+      ctx.fillRect(-5, -5, 10, 10);
+      ctx.restore();
+      if (m.n !== undefined && m.n > 1) {
+        ctx.font = 'bold 10px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#1b1612';
+        ctx.fillText(String(m.n), mx + 7, cy + 1);
+      }
+      mx += 18;
+    }
+    if (e.emp) {
+      ctx.fillStyle = 'rgba(255, 211, 106, 0.95)';
+      ctx.beginPath();
+      const sx = x - 32;
+      ctx.moveTo(sx, cy - 7);
+      ctx.lineTo(sx + 3, cy - 2);
+      ctx.lineTo(sx + 8, cy);
+      ctx.lineTo(sx + 3, cy + 2);
+      ctx.lineTo(sx, cy + 7);
+      ctx.lineTo(sx - 3, cy + 2);
+      ctx.lineTo(sx - 8, cy);
+      ctx.lineTo(sx - 3, cy - 2);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
   private label(text: string, x: number, y: number, color: string): void {
     const ctx = this.ctx;
     ctx.font = '600 12px system-ui, sans-serif';
@@ -224,6 +278,7 @@ export class Overlay {
         }
         if (monster && e.id === hoverId) this.label(variantName(e.variant, e.kind), a.sx, y - 5, '#f3e6c4');
         if (e.cc) this.drawCc(e, x, y, bw, bh, champ, e.id === myEid, snap.tick);
+        if (e.marks?.length || e.emp) this.drawMarks(e, x, y, bw, bh);
         if (dummy) {
           ctx.fillStyle = '#fff';
           ctx.font = 'bold 11px system-ui, sans-serif';

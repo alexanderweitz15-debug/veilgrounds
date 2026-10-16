@@ -16,7 +16,7 @@ import { BotDebugPanel } from './botDebug';
 import { setPortrait } from '../render/portraits';
 import { Announcer } from './announce';
 import { DeathRecap } from './deathRecap';
-import { abilityIcon, itemIcon, kesselbrutIcon, setIcon, summonerIcon } from './icons';
+import { abilityIcon, itemIcon, kesselbrutIcon, passiveIcon, setIcon, summonerIcon } from './icons';
 import { KESSELBRUT_MAX_STACKS, KESSELBRUT_STRUCT_PCT } from '../sim/systems/jungle';
 import { setTip } from './tooltip';
 import { play } from '../audio/sfx';
@@ -50,6 +50,9 @@ interface SlotView {
   pips: HTMLElement;
   plus: HTMLButtonElement;
   key: HTMLElement;
+  /** Recast window ring (draining) + label. */
+  rc: HTMLElement;
+  rlbl: HTMLElement;
 }
 
 export interface HudHooks {
@@ -81,6 +84,10 @@ export class Hud {
   private readonly level: HTMLElement;
   private readonly xpRing: HTMLElement;
   private readonly portrait: HTMLElement;
+  /** Passive badge next to the portrait (icon, cooldown sweep, stack count, ready glow). */
+  private readonly passive: HTMLElement;
+  private readonly passiveCd: HTMLElement;
+  private readonly passiveN: HTMLElement;
   private readonly gold: HTMLElement;
   private readonly clock: HTMLElement;
   private readonly kills: [HTMLElement, HTMLElement];
@@ -144,6 +151,9 @@ export class Hud {
     this.xpRing = el('div', 'xp-ring', portraitWrap);
     this.portrait = el('div', 'portrait', portraitWrap, '?');
     this.level = el('div', 'level', portraitWrap, '1');
+    this.passive = el('div', 'passive-badge', portraitWrap);
+    this.passiveCd = el('div', 'pcd', this.passive);
+    this.passiveN = el('div', 'pn', this.passive);
     const center = el('div', 'hud-center', bottom);
     const abil = el('div', 'abilities', center);
     const keys: Action[] = ['q', 'w', 'e', 'r', 'd', 'f'];
@@ -156,12 +166,14 @@ export class Hud {
       const key = el('div', 'key', root, keyLabel(binds[k]));
       this.keyLabels.push({ el: key, action: k });
       const pips = el('div', 'pips', root);
+      const rc = el('div', 'rc', root);
+      const rlbl = el('div', 'rlbl', root);
       const plus = el('button', 'plus', root, '+');
       plus.addEventListener('mousedown', (e) => {
         e.stopPropagation();
         if (i < 4) hooks.levelUp(i as 0 | 1 | 2 | 3);
       });
-      this.slots.push({ root, icon, cd, cdNum, pips, plus, key });
+      this.slots.push({ root, icon, cd, cdNum, pips, plus, key, rc, rlbl });
     });
     const bars = el('div', 'bars', center);
     const hp = el('div', 'bar hp', bars);
@@ -345,6 +357,8 @@ export class Hud {
       this.champ = me.champ;
       setText(this.portrait, champName(me.champ).charAt(0));
       setTip(this.portrait, `passive:${me.champ}`);
+      setTip(this.passive, me.champ ? `passive:${me.champ}` : null);
+      setIcon(this.passive, me.champ ? passiveIcon(me.champ) : null);
       if (me.champ) setPortrait(this.portrait, me.champ);
     }
     setText(this.cs, `${t('hud.cs')} ${me.cs} (${(me.cs / Math.max(1, time / 60)).toFixed(1)}/min)`);
@@ -369,6 +383,10 @@ export class Hud {
       setText(this.mpText, meE.maxMana ? `${Math.floor(meE.mana)} / ${Math.round(meE.maxMana)}` : '');
     }
     this.drawAbilities(me.abilities);
+    const pv = me.passive;
+    toggle(this.passive, 'ready', !!pv?.ready);
+    setStyle(this.passiveCd, '--p', pv?.cdTotal && pv.cdLeft ? String(Math.min(1, pv.cdLeft / pv.cdTotal)) : '0');
+    setText(this.passiveN, pv?.stacks !== undefined && (pv.stacks > 0 || pv.max) ? String(pv.stacks) : '');
     // respawn + recall
     toggle(this.respawn, 'open', me.dead);
     toggle(this.root, 'dead', me.dead);
@@ -468,6 +486,16 @@ ${t(`trinket.${tr.id}.desc`)}${tr.cdLeft > 0 ? ` (${Math.ceil(tr.cdLeft)} s)` : 
       setStyle(s.cd, '--p', ready ? '0' : String(a.cdTotal > 0 ? a.cdLeft / a.cdTotal : 1));
       setText(s.cdNum, ready ? '' : a.cdLeft >= 1 ? String(Math.ceil(a.cdLeft)) : a.cdLeft.toFixed(1));
       toggle(s.plus, 'show', !isSumm && a.canLevel);
+      // recast window: glowing border + draining ring; "soon" while it has not opened yet (Isolde Q 1.5 s)
+      const rc = a.recast;
+      const open = !!rc && rc.opensIn <= 0;
+      toggle(s.root, 'recast', open);
+      toggle(s.root, 'recast-soon', !!rc && !open);
+      if (rc) {
+        setStyle(s.rc, '--p', String(open ? Math.min(1, rc.left / Math.max(0.01, rc.total)) : 1));
+        setText(s.rlbl, open ? `${t('hud.recast')} ${rc.left.toFixed(1)}` : `${t('hud.recast')} ${rc.opensIn.toFixed(1)}`);
+      }
+      toggle(s.root, 'armed', a.armed !== undefined);
       if (!isSumm && s.pips.childElementCount !== a.maxRank) {
         s.pips.textContent = '';
         for (let k = 0; k < a.maxRank; k++) el('i', '', s.pips);

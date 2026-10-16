@@ -1,4 +1,4 @@
-// npm run bot-sim -- --rank=gold --games=5 --minutes=20 [--seed=1] [--archetype=farmer] [--vs=silver [--mirror]] [--out=file.csv]
+// npm run bot-sim -- --rank=gold --games=5 --minutes=20 [--seed=1] [--archetype=farmer] [--vs=silver [--mirror]] [--sides] [--out=file.csv]
 // Runs headless bot-vs-bot games and prints one CSV line per champion per game (calibration against Table A in the
 // rank profiles) plus style metrics (spec-bots §10 acceptance): trade duration, orbwalk ratio, roams/min,
 // wards/min, recalls/min. --archetype gives all ten bots that lobby preset (data/bots/archetypes.json); a summary
@@ -32,6 +32,11 @@ if (vs && !RANKS.includes(vs)) throw new Error(`unknown rank ${vs}`);
 // --mirror (with --vs): every seed is played twice, the second time with the ranks swapped between the teams, so
 // champion picks and map side cancel out; the summary reports the games won by --rank's team.
 const mirror = args.get('mirror') === 'true';
+// --sides: every seed is played twice, the second time with the two line-ups (champions, ranks, personalities)
+// swapped between blue and red, so the summary separates a map-side bias (blue wins) from a line-up bias.
+const sides = args.get('sides') === 'true';
+if (sides && mirror) throw new Error('--sides and --mirror are exclusive');
+let lineupAWins = 0;
 let blueWins = 0;
 let rankWins = 0;
 let rankNexusWins = 0;
@@ -45,11 +50,19 @@ const lengths: number[] = [];
 const pacing: { ft: number | undefined; k15: number; k25: number; towers: number; winner: number | undefined; min: number }[] = [];
 for (let g = 0; g < games; g++) {
   const swap = !!vs && mirror && g % 2 === 1;
-  const seed = seed0 + (mirror ? Math.floor(g / 2) : g);
+  const sideSwap = sides && g % 2 === 1;
+  const seed = seed0 + (mirror || sides ? Math.floor(g / 2) : g);
   const t0 = Date.now();
   const config = botGameConfig(seed, rank);
   if (archetype) for (const p of config.players) p.bot!.archetype = archetype;
   if (vs) for (const p of config.players) if (p.team === (swap ? 0 : 1)) p.bot!.rank = vs;
+  if (sideSwap) {
+    for (const p of config.players) {
+      p.slot = (p.slot + 5) % 10;
+      p.team = p.team === 0 ? 1 : 0;
+    }
+    config.players.sort((a, b) => a.slot - b.slot);
+  }
   const rankTeam = swap ? 1 : 0;
   const res = runBotGame(config, Math.round(minutes * 60 * 30));
   lengths.push(res.minutes);
@@ -59,6 +72,8 @@ for (let g = 0; g < games; g++) {
   if (res.winner === 0 || (res.winner === undefined && teamGold(0) > teamGold(1))) blueWins++;
   if (res.winner === rankTeam || (res.winner === undefined && teamGold(rankTeam) > teamGold(1 - rankTeam))) rankWins++;
   if (res.winner === rankTeam) rankNexusWins++;
+  const aTeam = sideSwap ? 1 : 0; // line-up A = blue's line-up of the unswapped game
+  if (res.winner === aTeam || (res.winner === undefined && teamGold(aTeam) > teamGold(1 - aTeam))) lineupAWins++;
   for (const s of res.stats) {
     all.push({ s, min: res.minutes });
     lines.push(
@@ -97,6 +112,7 @@ process.stderr.write(
     `, decided games length ${r1(mean2(pacing.filter((p) => p.winner !== undefined).map((p) => p.min)))} min` +
     (vs && !mirror ? `, blue (${rank}) vs red (${vs}): blue wins ${blueWins}/${games} (nexus, or more team gold at the end)` : '') +
     (vs && mirror ? `, ${rank} vs ${vs} mirrored: ${rank} wins ${rankWins}/${games} (${rankNexusWins} by nexus; else more team gold at the end)` : '') +
+    (sides ? `, sides swapped: blue wins ${blueWins}/${games}, line-up A wins ${lineupAWins}/${games}` : `, blue wins ${blueWins}/${games}`) +
     '\n',
 );
 const csv = lines.join('\n') + '\n';

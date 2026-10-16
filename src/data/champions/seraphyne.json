@@ -37,7 +37,7 @@
       "de": "Jede Fähigkeit gibt ihr 3 s +15 % Bewegung (als Buff-Effekt in jeder Fähigkeit hinterlegt).",
       "en": "Every ability grants her +15% move speed for 3 s (stored as a buff effect on each ability)."
     },
-    "hooks": []
+    "hooks": ["seraphyne_electrified"]
   },
   "abilities": [
     {

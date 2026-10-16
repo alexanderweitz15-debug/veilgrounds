@@ -144,6 +144,22 @@ describe('unit collision (champions vs minions / champions)', () => {
     expect(Math.hypot(sim.c.Pos.x[m1]! - sim.c.Pos.x[m2]!, sim.c.Pos.y[m1]! - sim.c.Pos.y[m2]!)).toBeGreaterThan(80);
   });
 
+  it('a champion walking straight at a standing ally slides around it and arrives', () => {
+    const sim = makeSim({ players: [
+      { slot: 0, team: 0, champion: 'mira', role: 'adc', summoners: ['sprung', 'heilen'], isHuman: true, runes: NO_RUNES },
+      { slot: 1, team: 0, champion: 'brom', role: 'top', summoners: ['sprung', 'heilen'], isHuman: true, runes: NO_RUNES },
+    ] });
+    const [a, b] = [sim.slots[0]!, sim.slots[1]!];
+    place(sim, a, CX, CY);
+    place(sim, b, CX + 300, CY); // exactly on a's line of travel
+    step(sim);
+    cmd(sim, { t: 'move', x: CX + 900, y: CY });
+    steps(sim, 90); // 900 at 340 ms is 80 ticks straight; the detour may cost 10
+    expect(Math.hypot(sim.c.Pos.x[a]! - (CX + 900), sim.c.Pos.y[a]! - CY)).toBeLessThan(5);
+    // the standing ally is nudged, not shoved along the walker's path
+    expect(Math.hypot(sim.c.Pos.x[b]! - (CX + 300), sim.c.Pos.y[b]! - CY)).toBeLessThan(60);
+  });
+
   it('dashes pass through units (no push during the dash), Ghost walks through minions', () => {
     const { sim, a } = solo('mira', ['geist', 'heilen']);
     learn(sim, a, 2); // E: 300 dash

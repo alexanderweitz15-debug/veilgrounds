@@ -192,13 +192,19 @@ export function jungle(v: View, ctx: BotStatic, mem: BotMemory): BotAction | Pt 
       if (!mem.monstersSeen && v.time > campTimer(c.id).first + 5) mem.noMonsters = true;
     }
   }
+  // First clear: both buffs spawn together; start at the one on the Schleierwächter (top) side, for both teams, so
+  // both junglers end their first clear bot-side (contested scuttle / Leviathan, LoL standard). It used to be the first
+  // buff in the list, the same buff id for both teams, which lies on opposite sides of the map: blue started top-side
+  // and ended at the Leviathan / bot lane every game, red ended at the empty Schleierwächter pit (side bias).
+  const top = ctx.map.objectives.schleierwaechter;
+  const startBuff = mem.campCleared.size === 0 ? camps.filter((c) => c.buff).sort((a, b) => dst(a, top) - dst(b, top))[0] : undefined;
   let best: { c: Pt; cost: number; up: number } | null = null;
   for (const c of camps) {
     const up = upAt(c);
     const travel = (dst(v.self, c) / Math.max(200, v.me.stats.ms)) * 30;
     // early game the jungler waits for its next camp (ganks run before this leaf); later it may farm a lane meanwhile
     if (up > v.tick + travel + CAMP_WAIT_S * 30 && v.time >= LANE_FARM_FROM_S) continue;
-    const cost = Math.max(travel, up - v.tick) - (c.buff ? 60 : 0);
+    const cost = Math.max(travel, up - v.tick) - (c.buff ? 60 : 0) - (c === startBuff ? 1 : 0);
     if (!best || cost < best.cost) best = { c, cost, up };
   }
   if (!best) return 'roam';

@@ -4,7 +4,9 @@ import { query } from 'bitecs';
 import type { Sim } from './sim';
 import { pointVisible, sees } from './vision';
 import { Kind, VARIANTS, isStructure, type SimEvent, type Variant } from './types';
-import { abilityHud, type AbilityHud } from './systems/abilities';
+import { abilityHud, armedSlot, type AbilityHud } from './systems/abilities';
+import { CHAMPION_DATA, championHooks, champIdOf } from './champions';
+import type { ChampionVisuals, HintMarker, VisualShape } from './champions/hooks';
 import { inFountain, inventory, itemValue } from './items/inventory';
 import { itemCooldownHud } from './items/itemHooks';
 import { champions, kda } from './systems/economy';
@@ -69,6 +71,20 @@ export interface SnapEntity {
   sight?: number;
   /** Monster / plant type (types.ts VARIANTS): sprite and name. */
   variant?: Variant;
+  /** Marks / stack counters on this unit (hook marks + 'mark' buffs): pips above the health bar. */
+  marks?: SnapMark[];
+  /** Next auto is empowered (armNextAuto or a hook state): weapon glow. */
+  emp?: boolean;
+  /** Ability self-buffs / shields / unstoppable from champion abilities (buff ids like 'vessa_e'): aura ring. */
+  auras?: string[];
+}
+
+export interface SnapMark {
+  id: string;
+  n?: number;
+  max?: number;
+  /** Seconds left. */
+  left?: number;
 }
 
 export interface SnapProjectile {
@@ -120,20 +136,38 @@ export interface PlayerHud {
   teleportLeft?: number;
   recallLeft: number;
   abilities: AbilityHud[];
+  /** World markers of the own champion's abilities (Renn E onto blades, Isolde E recast dash range). */
+  hints?: HintMarker[];
+  /** Passive badge state (stacks / cooldown seconds / ready). */
+  passive?: { stacks?: number; max?: number; cdLeft?: number; cdTotal?: number; ready?: boolean };
   stats: { ad: number; ap: number; armor: number; mr: number; as: number; ms: number; range: number; crit: number };
 }
 
 /** Ground objects from hooks (Renn blades, Nyx seeds, Grimald traps). Hidden ones only for the owner's team. */
 export interface SnapObject {
+  /** Ground object id (summons.ts); -1 for hook visual objects (then `key` identifies them). */
   id: number;
+  key?: string;
   tag: string;
   team: number;
   x: number;
   y: number;
   r: number;
+  /** Hook visual objects: shape, line end (or a followed unit), timer (seconds), count, hue. */
+  shape?: VisualShape;
+  x2?: number;
+  y2?: number;
+  follow?: number;
+  left?: number;
+  total?: number;
+  n?: number;
+  hue?: number;
 }
 
 /** Tags enemies never see (invisible traps/seeds); everything else follows normal vision. */
+/** Lifetime (seconds) of ground object tags with a fixed duration: timer arc in the render. */
+const OBJECT_TOTAL: Record<string, number> = { renn_blade: 4 };
+
 const HIDDEN_OBJECT_TAGS = new Set(['grimald_trap', 'nyx_seed']);
 
 export interface Snapshot {
@@ -266,6 +300,7 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
       ...(Unit.variant[e] ? { variant: VARIANTS[Unit.variant[e]!] } : {}),
     });
   }
+  addVisuals(sim, team, me0(sim, slot), entities);
   const projectiles: SnapProjectile[] = [];
   for (const e of query(sim.world, [Proj])) {
     if (Proj.team[e] !== team && !pointVisible(sim, team, Pos.x[e]!, Pos.y[e]!)) continue;
@@ -305,11 +340,90 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
   const objects: SnapObject[] = [];
   for (const o of groundObjects(sim)) {
     if (o.team !== team && (HIDDEN_OBJECT_TAGS.has(o.tag) || !pointVisible(sim, team, o.x, o.y))) continue;
-    objects.push({ id: o.id, tag: o.tag, team: o.team, x: o.x, y: o.y, r: o.r });
+    objects.push({ id: o.id, tag: o.tag, team: o.team, x: o.x, y: o.y, r: o.r, ...(o.until < 1 << 29 ? { left: (o.until - sim.tick) / 30, ...(OBJECT_TOTAL[o.tag] ? { total: OBJECT_TOTAL[o.tag] } : {}) } : {}) });
   }
+  const vis = visualsCache;
+  for (const [e, v] of vis) {
+    const own = Unit.team[e] === team;
+    for (const o of v.objects ?? []) {
+      if (!own && (o.hidden || !pointVisible(sim, team, o.x, o.y))) continue;
+      // no eid leaks: an enemy line following a unit in the fog keeps only its anchor
+      const follow = o.follow !== undefined && (own || entities.some((s) => s.id === o.follow)) ? o.follow : undefined;
+      objects.push({
+        id: -1, key: `${o.tag}:${o.key}`, tag: o.tag, team: Unit.team[e]!, x: o.x, y: o.y, r: o.r, shape: o.shape,
+        ...(o.x2 !== undefined ? { x2: o.x2, y2: o.y2 } : {}), ...(follow !== undefined ? { follow } : {}),
+        ...(o.left !== undefined ? { left: o.left / 30, total: (o.total ?? o.left) / 30 } : {}), ...(o.n !== undefined ? { n: o.n } : {}), ...(o.hue !== undefined ? { hue: o.hue } : {}),
+      });
+    }
+    if (hud && e === me) {
+      if (v.hints?.length) hud.hints = v.hints;
+      if (v.passive) {
+        const p = v.passive;
+        hud.passive = { ...(p.stacks !== undefined ? { stacks: p.stacks, max: p.max } : {}), ...(p.cdTotal ? { cdLeft: Math.max(0, p.cdLeft ?? 0) / 30, cdTotal: p.cdTotal / 30 } : {}), ...(p.ready !== undefined ? { ready: p.ready } : {}) };
+      }
+    }
+  }
+  vis.clear();
   const trainer = trainerHud(sim);
   const kessel = kesselbrutStacks(sim, team);
   return { tick: sim.tick, time: sim.tick / 30, team, entities, projectiles, objects, me: hud, events, audio, players: scoreRows(sim, team), ...(trainer ? { trainer } : {}), ...(kessel ? { kesselbrut: kessel } : {}) };
+}
+
+/** Visuals of the snapshot being built (champion eid -> visuals); module scratch, cleared after each build. */
+const visualsCache = new Map<number, ChampionVisuals>();
+const me0 = (sim: Sim, slot: number): number => sim.slots[slot] ?? -1;
+let champPrefixes: Set<string> | null = null;
+const SLOT_KEY = ['q', 'w', 'e', 'r', 'p'];
+
+/** Ability buffs worth an aura: positive stat buffs, shields, unstoppable, from a champion ability/passive id. */
+function auraIds(sim: Sim, e: number): string[] {
+  champPrefixes ??= new Set(Object.keys(CHAMPION_DATA));
+  let out: string[] | null = null;
+  for (const b of buffs(sim, e)) {
+    if (b.until <= sim.tick) continue;
+    const ok = b.kind === 'shield' ? b.amount > 0 : b.kind === 'unstoppable' || (b.kind === 'stat' && b.stat !== 'invisible' && b.stat !== 'untargetable' && (b.pct > 0 || b.flat > 0));
+    if (!ok || !champPrefixes.has(b.id.split('_')[0]!)) continue;
+    if (!(out ??= []).includes(b.id)) out.push(b.id);
+  }
+  return out ?? [];
+}
+
+/**
+ * Hook visuals (ChampionHooks.visuals), marks, empowered autos and ability auras onto the visible entities. Read-only:
+ * hooks must not create state. Marks/auras only reach units already in this team's view (fog-safe).
+ */
+function addVisuals(sim: Sim, team: number, me: number, entities: SnapEntity[]): void {
+  const { Unit } = sim.c;
+  const byId = new Map<number, SnapEntity>();
+  for (const s of entities) byId.set(s.id, s);
+  visualsCache.clear();
+  for (const e of champions(sim)) {
+    const v = championHooks(champIdOf(sim, e)).visuals?.(sim, e);
+    if (!v) continue;
+    visualsCache.set(e, v);
+    for (const m of v.marks ?? []) {
+      const s = byId.get(m.target);
+      if (!s || !s.alive) continue;
+      (s.marks ??= []).push({ id: m.id, ...(m.n !== undefined ? { n: m.n, max: m.max } : {}), ...(m.left !== undefined ? { left: m.left / 30 } : {}) });
+    }
+    const s = byId.get(e);
+    if (s?.alive && v.empowered !== undefined) s.emp = true;
+    if (s?.alive && v.aura !== undefined) (s.auras ??= []).push(`${champIdOf(sim, e)}_${SLOT_KEY[v.aura] ?? 'p'}`);
+    if (e !== me || Unit.team[e] !== team) {
+      delete v.hints;
+      delete v.passive;
+    }
+  }
+  champPrefixes ??= new Set(Object.keys(CHAMPION_DATA));
+  for (const s of entities) {
+    if (!s.alive || s.kind === Kind.Tower || s.kind === Kind.Ward || isStructure(s.kind)) continue;
+    if (s.kind === Kind.Champion && armedSlot(sim, s.id) >= 0) s.emp = true;
+    for (const b of buffs(sim, s.id)) {
+      if (b.kind === 'mark' && b.until > sim.tick && champPrefixes!.has(b.id.split('_')[0]!)) (s.marks ??= []).push({ id: b.id, left: (b.until - sim.tick) / 30 });
+    }
+    const a = auraIds(sim, s.id);
+    if (a.length) s.auras = s.auras ? [...new Set([...s.auras, ...a])] : a;
+  }
 }
 
 /** Grid the audio cue position snaps to (units). */

@@ -144,7 +144,90 @@ export interface PassiveHook {
 
 export type EffectHook = (sim: Sim, ctx: EffectCtx) => void;
 
+/** Ground shape of a visual object: ring (circle outline), disc (filled), blade (small bar), line (x/y -> x2/y2 strip),
+ *  cross (trap X), wall (thick line), dome (big translucent ring), pin (small marker with a stem). */
+export type VisualShape = 'ring' | 'disc' | 'blade' | 'line' | 'cross' | 'wall' | 'dome' | 'pin';
+
+/** Something on the map a hook keeps in its own state (dome, wire, bell, banner, ...). Snapshot only. */
+export interface VisualObject {
+  /** Stable per object while it exists (render pools meshes by it): e.g. `${eid}` or `${eid}:${i}`. */
+  key: string;
+  tag: string;
+  x: number;
+  y: number;
+  r: number;
+  shape: VisualShape;
+  /** Line / wall end point. */
+  x2?: number;
+  y2?: number;
+  /** Line end follows this unit (wire pulling a champion): render uses the interpolated unit position. */
+  follow?: number;
+  /** Ticks left (timer ring); absent = no timer. */
+  left?: number;
+  total?: number;
+  /** Count shown on the object (charges, stacks). */
+  n?: number;
+  /** Hidden from the enemy team (traps, seeds). */
+  hidden?: boolean;
+  /** Fill colour hint (CSS hue 0-360); absent = ability hue from the tag prefix or team colour. */
+  hue?: number;
+}
+
+/** World marker for the own champion: where `slot` can go / what it can hit next (Renn E blades, recast range). */
+export interface HintMarker {
+  slot: number;
+  x: number;
+  y: number;
+  /** Ring radius. */
+  r: number;
+  /** In range / usable now (false = dimmed). Default true. */
+  ok?: boolean;
+  /** Draw a thin line from the champion to the marker. */
+  link?: boolean;
+}
+
+/** Mark / stack counter on a unit (shown above its health bar while the unit is visible). */
+export interface UnitMark {
+  target: number;
+  id: string;
+  /** Stack count (pips) and maximum. */
+  n?: number;
+  max?: number;
+  /** Ticks left. */
+  left?: number;
+}
+
+/** Passive state for the HUD badge next to the portrait. */
+export interface PassiveHud {
+  stacks?: number;
+  max?: number;
+  /** Cooldown ticks left / total. */
+  cdLeft?: number;
+  cdTotal?: number;
+  /** Ready / charged / active (glowing badge). */
+  ready?: boolean;
+}
+
+/**
+ * Snapshot-only visuals of one champion entity (src/sim/snapshot.ts). MUST be read-only: no state creation (read hook
+ * maps via `sim.state[key] as Map | undefined`, never hookState/stateMap), no RNG, no events.
+ */
+export interface ChampionVisuals {
+  /** Own champion only (never sent to other teams). */
+  hints?: HintMarker[];
+  objects?: VisualObject[];
+  marks?: UnitMark[];
+  /** Own champion only. */
+  passive?: PassiveHud;
+  /** Next auto is empowered by a hook (slot 0..3, or 4 = passive), beyond the engine's armNextAuto. */
+  empowered?: number;
+  /** Self buff shown as an aura (hook-kept states without a buff entry): ability slot (0..3) or 4 = passive. */
+  aura?: number;
+}
+
 export interface ChampionHooks {
+  /** Snapshot visuals (read-only, see ChampionVisuals). Called for every champion entity of this id, alive or dead. */
+  visuals?(sim: Sim, eid: number): ChampionVisuals | void;
   passive?: Record<string, PassiveHook>;
   effects?: Record<string, EffectHook>;
   /** Called every tick for every champion entity of this champion id, alive or dead, before casts resolve. */

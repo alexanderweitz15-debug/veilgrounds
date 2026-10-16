@@ -11,7 +11,8 @@ import { MAX_ENT } from '../ecs';
 import { hasBuff } from '../buffs';
 import { isDisplacing } from './abilities';
 
-const REPATH_TICKS = 15;
+/** Chase path is recomputed once the target moved this far from the path's end (no eid-phased timer: mirror-symmetric). */
+const REPATH_DIST = 100;
 
 /** Per-unit tick (sim.tick + 1, i.e. the tick number after this step) of the last own walking step. */
 function walkTicks(sim: Sim): Int32Array {
@@ -30,6 +31,12 @@ export const movementSystem: System = {
     const { Move, Pos, Unit, Stats, Atk, Face } = sim.c;
     const ents = query(sim.world, [Move]);
     const walked = walkTicks(sim);
+    // chase targets are read from the positions at the start of the pass: units move in eid order, so reading the
+    // live position let high eids (red) chase where low eids (blue) already stepped to this tick (side bias)
+    const tx0 = ((sim.state.chaseX as Float64Array | undefined) ??= new Float64Array(MAX_ENT));
+    const ty0 = ((sim.state.chaseY as Float64Array | undefined) ??= new Float64Array(MAX_ENT));
+    tx0.set(Pos.x);
+    ty0.set(Pos.y);
     for (let i = 0; i < ents.length; i++) {
       const eid = ents[i]!;
       if (!Unit.alive[eid] || Move.mode[eid] === 0 || Atk.phase[eid] === 1) continue;
@@ -45,14 +52,16 @@ export const movementSystem: System = {
           continue;
         }
         const reach = Stats.range[eid]! + Unit.radius[eid]! + Unit.radius[t]!;
-        const dx = Pos.x[t]! - Pos.x[eid]!;
-        const dy = Pos.y[t]! - Pos.y[eid]!;
+        const px = tx0[t]!;
+        const py = ty0[t]!;
+        const dx = px - Pos.x[eid]!;
+        const dy = py - Pos.y[eid]!;
         if (dx * dx + dy * dy <= reach * reach) continue; // in range: attack system takes over
         // chase: straight if clear, otherwise path (refreshed periodically)
-        if (lineWalkable(sim.map.nav, Pos.x[eid]!, Pos.y[eid]!, Pos.x[t]!, Pos.y[t]!)) {
-          sim.paths.set(eid, [{ x: Pos.x[t]!, y: Pos.y[t]! }]);
-        } else if (!sim.paths.has(eid) || (sim.tick + eid) % REPATH_TICKS === 0) {
-          sim.paths.set(eid, findPath(sim.map.nav, Pos.x[eid]!, Pos.y[eid]!, Pos.x[t]!, Pos.y[t]!));
+        if (lineWalkable(sim.map.nav, Pos.x[eid]!, Pos.y[eid]!, px, py)) {
+          sim.paths.set(eid, [{ x: px, y: py }]);
+        } else if (chaseStale(sim.paths.get(eid), px, py)) {
+          sim.paths.set(eid, findPath(sim.map.nav, Pos.x[eid]!, Pos.y[eid]!, px, py));
         }
         // never walk past the point where the target enters range
         step = Math.min(step, Math.sqrt(dx * dx + dy * dy) - reach + 1);
@@ -103,6 +112,14 @@ export const movementSystem: System = {
   },
 };
 
+function chaseStale(path: { x: number; y: number }[] | undefined, x: number, y: number): boolean {
+  const end = path?.[path.length - 1];
+  if (!end) return true;
+  const dx = end.x - x;
+  const dy = end.y - y;
+  return dx * dx + dy * dy > REPATH_DIST * REPATH_DIST;
+}
+
 /**
  * Champion pairs (champion-champion, champion-minion) keep this fraction of the radius sum apart: LoL pathing radii
  * are smaller than the hit radii, so bodies may touch and overlap a little, but never stand inside each other.
@@ -134,6 +151,16 @@ function separateUnits(sim: Sim, ents: ArrayLike<number>): void {
   for (let i = 0; i < ents.length; i++) if (isBody(sim, ents[i]!)) bodies.push(ents[i]!);
   bodies.sort((p, q) => p - q);
   const walked = walkTicks(sim);
+  const walking = (e: number): boolean => walked[e] === sim.tick + 1;
+  // Pushes are computed from the positions at the start of the pass and applied together afterwards (Jacobi):
+  // resolving pairs one after another moved low eids (blue spawns first) before high ones, so mirrored waves did
+  // not stay mirrored (side bias).
+  const acc = pushAcc(sim);
+  for (const b of bodies) acc[b * 2] = acc[b * 2 + 1] = 0;
+  const push = (e: number, dx: number, dy: number): void => {
+    acc[e * 2] = acc[e * 2]! + dx;
+    acc[e * 2 + 1] = acc[e * 2 + 1]! + dy;
+  };
   for (let i = 0; i < bodies.length; i++) {
     const a = bodies[i]!;
     const aChamp = Unit.kind[a] === Kind.Champion;
@@ -146,47 +173,68 @@ function separateUnits(sim: Sim, ents: ArrayLike<number>): void {
       const d2 = dx * dx + dy * dy;
       if (d2 >= min * min) continue;
       const d = Math.sqrt(d2);
-      // coincident: push apart along a fixed axis derived from eid order (deterministic)
+      // coincident: push apart along a fixed axis (deterministic)
       const ux = d > 0 ? dx / d : 1;
       const uy = d > 0 ? dy / d : 0;
       if (!aChamp && !bChamp) {
-        const push = (min - d) * 0.25;
-        nudge(sim, a, Pos.x[a]! - ux * push, Pos.y[a]! - uy * push);
-        nudge(sim, b, Pos.x[b]! + ux * push, Pos.y[b]! + uy * push);
+        const p = (min - d) * 0.25;
+        push(a, -ux * p, -uy * p);
+        push(b, ux * p, uy * p);
         continue;
       }
       const over = (min - d) * BODY_RATE;
       if (aChamp && bChamp) {
-        nudge(sim, a, Pos.x[a]! - ux * over * 0.5, Pos.y[a]! - uy * over * 0.5);
-        nudge(sim, b, Pos.x[b]! + ux * over * 0.5, Pos.y[b]! + uy * over * 0.5);
+        // A walking champion with the other one ahead slides around it (tangential resolution, like LoL pathing
+        // around a standing unit) and takes most of the correction; two walkers each slide to their own side.
+        const aw = walking(a);
+        const bw = walking(b);
+        const wa = aw === bw ? 0.5 : aw ? SLIDE_SHARE : 1 - SLIDE_SHARE;
+        const [ax, ay] = aw ? sideStep(Face.x[a]!, Face.y[a]!, ux, uy) : [ux, uy];
+        const [bx, by] = bw ? sideStep(Face.x[b]!, Face.y[b]!, -ux, -uy) : [-ux, -uy];
+        push(a, -ax * over * wa, -ay * over * wa);
+        push(b, -bx * over * (1 - wa), -by * over * (1 - wa));
         continue;
       }
-      // champion vs minion: the minion yields; sideways off a walking champion's path
+      // champion vs minion: the minion yields, sideways off a walking champion's path
       const c = aChamp ? a : b;
       const m = aChamp ? b : a;
       const s = aChamp ? 1 : -1; // (ux, uy) * s points from champion to minion
-      let mx = ux * s;
-      let my = uy * s;
-      if (walked[c] === sim.tick + 1) {
-        const fx = Face.x[c]!;
-        const fy = Face.y[c]!;
-        const ahead = mx * fx + my * fy;
-        if (ahead > 0) {
-          // minion ahead of the champion: add the perpendicular toward the minion's side of the walking line
-          const side = mx * fy - my * fx >= 0 ? 1 : -1;
-          mx += fy * side * ahead;
-          my += -fx * side * ahead;
-          const l = Math.sqrt(mx * mx + my * my);
-          mx /= l;
-          my /= l;
-        }
-      }
+      const [mx, my] = walking(c) ? sideStep(Face.x[c]!, Face.y[c]!, ux * s, uy * s) : [ux * s, uy * s];
       const mp = over * MINION_YIELD;
       const cp = over * (1 - MINION_YIELD);
-      nudge(sim, m, Pos.x[m]! + mx * mp, Pos.y[m]! + my * mp);
-      nudge(sim, c, Pos.x[c]! - ux * s * cp, Pos.y[c]! - uy * s * cp);
+      push(m, mx * mp, my * mp);
+      push(c, -ux * s * cp, -uy * s * cp);
     }
   }
+  for (const b of bodies) {
+    const px = acc[b * 2]!;
+    const py = acc[b * 2 + 1]!;
+    if (px !== 0 || py !== 0) nudge(sim, b, Pos.x[b]! + px, Pos.y[b]! + py);
+  }
+}
+
+/** Champion share of a champion-champion overlap taken by the one walking into a standing one. */
+const SLIDE_SHARE = 0.8;
+
+/**
+ * Direction that pushes a body at unit offset (tx, ty) from a walker facing (fx, fy) out of the walker's way: if
+ * it is ahead, the perpendicular toward its side of the walking line is added (so the walker, pushed the opposite
+ * way, slides around it instead of stalling head-on). Exactly head-on picks a fixed side of the walking direction,
+ * which is mirror-symmetric (a point mirror keeps the sign of the cross product).
+ */
+function sideStep(fx: number, fy: number, tx: number, ty: number): [number, number] {
+  const ahead = tx * fx + ty * fy;
+  if (ahead <= 0) return [tx, ty];
+  const side = tx * fy - ty * fx >= 0 ? 1 : -1;
+  const x = tx + fy * side * ahead;
+  const y = ty - fx * side * ahead;
+  const l = Math.sqrt(x * x + y * y);
+  return [x / l, y / l];
+}
+
+/** Per-entity push accumulator (x, y interleaved) for separateUnits. */
+function pushAcc(sim: Sim): Float64Array {
+  return (sim.state.pushAcc ??= new Float64Array(MAX_ENT * 2)) as Float64Array;
 }
 
 /** Soft push: never into a wall or off the map (a blocked push is dropped; a unit already inside is let through). */

@@ -1,5 +1,5 @@
 {
-  "note": "Bot ward spots (spec-bots §2 vision axis, §8 objectives) in the blue-team frame (team 0, fountain bottom-left); team 1 mirrors them (x -> size - x, y -> size - y). kind: river (lane-side river entrance), objective (pit entrance; obj = objective id), jungle (own jungle entrance), deep (enemy jungle, Platinum+). roles: who wards there. Placement snaps to walkable ground in the sim. Bushes from the map are used too.",
+  "note": "Bot ward spots (spec-bots §2 vision axis, §8 objectives) in the blue-team frame (team 0, fountain bottom-left); team 1 reflects them across the river diagonal ((x, y) -> (size - y, size - x)), keeping lane and objective identity. kind: river (lane-side river entrance), objective (pit entrance; obj = objective id), jungle (own jungle entrance), deep (enemy jungle, Platinum+). roles: who wards there. Placement snaps to walkable ground in the sim. Bushes from the map are used too.",
   "spots": [
     { "x": 3300, "y": 12000, "kind": "river", "lane": "top", "roles": ["top", "jungle", "support"] },
     { "x": 2300, "y": 11200, "kind": "river", "lane": "top", "roles": ["top"] },

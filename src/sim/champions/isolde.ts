@@ -12,6 +12,33 @@ import { destroyProjectile } from '../systems/projectiles';
 import { blockTerrain, ringCells } from '../summons';
 import type { ChampionHooks } from './hooks';
 import { isChamp, stateMap, tickCtx, unitsWhere } from './dagny';
+import { peekState } from './util';
+import type { ChampionVisuals, VisualObject } from './hooks';
+
+const E_RECAST_DASH = 400;
+
+/** Snapshot visuals: wire while pulling, recast dash range, glass dome, passive cooldown (read-only). */
+function isoldeVisuals(sim: Sim, eid: number): ChampionVisuals {
+  const { Pos, Champ } = sim.c;
+  const v: ChampionVisuals = {};
+  const objects: VisualObject[] = [];
+  const w = peekState<Wire>(sim, 'isoldeE')?.get(eid);
+  if (w && w.pulled && sim.tick <= w.pullUntil) objects.push({ key: `${eid}`, tag: 'isolde_wire', x: w.ax, y: w.ay, r: 14, shape: 'line', follow: eid, hue: 185 });
+  if (w && w.recastUntil >= sim.tick && sim.c.Unit.alive[eid]) {
+    v.hints = [{ slot: 2, x: Pos.x[eid]!, y: Pos.y[eid]!, r: E_RECAST_DASH + sim.c.Unit.radius[eid]! }];
+    objects.push({ key: `${eid}`, tag: 'isolde_anchor', x: w.ax, y: w.ay, r: 40, shape: 'pin', left: w.recastUntil - sim.tick, total: sec(1), hue: 185 });
+  }
+  const d = peekState<Dome>(sim, 'isoldeDome')?.get(eid);
+  if (d && sim.tick < d.until) objects.push({ key: `${eid}`, tag: 'isolde_dome', x: d.x, y: d.y, r: DOME_R, shape: 'dome', left: d.until - sim.tick, total: d.until - d.start, hue: 185 });
+  if (objects.length) v.objects = objects;
+  const g = peekState<Glass>(sim, 'isoldeGlass')?.get(eid);
+  const lvl = Math.max(1, Champ.level[eid]!);
+  const cdTotal = sec(16 - (8 * (lvl - 1)) / 17);
+  const left = g ? g.ready - sim.tick : 0;
+  const quiet = !g || sim.tick - g.lastHit >= sec(2);
+  v.passive = { cdLeft: Math.max(0, left), cdTotal, ready: left <= 0 && quiet };
+  return v;
+}
 
 // ------------------------------------------------------------------ passive: tempered glass
 
@@ -53,6 +80,10 @@ interface Wire {
   /** Recast dash in flight until this tick; stuns the first enemy champion touched. */
   dashUntil: number;
   rank: number;
+  /** Wall anchor of the wire and the tick the pull ends (snapshot: wire line while pulling). */
+  ax: number;
+  ay: number;
+  pullUntil: number;
 }
 const wires = (sim: Sim): Map<number, Wire> => stateMap<Wire>(sim, 'isoldeE');
 
@@ -127,6 +158,7 @@ function isoldeTick(sim: Sim, eid: number): void {
 
 export const hooks: ChampionHooks = {
   onTick: isoldeTick,
+  visuals: isoldeVisuals,
   ownsHits: ['isolde_e'],
   passive: {
     isolde_tempered_glass: {
@@ -193,7 +225,10 @@ export const hooks: ChampionHooks = {
       const { Pos } = sim.c;
       if (ctx.phase === 'dashStart' && ctx.dash) {
         const d = wallDistance(sim, Pos.x[e]!, Pos.y[e]!, ctx.dash.dx, ctx.dash.dy, rv(ctx.ability.range, ctx.rank));
-        wires(sim).set(e, { pulled: d > 0, strip: false, recastUntil: 0, dashUntil: 0, rank: ctx.rank });
+        const ax = Pos.x[e]! + ctx.dash.dx * (d + 25);
+        const ay = Pos.y[e]! + ctx.dash.dy * (d + 25);
+        const pullUntil = d > 0 ? sim.tick + Math.ceil((d / ctx.dash.speed) * 30) + 1 : 0;
+        wires(sim).set(e, { pulled: d > 0, strip: false, recastUntil: 0, dashUntil: 0, rank: ctx.rank, ax, ay, pullUntil });
         if (d > 0) ctx.dash.distance = d;
         else {
           ctx.dash.distance = 0;

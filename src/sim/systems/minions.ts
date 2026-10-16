@@ -14,7 +14,7 @@ import { isRef, spawnUnit } from '../sim';
 import type { System } from './index';
 import { Kind, isMinion, isStructure, type LaneId } from '../types';
 import { LANES, findPath, lineWalkable, type Pt } from '../map';
-import { dist2 } from '../vec';
+import { dist2, nearer } from '../vec';
 import { sees } from '../vision';
 import { nextWaveInfo } from './waves';
 
@@ -49,6 +49,12 @@ export const AGGRO_RANGE = 500;
 export const CALL_RANGE = 1000;
 /** A target further than this (centre distance) is dropped. */
 export const LEASH_RANGE = 1000;
+/**
+ * Chase leash for champion targets (LoL: a minion gives up a champion soon after leaving its lane and walks back):
+ * measured from the minion's last position on its lane while it was not targeting a champion. Beyond it the minion
+ * drops the champion and takes no champion target until it is back (minions, structures still).
+ */
+export const CHASE_LEASH = 650;
 /** How long an attack counts as an active call for help (ticks). */
 export const CALL_WINDOW = 30;
 const SCALE_STEP_TICKS = 2700; // 90 s
@@ -70,7 +76,9 @@ export function spawnMinion(sim: Sim, kind: number, team: number, lane: LaneId, 
   Stats.mr[eid] = s.mr;
   Stats.ms[eid] = MINION_MS;
   Vision.r[eid] = MINION_VISION;
-  aggroState(sim).prio[eid] = NO_TARGET;
+  const st = aggroState(sim);
+  st.prio[eid] = NO_TARGET;
+  st.anchored[eid] = 0;
   return eid;
 }
 
@@ -247,15 +255,27 @@ const NO_TARGET = 255;
 interface AggroState {
   /** Priority of the current target (1 = champion attacking allied champion ... 6 = nearest champion). */
   prio: Uint8Array;
+  /** Chase anchor (CHASE_LEASH): last position on its lane while not targeting a champion. */
+  anchored: Uint8Array;
+  ax: Float64Array;
+  ay: Float64Array;
 }
 
 function aggroState(sim: Sim): AggroState {
   let s = sim.state.minionAggro as AggroState | undefined;
   if (!s) {
-    s = { prio: new Uint8Array(sim.c.Unit.kind.length).fill(NO_TARGET) };
+    const n = sim.c.Unit.kind.length;
+    s = { prio: new Uint8Array(n).fill(NO_TARGET), anchored: new Uint8Array(n), ax: new Float64Array(n), ay: new Float64Array(n) };
     sim.state.minionAggro = s;
   }
   return s;
+}
+
+/** Minion is further than CHASE_LEASH from where it left its lane: no champion targets until it is back. */
+function pastLeash(sim: Sim, m: number): boolean {
+  const st = aggroState(sim);
+  if (!st.anchored[m]) return false;
+  return dist2(sim.c.Pos.x[m]!, sim.c.Pos.y[m]!, st.ax[m]!, st.ay[m]!) > CHASE_LEASH * CHASE_LEASH;
 }
 
 /** Can `team` attack `t` (alive, targetable, visible if a champion)? */
@@ -315,10 +335,11 @@ function bestCall(sim: Sim, m: number, calls: Call[], maxPrio: number): Call | n
   for (const c of calls) {
     if (c.prio > maxPrio || Unit.team[c.dst] !== team) continue;
     if (!attackable(sim, team, c.src)) continue;
+    if (Unit.kind[c.src] === Kind.Champion && pastLeash(sim, m)) continue;
     if (dist2(mx, my, Pos.x[c.dst]!, Pos.y[c.dst]!) > CALL_RANGE * CALL_RANGE) continue;
     const d = dist2(mx, my, Pos.x[c.src]!, Pos.y[c.src]!);
     if (d > CALL_RANGE * CALL_RANGE) continue;
-    if (!best || c.prio < best.prio || (c.prio === best.prio && d < bestD)) {
+    if (!best || c.prio < best.prio || (c.prio === best.prio && nearer(d, Unit.serial[c.src]!, bestD, Unit.serial[best.src]!))) {
       best = c;
       bestD = d;
     }
@@ -352,7 +373,8 @@ export function targetLists(sim: Sim, units: ArrayLike<number>): [TargetLists, T
   return out;
 }
 
-/** Nearest unit of `list` within AGGRO_RANGE (+ target radius) of minion m; ties -> first in query order. */
+/** Nearest unit of `list` within AGGRO_RANGE (+ target radius) of minion m; exact ties -> older unit (spawn serial:
+ *  eids are recycled, so query order differed between mirrored waves and broke blue/red symmetry). */
 function nearest(sim: Sim, m: number, list: number[], range = AGGRO_RANGE): number {
   const { Pos, Unit } = sim.c;
   let best = -1;
@@ -360,7 +382,7 @@ function nearest(sim: Sim, m: number, list: number[], range = AGGRO_RANGE): numb
   for (const t of list) {
     const r = range + Unit.radius[t]!;
     const d = dist2(Pos.x[m]!, Pos.y[m]!, Pos.x[t]!, Pos.y[t]!);
-    if (d <= r * r && d < bestD) {
+    if (d <= r * r && (best < 0 || nearer(d, Unit.serial[t]!, bestD, Unit.serial[best]!))) {
       best = t;
       bestD = d;
     }
@@ -379,12 +401,22 @@ export function updateMinionAggro(sim: Sim, m: number, lists: [TargetLists, Targ
   const st = aggroState(sim);
   const team = Unit.team[m]!;
   let cur = Atk.target[m]!;
+  if ((cur < 0 || Unit.kind[cur] !== Kind.Champion) && Unit.lane[m]! <= 2) {
+    const g = laneGeo(sim, team, Unit.lane[m]! as LaneId);
+    const p = lanePoint(g, laneProgress(g, Pos.x[m]!, Pos.y[m]!));
+    if (dist2(Pos.x[m]!, Pos.y[m]!, p.x, p.y) <= OFF_LANE * OFF_LANE) {
+      st.anchored[m] = 1;
+      st.ax[m] = Pos.x[m]!;
+      st.ay[m] = Pos.y[m]!;
+    }
+  }
   if (cur >= 0) {
     const leash = LEASH_RANGE + Unit.radius[cur]!;
     const ok =
       isRef(sim, cur, Atk.targetSerial[m]!) &&
       attackable(sim, team, cur) &&
-      dist2(Pos.x[m]!, Pos.y[m]!, Pos.x[cur]!, Pos.y[cur]!) <= leash * leash;
+      dist2(Pos.x[m]!, Pos.y[m]!, Pos.x[cur]!, Pos.y[cur]!) <= leash * leash &&
+      !(Unit.kind[cur] === Kind.Champion && pastLeash(sim, m));
     if (!ok) {
       cur = -1;
       Atk.target[m] = -1;
@@ -424,7 +456,7 @@ export function updateMinionAggro(sim: Sim, m: number, lists: [TargetLists, Targ
   t = nearest(sim, m, l.structures);
   if (t >= 0) return setTarget(sim, m, t, 5);
   // idle champions only when (almost) in the minion's own attack range: no chasing champions across the lane
-  t = nearest(sim, m, l.champs, sim.c.Stats.range[m]! + sim.c.Unit.radius[m]! + 100);
+  t = pastLeash(sim, m) ? -1 : nearest(sim, m, l.champs, sim.c.Stats.range[m]! + sim.c.Unit.radius[m]! + 100);
   if (t < 0) t = nearest(sim, m, l.dummies);
   if (t >= 0) return setTarget(sim, m, t, 6);
   walkLane(sim, m);

@@ -2,7 +2,7 @@
 // Her passive (+15 % MS after abilities) is plain data (self ms buffs), so this file only owns R.
 import type { Sim } from '../sim';
 import { sec } from '../types';
-import { addBuff } from '../buffs';
+import { addBuff, buffs } from '../buffs';
 import { applyEffects, enemiesInRadius } from '../systems/abilities';
 import type { ChampionHooks, EffectCtx } from './hooks';
 import { ctxFor, hookState } from './util';
@@ -32,6 +32,18 @@ function strike(sim: Sim, ctx: EffectCtx, hits: number[], third: boolean): void 
 
 export const hooks: ChampionHooks = {
   ownsHits: ['seraphyne_r'],
+  passive: {
+    // The +15 % MS itself is data (self ms buff on every ability); this id makes the passive explicit (HUD badge).
+    seraphyne_electrified: {},
+  },
+  // HUD: the passive badge glows while the move speed bonus runs (timer = longest remaining ability ms buff).
+  visuals(sim, eid) {
+    let until = 0;
+    let start = 0;
+    for (const b of buffs(sim, eid)) if (b.kind === 'stat' && b.stat === 'ms' && b.id.startsWith('seraphyne_') && b.until > until) (until = b.until), (start = b.start);
+    const left = until - sim.tick;
+    return { passive: left > 0 ? { ready: true, cdLeft: left, cdTotal: until - start } : { ready: false } };
+  },
   onTick(sim, eid) {
     const l = strikes(sim, eid);
     if (l.length === 0) return;

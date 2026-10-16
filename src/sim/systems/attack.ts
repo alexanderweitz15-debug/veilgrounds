@@ -19,6 +19,7 @@ import { MINION_DMG_VS_CHAMP_STRUCT } from './minions';
 import { spawnProjectile } from './projectiles';
 import { breakChannel, isBusy, resolveEmpowered, takeEmpowered } from './abilities';
 import { ownerOnlyTarget } from '../summons';
+import { nearer } from '../vec';
 
 export const CRIT_MULT = 1.75;
 /** Attack-move acquisition reach beyond attack range. */
@@ -45,6 +46,10 @@ interface AttackState {
   holdFire: Uint8Array;
   /** Current target came from idle auto-acquire (dropped instead of chased when it leaves range). */
   idleAcq: Uint8Array;
+  /** Target serial the current wind-up started on. */
+  windSerial: Int32Array;
+  /** Unit serial these per-eid fields belong to (bitecs recycles eids: a new unit starts clean). */
+  owner: Int32Array;
 }
 
 function attackState(sim: Sim): AttackState {
@@ -58,6 +63,8 @@ function attackState(sim: Sim): AttackState {
       amChasing: new Uint8Array(MAX_ENT),
       holdFire: new Uint8Array(MAX_ENT),
       idleAcq: new Uint8Array(MAX_ENT),
+      windSerial: new Int32Array(MAX_ENT),
+      owner: new Int32Array(MAX_ENT),
     };
     sim.state.attack = s;
   }
@@ -145,25 +152,46 @@ export const attackSystem: System = {
   update(sim) {
     const { Atk, Unit } = sim.c;
     const ents = [...query(sim.world, [Atk])];
-    for (const eid of ents) {
-      if (!Unit.alive[eid]) {
-        Atk.phase[eid] = 0;
-        continue;
+    // Hits of one tick land together after every unit was updated: resolving melee hits inside the loop let a unit
+    // with a lower eid (blue spawns first) kill its target before later units were processed, so the later unit lost
+    // its own hit or wind-up. Mirrored melee minions finishing each other on the same tick then always went to blue,
+    // which pushed blue's waves (side bias).
+    const hits: { p: AutoPayload; t: number }[] = [];
+    pendingHits = hits;
+    try {
+      for (const eid of ents) {
+        if (!Unit.alive[eid]) {
+          Atk.phase[eid] = 0;
+          continue;
+        }
+        updateUnit(sim, eid);
       }
-      updateUnit(sim, eid);
+    } finally {
+      pendingHits = null;
     }
+    for (const h of hits) resolveAutoHit(sim, h.p, h.t);
   },
 };
+
+/** Melee hits of the running attack pass (null outside it: hits resolve immediately). */
+let pendingHits: { p: AutoPayload; t: number }[] | null = null;
 
 function updateUnit(sim: Sim, eid: number): void {
   const { Atk, Move, Pos, Unit } = sim.c;
   const st = attackState(sim);
+  if (st.owner[eid] !== Unit.serial[eid]) {
+    // recycled eid: the previous occupant's fractional attack-timer carry made mirrored units attack a tick apart
+    st.owner[eid] = Unit.serial[eid]!;
+    st.carry[eid] = 0;
+    st.amChasing[eid] = st.holdFire[eid] = st.idleAcq[eid] = 0;
+  }
   let t = Atk.target[eid]!;
   let valid = isRef(sim, t, Atk.targetSerial[eid]!);
   const able = canAttack(sim, eid) && !isBusy(sim, eid);
 
   if (Atk.phase[eid] === 1) {
-    if (!valid || !able) {
+    // a new target (minion re-aggro, new attack order) cancels the wind-up instead of landing it on the new target
+    if (!valid || !able || st.windSerial[eid] !== Atk.targetSerial[eid]) {
       Atk.phase[eid] = 0; // interrupted: attack lost, timer not consumed
     } else {
       face(sim, eid, t);
@@ -223,6 +251,7 @@ function updateUnit(sim: Sim, eid: number): void {
     Atk.phase[eid] = 1;
     Atk.phaseEnd[eid] = sim.tick + windupTicks(sim, eid);
     st.start[eid] = sim.tick;
+    st.windSerial[eid] = Atk.targetSerial[eid]!;
     face(sim, eid, t);
     sim.events.push({ e: 'attack', src: eid, dst: t });
     if (sim.tick >= Atk.phaseEnd[eid]!) fire(sim, eid, t); // windup 0 (towers)
@@ -253,7 +282,7 @@ function acquire(sim: Sim, eid: number, extra = ACQUIRE_EXTRA, structures = true
     const dx = Pos.x[e]! - Pos.x[eid]!;
     const dy = Pos.y[e]! - Pos.y[eid]!;
     const d = dx * dx + dy * dy;
-    if (d < bestD || (d === bestD && e < best)) {
+    if (best < 0 || nearer(d, Unit.serial[e]!, bestD, Unit.serial[best]!)) {
       bestD = d;
       best = e;
     }
@@ -322,6 +351,8 @@ function fire(sim: Sim, eid: number, t: number): void {
       // twin arrows: offset sideways so render shows two
       const off = i === 0 ? 0 : 20 * i;
       spawnProjectile(sim, { kind: 0, src: eid, team: Unit.team[eid]!, x: Pos.x[eid]! - sim.c.Face.y[eid]! * off, y: Pos.y[eid]! + sim.c.Face.x[eid]! * off, target: t, speed, payload: p });
+    } else if (pendingHits) {
+      pendingHits.push({ p, t });
     } else {
       resolveAutoHit(sim, p, t);
     }

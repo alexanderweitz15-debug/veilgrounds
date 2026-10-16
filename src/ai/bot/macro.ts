@@ -357,11 +357,16 @@ interface WardSpot extends Pt {
 }
 const SPOTS = (wardSpotsJson.spots as (Pt & { kind: WardSpot['kind']; roles: string[]; obj?: string })[]);
 
-/** Ward spots of the bot's team frame (data spots mirrored for red) plus the map bushes (any role). */
+/**
+ * Ward spots of the bot's team frame plus the map bushes (any role). Red reflects the data spots across the river
+ * diagonal, (x, y) -> (size - y, size - x): that keeps lane and objective identity (blue's top river spot becomes
+ * red's top river spot, the Leviathan pit spots stay at the Leviathan). The former point mirror (size - x, size - y)
+ * sent red's top laner to the bot river and red's objective wards to the other pit (side bias).
+ */
 export function wardSpots(n: NodeCtx): WardSpot[] {
   const size = n.ctx.map.size;
   const mirror = n.ctx.team === 1;
-  const data = SPOTS.map((q) => ({ ...q, x: mirror ? size - q.x : q.x, y: mirror ? size - q.y : q.y }));
+  const data = SPOTS.map((q) => ({ ...q, x: mirror ? size - q.y : q.x, y: mirror ? size - q.x : q.y }));
   return [...data, ...n.ctx.map.bushes.map((b) => ({ x: b.x, y: b.y, kind: 'bush' as const, roles: ['top', 'jungle', 'mid', 'adc', 'support'] }))];
 }
 

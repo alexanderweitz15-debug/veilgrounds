@@ -7,7 +7,7 @@ import { dealDamage } from '../damage';
 import { addBuff, buffs } from '../buffs';
 import { dir, dist2 } from '../vec';
 import { nearestWalkable } from '../map';
-import { applyEffects, channelOf, enemiesInRadius, landingPoint, reduceCooldown, setCooldown, teleport } from '../systems/abilities';
+import { applyEffects, channelOf, cooldownLeft, enemiesInRadius, landingPoint, reduceCooldown, setCooldown, teleport } from '../systems/abilities';
 import { addGroundObject, groundObjects, removeGroundObject, type GroundObject } from '../summons';
 import { sees } from '../vision';
 import type { ChampionHooks, EffectCtx } from './hooks';
@@ -35,6 +35,9 @@ const BLADE = 'renn_blade';
 const BLADE_TICKS = sec(4);
 const PICKUP_REACH = 50;
 const VOLLEY_TICKS = 4.5; // 0.15 s
+/** E reach (from the start) and cursor tolerance around a blade / unit. */
+const E_RANGE = 725;
+const E_CURSOR = 200;
 
 function dropBlade(sim: Sim, eid: number, x: number, y: number): void {
   const p = nearestWalkable(sim.map.nav, x, y);
@@ -68,6 +71,17 @@ function volley(sim: Sim, eid: number, rank: number): void {
 
 export const hooks: ChampionHooks = {
   ownsHits: ['renn_q', 'renn_r'],
+  // Snapshot: every own blade gets an E ring (cursor tolerance 200; bright when E is ready and the blade in reach).
+  visuals(sim, eid) {
+    const { Pos, Unit } = sim.c;
+    const blades = groundObjects(sim, BLADE, eid);
+    const eReady = cooldownLeft(sim, eid, 2) === 0 && Unit.alive[eid] === 1;
+    const reach = (E_RANGE + 60) * (E_RANGE + 60);
+    return {
+      hints: blades.map((b) => ({ slot: 2, x: b.x, y: b.y, r: E_CURSOR, ok: eReady && dist2(b.x, b.y, Pos.x[eid]!, Pos.y[eid]!) <= reach, link: true })),
+      passive: { stacks: blades.length, ready: blades.length > 0 },
+    };
+  },
   passive: {
     // Pickup itself runs in onTick (touch) and in the E hook.
     renn_blade_pickup: {},
@@ -152,8 +166,8 @@ export const hooks: ChampionHooks = {
       if (ctx.phase !== 'cast') return;
       const e = ctx.caster;
       const s = state(sim, e);
-      const range = 725;
-      const ok = (x: number, y: number): boolean => dist2(x, y, s.px, s.py) <= (range + 60) * (range + 60) && dist2(x, y, ctx.cursorX, ctx.cursorY) <= 200 * 200;
+      const range = E_RANGE;
+      const ok = (x: number, y: number): boolean => dist2(x, y, s.px, s.py) <= (range + 60) * (range + 60) && dist2(x, y, ctx.cursorX, ctx.cursorY) <= E_CURSOR * E_CURSOR;
       const blade = groundObjects(sim, BLADE, e).find((b) => ok(b.x, b.y));
       if (blade) {
         teleport(sim, e, blade.x, blade.y);

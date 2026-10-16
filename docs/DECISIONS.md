@@ -2,6 +2,56 @@
 
 Jede Abweichung vom Design-Prompt steht hier mit Grund. Neue Einträge oben.
 
+## Seiten-Fairness, Lane-Länge, Minion-Leine, Kollision (Balance-Agent, 2026-10-16)
+
+**Seiten-Ungleichgewicht – Ursachen.** Zwei Bot-Fehler benachteiligten Rot strukturell, dazu mehrere Tick-Reihenfolge-Effekte der Sim (niedrige Entity-IDs = Blau, weil Blau zuerst spawnt, handelten zuerst):
+
+| Ursache | Vorher | Jetzt |
+|---|---|---|
+| Ward-Spots (Bots) | Rot bekam die Blau-Spots **punktgespiegelt** (16000−x, 16000−y): Rots Top-Laner wardete den Bot-Fluss, Rots Leviathan-Wards landeten an der Schleierwächter-Grube und umgekehrt | Spiegelung an der Fluss-Diagonale (16000−y, 16000−x): Lane- und Objective-Identität bleiben (`macro.ts wardSpots`, Test in botVision) |
+| Jungle-Start | erster Buff der Liste (`dornenbock`) für beide Teams; der liegt für Blau oben, für Rot unten → Blaus Jungler beendete den ersten Clear immer am Leviathan/Botlane, Rots nie | beide starten am Buff auf der Schleierwächter-Seite und enden botseitig (LoL-Standard, umkämpfter Leviathan) (`laning.ts jungle`) |
+| Spawn-Versatz im Brunnen | rot punktgespiegelt (Jungler stand näher am anderen Buff als Blaus) | an der Fluss-Diagonale gespiegelt (`champions.ts spawnChampion`) |
+| Nahkampf-Treffer im Angriffs-Loop | sofort aufgelöst, in eid-Reihenfolge: Blau tötete bei gleichzeitigen Treffern zuerst, Rots Treffer/Wind-up ging verloren → gespiegelte Wellen kippten zu Blau | alle Nahkampf-Treffer eines Ticks landen nach dem Loop gemeinsam (`attack.ts pendingHits`); Zielwechsel im Wind-up bricht ab (vorher traf der Wind-up das neue Ziel) |
+| Verfolgen | Verfolger las die Live-Position, die niedrigere eids im selben Tick schon bewegt hatten; Repath-Takt nach eid | Zielposition vom Tick-Anfang; Repath, wenn das Ziel > 100 vom Pfadende ist (`movement.ts`) |
+| Einheiten-Kollision | Paare nacheinander aufgelöst (Gauss-Seidel, eid-Reihenfolge) | alle Schübe aus den Startpositionen summiert, dann angewendet (Jacobi) |
+| Gleichstände bei Zielwahl | erste eid gewinnt (eids werden recycelt → zufällig zwischen den Seiten verschieden) | Abstand gleich (rel. 1e−9) → ältere Einheit (Spawn-Serial) (`vec.ts nearer`: Minions, Türme, Attack-Move) |
+| Angriffs-Takt | Bruchteil-Übertrag des Angriffstimers blieb an recycelten eids hängen | wird bei neuer Einheit zurückgesetzt |
+
+Test `tests/sideMirror.test.ts`: Spiel ohne Champions bleibt 6 min exakt punktgespiegelt (vorher erste Abweichung nach 88 s, nach 8 min 30:26 Minions), zwei gleiche Champions im Auto-Duell sterben im selben Tick. Ab ≈ 12 min wachsen Rundungsunterschiede (16000 − x) chaotisch, ohne Richtung.
+
+Messung (Gold, `npm run bot-sim -- --sides`: jeder Seed zweimal, zweites Mal tauschen die Aufstellungen die Seite). Die „20/24 Blau“ ließen sich in Gold-gegen-Gold nicht nachstellen (vorher Seeds 21–26: Blau 2/6; Seitentausch auf altem Stand 31–38: Blau 6/12) – die Bot-Fehler oben wirken vor allem bei Wards/Objectives und damit stärker bei höheren Rängen.
+
+| | vorher (HEAD 6f071df) | nachher |
+|---|---|---|
+| Blau gewinnt (Seitentausch) | 6/12 | 12/24 |
+| gleiche Aufstellung gewinnt beide Seiten | – | 9 von 11 entschiedenen Paaren (Aufstellung A 14/24) |
+| Spiellänge / erster Turm / Kills (Gold, vor dem Turm-Umbau) | – | 33,3 min / 19,8 min / 26 |
+
+Offen: Die Champion-Zusammenstellung entscheidet mehr als die Seite (und als der Rang, s. u.).
+
+**Lane-Länge.** Statt die ganze Karte zu skalieren (bricht Trainer-Arenen, Testgelände, Render; Außen↔Außen bliebe bei +11 %) stehen die Außen- und Innentürme näher am Fluss (map.json `blue.towers`, Rot gespiegelt). Wellen-Treffpunkt (Lane-Mitte) und Spawn unverändert → Treffen weiter 1:27 / 1:38, 107 Minions bis 10:00 unverändert.
+
+| | vorher | jetzt | LoL (ca.) |
+|---|---|---|---|
+| Außen ↔ gegn. Außen Mid / Seite | 4525 / 5798 | **3818 / 4808** | 3800 / 4800 |
+| Mid außen→innen→Inhib | 1980 / 2121 | 1803 / 2652 | 1800 / 1800 |
+| Seite außen→innen→Inhib | 3600 / 3100 | 3700 / 3700 | 3700 / 2400 |
+| Turmpositionen (blau) Mid / Top / Bot | (6400,6400) (5000,5000) / (1300,10600) (1250,7000) / gespiegelt | (6650,6650) (5375,5375) / (1300,11300) (1250,7600) / gespiegelt | – |
+| Laufweg Brunnen → Außenturm Mid / Seite (345 MS) | 21,9 s / 27,7 s | 23,0 s / 29,7 s | 23–30 s |
+| Nexus ↔ Nexus | 17536 | 17536 (Karte 16000 vs. LoL ≈ 14870) | 16400 |
+
+Seiten-Inhib-Türme bleiben, die Seitenlanes sind von Natur aus länger (Inhib→Außen 7400 vs. LoL ≈ 6200). Render: nur die Turmpositionen ändern sich (aus den Sim-Entities), Sprites unberührt. Last-Hit-Trainer setzt den Spieler jetzt relativ zum Mid-Außenturm aus den Kartendaten.
+
+**Toplane-Terrain.** Neue Viertel-Wand: Klippe am Kartenrand entlang der Toplane (x ≤ 380–560, y 3700 bis zur Ecke) – über Tausch/Spiegelung auch Botlane und Rots Hälften, Ecke rund – plus 2 Lane-Büsche auf der Außenseite (780, 9700) / (820, 12900). Lane jetzt 1300–1400 breit zwischen den Wänden (vorher bis Kartenrand ≈ 1950–2200, LoL 1300–1600); Isoldes E findet auf beiden Seiten Wände. Alle Lane-Linien (±150 seitlich) bleiben frei, Lager/Objectives erreichbar (map-/jungle-Tests).
+
+**Minion-Leine.** `CHASE_LEASH = 650`: gemessen ab der letzten Position des Minions auf seiner Lane, solange er keinen Champion als Ziel hatte. Darüber lässt er den Champion fallen und nimmt keine Champion-Ziele (auch keine Hilferufe), bis er zurück ist; Minions/Gebäude weiter. Vorher folgte er einem kitenden Champion, bis der 1000 Abstand hatte – bei etwas schnellerem Champion Tausende Einheiten. Test in `minions.test.ts`.
+
+**Kollision.** Ein laufender Champion, der auf einen stehenden (oder entgegenkommenden) Champion trifft, wird tangential um ihn herumgeschoben (Senkrechte zur Laufrichtung, zur freien Seite; exakt frontal: feste Seite relativ zur Laufrichtung, spiegelsymmetrisch) und übernimmt 80 % der Korrektur. Vorher frontal blockiert, ohne Ende. Test in `mechanics.test.ts` (900 Weg, Umweg ≤ 10 Ticks).
+
+**Rang-Siegquote** (nach allen Änderungen, `--mirror`, Seeds 51–54): RANKRESULTS
+
+Werkzeug: `npm run bot-sim -- --sides` (neu) trennt Seiten- von Aufstellungs-Effekten.
+
 ## Maßstab (Scale-Agent, 2026-10-16)
 
 Nutzer: „Camps viel zu klein und hässlich, Map-Größe passt nicht, alles wirkt abgecrackt“. Gemessen headless

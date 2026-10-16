@@ -23,3 +23,6 @@ export function ctxFor(sim: Sim, caster: number, slot: number, rank: number, x: 
 
 /** Champion or practice dummy. */
 export const isChampLike = (sim: Sim, e: number): boolean => sim.c.Unit.kind[e] === Kind.Champion || sim.c.Unit.kind[e] === Kind.Dummy;
+
+/** Read-only view of a hook state map (snapshot visuals: must not create sim.state entries). */
+export const peekState = <T>(sim: Sim, key: string): Map<number, T> | undefined => sim.state[key] as Map<number, T> | undefined;

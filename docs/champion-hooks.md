@@ -131,6 +131,7 @@ recast / channel helpers) is documented at the top of `src/sim/champions/hooks.t
 
 | Hook | Slot | Behaviour |
 |---|---|---|
+| `seraphyne_electrified` | Passive | Marker only: the +15 % MS for 3 s is a self ms buff in every ability's data; the hook id makes the passive explicit (HUD badge glows while it runs). |
 | `seraphyne_r_three_strikes` | R | Hit-producer: 3 strikes at the target circle at 0, 0.8 and 1.6 s after cast; each applies the generic damage; the third also stuns for 1 s. |
 
 ## Renn Sieben (`renn`)

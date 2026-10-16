@@ -2,6 +2,58 @@
 
 Jede Abweichung vom Design-Prompt steht hier mit Grund. Neue Einträge oben.
 
+## Maßstab (Scale-Agent, 2026-10-16)
+
+Nutzer: „Camps viel zu klein und hässlich, Map-Größe passt nicht, alles wirkt abgecrackt“. Gemessen headless
+(`tools/scratch/scaleMeasure.ts`: Abstände, freier Radius = Abstand Lagermitte → nächstes Wand-Polygon, Spurbreiten,
+Engstellen) und im Browser (1280×720, Figurhöhe = `units.spriteHeight`, projiziert entlang der zur Kamera
+geneigten Sprite-Achse). LoL-Werte sind Richtwerte („ca., nicht nachgemessen“).
+
+| Größe | Veilgrounds vorher | jetzt | LoL (ca.) |
+|---|---|---|---|
+| Kartenkante | 16000 | 16000 (unverändert) | ≈ 14870 |
+| Nexus → Nexus (Mid) | 17536 | unverändert | ≈ 16400 |
+| Brunnen → Nexus | 1273 | unverändert | ≈ 1500 |
+| Außenturm → gegn. Außenturm Mid / Seite | 4525 / 5798 | unverändert | ≈ 3800 / 4800 |
+| Turmabstände Mid (außen→innen→Inhib) | 1980 / 2121 | unverändert | ≈ 1800 / 1800 |
+| Turmabstände Seite | 3600 / 3100 | unverändert | ≈ 3700 / 2400 |
+| Spurbreite (offen, Wand zu Wand) Mid / Seite | 1000–1300 / 1950–2200 (Kartenrand) | unverändert | ≈ 900–1200 / 1300–1600 |
+| Wandstärke Viertel-Wände (max.) | 560–940 | 330–940 | ≈ 300–1000 |
+| Dschungel-Engstellen (Wand zu Wand, vor Nav-Abstand 2×75) | 250–310 (Basis→Wölfe, Wölfe→Fluss, Blau→Baron) | ≥ 380–440 | ≈ 400–600 |
+| Freier Radius Blau-/Rot-Buff | 363 | **628** | ≈ 550–700 (Nische) |
+| Freier Radius Gromp/Raptoren-Lager (Sumpfunke/Hohlkäfer) | 415 | **582** | ≈ 500–650 |
+| Freier Radius Wölfe/Krugs (Moosrudel/Schattenkrabbe) | 580 | **661** | ≈ 550–700 |
+| Freier Radius Drachen-/Baron-Grube | 775 | unverändert | ≈ 750–850 |
+| Gemalte Lichtung (Bodenscheibe) Buff / klein / Grube | 430 / 430 / 900 | **560 / 500** / 900 | – |
+| Kamera-Abstand (Standard = Maximum) | 2750 | **2500** | – |
+| Champion-Figurhöhe auf dem Schirm | 170 Einheiten = 9 % | ≈ 10 % | 10–12 % |
+| Melee-/Caster-Vasall | 100 (0,6× Champion) | unverändert | ≈ 0,6× |
+| Turm | ≈ 3× Champion, Radius 88 | unverändert | ≈ 3×, Radius 88 |
+| Inhibitor / Nexus (Sim-Radius) | 140 / 220 | unverändert | ≈ 150 / 250 |
+
+Monster-Figurhöhe relativ zum Champion (170), `MONSTER_DRAWERS.world` (Zellhöhe) angepasst:
+
+| Monster (LoL-Pendant) | vorher | jetzt | LoL (ca.) |
+|---|---|---|---|
+| Dornenbock / Glutwächter (Blau/Rot) | 2,7× | 2,7× (640) | 2–2,5× |
+| Sumpfunke (Gromp) | 1,3× | **1,7×** (330 → 430) | 1,5–1,8× |
+| Mooswolf (großer Wolf) / Welpe | 1,1× / 0,7× | **1,4× / 0,84×** (340 → 430, Skala 0,6) | 1,3–1,5× / 0,8× |
+| Hohlkäfer (Raptor-Anführer) / Käferling | 0,8× / 0,5× | **1,2× / 0,66×** (300 → 440, Skala 0,56) | 1,1× / 0,6× |
+| Schattenkrabbe (Ur-Krug) / Krabbling | 1,1× / 0,65× | **1,6× / 0,92×** (330 → 480, Skala 0,58) | 1,6–1,8× / 1× |
+| Nebelschleicher (Scuttle) | 1,1× | **1,2×** (340) | 1,2× |
+| Flussleviathan (Drache) | 2,9× | **3,6×** (700 → 860) | 3,5–4× |
+| Schleierwächter (Baron) | 3,9× | **4,9×** (820 → 1040) | ≥ 5× |
+| Kesselbrut (Voidgrubs) | 0,7× | **0,9×** (290) | 0,8–1× |
+
+| Thema | Entscheidung | Grund |
+|---|---|---|
+| Kartengröße | 16000 und alle Gebäude-/Spur-Koordinaten bleiben (≈ +8 % gegenüber LoL, Spuren zwischen Außentürmen ≈ +20 %) | Umskalieren würde Wellen-Spawnpunkte (1:28/1:38), die 107-CS-Abnahme, die Bot-Kalibrierung des Pacing-Agenten und zahlreiche Test-Koordinaten entwerten; der Eindruck „passt nicht“ kam von engen Lagern und zu kleinen Monstern, nicht von der Gesamtgröße. `waves.ts` unverändert |
+| Lager-Geometrie | Viertel-Wände um die drei Lager geschrumpft (nur verkleinert, nie verschoben: Erreichbarkeit bleibt), Engstellen Basis→Wölfe, Wölfe→Fluss, Blau→Baron verbreitert; Lager-, Pflanzen- und Gebüsch-Positionen unverändert | Lager standen in 300er-Gassen, der Golem (Radius 110) hatte ≈ 180 Einheiten Platz bis zur sichtbaren Klippe |
+| Lager-Optik | `terrain.ts campSite`: Lichtungsradius pro Typ, freie Richtung pro 15°, Wahrzeichen an der nächsten Wand (sonst gegenüber dem Hauptweg), zwei Eingänge bleiben frei. Boden: ausgetretene Erdscheibe mit ausgefranstem Rand, hellere Mitte, Buffs mit leuchtendem Doppel-Runenkreis + Glyphen, kleine Lager mit eingelassenem Plattenring, Kratzspuren (Wölfe/Käfer), Tümpel (Sumpfunke), Risse (Krabben). Rand: Menhire, Steine, Baumstämme, Knochen, leuchtende Pilze, Kristalle, Nest; Buffs: 7 Runensäulen mit leuchtender Spitze, Monolith 340 hoch, Bodenglühen ≈ 2,3× Lichtungsradius | Lager sollen auf einen Blick als Lager lesbar sein (LoL), Requisiten in Champion-Maßstab statt Kiesel |
+| Große Monster-Atlas | Zelle 160 → 200 px, Master 256 → 320 (4096²) | Baron/Drache wurden größer gezeichnet und wären sonst unschärfer |
+| Lebensbalken | Breite nach Monster-Radius (ui/overlay.ts, Lead) unverändert; der Anker folgt automatisch der größeren Figurhöhe (`barAnchor` → `spriteHeight`) | UI gehört dem Lead |
+| Animation | Monster laufen über dieselbe Sprite-Pipeline wie Champions (Anlauf über die gemessene Wind-up-Zeit, Treffer-Frame bei atkPhase 1→2, Tod als Leiche) – unverändert | bereits synchron |
+
 ## Phase 2: Zauber, Wards, Abnahme (Agent J, 2026-10-15)
 
 | Thema | Prompt | Entscheidung | Grund |

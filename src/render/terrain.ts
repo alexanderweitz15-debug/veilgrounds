@@ -4,7 +4,8 @@
 //    blended in the gouache shader for close-up grain
 //  - walls: organic layered cliffs (organic.ts outline of the collision polygon) with moss caps, jagged rock
 //    pinnacles and slim pines as silhouettes (instanced), violet crystals near the river
-//  - bushes: tall spiky grass tufts; camps: stone rings, landmarks, buff glow; fountains + base props per team
+//  - bushes: tall spiky grass tufts; camps: worn clearings with rim props (stones, logs, bones, mushrooms, rune
+//    pillars), landmarks, buff glow; fountains + base props per team
 //  - beyond the map edge: dark forest and pinnacles sinking into the violet haze
 // Draw calls: ground, skirt, cliffs (+outline), pinnacles (+outline), pines (+outline), bushes (+outline), props
 // (+outline), glow props, buff glows, mist — about 16 (+ shadow passes).
@@ -65,13 +66,74 @@ function riverOffset(x: number, y: number): number {
 /** Signed distance across the river (0 = centre line). */
 const riverDist = (x: number, y: number): number => Math.abs((x + y - S) / Math.SQRT2 - riverOffset(x, y));
 
+/**
+ * Jungle camp clearing (shared by the ground painting and the 3D props): radius of the readable camp area, free
+ * walkable distance per direction (PROBES directions, capped at 1400), the landmark direction (nearest wall, or
+ * opposite the main path when the clearing is open) and the entrance directions (the two most open paths).
+ */
+interface CampSite {
+  x: number;
+  y: number;
+  id: string;
+  buff?: boolean;
+  side: number;
+  epic: boolean;
+  r: number;
+  probe: number[];
+  back: number;
+  backD: number;
+  open: number[];
+}
+const PROBES = 24;
+/** Clearing radius: LoL camps read as a worn area of ~1000-1100 diameter (buffs a bit more). */
+const CLEARING_R = { buff: 560, small: 500, epic: 900, scuttle: 420 };
+
+function campSite(map: MapData, c: { x: number; y: number; id: string; buff?: boolean; side: number }): CampSite {
+  const epic = c.side === 2;
+  const probe: number[] = [];
+  for (let i = 0; i < PROBES; i++) {
+    const a = (i / PROBES) * Math.PI * 2;
+    let d = 0;
+    while (d < 1400 && walkable(map.nav, c.x + Math.cos(a) * d, c.y + Math.sin(a) * d)) d += 25;
+    probe.push(d);
+  }
+  const ang = (i: number): number => (i / PROBES) * Math.PI * 2;
+  let near = 0;
+  for (let i = 1; i < PROBES; i++) if (probe[i]! < probe[near]!) near = i;
+  // entrances: the most open direction, then the most open one at least 100 degrees away from it
+  const order = probe.map((d, i) => [d, i] as const).sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+  const open = [ang(order[0]![1])];
+  for (const [, i] of order) {
+    const da = Math.abs(Math.atan2(Math.sin(ang(i) - open[0]!), Math.cos(ang(i) - open[0]!)));
+    if (da > (100 * Math.PI) / 180) {
+      open.push(ang(i));
+      break;
+    }
+  }
+  const r = epic ? CLEARING_R.epic : c.id === 'nebelschleicher' ? CLEARING_R.scuttle : c.buff ? CLEARING_R.buff : CLEARING_R.small;
+  // landmark against the nearest wall when one is close, otherwise opposite the main path (the camp's "back")
+  const wallBack = probe[near]! < r + 260;
+  const back = wallBack ? ang(near) : open[0]! + Math.PI;
+  return { ...c, epic, r, probe, back, backD: wallBack ? probe[near]! : r + 120, open };
+}
+
+/** Free distance of a camp site toward angle a (nearest probe). */
+function probeAt(s: CampSite, a: number): number {
+  const i = Math.round((((a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / ((Math.PI * 2) / PROBES)) % PROBES;
+  return s.probe[i]!;
+}
+/** True if angle a lies within `half` radians of one of the site's entrances. */
+function nearEntrance(s: CampSite, a: number, half: number): boolean {
+  return s.open.some((o) => Math.abs(Math.atan2(Math.sin(a - o), Math.cos(a - o))) < half);
+}
+
 interface Ctx {
   map: MapData;
   lanes: Seg[];
   laneDist(x: number, y: number): number;
   baseDist(x: number, y: number): [number, number];
   outlines: Pt[][];
-  camps: { x: number; y: number; id: string; buff?: boolean; side: number }[];
+  camps: CampSite[];
 }
 
 function context(map: MapData): Ctx {
@@ -97,7 +159,7 @@ function context(map: MapData): Ctx {
       return a < b ? [a, 0] : [b, 1];
     },
     outlines: map.walls.map((w, i) => organicOutline(w, i * 1.7 + 0.3)),
-    camps,
+    camps: camps.map((c) => campSite(map, c)),
   };
 }
 
@@ -399,7 +461,9 @@ export function buildTerrain(map: MapData, anisotropy: number, quality: string =
     group.add(bushes);
   }
 
-  // ---------------------------------------------------------------- camps: stone rings, landmarks, buff glows
+  // ---------------------------------------------------------------- camps: rim props, landmarks, buff glows
+  // Sized against a champion (~170 tall): rim stones 60-150 tall, logs ~260 long, mushrooms knee-high. Props stand
+  // on the clearing rim (campSite: radius per camp type, entrances toward the two most open paths stay free).
   const propParts: THREE.BufferGeometry[] = [];
   const glowParts: THREE.BufferGeometry[] = [];
   const glowPlanes: { mesh: THREE.Mesh; phase: number }[] = [];
@@ -410,75 +474,184 @@ export function buildTerrain(map: MapData, anisotropy: number, quality: string =
     g.translate(x, h * 0.45, -y);
     propParts.push(paint(g, col));
   };
+  /** Leaning standing stone (5-sided slab). */
+  const menhir = (x: number, y: number, r: number, h: number, col: string, lean: number, yaw: number): void => {
+    const g = new THREE.CylinderGeometry(r * 0.55, r, h, 5);
+    g.translate(0, h / 2, 0);
+    g.rotateZ(lean);
+    g.rotateY(yaw);
+    g.translate(x, -4, -y);
+    propParts.push(paint(g, col));
+  };
+  /** Fallen log with lighter cut ends. */
+  const log = (x: number, y: number, len: number, r: number, ang: number): void => {
+    const g = new THREE.CylinderGeometry(r, r * 1.12, len, 7);
+    g.rotateZ(Math.PI / 2);
+    g.rotateY(ang);
+    g.translate(x, r * 0.8, -y);
+    propParts.push(paint(g, rnd() < 0.5 ? '#5a4632' : '#4e3d2c'));
+    for (const s of [-1, 1]) {
+      const cut = new THREE.CylinderGeometry(r * 0.8, r * 0.8, 4, 7);
+      cut.rotateZ(Math.PI / 2);
+      cut.translate((s * len) / 2 + s * 2, 0, 0);
+      cut.rotateY(ang);
+      cut.translate(x, r * 0.8, -y);
+      propParts.push(paint(cut, '#a88a62'));
+    }
+    // moss saddle
+    const moss = new THREE.SphereGeometry(r * 1.05, 7, 3, 0, Math.PI * 2, 0, Math.PI / 2);
+    moss.scale(len * 0.012, 0.5, 1);
+    moss.rotateY(ang);
+    moss.translate(x, r * 1.5, -y);
+    propParts.push(paint(moss, '#56703c'));
+  };
+  /** Mushroom with a glowing cap (cap in the unlit glow mesh). */
+  const mushroom = (x: number, y: number, s: number, col: string): void => {
+    const st = new THREE.CylinderGeometry(5 * s, 7 * s, 30 * s, 5);
+    st.translate(x, 15 * s, -y);
+    propParts.push(paint(st, '#d8ccb0'));
+    const cap = new THREE.SphereGeometry(17 * s, 7, 3, 0, Math.PI * 2, 0, Math.PI / 2);
+    cap.scale(1, 0.62, 1);
+    cap.translate(x, 27 * s, -y);
+    glowParts.push(paint(cap, col));
+  };
+  /** Skull + rib arcs (wolves, beetles). */
+  const bones = (x: number, y: number, s: number, ang: number): void => {
+    const sk = new THREE.SphereGeometry(16 * s, 6, 4);
+    sk.scale(1, 0.85, 1.25);
+    sk.translate(x, 12 * s, -y);
+    propParts.push(paint(sk, '#dcd2b8'));
+    const jaw = new THREE.BoxGeometry(18 * s, 7 * s, 14 * s);
+    jaw.translate(x + Math.cos(ang) * 16 * s, 5 * s, -y - Math.sin(ang) * 16 * s);
+    propParts.push(paint(jaw, '#c9bea2'));
+    for (let i = 0; i < 4; i++) {
+      const rib = new THREE.TorusGeometry((20 - i * 2) * s, 3 * s, 3, 7, Math.PI);
+      rib.rotateY(ang + Math.PI / 2);
+      const d = (34 + i * 14) * s;
+      rib.translate(x - Math.cos(ang) * d, 0, -y + Math.sin(ang) * d);
+      propParts.push(paint(rib, '#d6ccb0'));
+    }
+  };
+  /** Glow crystal cluster (buff colour / shadow violet). */
+  const crystalCluster = (x: number, y: number, s: number, col: string): void => {
+    for (let i = 0; i < 3; i++) {
+      const g = new THREE.OctahedronGeometry(14 * s, 0);
+      g.scale(0.55, 1.9 - i * 0.4, 0.55);
+      g.rotateZ((i - 1) * 0.35);
+      g.translate(x + (i - 1) * 16 * s, (22 - i * 4) * s, -y + (i % 2) * 10 * s);
+      glowParts.push(paint(g, col));
+    }
+  };
+  const ROCK_COLS = ['#7d7666', '#686252', '#746d5c', '#5f5a4c'];
+  const pick = <T,>(a: readonly T[]): T => a[(rnd() * a.length) | 0]!;
+  const buffCol = (id: string): string =>
+    id === 'dornenbock' ? '#6fc4f0' : id === 'glutwaechter' ? '#ff8a3a' : id === 'leviathan' ? '#6fd6c8' : id === 'schattenkrabbe' ? '#a98aec' : '#b993ff';
   for (const c of cx.camps) {
     if (c.id === 'nebelschleicher') continue;
-    const epic = c.side === 2;
-    // the landmark stands against the nearest wall
-    let bestA = 0;
-    let bestD = Infinity;
-    for (let i = 0; i < 16; i++) {
-      const a = (i / 16) * Math.PI * 2;
-      let d = 0;
-      while (d < 900 && walkable(map.nav, c.x + Math.cos(a) * d, c.y + Math.sin(a) * d)) d += 25;
-      if (d < bestD) (bestD = d), (bestA = a);
-    }
-    const ringR = epic ? 0 : 400;
-    if (!epic) {
-      for (let i = 0; i < 13; i++) {
-        const a = (i / 13) * Math.PI * 2 + rnd() * 0.2;
-        if (Math.abs(Math.atan2(Math.sin(a - bestA - Math.PI), Math.cos(a - bestA - Math.PI))) < 0.5) continue; // entrance gap opposite the landmark
-        const x = c.x + Math.cos(a) * ringR;
-        const y = c.y + Math.sin(a) * ringR;
-        stone(x, y, 22 + rnd() * 18, 14 + rnd() * 14, rnd() < 0.5 ? '#7d7666' : '#686252', rnd() * 6);
-      }
-    }
-    const ld = Math.max(220, Math.min(bestD - 70, 520));
-    const lx = c.x + Math.cos(bestA) * ld;
-    const ly = c.y + Math.sin(bestA) * ld;
-    if (c.buff || epic) {
-      // standing stone with a glowing rune + coloured ground glow
-      const col = c.id === 'dornenbock' ? '#6fc4f0' : c.id === 'glutwaechter' ? '#ff8a3a' : c.id === 'leviathan' ? '#6fd6c8' : '#b993ff';
-      const ob = new THREE.CylinderGeometry(28, 52, 300, 5);
-      ob.translate(lx, 150, -ly);
+    const lx = c.x + Math.cos(c.back) * Math.max(c.r * 0.8, Math.min(c.backD - 60, c.r + 140));
+    const ly = c.y + Math.sin(c.back) * Math.max(c.r * 0.8, Math.min(c.backD - 60, c.r + 140));
+    if (c.buff || c.epic) {
+      // landmark: tall monolith with a glowing rune crystal + coloured ground glow
+      const col = buffCol(c.id);
+      const H = c.epic ? 420 : 340;
+      const ob = new THREE.CylinderGeometry(34, 66, H, 5);
+      ob.translate(lx, H / 2, -ly);
       propParts.push(paint(ob, '#5c574c'));
-      const capg = new THREE.ConeGeometry(30, 60, 5);
-      capg.translate(lx, 330, -ly);
+      const capg = new THREE.ConeGeometry(38, 80, 5);
+      capg.translate(lx, H + 38, -ly);
       propParts.push(paint(capg, '#4b463c'));
-      stone(lx + 50, ly - 30, 34, 22, '#686252');
-      stone(lx - 46, ly + 20, 28, 18, '#7d7666');
-      const rune = new THREE.OctahedronGeometry(24, 0);
-      rune.scale(0.6, 1.4, 0.6);
-      rune.translate(lx, 210, -ly + 30);
+      stone(lx + 70, ly - 40, 52, 34, '#686252', rnd() * 6);
+      stone(lx - 64, ly + 26, 44, 28, '#7d7666', rnd() * 6);
+      const rune = new THREE.OctahedronGeometry(30, 0);
+      rune.scale(0.6, 1.5, 0.6);
+      rune.translate(lx, H * 0.66, -ly + 40);
       glowParts.push(paint(rune, col));
       const plane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), withFog(new THREE.MeshBasicMaterial({ map: radialTexture(col), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.55 })));
-      const gr = epic ? 1500 : 1000;
+      const gr = c.r * (c.epic ? 1.7 : 2.3);
       plane.scale.set(gr, 1, gr);
       plane.position.set(c.x, 3, -c.y);
       plane.renderOrder = 2;
       group.add(plane);
       glowPlanes.push({ mesh: plane, phase: rnd() * 6 });
-    } else {
-      // cairn of stacked stones + a few mushrooms
-      stone(lx, ly, 46, 26, '#6e6858', rnd() * 6);
-      const g2 = new THREE.DodecahedronGeometry(1, 0);
-      g2.scale(32, 20, 30);
-      g2.translate(lx, 58, -ly);
-      propParts.push(paint(g2, '#7d7666'));
-      const g3 = new THREE.DodecahedronGeometry(1, 0);
-      g3.scale(20, 18, 20);
-      g3.translate(lx, 90, -ly);
-      propParts.push(paint(g3, '#8a8372'));
-      for (let i = 0; i < 4; i++) {
-        const mx = lx + (rnd() - 0.5) * 160;
-        const my = ly + (rnd() - 0.5) * 160;
-        const st = new THREE.CylinderGeometry(5, 7, 26, 5);
-        st.translate(mx, 13, -my);
-        propParts.push(paint(st, '#d8ccb0'));
-        const cap = new THREE.SphereGeometry(16, 6, 3, 0, Math.PI * 2, 0, Math.PI / 2);
-        cap.scale(1, 0.7, 1);
-        cap.translate(mx, 24, -my);
-        glowParts.push(paint(cap, rnd() < 0.5 ? '#c9a2e8' : '#e8c86a'));
+      if (c.epic) continue;
+      // rune pillars on the rim: knee-to-shoulder high obelisks with a glowing tip, entrances left open
+      for (let i = 0; i < 7; i++) {
+        const a = c.back + Math.PI / 7 + (i / 7) * Math.PI * 2;
+        if (nearEntrance(c, a, 0.42) || probeAt(c, a) < c.r * 0.92) continue;
+        const rr = c.r * (0.98 + rnd() * 0.08);
+        const px = c.x + Math.cos(a) * rr;
+        const py = c.y + Math.sin(a) * rr;
+        const h = 120 + rnd() * 70;
+        const p = new THREE.CylinderGeometry(14, 30, h, 4);
+        p.rotateY(rnd());
+        p.translate(px, h / 2 - 4, -py);
+        propParts.push(paint(p, rnd() < 0.5 ? '#6e6858' : '#5f5a4c'));
+        const tip = new THREE.OctahedronGeometry(13, 0);
+        tip.scale(0.7, 1.4, 0.7);
+        tip.translate(px, h + 14, -py);
+        glowParts.push(paint(tip, col));
+        stone(px + 30, py - 22, 26 + rnd() * 14, 18 + rnd() * 10, pick(ROCK_COLS), rnd() * 6);
       }
+      continue;
+    }
+    // small camps: theme props on the rim (standing stones + camp-specific dressing), entrances stay free
+    const N = 9;
+    for (let i = 0; i < N; i++) {
+      const a = c.back + (i / N) * Math.PI * 2 + (rnd() - 0.5) * 0.25;
+      if (nearEntrance(c, a, 0.45)) continue;
+      const free = probeAt(c, a);
+      if (free < c.r * 0.9) continue; // the cliff is the boundary there
+      const rr = Math.min(free - 40, c.r * (1.0 + rnd() * 0.14));
+      const px = c.x + Math.cos(a) * rr;
+      const py = c.y + Math.sin(a) * rr;
+      const kind = (i + (c.id.length % 3)) % 3;
+      if (kind === 0) menhir(px, py, 30 + rnd() * 16, 90 + rnd() * 70, pick(ROCK_COLS), (rnd() - 0.5) * 0.3, rnd() * 6);
+      else if (kind === 1) {
+        stone(px, py, 50 + rnd() * 26, 36 + rnd() * 26, pick(ROCK_COLS), rnd() * 6);
+        stone(px + 44, py + 26, 26 + rnd() * 12, 20 + rnd() * 10, pick(ROCK_COLS), rnd() * 6);
+      } else if (c.id === 'sumpfunke' || c.id === 'mooswolf') log(px, py, 220 + rnd() * 80, 22 + rnd() * 8, a + Math.PI / 2 + (rnd() - 0.5) * 0.6);
+      else if (c.id === 'schattenkrabbe') {
+        stone(px, py, 64 + rnd() * 24, 50 + rnd() * 30, '#5a5562', rnd() * 6);
+        crystalCluster(px - 30, py + 20, 1.3, '#a98aec');
+      } else bones(px, py, 1.3, a);
+    }
+    // landmark: cairn (gromp: mushroom ring, wolves: bones under a dead stump, beetles: twig nest, krugs: boulders)
+    stone(lx, ly, 70, 44, '#6e6858', rnd() * 6);
+    const g2 = new THREE.DodecahedronGeometry(1, 0);
+    g2.scale(48, 32, 44);
+    g2.translate(lx, 86, -ly);
+    propParts.push(paint(g2, '#7d7666'));
+    const g3 = new THREE.DodecahedronGeometry(1, 0);
+    g3.scale(30, 26, 30);
+    g3.translate(lx, 134, -ly);
+    propParts.push(paint(g3, '#8a8372'));
+    if (c.id === 'sumpfunke') {
+      for (let i = 0; i < 9; i++) {
+        const a = c.back + (rnd() - 0.5) * 2.2;
+        const d = c.r * (0.82 + rnd() * 0.2);
+        mushroom(c.x + Math.cos(a) * d, c.y + Math.sin(a) * d, 1.4 + rnd() * 1.1, rnd() < 0.6 ? '#9fe8a0' : '#e8c86a');
+      }
+    } else if (c.id === 'mooswolf') {
+      const st = new THREE.CylinderGeometry(30, 46, 120, 7);
+      st.translate(lx + 90, 60, -ly - 40);
+      propParts.push(paint(st, '#4e3d2c'));
+      bones(lx - 110, ly + 60, 1.4, c.back + 2);
+      for (let i = 0; i < 4; i++) mushroom(lx + (rnd() - 0.5) * 220, ly + (rnd() - 0.5) * 220, 1.2, '#c9a2e8');
+    } else if (c.id === 'hohlkaefer') {
+      const nest = new THREE.TorusGeometry(70, 20, 5, 12);
+      nest.rotateX(Math.PI / 2);
+      nest.scale(1, 0.6, 1);
+      nest.translate(lx + Math.cos(c.back + 1.4) * 150, 14, -(ly + Math.sin(c.back + 1.4) * 150));
+      propParts.push(paint(nest, '#6a5638'));
+      for (let i = 0; i < 4; i++) {
+        const eg = new THREE.SphereGeometry(13, 6, 4);
+        eg.scale(1, 1.3, 1);
+        eg.translate(lx + Math.cos(c.back + 1.4) * 150 + (rnd() - 0.5) * 60, 18, -(ly + Math.sin(c.back + 1.4) * 150) + (rnd() - 0.5) * 60);
+        glowParts.push(paint(eg, '#bfe8dc'));
+      }
+    } else if (c.id === 'schattenkrabbe') {
+      crystalCluster(lx + 70, ly + 40, 1.8, '#a98aec');
+      crystalCluster(lx - 80, ly - 30, 1.4, '#8e74d8');
     }
   }
 
@@ -1014,46 +1187,149 @@ function paintGround(cx: Ctx, N: number): HTMLCanvasElement {
     dab(x, y, 28 + rnd() * 20, 20 + rnd() * 14, rnd() * 3, pick(C.cobble), 0.55);
   }
 
-  // 7. camp clearings + epic pits
+  // 7. camp clearings + epic pits: worn soil disc (ragged trampled edge), lighter packed centre, a rune circle
+  //    (buffs: glowing glyph ring in the buff colour; small camps: inlaid flagstones) and camp-specific marks
   for (const cp of cx.camps) {
-    const epic = cp.side === 2;
+    const epic = cp.epic;
     if (cp.id === 'nebelschleicher') {
       dab(cp.x, cp.y, 420, 300, 0.78, '#8a98ae', 0.35);
       continue;
     }
-    const r = epic ? 900 : 430;
+    const r = cp.r;
     const [x, y] = P(cp.x, cp.y);
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r * k);
-    const floor = epic ? (cp.id === 'leviathan' ? '#3c5c66' : '#3a2f48') : '#6a5a42';
+    const floor = epic ? (cp.id === 'leviathan' ? '#3c5c66' : '#3a2f48') : cp.id === 'sumpfunke' ? '#5a5a3a' : cp.id === 'schattenkrabbe' ? '#5e5648' : '#6a5a42';
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r * 1.08 * k);
     g.addColorStop(0, floor);
-    g.addColorStop(0.75, floor);
+    g.addColorStop(0.8, floor);
     g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.globalAlpha = epic ? 0.85 : 0.75;
+    ctx.globalAlpha = epic ? 0.85 : 0.8;
     ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.arc(x, y, r * k, 0, Math.PI * 2);
+    ctx.arc(x, y, r * 1.08 * k, 0, Math.PI * 2);
     ctx.fill();
-    for (let i = 0; i < 260; i++) {
+    // ragged trampled edge: soil tongues into the moss, moss tufts into the soil
+    for (let i = 0; i < 70; i++) {
       const a = rnd() * Math.PI * 2;
-      const d = Math.sqrt(rnd()) * r * 0.85;
+      const d = r * (0.88 + rnd() * 0.24);
+      dab(cp.x + Math.cos(a) * d, cp.y + Math.sin(a) * d, 40 + rnd() * 70, 14 + rnd() * 16, a + Math.PI / 2 + (rnd() - 0.5), rnd() < 0.5 ? floor : pick(C.moss), 0.5);
+    }
+    // packed, lighter centre where the monsters stand
+    if (!epic) {
+      const c2 = ctx.createRadialGradient(x, y, 0, x, y, r * 0.62 * k);
+      c2.addColorStop(0, cp.buff ? '#8a7656' : '#86704e');
+      c2.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.globalAlpha = 0.6;
+      ctx.fillStyle = c2;
+      ctx.beginPath();
+      ctx.arc(x, y, r * 0.62 * k, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (let i = 0; i < 300; i++) {
+      const a = rnd() * Math.PI * 2;
+      const d = Math.sqrt(rnd()) * r * 0.9;
       dab(cp.x + Math.cos(a) * d, cp.y + Math.sin(a) * d, 30 + rnd() * 50, 8 + rnd() * 8, rnd() * 3, epic ? (rnd() < 0.5 ? '#2a2236' : '#4a3e5e') : rnd() < 0.5 ? '#5a4c38' : '#7a6a4e', 0.35);
     }
-    // painted rune circle (buff colour) / claw marks
-    const rc = cp.id === 'dornenbock' ? '#6fc4f0' : cp.id === 'glutwaechter' ? '#ff8a3a' : epic ? (cp.id === 'leviathan' ? '#6fd6c8' : '#b993ff') : '#3e3428';
-    ctx.globalAlpha = cp.buff || epic ? 0.45 : 0.3;
-    ctx.strokeStyle = rc;
-    ctx.lineWidth = (cp.buff || epic ? 14 : 8) * k;
-    ctx.beginPath();
-    ctx.arc(x, y, (epic ? 620 : 260) * k, 0, Math.PI * 2);
-    ctx.stroke();
+    const rc = cp.buff || epic ? (cp.id === 'dornenbock' ? '#6fc4f0' : cp.id === 'glutwaechter' ? '#ff8a3a' : cp.id === 'leviathan' ? '#6fd6c8' : '#b993ff') : '#3e3428';
+    const rr = (epic ? 620 : r * 0.7) * k;
     if (cp.buff || epic) {
-      for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * Math.PI * 2;
-        const rr = (epic ? 620 : 260) * k;
+      // glowing rune circle: double ring, glyph ticks between the rings, spokes outward
+      ctx.strokeStyle = rc;
+      for (const [rad, lw, al] of [
+        [rr, 14, 0.5],
+        [rr * 0.84, 6, 0.4],
+      ] as const) {
+        ctx.globalAlpha = al;
+        ctx.lineWidth = lw * k;
         ctx.beginPath();
-        ctx.moveTo(x + Math.cos(a) * rr * 0.86, y + Math.sin(a) * rr * 0.86);
-        ctx.lineTo(x + Math.cos(a + 0.12) * rr * 1.12, y + Math.sin(a + 0.12) * rr * 1.12);
+        ctx.arc(x, y, rad, 0, Math.PI * 2);
         ctx.stroke();
+      }
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = 7 * k;
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        const m = rr * 0.92;
+        const t = 0.07;
+        ctx.beginPath();
+        if (i % 2) {
+          ctx.moveTo(x + Math.cos(a - t) * m, y + Math.sin(a - t) * m);
+          ctx.lineTo(x + Math.cos(a) * rr * 0.86, y + Math.sin(a) * rr * 0.86);
+          ctx.lineTo(x + Math.cos(a + t) * m, y + Math.sin(a + t) * m);
+        } else {
+          ctx.moveTo(x + Math.cos(a) * rr * 0.86, y + Math.sin(a) * rr * 0.86);
+          ctx.lineTo(x + Math.cos(a) * rr * 0.98, y + Math.sin(a) * rr * 0.98);
+        }
+        ctx.stroke();
+      }
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
+        ctx.beginPath();
+        ctx.moveTo(x + Math.cos(a) * rr * 1.04, y + Math.sin(a) * rr * 1.04);
+        ctx.lineTo(x + Math.cos(a + 0.1) * rr * 1.26, y + Math.sin(a + 0.1) * rr * 1.26);
+        ctx.stroke();
+      }
+      // soft inner glow wash
+      const gw = ctx.createRadialGradient(x, y, rr * 0.2, x, y, rr);
+      gw.addColorStop(0, 'rgba(0,0,0,0)');
+      gw.addColorStop(1, rc);
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = gw;
+      ctx.beginPath();
+      ctx.arc(x, y, rr, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // inlaid flagstone ring (worn, some missing)
+      for (let i = 0; i < 22; i++) {
+        if (rnd() < 0.18) continue;
+        const a = (i / 22) * Math.PI * 2 + rnd() * 0.06;
+        const sx = cp.x + Math.cos(a) * r * 0.7;
+        const sy = cp.y + Math.sin(a) * r * 0.7;
+        dab(sx, sy, 46 + rnd() * 14, 26 + rnd() * 8, -a + Math.PI / 2, '#3a3024', 0.55);
+        dab(sx, sy, 38 + rnd() * 12, 20 + rnd() * 6, -a + Math.PI / 2, pick(C.cobble), 0.6);
+      }
+      // camp marks: claw scratches (wolves, beetles), puddle (gromp), cracks (krugs)
+      ctx.lineCap = 'round';
+      if (cp.id === 'mooswolf' || cp.id === 'hohlkaefer') {
+        for (let i = 0; i < 9; i++) {
+          const a = rnd() * Math.PI * 2;
+          const d = r * (0.2 + rnd() * 0.45);
+          const [mx, my] = P(cp.x + Math.cos(a) * d, cp.y + Math.sin(a) * d);
+          const o = rnd() * Math.PI;
+          ctx.globalAlpha = 0.45;
+          ctx.strokeStyle = '#3a2e22';
+          ctx.lineWidth = 6 * k;
+          for (let j = -1; j <= 1; j++) {
+            ctx.beginPath();
+            ctx.moveTo(mx + Math.cos(o + Math.PI / 2) * j * 14 * k, my + Math.sin(o + Math.PI / 2) * j * 14 * k);
+            ctx.lineTo(mx + Math.cos(o) * 80 * k + Math.cos(o + Math.PI / 2) * j * 20 * k, my + Math.sin(o) * 80 * k + Math.sin(o + Math.PI / 2) * j * 20 * k);
+            ctx.stroke();
+          }
+        }
+      } else if (cp.id === 'sumpfunke') {
+        const a = cp.back + 0.6;
+        const px = cp.x + Math.cos(a) * r * 0.5;
+        const py = cp.y + Math.sin(a) * r * 0.5;
+        dab(px, py, 230, 150, a, '#3e5a52', 0.7);
+        dab(px, py, 190, 115, a, '#5f8a82', 0.6);
+        dab(px + 40, py + 20, 80, 30, a, '#a8c8b8', 0.35);
+        for (let i = 0; i < 6; i++) dab(px + (rnd() - 0.5) * 300, py + (rnd() - 0.5) * 200, 26, 20, rnd() * 3, '#5d7a3a', 0.8);
+      } else if (cp.id === 'schattenkrabbe') {
+        ctx.globalAlpha = 0.5;
+        ctx.strokeStyle = '#2e2a26';
+        ctx.lineWidth = 5 * k;
+        for (let i = 0; i < 7; i++) {
+          let a = rnd() * Math.PI * 2;
+          let [px, py] = P(cp.x + Math.cos(a) * r * 0.15, cp.y + Math.sin(a) * r * 0.15);
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          for (let j = 0; j < 4; j++) {
+            a += (rnd() - 0.5) * 0.9;
+            px += Math.cos(a) * 70 * k;
+            py += Math.sin(a) * 70 * k;
+            ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+        }
       }
     }
   }

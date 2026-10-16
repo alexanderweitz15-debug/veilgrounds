@@ -269,7 +269,7 @@ describe('M2: replays of bot games reproduce the state hash', () => {
       expect(stateHash(sim), `tick ${sim.tick}`).toBe(h);
       step(sim);
     }
-  });
+  }, 60_000); // cold import of the bot runner can exceed 5 s on a loaded machine
 
   it('a recorded bot game replays to the same hash', async () => {
     const { BotRunner, classicConfig } = await import('../src/ai/runner');

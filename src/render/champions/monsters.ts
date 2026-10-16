@@ -875,29 +875,32 @@ const MOSS_WOLF: WolfLook = { fur: m('#5d6452', 'fur'), light: m('#a8a88a', 'fur
 
 /** Leader type each small camp member is drawn as (scaled). */
 export const MONSTER_SPRITE: Record<string, { id: string; scale: number }> = {
-  mooswelpe: { id: 'mooswolf', scale: 0.62 },
-  kaeferling: { id: 'hohlkaefer', scale: 0.58 },
-  krabbling: { id: 'schattenkrabbe', scale: 0.6 },
+  mooswelpe: { id: 'mooswolf', scale: 0.6 },
+  kaeferling: { id: 'hohlkaefer', scale: 0.56 },
+  krabbling: { id: 'schattenkrabbe', scale: 0.58 },
 };
 /** Sprites baked into the big atlas (higher resolution) and the camp atlas. */
 export const BIG_MONSTER_IDS = ['dornenbock', 'glutwaechter', 'leviathan', 'schleierwaechter'];
 export const CAMP_MONSTER_IDS = ['sumpfunke', 'mooswolf', 'hohlkaefer', 'schattenkrabbe', 'nebelschleicher', 'kesselbrut', 'sprungfrucht', 'honigfrucht', 'spaehfrucht'];
 
 const d = (world: number, foot: number, frames: Record<Anim, number>, draw: SpriteDrawer['draw'], ink = 1.2): SpriteDrawer => ({ world, foot, frames, draw, ink });
+// `world` = cell height in map units; figure height (idle top to feet) relative to a champion (~170) is the LoL
+// yardstick (docs/DECISIONS.md "Maßstab"): buffs ~2.7x, Gromp ~1.7x, wolf/krug/raptor leaders 1.2-1.6x, scuttle
+// ~1.2x, drake ~3.6x, baron ~4.9x; small camp members 0.6-0.9x (MONSTER_SPRITE scales).
 export const MONSTER_DRAWERS: Record<string, SpriteDrawer> = {
   dornenbock: d(640, 0.9, MF, (st, p, a, f) => drawGolem(st, p, a, f, DORNEN), 1.0),
   glutwaechter: d(640, 0.9, MF, (st, p, a, f) => drawGolem(st, p, a, f, GLUT), 1.0),
-  sumpfunke: d(330, 0.8, MF, drawToad),
-  mooswolf: d(340, 0.9, HARK.frames, (st, p, a, f) => {
+  sumpfunke: d(430, 0.8, MF, drawToad),
+  mooswolf: d(430, 0.9, HARK.frames, (st, p, a, f) => {
     st.view.k *= 1.55;
     drawWolf(st, p, a, f, MOSS_WOLF);
   }),
-  hohlkaefer: d(300, 0.78, MF, drawBeetle),
-  schattenkrabbe: d(330, 0.78, MF, drawCrab),
-  nebelschleicher: d(300, 0.8, MF, drawStrider),
-  leviathan: d(700, 0.88, MF, drawLeviathan, 0.9),
-  schleierwaechter: d(820, 0.9, MF, drawWarden, 0.85),
-  kesselbrut: d(230, 0.8, MF, drawGrub),
+  hohlkaefer: d(440, 0.78, MF, drawBeetle),
+  schattenkrabbe: d(480, 0.78, MF, drawCrab),
+  nebelschleicher: d(340, 0.8, MF, drawStrider),
+  leviathan: d(860, 0.88, MF, drawLeviathan, 0.9),
+  schleierwaechter: d(1040, 0.9, MF, drawWarden, 0.85),
+  kesselbrut: d(290, 0.8, MF, drawGrub),
   sprungfrucht: d(190, 0.86, PF, drawSprung),
   honigfrucht: d(190, 0.86, PF, drawHonig),
   spaehfrucht: d(200, 0.88, PF, drawSpaeh),

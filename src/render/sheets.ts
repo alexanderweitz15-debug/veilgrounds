@@ -43,13 +43,13 @@ export function getMinionAtlas(onProgress?: (done: number, total: number) => voi
 
 let monsters: Promise<[ChampionAtlas, ChampionAtlas]> | null = null;
 /**
- * Jungle monster + plant atlases, the same for every match: [big, camp]. Buffs and epic objectives get a 160 px
- * cell (they are drawn 2-3x champion size), camps and plants 128 px; each atlas is 4096 x 2048.
+ * Jungle monster + plant atlases, the same for every match: [big, camp]. Buffs and epic objectives get a 200 px
+ * cell (they are drawn 2.7-5x champion height), camps and plants 128 px; big = 4096², camp = 4096 x 2048.
  */
 export function getMonsterAtlases(onProgress?: (done: number, total: number) => void): Promise<[ChampionAtlas, ChampionAtlas]> {
   if (!monsters) {
     const t0 = performance.now();
-    const p = buildChampionAtlasAsync(BIG_MONSTER_IDS, { master: 256, frame: 160, autoHark: false, worker: makeWorker, onProgress: (d, n) => onProgress?.(d * 0.4, n) })
+    const p = buildChampionAtlasAsync(BIG_MONSTER_IDS, { master: 320, frame: 200, autoHark: false, worker: makeWorker, onProgress: (d, n) => onProgress?.(d * 0.4, n) })
       .then((big) => buildChampionAtlasAsync(CAMP_MONSTER_IDS, { master: 192, frame: 128, autoHark: false, worker: makeWorker, onProgress: (d, n) => onProgress?.(n * 0.4 + d * 0.6, n) }).then((camp) => [big, camp] as [ChampionAtlas, ChampionAtlas]))
       .then((a) => {
         console.info(`monster atlases: ${a[0].canvas.width}x${a[0].canvas.height} + ${a[1].canvas.width}x${a[1].canvas.height} in ${Math.round(performance.now() - t0)} ms`);

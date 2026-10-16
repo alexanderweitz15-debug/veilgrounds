@@ -5,15 +5,16 @@ import { MAP_SIZE } from './coords';
 export const PITCH = THREE.MathUtils.degToRad(56);
 const FOV = 38;
 const MIN_DIST = 2000;
-// LoL: the default zoom is the maximum (no zooming out past it)
-const MAX_DIST = 2750;
+// LoL: the default zoom is the maximum (no zooming out past it). 2500 puts a champion (~170 tall) at ~10 % of the
+// screen height like LoL (docs/DECISIONS.md "Maßstab"; was 2750 = 9 %)
+const MAX_DIST = 2500;
 
 export class CameraRig {
   readonly camera: THREE.PerspectiveCamera;
   /** Focus point on the ground (sim coordinates). */
   tx = 8000;
   ty = 8000;
-  dist = 2750;
+  dist = MAX_DIST;
   private readonly ray = new THREE.Raycaster();
   private readonly plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   private readonly v = new THREE.Vector3();

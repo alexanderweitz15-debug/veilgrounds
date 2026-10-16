@@ -380,17 +380,190 @@ const ABILITY_GLYPH: Record<string, Glyph> = {
   },
 };
 
-/** Ability icon for champion `champ`, slot 0..3 (R gets a gold frame). */
+// ------------------------------------------------------------------------------------------------ ability motifs
+/** Thematic glyphs: what the ability IS (fire, lightning, hook…), not only its targeting type. */
+const MOTIF: Record<string, Glyph> = {
+  arrow: (g, c) => {
+    line(g, WOOD, 4, [14, 50, 46, 18]);
+    shape(g, METAL, () => (g.moveTo(52, 12), g.lineTo(48, 28), g.lineTo(36, 16), g.closePath()));
+    line(g, c, 4, [14, 50, 10, 42]);
+    line(g, c, 4, [14, 50, 22, 54]);
+  },
+  flame: (g, c) => {
+    shape(g, c, () => (g.moveTo(32, 6), g.bezierCurveTo(54, 26, 50, 40, 44, 50), g.quadraticCurveTo(32, 60, 20, 50), g.bezierCurveTo(12, 38, 18, 26, 26, 18), g.quadraticCurveTo(26, 30, 32, 32), g.quadraticCurveTo(28, 18, 32, 6), g.closePath()));
+    shape(g, '#ffe7a0', () => (g.moveTo(32, 30), g.quadraticCurveTo(42, 40, 38, 48), g.quadraticCurveTo(32, 54, 26, 48), g.quadraticCurveTo(24, 40, 32, 30), g.closePath()), undefined, 2);
+  },
+  bolt: (g, c) => shape(g, c, () => (g.moveTo(38, 4), g.lineTo(16, 34), g.lineTo(30, 34), g.lineTo(22, 60), g.lineTo(48, 26), g.lineTo(34, 26), g.lineTo(42, 4), g.closePath())),
+  wave: (g, c) => {
+    for (const y of [22, 34, 46]) line(g, c, 5, [8, y, 18, y - 6, 28, y, 38, y - 6, 48, y, 56, y - 5]);
+  },
+  hook: (g, c) => {
+    line(g, METAL, 5, [32, 6, 32, 34]);
+    g.beginPath();
+    g.arc(24, 36, 12, 0, Math.PI, false);
+    g.lineWidth = 9;
+    g.strokeStyle = 'rgba(12,9,6,0.9)';
+    g.stroke();
+    g.lineWidth = 6;
+    g.strokeStyle = c;
+    g.stroke();
+    shape(g, c, () => (g.moveTo(10, 36), g.lineTo(6, 26), g.lineTo(16, 32), g.closePath()), undefined, 2);
+  },
+  web: (g, c) => {
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      line(g, c, 2, [32, 32, 32 + Math.cos(a) * 26, 32 + Math.sin(a) * 26]);
+    }
+    for (const r of [9, 17, 25]) {
+      g.beginPath();
+      for (let i = 0; i <= 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        if (i) g.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r);
+        else g.moveTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r);
+      }
+      g.lineWidth = 2;
+      g.strokeStyle = c;
+      g.stroke();
+    }
+  },
+  gear: (g, c) => {
+    shape(g, c, () => {
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        const r = i % 2 ? 18 : 25;
+        if (i) g.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r);
+        else g.moveTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r);
+      }
+      g.closePath();
+    });
+    shape(g, '#1a1410', () => g.arc(32, 32, 8, 0, 7), undefined, 2);
+    line(g, '#efe6cf', 3, [32, 32, 32, 16]);
+  },
+  bell: (g, c) => {
+    shape(g, c, () => (g.moveTo(32, 8), g.bezierCurveTo(46, 8, 46, 22, 48, 42), g.lineTo(54, 48), g.lineTo(10, 48), g.lineTo(16, 42), g.bezierCurveTo(18, 22, 18, 8, 32, 8), g.closePath()));
+    shape(g, METAL, () => g.arc(32, 52, 5, 0, 7), undefined, 2);
+  },
+  claw: (g, c) => {
+    for (const dx of [-12, 0, 12]) line(g, c, 5, [24 + dx, 10, 34 + dx, 30, 30 + dx, 54]);
+  },
+  moon: (g, c) => {
+    shape(g, c, () => (g.arc(32, 32, 22, Math.PI * 0.3, Math.PI * 1.7, false), g.arc(40, 30, 17, Math.PI * 1.55, Math.PI * 0.45, true), g.closePath()));
+    shape(g, '#efe6cf', () => g.arc(46, 18, 3, 0, 7), undefined, 1);
+  },
+  sun: (g, c) => {
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      line(g, c, 4, [32 + Math.cos(a) * 16, 32 + Math.sin(a) * 16, 32 + Math.cos(a) * 27, 32 + Math.sin(a) * 27]);
+    }
+    shape(g, '#ffe7a0', () => g.arc(32, 32, 12, 0, 7));
+  },
+  bomb: (g, c) => {
+    shape(g, '#3a3028', () => g.arc(30, 38, 17, 0, 7));
+    line(g, WOOD, 3, [40, 24, 48, 14]);
+    GLYPHS_SPARK(g, c, 50, 11);
+  },
+  banner: (g, c) => {
+    line(g, WOOD, 4, [18, 8, 18, 58]);
+    shape(g, c, () => (g.moveTo(20, 10), g.lineTo(50, 10), g.lineTo(44, 22), g.lineTo(50, 34), g.lineTo(20, 34), g.closePath()));
+  },
+  spiral: (g, c) => {
+    g.beginPath();
+    for (let i = 0; i <= 60; i++) {
+      const a = i * 0.32;
+      const r = 3 + i * 0.42;
+      if (i) g.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r);
+      else g.moveTo(32, 32);
+    }
+    g.lineWidth = 8;
+    g.strokeStyle = 'rgba(12,9,6,0.9)';
+    g.stroke();
+    g.lineWidth = 5;
+    g.strokeStyle = c;
+    g.stroke();
+  },
+  snow: (g, c) => {
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI;
+      line(g, c, 4, [32 - Math.cos(a) * 24, 32 - Math.sin(a) * 24, 32 + Math.cos(a) * 24, 32 + Math.sin(a) * 24]);
+    }
+  },
+  glass: (g, c) => shape(g, c, () => (g.moveTo(32, 6), g.lineTo(50, 24), g.lineTo(40, 58), g.lineTo(24, 58), g.lineTo(14, 24), g.closePath())),
+  root: (g, c) => {
+    line(g, c, 6, [32, 8, 32, 40, 18, 56]);
+    line(g, c, 5, [32, 40, 46, 56]);
+    line(g, c, 4, [32, 26, 46, 18]);
+    line(g, c, 4, [32, 30, 18, 22]);
+  },
+};
+
+function GLYPHS_SPARK(g: CanvasRenderingContext2D, c: string, x: number, y: number): void {
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + 0.4;
+    line(g, c, 2, [x, y, x + Math.cos(a) * 7, y + Math.sin(a) * 7]);
+  }
+}
+
+/** Keyword rules on the ability's English name + description: [pattern, motif, element hue]. First match wins. */
+const MOTIF_RULES: [RegExp, string, number][] = [
+  [/fire|ember|ash|flame|burn|ignite/, 'flame', 22],
+  [/lightning|thunder|spark|storm|electr|bolt/, 'bolt', 52],
+  [/water|jet|flood|current|spring|surge|sea|wave|steam|mist/, 'wave', 200],
+  [/ice|frost|freeze|snow/, 'snow', 195],
+  [/hook|anchor|harpoon|reel|haul|chain/, 'hook', 30],
+  [/thread|\bweb\b|\bnets?\b|yarn|\bknot|\bwire|tripwire|\btrap/, 'web', 300],
+  [/clock|rewind|standstill|wheel|\btime\b|\btick/, 'gear', 42],
+  [/blade|\bcut\b|slash|execution|sevenfold|dagger/, 'dagger', 5],
+  [/shield|\bwall\b|hide|guard|aegis/, 'shield', 210],
+  [/slam|strike|\bram\b|\bfell\b|axe|smash/, 'axe', 18],
+  [/\bbell|\btoll|\bpeal|\bring\b/, 'bell', 45],
+  [/claw|pounce|fang|bear|jaw|hunt|pack|nose|stalk/, 'claw', 14],
+  [/shadow|shroud|night|veil|dark|hollow|smoke|dusk/, 'moon', 270],
+  [/light|lance|prism|sun|glare|lantern|verdict/, 'sun', 48],
+  [/keg|powder|bomb|blast|burst/, 'bomb', 28],
+  [/banner|monument|call|faith|march|duty/, 'banner', 10],
+  [/whirl|whorl|spin/, 'spiral', 190],
+  [/glass|dome|crystal/, 'glass', 185],
+  [/root|grip|sap/, 'root', 110],
+  [/arrow|shot|volley|bow|needle|spear/, 'arrow', 35],
+];
+
+function abilityMotif(champ: string, slot: number): [Glyph, number] | null {
+  const ab = championData(champ)?.abilities[slot];
+  if (!ab) return null;
+  const text = `${ab.name.en} ${ab.desc.en}`.toLowerCase();
+  for (const [re, m, hue] of MOTIF_RULES) if (re.test(ab.name.en.toLowerCase())) return [(MOTIF[m] ?? GLYPHS[m])!, hue];
+  for (const [re, m, hue] of MOTIF_RULES) if (re.test(text)) return [(MOTIF[m] ?? GLYPHS[m])!, hue];
+  return null;
+}
+
+/** Ability icon for champion `champ`, slot 0..3 (R gets a gold frame): thematic motif + element colour on the champion palette. */
 export function abilityIcon(champ: string, slot: number): string | null {
   const ab = championData(champ)?.abilities[slot];
   if (!ab) return null;
   return cached(`ab:${champ}:${slot}`, (g) => {
     const { base, accent } = champColors(champ);
     const [h, s] = hexToHsl(base);
-    backdrop(g, hsl(h, Math.min(60, s + 10), 34), hsl(h, s, 10));
-    const [ah, as] = hexToHsl(accent);
-    const glow = hsl(ah, Math.max(55, as), 66);
-    (ABILITY_GLYPH[ab.type] ?? ABILITY_GLYPH.self!)(g, glow);
+    backdrop(g, hsl(h, Math.min(60, s + 10), 30), hsl(h, s, 8));
+    const motif = abilityMotif(champ, slot);
+    if (motif) {
+      // same motif on an earlier slot of this champion: shift the hue so Q/W/E/R stay distinguishable
+      let repeats = 0;
+      for (let k = 0; k < slot; k++) if (abilityMotif(champ, k)?.[0] === motif[0]) repeats++;
+      motif[0](g, hsl((motif[1] + repeats * 47) % 360, 75, 62));
+      // small targeting-type badge (line / circle / dash / zone …) in the corner
+      g.save();
+      g.fillStyle = 'rgba(12,9,6,0.8)';
+      g.beginPath();
+      g.arc(50, 50, 12, 0, 7);
+      g.fill();
+      g.translate(39, 39);
+      g.scale(0.34, 0.34);
+      (ABILITY_GLYPH[ab.type] ?? ABILITY_GLYPH.self!)(g, '#efe6cf');
+      g.restore();
+    } else {
+      const [ah, as] = hexToHsl(accent);
+      (ABILITY_GLYPH[ab.type] ?? ABILITY_GLYPH.self!)(g, hsl(ah, Math.max(55, as), 66));
+    }
     frame(g, slot === 3 ? GOLD : 'rgba(12,9,6,0.9)', slot === 3 ? 4 : 2);
   });
 }
@@ -433,8 +606,12 @@ export function passiveIcon(champ: string): string | null {
     const { base, accent } = champColors(champ);
     const [h, s] = hexToHsl(base);
     backdrop(g, hsl(h, Math.min(60, s + 10), 30), hsl(h, s, 8));
+    const p = championData(champ)!.passive;
+    const text = `${p.name.en} ${p.desc.en}`.toLowerCase();
+    const rule = MOTIF_RULES.find(([re]) => re.test(text));
     const [ah, as] = hexToHsl(accent);
-    GLYPHS.gem!(g, hsl(ah, Math.max(55, as), 68));
+    if (rule) (MOTIF[rule[1]] ?? GLYPHS[rule[1]])!(g, hsl(rule[2], 70, 64));
+    else GLYPHS.gem!(g, hsl(ah, Math.max(55, as), 68));
     frame(g, '#b9b2a2', 3);
   });
 }

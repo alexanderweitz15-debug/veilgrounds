@@ -37,6 +37,8 @@ const ALL_KNOBS: Record<Knob, true> = {
   groupWeight: true, splitWeight: true, pingObedience: true, fightJoinThreshold: true, fightJoinLatencyMult: true,
   recallThresholdShift: true, macroIntervalMult: true, waveSacrifice: true,
   gankThreshold: true, gankEvalIntervalS: true,
+  harassRateShift: true, utilFarm: true, utilTrade: true, utilHarass: true, utilRoam: true, utilPush: true, utilRecall: true,
+  utilObjective: true, utilVision: true, utilGroup: true, utilCatchLane: true,
 };
 
 const ps = (o: Partial<Playstyle>): Playstyle => ({ ...neutralPlaystyle(), ...o });

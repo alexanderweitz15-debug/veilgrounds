@@ -61,6 +61,18 @@
     "waveSacrifice": { "base": 0.5, "from": [{ "axis": "tempo", "perStep": 0.1 }], "clamp": [0, 1], "note": "§2: give up a wave for an objective" },
 
     "gankThreshold": { "base": 0.55, "from": [{ "axis": "aggression", "perStep": -0.03 }], "clamp": [0.4, 0.7], "note": "§4.3: gank at score > 0.55, aggression +-0.15 (rank: Iron 0.3, Challenger 0.6 in behaviour)" },
-    "gankEvalIntervalS": { "base": 5, "from": [{ "axis": "tempo", "perStep": [-0.5, -0.3] }], "clamp": [3.5, 7.5], "note": "§4.3: every 5 s, tempo scales" }
+    "gankEvalIntervalS": { "base": 5, "from": [{ "axis": "tempo", "perStep": [-0.5, -0.3] }], "clamp": [3.5, 7.5], "note": "§4.3: every 5 s, tempo scales" },
+
+    "harassRateShift": { "base": 0, "from": [{ "axis": "aggression", "perStep": 0.6 }], "clamp": [-3, 3], "note": "BRAIN-REWORK §4.3: harass budget (profile harassPerMin) +-3 autos/min by aggression" },
+    "utilFarm": { "base": 1.0, "from": [{ "axis": "farmPriority", "perStep": [0.08, 0.12] }], "clamp": [0.6, 1.6], "note": "BRAIN-REWORK §5: Farm axis x farm utility (0.6 .. 1.6)" },
+    "utilTrade": { "base": 1.0, "from": [{ "axis": "aggression", "perStep": [0.08, 0.12] }], "clamp": [0.6, 1.6], "note": "BRAIN-REWORK §5: Aggression x trade / all-in utility" },
+    "utilHarass": { "base": 1.0, "from": [{ "axis": "aggression", "perStep": [0.08, 0.12] }], "clamp": [0.6, 1.6], "note": "BRAIN-REWORK §5: Aggression x harass-poke utility" },
+    "utilRoam": { "base": 1.0, "from": [{ "axis": "roam", "perStep": [0.08, 0.12] }], "clamp": [0.6, 1.6], "note": "BRAIN-REWORK §5: Roam axis x roam utility" },
+    "utilPush": { "base": 1.0, "from": [{ "axis": "tempo", "perStep": [0.08, 0.12] }], "clamp": [0.6, 1.6], "note": "BRAIN-REWORK §5: Tempo x push / plates utility (fast tempo shoves)" },
+    "utilRecall": { "base": 1.0, "from": [{ "axis": "tempo", "perStep": [-0.12, -0.08] }], "clamp": [0.6, 1.6], "note": "BRAIN-REWORK §5 / spec-bots §2: Tempo x recall utility (slow recalls often: -5 -> 1.6, +5 -> 0.6)" },
+    "utilObjective": { "base": 1.0, "from": [{ "axis": "objectiveRisk", "perStep": [0.08, 0.12] }], "clamp": [0.6, 1.6], "note": "BRAIN-REWORK §5: Objective risk x objective utility" },
+    "utilVision": { "base": 1.0, "from": [{ "axis": "vision", "perStep": [0.08, 0.12] }], "clamp": [0.6, 1.6], "note": "BRAIN-REWORK §5: Vision x ward / sweep utility" },
+    "utilGroup": { "base": 1.0, "from": [{ "axis": "teamplay", "perStep": [0.08, 0.12] }], "clamp": [0.6, 1.6], "note": "BRAIN-REWORK §5: Teamplay x group / siege / end utility" },
+    "utilCatchLane": { "base": 1.0, "from": [{ "axis": "farmPriority", "perStep": [0.08, 0.12] }], "clamp": [0.6, 1.6], "note": "BRAIN-REWORK §4.6/§5: Farm x jungler 'catch the lane' utility" }
   }
 }

@@ -173,9 +173,17 @@ export const MAX_TILT = 3;
  * tiltPerformanceDropPct and the bot plays one aggression step more per stack. Returns a new object.
  * ponytail: linear in stacks, no decay here; the caller owns the tilt counter and its decay.
  */
-export function withTilt(params: BotParams, tilt: number): BotParams {
+export function withTilt(params: BotParams, tilt: number, mode: 'legacy' | 'attention' = 'legacy'): BotParams {
   const n = clamp(tilt, 0, MAX_TILT);
   if (n <= 0) return params;
+  // BRAIN-REWORK §9: tilt acts through longer distraction windows (src/ai/humanize/attention.ts, tilt x
+  // attention.json tiltExtendPct) plus one aggression step per stack - no direct parameter degradation. The caller
+  // switches to 'attention' once the attention model is consumed (runTree, shared-changes.md); 'legacy' keeps today's
+  // behaviour until then.
+  if (mode === 'attention') {
+    const playstyle = { ...params.playstyle, aggression: clampAxis(params.playstyle.aggression + Math.round(n)) };
+    return { ...params, playstyle, knobs: computeKnobs(playstyle) };
+  }
   const drop = (params.behavior.tiltPerformanceDropPct / 100) * (n / MAX_TILT);
   const b: RankBehavior = {
     ...params.behavior,
@@ -188,6 +196,20 @@ export function withTilt(params: BotParams, tilt: number): BotParams {
   const playstyle = { ...params.playstyle, aggression: clampAxis(params.playstyle.aggression + Math.round(n)) };
   return { ...params, behavior: b, playstyle, knobs: computeKnobs(playstyle) };
 }
+
+/**
+ * BRAIN-REWORK §4.4/§4.7 orbwalk chance (0..1): the rank's chance at kiting axis 0 (profile orbwalkPct, %) blended
+ * linearly to 100 % at kiting -5 ("Profi") and 0 % at +5 ("keins") - spec-bots §2: rank limits the execution, the
+ * axis the preference. Replaces knobs.orbwalkChance (axis only, base 0.5) once the reflex layer reads it.
+ */
+export function orbwalkChanceAt(orbwalkPct: number, kiting: number): number {
+  const base = clamp(orbwalkPct / 100, 0, 1);
+  const k = clamp(kiting, -5, 5) / 5;
+  return k < 0 ? base + (1 - base) * -k : base * (1 - k);
+}
+
+/** BRAIN-REWORK §4.3 harass budget (autos/min): profile harassPerMin plus the aggression knob harassRateShift. */
+export const harassBudgetPerMin = (harassPerMin: number, p: Pick<BotParams, 'knobs'>): number => Math.max(0, harassPerMin + p.knobs.harassRateShift);
 
 /**
  * Spec §1 hysteresis: the running behaviour gets a bonus of params.hysteresis (fraction, 0.10 .. 0.25) on its

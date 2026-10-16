@@ -131,6 +131,28 @@ export class BotDecisionLog implements DecisionLog {
 
 // ------------------------------------------------------------------ F9 overlay rows
 
+/**
+ * Reflex layer state for the overlay (BRAIN-REWORK §3). Structural copy of A1's `reflexDebug(mem, tick)` result
+ * (docs/agents/plan-api.md §5, type `ReflexDebug` in src/ai/plan.ts) - no import, so the overlay builds without it.
+ */
+export interface ReflexDebugRow {
+  /** Current lane intent, e.g. 'laneFarm/push' ('' or 'none' = no intent this decision). */
+  intent: string;
+  /** Active plans in execution order; inTicks = countdown to executeAtTick; reason = latest cancel reason, if any. */
+  plans: { kind: string; targetId: number; inTicks: number; reason?: string }[];
+  /** Attack utilisation of the last 30 s (0..1). */
+  util30s: number;
+  stand: { x: number; y: number } | null;
+}
+
+/** Attention model state for the overlay (src/ai/humanize/attention.ts attentionDebug). */
+export interface AttentionDebugRow {
+  /** "focused" or "distracted(<reason>) <s left> s". */
+  text: string;
+  /** Distracted share of the game so far (0..1). */
+  share: number;
+}
+
 /** Static facts about a bot for the overlay (runner side). */
 export interface BotDebugInfo {
   slot: number;
@@ -141,9 +163,17 @@ export interface BotDebugInfo {
   rolled: boolean;
   /** Current behaviour mode (BotMemory.mode). */
   mode: string;
+  /** BRAIN-REWORK §3 (optional until the runner fills them): reflex state and attention of this bot. */
+  reflex?: ReflexDebugRow;
+  attention?: AttentionDebugRow;
 }
 
+/** Log node of A2's intent choice (BRAIN-REWORK §3/§5, src/ai/utility/select.ts): chosen = intent ('none' / 'wait' = idle), scores = all candidates. */
+export const INTENT_NODE = 'utility';
+
 export interface BotDebugRow extends BotDebugInfo {
+  /** Latest intent decision (log node INTENT_NODE): intent and its top-3 candidates; absent before the utility model. */
+  intent?: { chosen: string; tick: number; candidates: [string, number][] };
   tick: number;
   node: string;
   chosen: string;
@@ -156,6 +186,8 @@ export interface BotDebugRow extends BotDebugInfo {
   reactionMs?: number;
   perceptionAgeMs?: number;
 }
+
+const topScores = (s: Record<string, number> | undefined): [string, number][] => (s ? (Object.entries(s).sort((x, y) => y[1] - x[1]).slice(0, 3) as [string, number][]) : []);
 
 /** Overlay rows: latest decision per bot plus the latest injected error / reaction time. */
 export function debugRows(log: BotDecisionLog, bots: readonly BotDebugInfo[]): BotDebugRow[] {
@@ -170,8 +202,10 @@ export function debugRows(log: BotDecisionLog, bots: readonly BotDebugInfo[]): B
       node: last?.node ?? '-',
       chosen: last?.chosen ?? '-',
       reason: last?.reason ?? '',
-      topScores: last?.scores ? (Object.entries(last.scores).sort((x, y) => y[1] - x[1]).slice(0, 3) as [string, number][]) : [],
+      topScores: topScores(last?.scores),
     };
+    const intent = log.latest(b.slot, (e) => e.node === INTENT_NODE);
+    if (intent) row.intent = { chosen: intent.chosen, tick: intent.tick, candidates: topScores(intent.scores) };
     if (err) [row.injectedError, row.errorTick] = [err.injectedError, err.tick];
     if (react) row.reactionMs = react.reactionMs;
     if (age) row.perceptionAgeMs = age.perceptionAgeMs;

@@ -55,7 +55,15 @@
     "apmCap": 280,
     "inertia": 0.15,
     "hysteresis": 0.1,
-    "engageHesitationS": 0.3
+    "engageHesitationS": 0.3,
+    "utilityNoisePct": 7,
+    "distractionIntervalS": 31,
+    "distractionDurMedianS": 0.8,
+    "distractionDurSigma": 0.5,
+    "minimapGlancePlannedPct": 100,
+    "distractKillFeedPct": 5,
+    "distractShopPct": 5,
+    "distractChatPct": 3
   },
   "notes": {
     "de": "Unterschied zu Diamant ist Makro und Konsistenz, nicht Mechanik. Clears auf 10–20 s zum Camp-Respawn getimt. Recall nur mit kaufbarem Item nach unbestrafbarem Play. Tracked den Jungler ab dem Leash bei 1:30, zählt dessen CS (12 CS ≈ 3 Camps). Erkennt die Win-Condition, erzeugt Trade-Fenster. Dodged per Vorhersage vor dem Cast-Ende, passt sich in den ersten Minuten an Spieler-Tendenzen an. Vision eine Minute vor Objective-Spawn. Makro-Neubewertung alle 10 s. Surrendert früh bei klarem Rückstand. 40 % weniger Fehler als Diamant bei gleicher Reaktionszeit.",

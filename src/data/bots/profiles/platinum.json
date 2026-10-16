@@ -55,7 +55,15 @@
     "apmCap": 147,
     "inertia": 0.4,
     "hysteresis": 0.22,
-    "engageHesitationS": 0.68
+    "engageHesitationS": 0.68,
+    "utilityNoisePct": 17,
+    "distractionIntervalS": 9.3,
+    "distractionDurMedianS": 1.2,
+    "distractionDurSigma": 0.5,
+    "minimapGlancePlannedPct": 65,
+    "distractKillFeedPct": 25,
+    "distractShopPct": 40,
+    "distractChatPct": 25
   },
   "notes": {
     "de": "Mechanisch sauber, verliert gewonnene Spiele: zögert an Inhibitoren und Baron, schwaches Wave-Management in unbekannten Matchups, bricht nach einem Death mental ein. Große Varianz. Denkt einen Spielzustand voraus, versteht Teamkompositionen. Deutlich selektivere Trades als Gold.",

@@ -32,8 +32,11 @@ Ausführlicher Ist-Zustand mit Screenshots: [docs/IST-ZUSTAND.md](IST-ZUSTAND.md
 - [x] Drache, Kesselbrut, Baron mit Gruppenruf, Bannen-Timing
 - [x] Wellen in Turm schieben, Gruppieren/Belagern ab 14:00
 - [x] bot-sim mit CSV und `--vs=<rang>`
-- [~] CS-Kalibrierung gegen Tabelle A (aktuell ~50 %) → Tempo/Balance-Agent
-- [~] Spieldauer 28–35 min, 40–60 Kills, erster Turm 12–16 min (aktuell 40–45 min) → Tempo/Balance-Agent
+- [~] CS-Kalibrierung gegen Tabelle A (~40 % in Partien; allein auf der Lane 5,6–7,8 CS/min – Verluste durch Abwesenheit)
+- [x] Spieldauer 28–35 min: Gold-Partien enden 29,6–34,7 min mit Nexus (505e770)
+- [~] Kills ~34 statt 40–60, erster Turm ~18 min statt 12–16
+- [x] Bot-Wegfindung: Richtungswechsel −35 %, Hängen −83 % (505e770)
+- [ ] Seiten-Ungleichgewicht: Blau gewann 20 von 24 Bot-Partien – Ursache in Sim/Karte suchen
 
 ## Phase 4 – Ränge + Humanisierung
 - [x] Rangprofile Eisen–Challenger, 10 Spielstil-Achsen, Archetypen, Reaktionszeiten, Varianz

@@ -6,6 +6,7 @@ export type Cue =
   | 'lastHit'
   | 'auto'
   | 'autoHeavy'
+  | 'minionAuto'
   | 'tower'
   | 'hit'
   | 'death'
@@ -128,6 +129,9 @@ export function play(cue: Cue, x?: number, y?: number): void {
     case 'autoHeavy':
       noise(v, 0.09, 900, 2, 0.25);
       tone(v, 'sawtooth', 160, 70, 0.12, 0.12);
+      break;
+    case 'minionAuto': // soft clack: a wave fight is many of these at once
+      noise(v, 0.035, 1400, 2.5, 0.06);
       break;
     case 'tower':
       tone(v, 'sawtooth', 220, 55, 0.35, 0.28);

@@ -1,9 +1,16 @@
 // Maps sim events (already fog-filtered by the snapshot) to sounds.
 import type { SimEvent } from '../sim/types';
+import type { SnapEntity } from '../sim/snapshot';
 import { Kind, isMinion } from '../sim/types';
 import type { ClientState } from '../game/state';
 import { championData } from '../sim/champions';
 import { play, playCast } from './sfx';
+
+/** Auto attack leaving the wind-up (projectile launch / melee strike): champions full, minions soft. */
+export function soundForFire(e: SnapEntity): void {
+  if (e.kind === Kind.Champion) play(e.radius >= 60 ? 'autoHeavy' : 'auto', e.x, e.y);
+  else if (isMinion(e.kind)) play('minionAuto', e.x, e.y);
+}
 
 export function soundForEvent(ev: SimEvent, state: ClientState): void {
   const me = state.me();
@@ -20,10 +27,15 @@ export function soundForEvent(ev: SimEvent, state: ClientState): void {
       return;
     }
     case 'attack': {
+      // only towers here (no wind-up); champions and minions sound when the shot leaves (soundForFire)
       const e = state.byId.get(ev.src);
-      if (!e) return;
-      if (e.kind === Kind.Tower || e.kind === Kind.Nexus) play('tower', e.x, e.y);
-      else if (e.kind === Kind.Champion) play(e.radius >= 60 ? 'autoHeavy' : 'auto', e.x, e.y);
+      if (e && (e.kind === Kind.Tower || e.kind === Kind.Nexus)) play('tower', e.x, e.y);
+      return;
+    }
+    case 'damage': {
+      // impact of an auto attack on you or by you (LoL: hit sound at the target)
+      if (!ev.auto || !me || (ev.src !== me.id && ev.dst !== me.id)) return;
+      play('hit', ...(at(ev.dst) as [number, number]));
       return;
     }
     case 'death':

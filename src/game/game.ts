@@ -1,6 +1,6 @@
 // One running match on the client: sim link, render world, input, HUD, minimap and the frame loop.
 import { ChatBox } from '../ui/chat';
-import { soundForEvent } from '../audio/eventSounds';
+import { soundForEvent, soundForFire } from '../audio/eventSounds';
 import { audioUnlock, setListener, setVolume } from '../audio/sfx';
 import { blockBrowserShortcuts, enterGameFullscreen, exitGameFullscreen } from './fullscreen';
 import { loadMap } from '../sim/map';
@@ -117,6 +117,7 @@ export class Game {
         this.chat?.onEvent(ev);
         soundForEvent(ev, this.state);
       }
+      for (const e of this.state.fired) soundForFire(e);
     };
 
     this.hud = new Hud(

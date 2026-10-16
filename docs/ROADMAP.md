@@ -108,7 +108,7 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
   AS-Änderung ist die Ausholphase falsch getaktet. Fix: `atkEnd` (= `Atk.phaseEnd`) in `SnapEntity`.
 
 **Wichtig**
-- [ ] **Angriffs-Sound am Wind-up-Start.** audio/eventSounds.ts `soundForEvent` case `'attack'` spielt 433–567 ms vor
+- [x] **Angriffs-Sound am Wind-up-Start.** (erledigt: Sound beim Abschuss = Phase 1→2, leiser Minion-Sound, Einschlag-Ton bei eigenen Autos/Treffern auf dich) audio/eventSounds.ts `soundForEvent` case `'attack'` spielt 433–567 ms vor
   Abschuss/Einschlag; Minion-Autos sind stumm, Einschläge auch. LoL: Schuss-Sound beim Abschuss, Einschlag-Sound am
   Ziel. Fix: Sim-Event beim Abschuss in attack.ts `fire()` (gibt es heute nicht) bzw. Phase 1→2 im Client, Einschlag
   an `damage` mit `auto: true`.

@@ -47,6 +47,9 @@ export class ClientState {
   /** Snapshot arrival baseline in ms (see ingest). */
   private base = Number.NaN;
   private readonly prev2 = new Map<number, [number, number]>();
+  /** Units whose auto attack fired in the newest snapshot (wind-up -> backswing). */
+  readonly fired: SnapEntity[] = [];
+  private readonly phase = new Map<number, number>();
   /** Interpolated positions for the current frame, keyed by eid. */
   readonly ix = new Map<number, number>();
   readonly iy = new Map<number, number>();
@@ -71,6 +74,13 @@ export class ClientState {
     else this.base += (m - this.base) * 0.02;
     this.myTeam = s.team;
     this.byId.clear();
+    // autos that left the wind-up this snapshot (phase 1 -> 2 = projectile launch / melee hit): fire sounds
+    this.fired.length = 0;
+    for (const e of s.entities) {
+      if (e.atkPhase === 2 && this.phase.get(e.id) === 1) this.fired.push(e);
+      this.phase.set(e.id, e.atkPhase);
+    }
+    if (this.phase.size > s.entities.length * 4) for (const id of this.phase.keys()) if (!s.entities.some((e) => e.id === id)) this.phase.delete(id);
     for (const e of s.entities) {
       this.byId.set(e.id, e);
       this.known.set(e.id, e);

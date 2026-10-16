@@ -63,7 +63,7 @@ function lastHitter(sim: Sim, me: number): TickInput[] {
     const d = Math.hypot(dx, dy) || 1;
     if (Math.abs(d - 450) > 120) out.push({ slot: 0, cmd: { t: 'move', x: Pos.x[front]! + (dx / d) * 450, y: Pos.y[front]! + (dy / d) * 450 } });
   } else if (front < 0 && sim.tick % 60 === 0) {
-    out.push({ slot: 0, cmd: { t: 'move', x: 6000, y: 6000 } }); // wait in front of own outer mid tower
+    out.push({ slot: 0, cmd: { t: 'move', x: 6250, y: 6250 } }); // wait just behind own outer mid tower (6650, 6650)
   }
   return out;
 }

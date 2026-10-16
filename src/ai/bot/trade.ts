@@ -16,7 +16,9 @@ import { castSlot, hpPct, slotReach, offensiveCast } from './combat';
 import { dst, unit } from './geo';
 import { estimateExchange, laningSafety, rankIdx, rollError, tacticsFocus } from '../bt/deps';
 import { cancelOrbwalk, kitePoint, orbwalkAttack, moveCmd } from './kite';
-import { towerCovering } from './perception';
+import { TOWER_DANGER, towerCovering } from './perception';
+import { lv } from '../ganks/common';
+import { VALUES, rankCurve } from '../utility/values';
 import type { TradeState } from '../bt/state';
 import type { ExchangeResult } from '../contract';
 import { utilityOn } from '../utility/flag';
@@ -310,6 +312,11 @@ export function tradeRunCore(n: NodeCtx): NodeResult {
     const tol = n.ctx.profile.behavior.diveHpTolerancePct + n.p.knobs.diveTolerancePctShift;
     const overcommit = n.v.tick < ext.overcommitUntil;
     if (!overcommit && towerCovering(n.v, t) && !(n.p.knobs.towerDive && hpPct(t) * 100 <= tol) && !lethalDive(n, t, exK)) return endTrade(n, tr, 'target under tower', true), 'failure';
+    if (utilityOn(n.ctx) && !overcommit) {
+      const why = chaseAbort(n, tr, t, exK);
+      if (why) return endTrade(n, tr, why, true), 'failure';
+      if (diveAggroSwap(n, tr)) return 'running';
+    }
   } else {
     tr.win = 0.6 * tr.win + 0.4 * ex.winProb;
     const why = shouldAbort(n.p.knobs, { elapsedS: elapsed, comboDone: tr.comboDone, myHp: n.v.hpPct, theirHp: hpPct(t), winProb: tr.win });
@@ -319,6 +326,73 @@ export function tradeRunCore(n: NodeCtx): NodeResult {
   summoners(n, tr, t, ex);
   execute(n, tr, t, ex);
   return 'running';
+}
+
+// ------------------------------------------------------------------ §6.2 rework (utility flag only)
+// Rank enters only through the rolled rates (values.json combat.*.pct rank curves, rolled once per all-in).
+
+const reworkRolls = new WeakMap<TradeState, { chaseAbort: boolean; aggroSwap: boolean }>();
+function rollsOf(n: NodeCtx, tr: TradeState): { chaseAbort: boolean; aggroSwap: boolean } {
+  let r = reworkRolls.get(tr);
+  if (!r) {
+    const c = VALUES.combat;
+    r = { chaseAbort: n.rng.chance(rankCurve(c.chaseAbort.pct, n.ctx.params.skill) / 100), aggroSwap: n.rng.chance(rankCurve(c.diveAggroSwap.pct, n.ctx.params.skill) / 100) };
+    reworkRolls.set(tr, r);
+  }
+  return r;
+}
+
+/** Summed weight of unseen enemies whose probability cloud touches the segment bot -> target (fog-safe tracks). */
+export function cloudOnPath(n: NodeCtx, t: { x: number; y: number }): number {
+  const pv = lv(n);
+  if (!pv) return 0;
+  const a = n.v.self;
+  const bx = t.x - a.x;
+  const by = t.y - a.y;
+  const len2 = bx * bx + by * by || 1;
+  let w = 0;
+  for (const tr of pv.enemies.values()) {
+    if (tr.dead || tr.visibleNow || !tr.cloud) continue;
+    const c = tr.cloud;
+    const k = Math.max(0, Math.min(1, ((c.x - a.x) * bx + (c.y - a.y) * by) / len2));
+    if (dst(c, { x: a.x + bx * k, y: a.y + by * k }) <= c.r) w += c.weight;
+  }
+  return Math.min(1, w);
+}
+
+/**
+ * §6.2 chase abort: the chase ends when the target reached its tower range + towerMargin while the kill estimate is
+ * below killProbBelow, or when unknown enemies' clouds on the path weigh more than cloudOnPath. Iron chases anyway
+ * (rank curve 0 %, the chase_third_kill behaviour).
+ */
+function chaseAbort(n: NodeCtx, tr: TradeState, t: SnapEntity, exK: ExchangeResult): string | null {
+  const c = VALUES.combat.chaseAbort;
+  if (!rollsOf(n, tr).chaseAbort) return null;
+  if (exK.killProb < c.killProbBelow && n.v.enemyTowers.some((tw) => dst(tw, t) <= TOWER_DANGER + c.towerMargin)) return 'chase abort: target at its tower';
+  const cloud = cloudOnPath(n, t);
+  if (cloud > c.cloudOnPath) return 'chase abort: unknown enemies on the path';
+  return null;
+}
+
+/**
+ * §6.2 dive tower-aggro swap (Platinum+ by rank curve): while the enemy tower shoots the bot and an ally dives
+ * with it, the bot steps out of the tower's reach so the tower re-targets the ally; it re-enters when the tower
+ * shoots someone else.
+ */
+function diveAggroSwap(n: NodeCtx, tr: TradeState): boolean {
+  const tower = towerCovering(n.v, n.v.self);
+  if (!tower || tower.atkTarget !== n.v.me.eid || !rollsOf(n, tr).aggroSwap) return false;
+  const partner = n.v.allies.some((a) => dst(a, tower) <= TOWER_DANGER);
+  if (!partner) return false;
+  const d = dst(tower, n.v.self) || 1;
+  const r = TOWER_DANGER + VALUES.combat.diveAggroSwap.stepOutMargin;
+  const p = { x: tower.x + ((n.v.self.x - tower.x) / d) * r, y: tower.y + ((n.v.self.y - tower.y) / d) * r };
+  cancelOrbwalk(n);
+  n.out.push(moveCmd(p));
+  n.mem.lastMove = { ...p, tick: n.v.tick };
+  if (n.mem.ext.lastMode !== 'aggroSwap') n.log('trade', 'aggro_swap', 'tower shoots me, ally diving: step out', { target: tr.id });
+  n.mem.ext.lastMode = 'aggroSwap';
+  return true;
 }
 
 function summoners(n: NodeCtx, tr: TradeState, t: SnapEntity, ex: ExchangeResult): void {

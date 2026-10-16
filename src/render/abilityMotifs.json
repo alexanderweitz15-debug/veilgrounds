@@ -1,0 +1,32 @@
+{
+  "_doc": "D1/D4: per-ability motif + element hue (ability icons in src/ui/icons.ts, missile and ground-object colours in src/render). Overrides the keyword rules in abilityTheme.ts so that Q/W/E/R of one champion never share a motif. `glyphs` = every motif key the icon painter can draw (MOTIF + GLYPHS in src/ui/icons.ts).",
+  "glyphs": ["arrow", "flame", "bolt", "wave", "hook", "web", "gear", "bell", "claw", "moon", "sun", "bomb", "banner", "spiral", "snow", "glass", "root", "drop", "leaf", "wing", "sword", "dagger", "axe", "bow", "crown", "chain", "shield", "cloak", "staff", "book", "ring", "gem", "lamp", "hourglass", "belt", "horn", "heart", "boot", "potion", "eye", "fang"],
+  "champions": {
+    "aurel": [["gear", 42], ["spiral", 60], ["hourglass", 42], ["snow", 195]],
+    "brom": [["spiral", 190], ["root", 110], ["hook", 30], ["axe", 18]],
+    "corvin": [["arrow", 35], ["bomb", 28], ["boot", 22], ["flame", 22]],
+    "dagny": [["axe", 18], ["wave", 200], ["shield", 210], ["bomb", 28]],
+    "ferris": [["sun", 48], ["lamp", 48], ["banner", 120], ["moon", 270]],
+    "gorvam": [["hook", 30], ["axe", 18], ["chain", 210], ["spiral", 200]],
+    "grimald": [["fang", 35], ["shield", 210], ["web", 300], ["claw", 14]],
+    "hagen": [["bell", 45], ["shield", 210], ["boot", 45], ["bolt", 52]],
+    "harrow": [["axe", 18], ["shield", 210], ["banner", 10], ["crown", 45]],
+    "ilvane": [["chain", 300], ["spiral", 190], ["wing", 280], ["web", 300]],
+    "isolde": [["dagger", 5], ["glass", 185], ["web", 300], ["gem", 185]],
+    "kaelen": [["dagger", 5], ["moon", 270], ["sword", 0], ["axe", 350]],
+    "kiran": [["arrow", 300], ["chain", 300], ["web", 300], ["root", 300]],
+    "lio": [["gem", 52], ["bolt", 52], ["sun", 55], ["drop", 52]],
+    "lysa": [["spiral", 300], ["arrow", 300], ["web", 300], ["bow", 35]],
+    "mira": [["bow", 35], ["wave", 200], ["boot", 30], ["arrow", 35]],
+    "nyx": [["dagger", 5], ["cloak", 270], ["wing", 280], ["moon", 250]],
+    "oda": [["drop", 200], ["ring", 190], ["wave", 200], ["spiral", 200]],
+    "oleth": [["banner", 10], ["horn", 30], ["boot", 52], ["shield", 210]],
+    "ottilie": [["arrow", 35], ["eye", 30], ["bow", 35], ["horn", 14]],
+    "renn": [["dagger", 220], ["spiral", 200], ["wing", 230], ["sword", 5]],
+    "seraphyne": [["bolt", 52], ["wave", 200], ["boot", 60], ["spiral", 230]],
+    "thessaly": [["staff", 48], ["gem", 185], ["eye", 55], ["sun", 45]],
+    "tobin": [["hook", 30], ["wave", 200], ["web", 300], ["bolt", 52]],
+    "vessa": [["claw", 14], ["fang", 350], ["eye", 80], ["wing", 20]],
+    "wren": [["arrow", 22], ["flame", 22], ["moon", 270], ["spiral", 15]]
+  }
+}

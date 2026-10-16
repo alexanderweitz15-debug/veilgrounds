@@ -21,12 +21,18 @@ interface Floater {
   drift: number;
 }
 
-const DMG_COLORS = { phys: '#ffb35c', magic: '#b98cff', true: '#ffffff' } as const;
+/** HP-bar damage trail: hold the lost chunk, then drain at this rate (ms for a full bar). */
+const TRAIL_HOLD_MS = 350;
+const TRAIL_DRAIN_MS = 900;
+const DMG_COLORS ={ phys: '#ffb35c', magic: '#b98cff', true: '#ffffff' } as const;
 
 export class Overlay {
   readonly canvas = document.createElement('canvas');
   private readonly ctx: CanvasRenderingContext2D;
   private floaters: Floater[] = [];
+  /** Per-eid damage trail of the HP bars (eid reuse: reset when unseen for 1 s). */
+  private readonly trail = new Map<number, { hp: number; shown: number; at: number; seen: number }>();
+  private lastDraw = 0;
   private w = 1;
   private h = 1;
   private dpr = 1;
@@ -88,6 +94,9 @@ export class Overlay {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.clearRect(0, 0, this.w, this.h);
     const snap = state.snap;
+    const dt = Math.min(100, now - this.lastDraw);
+    this.lastDraw = now;
+    if (this.trail.size > 400) for (const [id, tr] of this.trail) if (now - tr.seen > 2000) this.trail.delete(id);
     if (snap) {
       const myEid = snap.me?.eid ?? -1;
       const hc = settings.highContrast;
@@ -115,6 +124,18 @@ export class Overlay {
         const total = Math.max(e.maxHp, e.hp + e.shield);
         ctx.fillStyle = 'rgba(12,10,8,0.85)';
         ctx.fillRect(x - 2, y - 2, bw + 4, bh + 4 + (champ ? 5 : 0));
+        // damage trail (LoL): the HP just lost stays as a pale chunk for a moment, then drains to the new value
+        let tr = this.trail.get(e.id);
+        if (!tr || now - tr.seen > 1000) this.trail.set(e.id, (tr = { hp: e.hp, shown: e.hp, at: 0, seen: now }));
+        if (e.hp < tr.hp) tr.at = now; // new damage: hold the chunk again
+        if (e.hp > tr.shown) tr.shown = e.hp; // heal
+        if (now - tr.at > TRAIL_HOLD_MS) tr.shown = Math.max(e.hp, tr.shown - (e.maxHp * dt) / TRAIL_DRAIN_MS);
+        tr.hp = e.hp;
+        tr.seen = now;
+        if (tr.shown > e.hp) {
+          ctx.fillStyle = 'rgba(245,232,200,0.85)';
+          ctx.fillRect(x + (bw * e.hp) / total, y, (bw * (tr.shown - e.hp)) / total, bh);
+        }
         ctx.fillStyle = color;
         ctx.fillRect(x, y, (bw * e.hp) / total, bh);
         if (e.shield > 0) {

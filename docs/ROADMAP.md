@@ -19,8 +19,9 @@ Entscheidungen und Zahlen stehen in docs/DECISIONS.md, das Bot-Verhalten in docs
 - [x] Alle 8 Beschwörerzauber (inkl. Sicht-Prüfung, nicht während Wind-up)
 - [x] Wards, Trinkets, Kontrollwards
 - [x] LoL-Tooltips für Fähigkeiten, Passive, Items, Zauber, Prägungen
-- [ ] Combo-Abnahme je Champion (Signature-Combos aus den Daten ausführbar und getestet)
-- [ ] Telegraph-Audit (jede Fähigkeit zeigt Reichweite/Form korrekt an)
+- [x] Combo-Abnahme je Champion: alle Signature-Combos headless ausführbar (tests/combos.test.ts)
+- [x] Telegraph-Audit: Anzeige = Sim-Hitbox für jede Fähigkeit (tests/telegraph.test.ts)
+- [x] Fähigkeits-Icons zeigen, was die Fähigkeit ist (Feuer, Blitz, Haken, Netz …) + Typ-Abzeichen
 
 ## Phase 3 – Bots (Gold-Niveau)
 - [x] Behavior Tree als JSON, Wahrnehmung ohne Allwissen (Fog), Entscheidungs-Log (gedrosselt), F9-Overlay

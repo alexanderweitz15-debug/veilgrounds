@@ -1,0 +1,128 @@
+{
+  "note": "Utility model (docs/BRAIN-REWORK.md §5, §4.6, §6, §7): every gold equivalent and every utility/combat constant the selector uses. Common currency = expected team gold per second over the candidate's horizon. Sim game rules (minion gold/XP, plate gold, death timer, wave timing) are read from the sim modules, not copied here; this file holds the *equivalents* and weights. Rank curves: anchors by rank name, linearly interpolated over the bot's continuous skill (Iron 5 .. Challenger 100); missing ranks interpolate between the given ones. Owner: A2.",
+
+  "gold": {
+    "xp": 0.4,
+    "kill": { "base": 300, "streakStep": 100, "streakMax": 1000, "assistShare": 0.5 },
+    "plate": 120,
+    "tower": { "local": 250, "team": 150 },
+    "inhibitor": 500,
+    "nexusTower": 300,
+    "objectives": {
+      "leviathan": { "gold": 25, "buff": 400 },
+      "kesselbrut": { "goldPerLarva": 25, "stackStructureValue": 90 },
+      "schleierwaechter": { "goldPerChamp": 300, "champs": 5, "buff": 2500 }
+    },
+    "ward": { "seal": 75, "visionMin": 40, "visionMax": 120, "objectiveLeadS": 60 },
+    "hpPerPointFull": 0.15,
+    "hpPerPointLowMult": 2.0,
+    "manaPerPoint": 0.05
+  },
+
+  "death": {
+    "enemyGold": 300,
+    "objectiveRisk": 100,
+    "ownGoldRateFloor": 2.0
+  },
+
+  "lane": {
+    "csShare": { "iron": 0.62, "silver": 0.74, "gold": 0.82, "diamond": 0.9, "challenger": 0.96 },
+    "farmRadius": 1400,
+    "laneWidth": 900,
+    "absenceLossFrac": { "crashed": 0.25, "neutral": 0.6, "atOwnTower": 1.0 },
+    "crashSoonS": 20,
+    "supportPresenceGoldPerS": 3.0
+  },
+
+  "jungle": {
+    "campGoldPerS": 5.0,
+    "clearS": 18,
+    "catchLane": { "iron": 0, "silver": 0, "gold": 1, "challenger": 1 },
+    "catchLaneMinOwnTowerWave": 3
+  },
+
+  "horizons": {
+    "farm": 10,
+    "poke": 2,
+    "trade": 3,
+    "allin": 6,
+    "fight": 8,
+    "push": 10,
+    "roamExtra": 12,
+    "recallChannel": 8,
+    "objective": 30,
+    "ward": 6,
+    "group": 30,
+    "catchLane": 20
+  },
+
+  "weights": {
+    "farmRisk": 0.35,
+    "pokeRecallForce": 0.6,
+    "pokeAggroPerMinion": 6,
+    "tradeMissedFarm": 0.5,
+    "tradeAggroPerMinion": 4,
+    "tradeGankRisk": 0.6,
+    "fightWinGold": 0.6,
+    "pushGankRisk": 0.5,
+    "pushEnemyReturn": 0.3,
+    "roamKillConversion": 0.45,
+    "roamPlateRisk": 0.5,
+    "recallStayDeathThreshold": 0.3,
+    "recallHpValue": 1.0,
+    "objectiveFightRisk": 0.5,
+    "groupNeedsAlliesAtTarget": 2,
+    "wardMissedFarm": 0.5
+  },
+
+  "push": {
+    "towerMitigation": 0.67
+  },
+
+  "recall": {
+    "itemValuePerGold": 0.5,
+    "stayDeath": { "hpBase": 0.9, "gankRiskWeight": 0.6, "enemyNearWeight": 0.5 },
+    "shoveFirst": { "iron": 0, "bronze": 0, "silver": 1, "challenger": 1 },
+    "manaLowFrac": 0.15
+  },
+
+  "selection": {
+    "noiseDistribution": "normal, sigma = exchangeNoise(skill) x |score| (Iron 0.40, Gold 0.20, Challenger 0.07; spec §5 = §6 rank noise)",
+    "hysteresisSource": "BotParams.hysteresis (profile: Gold 0.25 .. Challenger 0.10)",
+    "noFlipWithinTicks": 6,
+    "logTopN": 12
+  },
+
+  "style": {
+    "note": "Style factor per candidate (spec §5: 0.6 .. 1.6). 'knob' = an existing BotParams knob; 'axis' = linear in a playstyle axis (perStep [below 0, above 0]) until the knob exists in playstyleAxes.json (proposal in docs/agents/shared-changes.md).",
+    "farm": { "knob": "farmWeight" },
+    "poke": { "knob": "fightWeight" },
+    "trade": { "knob": "fightWeight" },
+    "fight": { "knob": "fightWeight" },
+    "push": { "axis": "tempo", "perStep": [0.06, 0.08], "clamp": [0.6, 1.6] },
+    "roam": { "axis": "roam", "perStep": [0.08, 0.12], "clamp": [0.6, 1.6] },
+    "gank": { "axis": "aggression", "perStep": [0.06, 0.08], "clamp": [0.6, 1.6] },
+    "recall": { "axis": "tempo", "perStep": [-0.06, -0.04], "clamp": [0.6, 1.6] },
+    "objective": { "axis": "objectiveRisk", "perStep": [0.08, 0.12], "clamp": [0.6, 1.6] },
+    "ward": { "knob": "wardIntervalMult", "invert": true, "clamp": [0.6, 1.6] },
+    "group": { "knob": "groupWeight" },
+    "catchLane": { "axis": "teamplay", "perStep": [0.06, 0.08], "clamp": [0.6, 1.6] }
+  },
+
+  "combat": {
+    "focusHysteresis": 0.2,
+    "commitLeaveWin": 0.25,
+    "commitReevalS": 2,
+    "chaseAbort": {
+      "towerMargin": 200,
+      "killProbBelow": 0.5,
+      "cloudOnPath": 0.4,
+      "pct": { "iron": 0, "bronze": 40, "silver": 75, "gold": 90, "challenger": 100 }
+    },
+    "diveAggroSwap": {
+      "pct": { "iron": 0, "gold": 0, "platinum": 70, "diamond": 90, "challenger": 100 },
+      "stepOutMargin": 60
+    },
+    "killWindowFromFarm": 0.6
+  }
+}

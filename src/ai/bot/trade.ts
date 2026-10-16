@@ -19,6 +19,8 @@ import { cancelOrbwalk, kitePoint, orbwalkAttack, moveCmd } from './kite';
 import { towerCovering } from './perception';
 import type { TradeState } from '../bt/state';
 import type { ExchangeResult } from '../contract';
+import { utilityOn } from '../utility/flag';
+import { utilitySelect } from '../utility/select';
 
 const SILVER = rankIdx('silver');
 const GOLD = rankIdx('gold');
@@ -39,7 +41,7 @@ export function summonerReady(n: NodeCtx, id: string): 0 | 1 | -1 {
 const SLOT: Record<string, 0 | 1 | 2 | 3> = { Q: 0, W: 1, E: 2, R: 3 };
 
 /** Longest reach of the first ability token of a combo (or auto reach). */
-function comboReach(n: NodeCtx, combo: string[]): number {
+export function comboReach(n: NodeCtx, combo: string[]): number {
   const first = combo.find((t) => t in SLOT);
   return Math.max(n.v.reach + 50, first ? slotReach(n.v, n.ctx, SLOT[first]!) : 0);
 }
@@ -169,15 +171,21 @@ export function tradeStart(n: NodeCtx): NodeResult {
     if (!o || !t || dst(t, n.v.self) > 1300) return 'failure';
     w = { ...o.w, target: t };
   }
-  const allIn = isAllIn(n, w.exK);
-  const kind = allIn ? 'allin' : 'trade';
-  const combo = chooseCombo(n, kind, n.rng);
-  n.mem.ext.trade = { serial: w.target.serial, id: w.target.id, kind, start: n.v.tick, trigger: w.trigger, combo, step: 0, stepAt: n.v.tick, comboDone: false, flash: false, ignite: false, win: w.ex.winProb, kill: w.exK.killProb, death: w.exK.deathProb };
-  n.mem.mode = 'fight';
-  n.mem.fightTarget = w.target.serial;
-  n.log('trade', kind, `trigger ${w.trigger}`, { target: w.target.slot, combo: combo.join('-') }, { win: w.ex.winProb, kill: w.exK.killProb, death: w.exK.deathProb, score: w.score });
-  return tradeRun(n);
+  return startTrade(n, w.target, isAllIn(n, w.exK) ? 'allin' : 'trade', w.trigger, w.ex, w.exK, w.score);
 }
+
+/** Start a trade / all-in on `target` (gated tradeStart above, or the utility model's trade intent) and run it. */
+export function startTrade(n: NodeCtx, target: SnapEntity, kind: 'trade' | 'allin', trigger: string, ex: ExchangeResult, exK: ExchangeResult, score: number): NodeResult {
+  const combo = chooseCombo(n, kind, n.rng);
+  n.mem.ext.trade = { serial: target.serial, id: target.id, kind, start: n.v.tick, trigger, combo, step: 0, stepAt: n.v.tick, comboDone: false, flash: false, ignite: false, win: ex.winProb, kill: exK.killProb, death: exK.deathProb };
+  n.mem.mode = 'fight';
+  n.mem.fightTarget = target.serial;
+  n.log('trade', kind, `trigger ${trigger}`, { target: target.slot, combo: combo.join('-') }, { win: ex.winProb, kill: exK.killProb, death: exK.deathProb, score });
+  return tradeRunCore(n);
+}
+
+/** All-in decision of the kill estimate (knobs allInKillProb / allInDeathProb; long traders prefer all-in at 0.5). */
+export const allInWanted = (n: NodeCtx, exK: ExchangeResult): boolean => isAllIn(n, exK);
 
 /**
  * Lethal dive (Silver+): the kill is likely within the all-in horizon, the target is low and the bot healthy enough
@@ -220,8 +228,18 @@ export function shouldAbort(
   return null;
 }
 
-/** Continue the running trade / all-in (combo, then autos + casts), or abort it. */
+/**
+ * First leaf of the combat selector. With the utility flag on (BOT_UTILITY=1, src/ai/utility/flag.ts) it hands the
+ * whole non-reflexive decision to the utility selector - an interim hook until the dedicated 'utilitySelect' tree
+ * node is merged (docs/agents/shared-changes.md); flag off: the classic trade leaf, unchanged.
+ */
 export function tradeRun(n: NodeCtx): NodeResult {
+  if (utilityOn(n.ctx)) return utilitySelect(n);
+  return tradeRunCore(n);
+}
+
+/** Continue the running trade / all-in (combo, then autos + casts), or abort it. */
+export function tradeRunCore(n: NodeCtx): NodeResult {
   const tr = n.mem.ext.trade;
   if (!tr) return 'failure';
   const t = n.v.enemies.find((e) => e.serial === tr.serial);

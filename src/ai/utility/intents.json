@@ -1,0 +1,56 @@
+{
+  "note": "Intent subtrees of the utility model (docs/BRAIN-REWORK.md §3: the former main-selector branches combat / objective / recall / role / vision become subtrees that the chosen intent calls). Same node types as src/data/bots/tree.json, leaves from src/ai/bt/leaves.ts plus the utility leaves (u*) of src/ai/utility/intents.ts. 'failure' = the intent has nothing to do now: the selector tries the next candidate in the same decision.",
+  "intents": {
+    "farm": {
+      "type": "selector",
+      "id": "u.farm",
+      "children": [
+        { "type": "action", "name": "gankRiskReaction" },
+        { "type": "action", "name": "enemyRoamReaction" },
+        { "type": "action", "name": "jungle" },
+        { "type": "action", "name": "lane" }
+      ]
+    },
+    "poke": { "type": "action", "name": "uPoke" },
+    "trade": { "type": "action", "name": "uTrade" },
+    "fight": {
+      "type": "selector",
+      "id": "u.fight",
+      "children": [
+        {
+          "type": "sequence",
+          "children": [
+            { "type": "condition", "name": "teamfightNear" },
+            { "type": "action", "name": "teamfight" }
+          ]
+        },
+        { "type": "action", "name": "followUp" },
+        { "type": "action", "name": "joinFight" }
+      ]
+    },
+    "push": { "type": "action", "name": "uPush" },
+    "roam": { "type": "action", "name": "uRoam" },
+    "gank": { "type": "action", "name": "uGank" },
+    "recall": { "type": "action", "name": "uRecall" },
+    "objective": { "type": "action", "name": "objective" },
+    "ward": { "type": "action", "name": "vision" },
+    "group": {
+      "type": "selector",
+      "id": "u.group",
+      "children": [
+        { "type": "action", "name": "uGroup" },
+        { "type": "action", "name": "splitPush" },
+        { "type": "action", "name": "lane" }
+      ]
+    },
+    "catchLane": {
+      "type": "sequence",
+      "id": "u.catchLane",
+      "children": [
+        { "type": "action", "name": "uCatchLane" },
+        { "type": "action", "name": "lane" }
+      ]
+    },
+    "none": { "type": "action", "name": "idle" }
+  }
+}

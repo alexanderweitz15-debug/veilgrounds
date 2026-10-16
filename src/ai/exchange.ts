@@ -264,23 +264,46 @@ export interface SnapshotExchangeOpts {
   orbwalk?: number;
 }
 
+/**
+ * Fighter spec of a champion entity from the bot's view: own HUD (stats, ranks, cooldowns) for the bot itself,
+ * estimates from level + scoreboard item value for everybody else (known enemy cooldowns if given).
+ */
+export function fighterFromSnapshot(snap: Snapshot, e: SnapEntity, own: boolean, o: { orbwalk?: number; knownCds?: SnapshotExchangeOpts['knownCds'] } = {}): FighterSpec {
+  const champ = championData(e.champ ?? '');
+  const row = snap.players.find((r) => r.slot === e.slot);
+  const base: FighterSpec = { champ, level: Math.max(1, e.level), hp: e.hp, maxHp: e.maxHp, shield: e.shield, itemValue: row?.itemValue ?? 0 };
+  if (snap.me && e.id === snap.me.eid) {
+    const me = snap.me;
+    return { ...base, stats: me.stats, ranks: me.abilities.map((a) => a.rank), cdLeft: me.abilities.map((a) => a.cdLeft), orbwalk: o.orbwalk };
+  }
+  if (!own) {
+    const cds = o.knownCds?.get(e.slot);
+    if (cds) base.cdLeft = cds;
+  }
+  return base;
+}
+
+/** Mitigated damage of one cast of ability `slot` of `f` on `target` (damage effects only, ability multiplier). */
+export function abilityDamage(f: FighterSpec, slot: number, target: FighterSpec): number {
+  const ab = f.champ.abilities[slot];
+  const ranks = f.ranks ?? estimateRanks(f.champ, f.level);
+  const rank = ranks[slot] ?? 0;
+  if (!ab || rank <= 0) return 0;
+  const st = f.stats ?? estimateStats(f.champ, f.level, f.itemValue);
+  const ts = target.stats ?? estimateStats(target.champ, target.level, target.itemValue);
+  let dmg = 0;
+  for (const e of ab.effects) {
+    if (e.kind !== 'damage' || isOwnSide(e)) continue;
+    const raw = scale(e.amount, f, st, rank, target);
+    dmg += raw * (e.type === 'phys' ? mit(ts.armor) : e.type === 'magic' ? mit(ts.mr) : 1) * CHAMP_ABILITY_DMG_MULT;
+  }
+  return dmg;
+}
+
 /** Spec §6 from the bot's fog-filtered view: entities, own HUD (stats, ranks, cooldowns), scoreboard item value. */
 export function exchangeFromSnapshot(snap: Snapshot, o: SnapshotExchangeOpts): ExchangeDetail {
   const byId = new Map(snap.entities.map((e) => [e.id, e]));
-  const rows = new Map(snap.players.map((r) => [r.slot, r]));
-  const spec = (e: SnapEntity, own: boolean): FighterSpec => {
-    const champ = championData(e.champ ?? '');
-    const base: FighterSpec = { champ, level: Math.max(1, e.level), hp: e.hp, maxHp: e.maxHp, shield: e.shield, itemValue: rows.get(e.slot)?.itemValue ?? 0 };
-    if (snap.me && e.id === snap.me.eid) {
-      const me = snap.me;
-      return { ...base, stats: me.stats, ranks: me.abilities.map((a) => a.rank), cdLeft: me.abilities.map((a) => a.cdLeft), orbwalk: o.orbwalk };
-    }
-    if (!own) {
-      const cds = o.knownCds?.get(e.slot);
-      if (cds) base.cdLeft = cds;
-    }
-    return base;
-  };
+  const spec = (e: SnapEntity, own: boolean): FighterSpec => fighterFromSnapshot(snap, e, own, o);
   const pick = (ids: number[], own: boolean): FighterSpec[] =>
     ids.map((id) => byId.get(id)).filter((e): e is SnapEntity => !!e && e.alive && e.kind === Kind.Champion).map((e) => spec(e, own));
   const allyEnts = o.allies.map((id) => byId.get(id)).filter((e): e is SnapEntity => !!e);

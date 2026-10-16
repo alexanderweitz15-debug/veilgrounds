@@ -11,7 +11,10 @@ import { champions, kda } from './systems/economy';
 import { buffs } from './buffs';
 import { groundObjects } from './summons';
 import { trinketHud, wardTypeOf, type TrinketId, type WardType } from './wards';
-import { ccLevel } from './buffs';
+import { ccLevel, ccState } from './buffs';
+import { attackStartTick } from './systems/attack';
+import { projectileSource } from './systems/projectiles';
+import { walkedLastTick } from './systems/movement';
 import { teleportLeft } from './summoners';
 import { trainerHud, type TrainerHud } from './trainer';
 import { sandboxFlags } from './trainer/sandbox';
@@ -42,7 +45,21 @@ export interface SnapEntity {
   /** 0 idle, 1 windup, 2 backswing. */
   atkPhase: number;
   atkTarget: number;
+  /**
+   * Auto-attack timing (sim ticks, compare with Snapshot.tick; present while atkPhase !== 0). atkStart: tick the
+   * wind-up started. atkEnd: phase 1 = wind-up end (hit point / projectile launch), phase 2 = attack timer ready
+   * (end of the attack cycle). Both include item/buff attack speed: wind-up = atkEnd - atkStart in phase 1.
+   */
+  atkStart?: number;
+  atkEnd?: number;
+  /** Walked (path or chase step) during the last tick: run animation. Not set by dashes, Flash or collision pushes. */
   moving: boolean;
+  /** Active crowd control as buffs.CC_BIT mask (stun 1, root 2, slow 4, silence 8, airborne 16, blind 32, suppress 64, stasis 128); absent = none. */
+  cc?: number;
+  /** Strongest slow in percent points (with cc & 4). */
+  slow?: number;
+  /** Last tick any of the active CC lasts (CC timer bar: (ccEnd - tick) / 30 s). */
+  ccEnd?: number;
   alive: boolean;
   /** Player ward type (Agent J); absent for every other unit incl. jungle river vision. */
   ward?: WardType;
@@ -67,6 +84,13 @@ export interface SnapProjectile {
   width: number;
   /** Line skillshots (kind 1): distance left to max range (telegraph strip ahead of the projectile). */
   left?: number;
+  // Source info (render: missile look per unit/champion/ability). Always set by the sim; optional for mocks/fixtures.
+  /** Unit kind of the source at launch (types.ts Kind; 0 = no unit, e.g. trainer shots). Survives the source's death. */
+  srcKind?: number;
+  /** Champion id when a champion fired it, else null. */
+  champ?: string | null;
+  /** -1 = basic attack (or non-ability shot), 0..3 = ability Q/W/E/R. */
+  slot?: number;
 }
 
 export interface PlayerHud {
@@ -195,8 +219,16 @@ function wardFields(sim: Sim, e: number, team: number): { ward?: WardType; visio
   return sim.c.Unit.team[e] === team ? { ward: w, vision: sim.c.Vision.r[e]! } : { ward: w };
 }
 
+/** CC state of a visible unit (fog-safe: only called for entities already in the team's view). */
+function ccFields(sim: Sim, e: number, alive: boolean): { cc?: number; slow?: number; ccEnd?: number } {
+  if (!alive) return {};
+  const s = ccState(sim, e);
+  if (!s.mask) return {};
+  return { cc: s.mask, ccEnd: s.until, ...(s.slow > 0 ? { slow: s.slow } : {}) };
+}
+
 export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
-  const { Unit, Pos, Face, Hp, Mana, Champ, Atk, Move, Proj } = sim.c;
+  const { Unit, Pos, Face, Hp, Mana, Champ, Atk, Proj } = sim.c;
   const entities: SnapEntity[] = [];
   for (const e of query(sim.world, [Unit])) {
     const k = Unit.kind[e]!;
@@ -226,7 +258,9 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
       slot: Unit.slot[e]!,
       atkPhase: Atk.phase[e]!,
       atkTarget: Atk.target[e]!,
-      moving: Move.mode[e] !== 0,
+      ...(Atk.phase[e] ? { atkStart: attackStartTick(sim, e), atkEnd: Atk.phaseEnd[e]! } : {}),
+      moving: alive && walkedLastTick(sim, e),
+      ...ccFields(sim, e, alive),
       alive,
       ...(k === Kind.Ward ? wardFields(sim, e, team) : {}),
       ...(Unit.variant[e] ? { variant: VARIANTS[Unit.variant[e]!] } : {}),
@@ -235,7 +269,7 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
   const projectiles: SnapProjectile[] = [];
   for (const e of query(sim.world, [Proj])) {
     if (Proj.team[e] !== team && !pointVisible(sim, team, Pos.x[e]!, Pos.y[e]!)) continue;
-    projectiles.push({ id: e, kind: Proj.kind[e]!, team: Proj.team[e]!, x: Pos.x[e]!, y: Pos.y[e]!, px: Pos.px[e]!, py: Pos.py[e]!, dx: Proj.dx[e]!, dy: Proj.dy[e]!, width: Proj.width[e]!, ...(Proj.kind[e] === 1 ? { left: Math.max(0, Proj.maxDist[e]! - Proj.travelled[e]!) } : {}) });
+    projectiles.push({ id: e, kind: Proj.kind[e]!, team: Proj.team[e]!, x: Pos.x[e]!, y: Pos.y[e]!, px: Pos.px[e]!, py: Pos.py[e]!, dx: Proj.dx[e]!, dy: Proj.dy[e]!, width: Proj.width[e]!, ...projectileSource(sim, e), ...(Proj.kind[e] === 1 ? { left: Math.max(0, Proj.maxDist[e]! - Proj.travelled[e]!) } : {}) });
   }
   const me = sim.slots[slot];
   let hud: PlayerHud | null = null;
@@ -264,7 +298,10 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
       stats: { ad: Stats.ad[me]!, ap: Stats.ap[me]!, armor: Stats.armor[me]!, mr: Stats.mr[me]!, as: Stats.as[me]!, ms: Stats.ms[me]!, range: Stats.range[me]!, crit: Stats.crit[me]! },
     };
   }
-  const { events, audio } = teamEvents(sim, team);
+  const te = teamEvents(sim, team);
+  const audio = te.audio;
+  // failed casts only for the player who issued them (no messages for teammates' / bots' attempts)
+  const events = te.events.some((ev) => ev.e === 'castFail') ? te.events.filter((ev) => ev.e !== 'castFail' || ev.src === me) : te.events;
   const objects: SnapObject[] = [];
   for (const o of groundObjects(sim)) {
     if (o.team !== team && (HIDDEN_OBJECT_TAGS.has(o.tag) || !pointVisible(sim, team, o.x, o.y))) continue;
@@ -326,6 +363,8 @@ export function teamEvents(sim: Sim, team: number): { events: SimEvent[]; audio:
         return ev.team === team; // pings are team-only
       case 'chat':
         return ev.team === team;
+      case 'castFail':
+        return Unit.team[ev.src] === team; // team-private (buildSnapshot narrows it to the own champion)
       case 'zone':
         return ev.team === team || pointVisible(sim, team, ev.x, ev.y);
       case 'gold':

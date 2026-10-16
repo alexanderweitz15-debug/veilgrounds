@@ -67,7 +67,7 @@ export function castSummonerSpell(sim: Sim, eid: number, id: string, x: number, 
     return true;
   }
   if (!canAttack(sim, eid)) return false; // stunned / airborne / suppressed
-  const { Pos, Unit } = sim.c;
+  const { Pos } = sim.c;
   switch (id) {
     case 'sprung': {
       if (!canMove(sim, eid)) return false; // rooted units cannot Flash
@@ -116,23 +116,7 @@ export function castSummonerSpell(sim: Sim, eid: number, id: string, x: number, 
       return startTeleport(sim, eid, x, y, target);
     case 'bannen': {
       // Smite (Agent H): true damage to a monster or minion in range, nearest to the cursor if no target given.
-      const ok = (t: number): boolean => {
-        if (t < 0 || !Unit.alive[t] || Unit.untargetable[t] || Unit.team[t] === Unit.team[eid]) return false;
-        const k = Unit.kind[t]!;
-        if (k !== Kind.Monster && !(k >= Kind.MinionMelee && k <= Kind.MinionSuper)) return false;
-        if (!sees(sim, Unit.team[eid]!, t)) return false; // no smiting into fog / unseen bushes
-        const r = 500 + Unit.radius[eid]! + Unit.radius[t]!;
-        return dist2(Pos.x[t]!, Pos.y[t]!, Pos.x[eid]!, Pos.y[eid]!) <= r * r;
-      };
-      let t = target !== undefined && ok(target) ? target : -1;
-      if (t < 0) {
-        let bestD = 400 * 400;
-        for (const e of query(sim.world, [Unit])) {
-          if (!ok(e)) continue;
-          const d = dist2(Pos.x[e]!, Pos.y[e]!, x, y);
-          if (d < bestD) (bestD = d), (t = e);
-        }
-      }
+      const t = smiteTarget(sim, eid, x, y, 500, target);
       if (t < 0) return false;
       dealDamage(sim, eid, t, byLevel(sim, eid, 450, 900), 'true');
       return true;
@@ -142,6 +126,39 @@ export function castSummonerSpell(sim: Sim, eid: number, id: string, x: number, 
   }
 }
 
+/**
+ * Targeted summoners (Ignite, Exhaust, Smite): the target they would pick ignoring the cast range (walk into range
+ * first, like LoL), or -1 (no valid target, or not a targeted summoner).
+ */
+export function summonerWalkTarget(sim: Sim, eid: number, id: string, x: number, y: number, target?: number): number {
+  if (id === 'entflammen' || id === 'erschoepfen') return enemyChampionTarget(sim, eid, x, y, Infinity, target);
+  if (id === 'bannen') return smiteTarget(sim, eid, x, y, Infinity, target);
+  return -1;
+}
+
+/** Smite target: a visible enemy monster or minion within `range` (+ hitboxes); explicit, else nearest the cursor (400). */
+function smiteTarget(sim: Sim, eid: number, x: number, y: number, range: number, target?: number): number {
+  const { Pos, Unit } = sim.c;
+  const ok = (t: number): boolean => {
+    if (t < 0 || !Unit.alive[t] || Unit.untargetable[t] || Unit.team[t] === Unit.team[eid]) return false;
+    const k = Unit.kind[t]!;
+    if (k !== Kind.Monster && !(k >= Kind.MinionMelee && k <= Kind.MinionSuper)) return false;
+    if (!sees(sim, Unit.team[eid]!, t)) return false; // no smiting into fog / unseen bushes
+    const r = range + Unit.radius[eid]! + Unit.radius[t]!;
+    return range === Infinity || dist2(Pos.x[t]!, Pos.y[t]!, Pos.x[eid]!, Pos.y[eid]!) <= r * r;
+  };
+  let t = target !== undefined && ok(target) ? target : -1;
+  if (t < 0) {
+    let bestD = 400 * 400;
+    for (const e of query(sim.world, [Unit])) {
+      if (!ok(e)) continue;
+      const d = dist2(Pos.x[e]!, Pos.y[e]!, x, y);
+      if (d < bestD) (bestD = d), (t = e);
+    }
+  }
+  return t;
+}
+
 /** Enemy champion (or practice dummy) within `range` (+ hitboxes): the explicit target, else nearest to the cursor (200). */
 function enemyChampionTarget(sim: Sim, eid: number, x: number, y: number, range: number, target?: number): number {
   const { Pos, Unit } = sim.c;
@@ -149,6 +166,7 @@ function enemyChampionTarget(sim: Sim, eid: number, x: number, y: number, range:
     if (t < 0 || !Unit.alive[t] || Unit.untargetable[t] || Unit.team[t] === Unit.team[eid]) return false;
     if (Unit.kind[t] !== Kind.Champion && Unit.kind[t] !== Kind.Dummy) return false;
     if (!sees(sim, Unit.team[eid]!, t)) return false; // targets in fog, bushes or invisible are not castable
+    if (range === Infinity) return true;
     const r = range + Unit.radius[eid]! + Unit.radius[t]!;
     return dist2(Pos.x[t]!, Pos.y[t]!, Pos.x[eid]!, Pos.y[eid]!) <= r * r;
   };

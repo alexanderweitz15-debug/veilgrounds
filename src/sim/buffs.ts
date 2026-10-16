@@ -215,6 +215,25 @@ export function ccLevel(sim: Sim, eid: number): number {
   return lvl;
 }
 
+/** SnapEntity.cc bits (render: CC indicators). Mirrors canMove/canCast: an unstoppable unit reports no CC but suppress/stasis. */
+export const CC_BIT = { stun: 1, root: 2, slow: 4, silence: 8, airborne: 16, blind: 32, suppress: 64, stasis: 128 } as const;
+
+/** Active CC as CC_BIT mask, strongest slow (pct points) and the last tick any of it lasts (0 = none). */
+export function ccState(sim: Sim, eid: number): { mask: number; slow: number; until: number } {
+  const e = entry(sim, eid, false);
+  if (!e) return { mask: 0, slow: 0, until: 0 };
+  const unstoppable = e.list.some((b) => b.kind === 'unstoppable' && b.until > sim.tick);
+  let mask = 0;
+  let until = 0;
+  for (const b of e.list) {
+    if (b.until <= sim.tick || !(b.kind in CC_BIT)) continue;
+    if (unstoppable && b.kind !== 'suppress' && b.kind !== 'stasis') continue;
+    mask |= CC_BIT[b.kind as keyof typeof CC_BIT];
+    until = Math.max(until, b.until);
+  }
+  return { mask, slow: strongestSlow(sim, eid), until };
+}
+
 /** Strongest active slow in percent points (LoL: only the strongest slow applies). */
 export function strongestSlow(sim: Sim, eid: number): number {
   const e = entry(sim, eid, false);

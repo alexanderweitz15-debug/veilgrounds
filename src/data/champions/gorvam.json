@@ -27,7 +27,7 @@
     "asGrowth": 2,
     "range": 125,
     "ms": 335,
-    "windup": 0.35,
+    "windup": 0.27,
     "radius": 65
   },
   "passive": {

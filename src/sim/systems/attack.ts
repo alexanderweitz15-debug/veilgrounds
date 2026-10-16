@@ -10,7 +10,7 @@ import { isRef } from '../sim';
 import { MAX_ENT } from '../ecs';
 import { Kind, TICK_HZ, Team, isStructure, type DamageType } from '../types';
 import { dealDamage } from '../damage';
-import { canAttack, healMult, healUnit, isBlind, removeBuffs } from '../buffs';
+import { canAttack, hasStat, healMult, healUnit, isBlind, removeBuffs } from '../buffs';
 import { sees } from '../vision';
 import { findPath } from '../map';
 import { championData, passiveHooksOf } from '../champions';
@@ -41,6 +41,10 @@ interface AttackState {
   projSerial: Int32Array;
   /** Attack-move: 1 while chasing an acquired target (resume walking to amx/amy when it dies). */
   amChasing: Uint8Array;
+  /** Stop command: no idle auto-acquire until the next move/attack order. */
+  holdFire: Uint8Array;
+  /** Current target came from idle auto-acquire (dropped instead of chased when it leaves range). */
+  idleAcq: Uint8Array;
 }
 
 function attackState(sim: Sim): AttackState {
@@ -52,6 +56,8 @@ function attackState(sim: Sim): AttackState {
       projSpeed: new Float64Array(MAX_ENT),
       projSerial: new Int32Array(MAX_ENT).fill(-1),
       amChasing: new Uint8Array(MAX_ENT),
+      holdFire: new Uint8Array(MAX_ENT),
+      idleAcq: new Uint8Array(MAX_ENT),
     };
     sim.state.attack = s;
   }
@@ -73,6 +79,9 @@ export function attackProjectileSpeed(sim: Sim, eid: number): number {
   return DEFAULT_PROJ_SPEED[k] ?? 0;
 }
 
+/** Tick the unit's current/last auto wind-up started (snapshot atkStart). */
+export const attackStartTick = (sim: Sim, eid: number): number => attackState(sim).start[eid]!;
+
 /** Windup ticks for the unit's current AS (0 for towers). */
 export function windupTicks(sim: Sim, eid: number): number {
   const w = sim.c.Stats.windup[eid]!;
@@ -87,7 +96,20 @@ export function clearAttackOrders(sim: Sim, eid: number): void {
   Atk.target[eid] = -1;
   Atk.attackMove[eid] = 0;
   Atk.phase[eid] = 0;
-  attackState(sim).amChasing[eid] = 0;
+  const s = attackState(sim);
+  s.amChasing[eid] = s.holdFire[eid] = s.idleAcq[eid] = 0;
+}
+
+/** Stop command (on) / any other order (off): idle auto-acquire paused until the next order. */
+export function setHoldFire(sim: Sim, eid: number, on: boolean): void {
+  const s = attackState(sim);
+  s.holdFire[eid] = on ? 1 : 0;
+  s.idleAcq[eid] = 0;
+}
+
+/** PlayerSetup.autoAttack (sim default off; the client turns it on for the human player, game/modes.ts withClientSettings). */
+function autoAttackOn(sim: Sim, eid: number): boolean {
+  return sim.config.players.find((q) => q.slot === sim.c.Unit.slot[eid])?.autoAttack === true;
 }
 
 /** Movement/stop command arrived: cancel windup (attack lost, timer kept) or backswing (orbwalk); ends channels. */
@@ -180,6 +202,22 @@ function updateUnit(sim: Sim, eid: number): void {
     st.amChasing[eid] = 0;
   }
 
+  // LoL "auto attack": an idle champion attacks the nearest enemy in range (no chase, not after Stop)
+  if (st.idleAcq[eid] && t >= 0 && Atk.phase[eid] !== 1 && Move.mode[eid] === 0 && !inAttackRange(sim, eid, t)) {
+    Atk.target[eid] = t = -1;
+    valid = false;
+  }
+  if (t < 0) st.idleAcq[eid] = 0;
+  if (t < 0 && Unit.kind[eid] === Kind.Champion && Move.mode[eid] === 0 && Atk.phase[eid] === 0 && !Atk.attackMove[eid] && able && !st.holdFire[eid] && sim.c.Champ.recallAt[eid]! <= sim.tick && !hasStat(sim, eid, 'invisible') && autoAttackOn(sim, eid)) {
+    const found = acquire(sim, eid, 0, false);
+    if (found >= 0) {
+      Atk.target[eid] = t = found;
+      Atk.targetSerial[eid] = Unit.serial[found]!;
+      st.idleAcq[eid] = 1;
+      valid = true;
+    }
+  }
+
   // start a new attack
   if (Atk.phase[eid] === 0 && valid && able && sim.tick >= Atk.nextReady[eid]! && canTarget(sim, eid, t) && inAttackRange(sim, eid, t)) {
     Atk.phase[eid] = 1;
@@ -202,14 +240,16 @@ function face(sim: Sim, eid: number, t: number): void {
   }
 }
 
-function acquire(sim: Sim, eid: number): number {
+/** Nearest attackable enemy within attack range + extra (plants never; structures and wards only if `structures`). */
+function acquire(sim: Sim, eid: number, extra = ACQUIRE_EXTRA, structures = true): number {
   const { Unit, Pos } = sim.c;
   let best = -1;
   let bestD = Infinity;
   const ents = query(sim.world, [Unit]);
   for (let i = 0; i < ents.length; i++) {
     const e = ents[i]!;
-    if (Unit.kind[e] === Kind.Plant || !canTarget(sim, eid, e) || !inAttackRange(sim, eid, e, ACQUIRE_EXTRA)) continue;
+    const k = Unit.kind[e]!;
+    if (k === Kind.Plant || (!structures && (isStructure(k) || k === Kind.Ward)) || !canTarget(sim, eid, e) || !inAttackRange(sim, eid, e, extra)) continue;
     const dx = Pos.x[e]! - Pos.x[eid]!;
     const dy = Pos.y[e]! - Pos.y[eid]!;
     const d = dx * dx + dy * dy;

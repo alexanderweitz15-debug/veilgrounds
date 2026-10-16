@@ -78,7 +78,9 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
 
 ### Auto-Attacks (Champions, Minions, Türme)
 **Kritisch**
-- [ ] **Lauf-Animation auf der Stelle beim Angreifen.** `buildSnapshot` (snapshot.ts ~Z. 229) setzt
+- [x] **Lauf-Animation auf der Stelle beim Angreifen.** (erledigt: `moving` = im letzten Tick gelaufen, movement.ts
+  `walkedLastTick`; 4-min-Match: moving ohne Positionsänderung 8191 → 0 Champion-, 65006 → 0 Minion-Ticks; Test
+  mechanics.test.ts „snapshot moving“) `buildSnapshot` (snapshot.ts ~Z. 229) setzt
   `moving: Move.mode !== 0`; wer ein Ziel in Reichweite hat, bleibt in Modus 2 (movement.ts `movementSystem`:
   „in range: attack system takes over“ → `continue`). Gemessen (4-min-Bot-Match): 24,1 % aller Champion-Snapshot-Ticks
   (8754/36373) und 24,4 % aller Minion-Ticks (57450/235427, davon 39751 in der Ausschwingphase) melden `moving` ohne
@@ -90,12 +92,15 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
   `moving`-Flag zum Hauptproblem, weil das Ausschwingen nach 95 ms in den Laufzyklus kippt. LoL: zwischen zwei Autos Kampf-Idle, nie Laufen. Fix: `moving` aus
   echter Verschiebung (x≠px) oder „Modus 1 / Modus 2 außerhalb Reichweite“ ableiten (Sim/Snapshot, kein anderer
   Agent zuständig).
-- [ ] **Wind-up zu lang.** Fernkampf `base.windup` 0,30, Nahkampf 0,30–0,35 der Angriffszeit (data/champions/*.json);
+- [x] **Wind-up zu lang.** (erledigt: Schützen 0,17–0,19 = 8 Ticks ≈ 270 ms, Magier 0,20, Nahkampf 0,22–0,27;
+  Tabelle in DECISIONS.md „Mechanik-Feeling“; Test mechanics.test.ts „auto-attack wind-up“) Fernkampf `base.windup` 0,30, Nahkampf 0,30–0,35 der Angriffszeit (data/champions/*.json);
   gemessen 14 Ticks = 467 ms (Mira/Ilvane/Aurel/Corvin), 17 Ticks = 567 ms (Brom), 13 Ticks = 433 ms (Isolde);
   Klick→Schaden Fernkampf auf ~300 Distanz 18–20 Ticks (600–667 ms). LoL ca.: Schützen 15–22 % (≈ 0,25–0,3 s auf
   Stufe 1), Nahkämpfer meist 20–30 %. Folge: zähes Orbwalking, Last-Hits „kleben“. Fix: Fernkampf ~0,18–0,22,
   Nahkampf ~0,22–0,28 je Champion; danach botLastHit-Tests und Last-Hit-Trainer neu prüfen.
-- [ ] **Keine Kollision Champion ↔ Minion/Champion.** movement.ts `separateMinions` schiebt nur Minions
+- [x] **Keine Kollision Champion ↔ Minion/Champion.** (erledigt: movement.ts `separateUnits`, Abstand 75 % der
+  Radiensumme, Minion weicht seitlich aus, Dash/Geist gehen durch; 4-min-Match seed 7: tiefe Überlappung
+  Champion↔Minion 3223 → 10 Ticks, Champion↔Champion 134 → 8; Test mechanics.test.ts „unit collision“) movement.ts `separateMinions` schiebt nur Minions
   auseinander („Champions pass through units“). Gemessen: ~3200–3300 Champion-Ticks in 4 min (zwei Läufe), in denen ein Champion tief
   in einem Minion steht (Mittelpunkt-Abstand < halbe Radiensumme). LoL: Pathing-Kollision, Body-Block, Minions
   umstellen ihr Ziel, Geist-Effekt hebt das auf. Fix: weiche Champion↔Minion-Kollision (Minion weicht aus, Champion
@@ -105,7 +110,8 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
   Schlagbild ~83 ms gegen Sim-Treffer 233 ms (Nahkampf) / 433 ms (Caster); Körper-Lunge Spitze 110 ms nach Start.
   → Champion-Agent (uncommitted: Schlagbild auf Phase 1→2, Lunge am Treffer, Wind-up geschätzt). Rest-Problem: der
   Snapshot kennt das Wind-up-Ende nicht, `windEstimate` nutzt nur Basis-AS + Wachstum (keine Item-/Buff-AS) → nach
-  AS-Änderung ist die Ausholphase falsch getaktet. Fix: `atkEnd` (= `Atk.phaseEnd`) in `SnapEntity`.
+  AS-Änderung ist die Ausholphase falsch getaktet. Fix: `atkEnd` (= `Atk.phaseEnd`) in `SnapEntity`. (Sim-Seite
+  erledigt: `SnapEntity.atkStart`/`atkEnd` inkl. Item-/Buff-AS; Render muss sie noch lesen.)
 
 **Wichtig**
 - [x] **Angriffs-Sound am Wind-up-Start.** (erledigt: Sound beim Abschuss = Phase 1→2, leiser Minion-Sound, Einschlag-Ton bei eigenen Autos/Treffern auf dich) audio/eventSounds.ts `soundForEvent` case `'attack'` spielt 433–567 ms vor
@@ -121,7 +127,8 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
 - [x] **Turm-Lesbarkeit.** (erledigt: Reichweitenkreis ab 350 vor der Grenze, rot + Ziel-Linie wenn er dich anvisiert; fx.ts) Kein Reichweitenkreis beim Annähern, keine Aggro-Linie zum Ziel; nur Rand-Vignette nach
   dem ersten Treffer (ui/cues.ts). LoL: Turmkreis taucht in der Nähe auf, rote Zielmarkierung vor dem Schuss. Fix:
   Kreis ab Abstand ≤ Reichweite + 300, Linie aus `atkTarget` (steht schon im Snapshot).
-- [ ] **Kein Auto-Angriff im Stand.** attack.ts `acquire` läuft nur bei Angriffsbewegung; ein stehender Champion
+- [x] **Kein Auto-Angriff im Stand.** (erledigt: `PlayerSetup.autoAttack`, Client-Default an für den Menschen,
+  ohne Verfolgung, nach Stopp aus bis zum nächsten Befehl; Test mechanics.test.ts „idle auto-attack“) attack.ts `acquire` läuft nur bei Angriffsbewegung; ein stehender Champion
   ignoriert Gegner in Reichweite. LoL-Standard „Automatisch angreifen“ an. Fix: Einstellung + Acquire bei Modus 0
   ohne Ziel (nicht nach Stopp-Befehl).
 
@@ -129,7 +136,7 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
 - [ ] Auto-Reset: nur 1 von 26 Champions (`dagny_q`, castTime 0,2 s → stehen bleiben); LoL-Resets sind sofort.
   Latent: ein `auto_reset` mit castTime 0 + Typ `self` setzt nur `nextReady` (abilities.ts `execute`), `castAbility`
   ruft dann kein `onMoveCommand` → die Ausschwingphase blockiert weiter. Fix: in `execute` auch `Atk.phase = 0`.
-- [ ] Wind-up skaliert linear mit AS (attack.ts `windupTicks`) – prüfen, ob ein LoL-artiger Windup-Modifier bei
+- [x] (geprüft: linear = LoL-Standard mit Windup-Modifier 1, bleibt so) Wind-up skaliert linear mit AS (attack.ts `windupTicks`) – prüfen, ob ein LoL-artiger Windup-Modifier bei
   hoher AS nötig ist.
 - [ ] Angriffsbewegung nimmt den nächsten Gegner zum Champion (Reichweite + 200, `ACQUIRE_EXTRA`); LoL hat zusätzlich
   „Ziel am Cursor“ und die Taste „Nur Champions anvisieren“.
@@ -156,10 +163,12 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
 
 ### Fähigkeiten
 **Kritisch**
-- [ ] **Gezielte Fähigkeit außer Reichweite wird verschluckt.** abilities.ts `castAbility`: `if (tgt < 0) return; //
+- [x] **Gezielte Fähigkeit außer Reichweite wird verschluckt.** (erledigt: hinlaufen + wirken, auch gezielte
+  Beschwörerzauber; Abbruch durch Befehle; Test mechanics.test.ts „walk into range“) abilities.ts `castAbility`: `if (tgt < 0) return; //
   ponytail: LoL walks into range first`. LoL: Champion läuft in Reichweite und wirkt dann. Fix: ausstehenden Cast
   merken, wie Modus 2 verfolgen, bei Reichweite auslösen (Abbruch durch Bewegungsbefehl).
-- [ ] **Fehlgeschlagene Casts ohne Rückmeldung.** `castAbility` bricht bei Abklingzeit, Mana, Reichweite, CC oder
+- [~] **Fehlgeschlagene Casts ohne Rückmeldung.** (Sim-Seite erledigt: Event `castFail {src, slot, reason,
+  summoner?}` nur für den Wirkenden; Ton/Text/HUD-Klasse → Lead) `castAbility` bricht bei Abklingzeit, Mana, Reichweite, CC oder
   „busy“ ohne Event ab; HUD kennt nur `cooling`/`unlearned` (hud.ts), kein „zu wenig Mana“. LoL: Symbol blau getönt,
   Fehlerton, „Nicht genug Mana“. Fix: Sim-Event `castFail` mit Grund (nur eigenes Team) → Ton + Text; HUD-Klasse
   `nomana` wenn Kosten > Mana.
@@ -168,7 +177,8 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
 - [x] **Nur Schnellzauber, keine Anzeige vor dem Wirken.** (erledigt: „Zauber mit Anzeige“ als Standard – Taste halten zeigt Reichweite + Form, loslassen wirkt, Esc bricht ab; Einstellung) controller.ts `cast()` sendet beim Tastendruck; kein
   Normal-Cast, kein „Schnellzauber mit Anzeige“ (Taste halten = Reichweite + Form, loslassen = wirken); C zeigt nur
   die AA-Reichweite. Fix: keydown → `castTelegraph()` am Cursor zeigen, keyup → senden; Modus je Taste einstellbar.
-- [ ] **Kein Eingabe-Puffer.** `castAbility` verwirft Eingaben während Wind-up/Dash/Kanalisieren (`a.cast ||
+- [x] **Kein Eingabe-Puffer.** (erledigt: 1 Platz, 8 Ticks bzw. bis Wind-up-Ende; Flash sofort in nicht gezielten
+  Wind-ups, sonst gepuffert; Test mechanics.test.ts „input buffer“, bughunt.test.ts angepasst) `castAbility` verwirft Eingaben während Wind-up/Dash/Kanalisieren (`a.cast ||
   isBusy`), `castSummoner` blockt Sprung (Flash) während `isBusy`. LoL puffert den nächsten Zauber in Cast-Zeiten und
   Dashes und erlaubt Flash während vieler Wind-ups (R-Flash, Q-Flash). Fix: 1-Slot-Puffer (~0,25 s), ausgeführt wenn
   „busy“ endet; Flash im Wind-up erlauben.
@@ -186,7 +196,8 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
 
 ### Kampf-Lesbarkeit
 **Kritisch**
-- [ ] **CC und Buffs an Einheiten unsichtbar.** `SnapEntity` hat kein CC-/Buff-Feld; `ccLevel` steht nur in
+- [~] **CC und Buffs an Einheiten unsichtbar.** (Sim-Seite erledigt: `SnapEntity.cc` Bitmaske buffs.ts `CC_BIT`,
+  `slow`, `ccEnd`; Anzeige → Lead) `SnapEntity` hat kein CC-/Buff-Feld; `ccLevel` steht nur in
   `PlayerHud.cc` und wird nur von Bots gelesen (keine Fundstelle in src/render, src/ui). Betäubung, Festhalten,
   Verlangsamung, Stille, Airborne sind weder bei Gegnern noch beim eigenen Champion zu sehen. LoL: CC-Partikel,
   Statustext über dem eigenen Champion, Buff-/Debuff-Leiste. Fix: `SnapEntity.cc` (stärkster CC + Rest-Ticks +

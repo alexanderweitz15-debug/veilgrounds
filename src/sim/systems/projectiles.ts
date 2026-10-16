@@ -23,12 +23,21 @@ export type Payload = AutoPayload | AbilityPayload | TrainerPayload;
 interface ProjState {
   next: number;
   payloads: Map<number, Payload>;
+  /** Source at spawn time (render: missile look), survives the source's death: [unit kind, champion index or -1, slot]. */
+  srcInfo: Map<number, [number, number, number]>;
 }
 
 function projState(sim: Sim): ProjState {
   let s = sim.state.projectiles as ProjState | undefined;
-  if (!s) sim.state.projectiles = s = { next: 0, payloads: new Map() };
+  if (!s) sim.state.projectiles = s = { next: 0, payloads: new Map(), srcInfo: new Map() };
   return s;
+}
+
+/** Projectile source for the snapshot: kind of the firing unit (0 = none/trainer), champion id, slot (-1 = auto). */
+export function projectileSource(sim: Sim, eid: number): { srcKind: number; champ: string | null; slot: number } {
+  const i = projState(sim).srcInfo.get(eid);
+  if (!i) return { srcKind: 0, champ: null, slot: -1 };
+  return { srcKind: i[0], champ: i[1] >= 0 ? (sim.championIds[i[1]] ?? null) : null, slot: i[2] };
 }
 
 export interface ProjSpec {
@@ -72,6 +81,8 @@ export function spawnProjectile(sim: Sim, p: ProjSpec): number {
   const s = projState(sim);
   Proj.payload[eid] = ++s.next;
   s.payloads.set(eid, p.payload);
+  const slot = p.payload.t === 'ability' ? p.payload.slot : -1;
+  s.srcInfo.set(eid, p.src >= 0 ? [Unit.kind[p.src]!, Unit.champ[p.src]!, slot] : [0, -1, slot]);
   if (t >= 0) aimAt(sim, eid, t);
   return eid;
 }
@@ -88,7 +99,9 @@ function aimAt(sim: Sim, eid: number, t: number): void {
 }
 
 function remove(sim: Sim, eid: number): void {
-  if (!projState(sim).payloads.delete(eid)) return;
+  const s = projState(sim);
+  if (!s.payloads.delete(eid)) return;
+  s.srcInfo.delete(eid);
   sim.doomed.push(eid);
 }
 

@@ -3,8 +3,8 @@
 import type { Sim } from '../sim';
 import type { System } from './index';
 import { findPath, nearestWalkable } from '../map';
-import { canTarget, onMoveCommand } from './attack';
-import { castAbility, castSummoner, levelAbility, refreshCooldowns } from './abilities';
+import { canTarget, onMoveCommand, setHoldFire } from './attack';
+import { cancelCastIntents, commandCast, levelAbility, refreshCooldowns, updateCastIntents } from './abilities';
 import { cancelRecall, grantGold, grantXp, startRecall, xpToNext } from './economy';
 import { spawnDummy } from './champions';
 import { PING_KINDS, type Command } from '../types';
@@ -25,8 +25,15 @@ export const inputSystem: System = {
       const safe = sanitize(sim, cmd);
       if (safe) apply(sim, eid, safe);
     }
+    updateCastIntents(sim); // buffered casts, walk-into-range casts
   },
 };
+
+/** Orders (move/stop/attack/attack-move/recall) end a walk-into-range cast; Stop also clears the input buffer. */
+function newOrder(sim: Sim, eid: number, stop: boolean): void {
+  cancelCastIntents(sim, eid, stop);
+  setHoldFire(sim, eid, stop);
+}
 
 const clampTo = (v: number, max: number): number => Math.min(max, Math.max(0, v));
 
@@ -65,6 +72,7 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
   if (!Unit.alive[eid]) return;
   switch (cmd.t) {
     case 'move':
+      newOrder(sim, eid, false);
       onMoveCommand(sim, eid);
       cancelRecall(sim, eid);
       Atk.target[eid] = -1;
@@ -72,6 +80,7 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
       moveTo(sim, eid, cmd.x, cmd.y);
       break;
     case 'stop':
+      newOrder(sim, eid, true);
       onMoveCommand(sim, eid);
       cancelRecall(sim, eid);
       Atk.target[eid] = -1;
@@ -82,6 +91,7 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
     case 'attack': {
       const t = cmd.target;
       if (!canTarget(sim, eid, t)) break;
+      newOrder(sim, eid, false);
       cancelRecall(sim, eid);
       if (Atk.target[eid] !== t) onMoveCommand(sim, eid);
       Atk.target[eid] = t;
@@ -91,6 +101,7 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
       break;
     }
     case 'attackMove':
+      newOrder(sim, eid, false);
       onMoveCommand(sim, eid);
       cancelRecall(sim, eid);
       Atk.target[eid] = -1;
@@ -100,15 +111,16 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
       moveTo(sim, eid, cmd.x, cmd.y);
       break;
     case 'cast':
-      castAbility(sim, eid, cmd.slot, cmd.x, cmd.y, cmd.target);
+      commandCast(sim, eid, false, cmd.slot, cmd.x, cmd.y, cmd.target);
       break;
     case 'spell':
-      castSummoner(sim, eid, cmd.slot, cmd.x, cmd.y, cmd.target);
+      commandCast(sim, eid, true, cmd.slot, cmd.x, cmd.y, cmd.target);
       break;
     case 'levelUp':
       levelAbility(sim, eid, cmd.slot);
       break;
     case 'recall':
+      cancelCastIntents(sim, eid, true);
       startRecall(sim, eid);
       break;
     case 'ward':

@@ -27,7 +27,7 @@
     "asGrowth": 1.6,
     "range": 575,
     "ms": 335,
-    "windup": 0.3,
+    "windup": 0.2,
     "projectileSpeed": 1700,
     "radius": 55
   },

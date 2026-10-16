@@ -12,11 +12,11 @@ import { query } from 'bitecs';
 import type { Sim } from '../sim';
 import type { System } from './index';
 import { isRef } from '../sim';
-import { DT, Kind, isMinion, isStructure, sec } from '../types';
+import { CHAMP_ABILITY_DMG_MULT, DT, Kind, isMinion, isStructure, sec, type CastFailReason } from '../types';
 import { dealDamage } from '../damage';
 import { dir, dist2, circleInCone, cosDeg, segDist2 } from '../vec';
-import { findPath, nearestWalkable, walkable } from '../map';
-import { addBuff, addShield, canCast, canMove, channelBroken, healUnit, removeBuffs, reveal, type StatKey } from '../buffs';
+import { findPath, lineWalkable, nearestWalkable, walkable } from '../map';
+import { addBuff, addShield, canAttack, canCast, canMove, channelBroken, healUnit, removeBuffs, reveal, type StatKey } from '../buffs';
 import { championData, championHooks, champIdOf, passiveHooksOf } from '../champions';
 import type { AbilityData, Effect, EffectTarget, Ranked, Scaling } from '../champions/schema';
 import type { CastMods, DashPlan, EffectCtx, EffectPhase } from '../champions/hooks';
@@ -24,7 +24,7 @@ import { onMoveCommand } from './attack';
 import { spawnProjectile } from './projectiles';
 import { baseMaxHp } from './stats';
 import { cancelRecall, champions } from './economy';
-import { cancelTeleport, castSummonerSpell, summonerCooldown, summonerDef, teleporting } from '../summoners';
+import { cancelTeleport, castSummonerSpell, summonerCooldown, summonerDef, summonerWalkTarget, teleporting } from '../summoners';
 import { sees } from '../vision';
 import { updateSummons } from '../summons';
 import { tickItemsAndRunes } from '../items/itemHooks';
@@ -107,6 +107,21 @@ interface ChampAbil {
   channel: { slot: number; rank: number; start: number; until: number } | null;
   armed: { slot: number; rank: number; until: number } | null;
   lastDashEnd: number;
+  /** Targeted cast (ability or summoner) walking into range (LoL): cast once in range, cancelled by orders. */
+  walk: CastIntent | null;
+  /** One input pressed while busy (own wind-up, dash, channel), retried each tick until `until` (input buffer). */
+  queued: (CastIntent & { until: number }) | null;
+}
+
+/** A cast command kept for later: summoner (slot = D/F) or ability (slot = Q..R). */
+interface CastIntent {
+  sum: boolean;
+  slot: number;
+  x: number;
+  y: number;
+  /** -1 = none (cursor pick). */
+  target: number;
+  targetSerial: number;
 }
 
 interface Zone {
@@ -161,6 +176,8 @@ export function champAbil(sim: Sim, eid: number): ChampAbil {
       channel: null,
       armed: null,
       lastDashEnd: -1e9,
+      walk: null,
+      queued: null,
     };
     s.champs.set(eid, a);
   }
@@ -290,6 +307,12 @@ export function noteDashEnd(sim: Sim, eid: number, slot: number): void {
   for (const h of passiveHooksOf(sim, eid)) h.onDashEnd?.(sim, eid, slot);
 }
 
+/** Dashing, leaping or knocked back / pulled right now (abilState.moves). */
+export function isDisplacing(sim: Sim, eid: number): boolean {
+  const m = (sim.state.abilities as AbilState | undefined)?.moves.get(eid);
+  return !!m && m.serial === sim.c.Unit.serial[eid];
+}
+
 /** Casting (wind-up), channelling, dashing or being displaced: no movement, no autos. */
 export function isBusy(sim: Sim, eid: number): boolean {
   if (teleporting(sim, eid)) return true;
@@ -312,39 +335,51 @@ function makeCtx(sim: Sim, eid: number, slot: number, rank: number, phase: Effec
   return { caster: eid, slot, rank, ability: abilityOf(sim, eid, slot), hits: [], x, y, target, phase, dx, dy, cursorX: x, cursorY: y };
 }
 
-export function castAbility(sim: Sim, eid: number, slot: number, x: number, y: number, target?: number): void {
+/**
+ * Cast an ability now. Returns null on success (wind-up started, resolved, or recast), else why it failed. 'range':
+ * a valid target is out of range; the cast is then stored as a walk-into-range intent (champAbil().walk, see
+ * updateCastIntents) and the attack order dropped. Commands go through commandCast (buffer + castFail events).
+ */
+export function castAbility(sim: Sim, eid: number, slot: number, x: number, y: number, target?: number): CastFailReason | null {
   const { Unit, Mana, Hp, Stats } = sim.c;
-  if (!Unit.alive[eid] || Unit.kind[eid] !== Kind.Champion || slot < 0 || slot > 3) return;
+  if (!Unit.alive[eid] || Unit.kind[eid] !== Kind.Champion || slot < 0 || slot > 3) return 'unlearned';
   const a = champAbil(sim, eid);
   const ab = abilityOf(sim, eid, slot);
   const rank = a.ranks[slot]!;
-  if (rank === 0) return;
+  if (rank === 0) return 'unlearned';
   if (ab.flags?.includes('recast')) {
     const w = a.recast[slot]!;
     const win = sim.tick >= w.from && sim.tick <= w.until;
     // a press during the own wind-up is a cancel/feint (Gorvam Q) and always allowed; a hook-opened window is a real
     // cast: blocked by stun/silence/airborne (and roots for dash/blink/mobility recasts), the window stays open
     const windup = a.cast?.slot === slot;
-    if (win && !windup && (!canCast(sim, eid) || (movesCaster(ab) && !canMove(sim, eid)))) return;
+    if (win && !windup && (!canCast(sim, eid) || (movesCaster(ab) && !canMove(sim, eid)))) return 'cc';
     if (windup || win) {
       if (win) w.until = -1;
       sim.events.push({ e: 'cast', src: eid, slot, x, y, rank, recast: true });
       runHooks(sim, makeCtx(sim, eid, slot, rank, 'recast', x, y, target ?? -1));
-      return;
+      return null;
     }
   }
-  if (a.cast || isBusy(sim, eid) || sim.tick < a.cdUntil[slot]! || !canCast(sim, eid)) return;
-  if (movesCaster(ab) && !canMove(sim, eid)) return;
+  if (sim.tick < a.cdUntil[slot]!) return 'cooldown';
+  if (!canCast(sim, eid) || (movesCaster(ab) && !canMove(sim, eid))) return 'cc';
   const mods: CastMods = { cost: rv(ab.cost, rank), timeMult: 1 };
   for (const h of passiveHooksOf(sim, eid)) h.modifyCast?.(sim, eid, slot, mods);
   const cost = Math.max(0, mods.cost);
   if (ab.costType === 'mana' || ab.costType === 'energy') {
-    if (Mana.cur[eid]! < cost) return;
-  } else if (ab.costType === 'hp' && cost > 0 && Hp.cur[eid]! <= cost) return;
+    if (Mana.cur[eid]! < cost) return 'mana';
+  } else if (ab.costType === 'hp' && cost > 0 && Hp.cur[eid]! <= cost) return 'mana';
+  if (a.cast || isBusy(sim, eid)) return 'busy';
   let tgt = -1;
   if (ab.type === 'targeted') {
-    tgt = pickTarget(sim, eid, ab, rank, x, y, target);
-    if (tgt < 0) return; // ponytail: LoL walks into range first; here an out-of-range cast is rejected
+    tgt = pickTarget(sim, eid, ab, rank, x, y, target, false);
+    if (tgt < 0) {
+      // LoL: a valid target out of range -> walk into range, then cast
+      const far = pickTarget(sim, eid, ab, rank, x, y, target, true);
+      if (far < 0) return 'target';
+      startWalk(sim, eid, { sum: false, slot, x, y, target: far, targetSerial: Unit.serial[far]! });
+      return 'range';
+    }
   }
   // pay + cooldown at cast start (refunded if interrupted during the wind-up)
   if (ab.costType === 'mana' || ab.costType === 'energy') Mana.cur[eid] = Mana.cur[eid]! - cost;
@@ -367,12 +402,123 @@ export function castAbility(sim: Sim, eid: number, slot: number, x: number, y: n
   } else {
     execute(sim, eid, slot, rank, x, y, tgt, mods.timeMult);
   }
+  return null;
+}
+
+// ------------------------------------------------------------------ cast commands: walk into range, input buffer
+
+/** Input buffer: a cast pressed during an own wind-up / dash / channel is retried for this long (~0.25 s). */
+export const CAST_BUFFER_TICKS = 8;
+
+function castFail(sim: Sim, eid: number, i: { sum: boolean; slot: number }, reason: CastFailReason): void {
+  sim.events.push({ e: 'castFail', src: eid, slot: i.slot, reason, ...(i.sum ? { summoner: true as const } : {}) });
+}
+
+const tryCast = (sim: Sim, eid: number, i: CastIntent): CastFailReason | null =>
+  i.sum ? castSummoner(sim, eid, i.slot, i.x, i.y, i.target >= 0 ? i.target : undefined) : castAbility(sim, eid, i.slot, i.x, i.y, i.target >= 0 ? i.target : undefined);
+
+/** Walk toward a targeted cast's target (stored intent; the attack order and an auto wind-up are dropped). */
+function startWalk(sim: Sim, eid: number, i: CastIntent): void {
+  const { Atk } = sim.c;
+  champAbil(sim, eid).walk = i;
+  Atk.target[eid] = -1;
+  Atk.attackMove[eid] = 0;
+  onMoveCommand(sim, eid);
+  walkStep(sim, eid, i.target);
+}
+
+/** Path toward the walk target (straight if clear, else pathfinding refreshed every 15 ticks), like a chase. */
+function walkStep(sim: Sim, eid: number, t: number): void {
+  const { Pos, Move } = sim.c;
+  if (lineWalkable(sim.map.nav, Pos.x[eid]!, Pos.y[eid]!, Pos.x[t]!, Pos.y[t]!)) sim.paths.set(eid, [{ x: Pos.x[t]!, y: Pos.y[t]! }]);
+  else if (Move.mode[eid] !== 1 || !sim.paths.has(eid) || (sim.tick + eid) % 15 === 0) sim.paths.set(eid, findPath(sim.map.nav, Pos.x[eid]!, Pos.y[eid]!, Pos.x[t]!, Pos.y[t]!));
+  Move.mode[eid] = 1;
+  Move.tx[eid] = Pos.x[t]!;
+  Move.ty[eid] = Pos.y[t]!;
+  Move.pathIdx[eid] = 0;
+}
+
+/**
+ * Cast / summoner command (input system, humans and bots alike): cast now; pressed while busy -> buffered for
+ * CAST_BUFFER_TICKS (at least until the current wind-up ends); out of range -> walk into range; otherwise a
+ * castFail event with the reason. A new command replaces a pending walk.
+ */
+export function commandCast(sim: Sim, eid: number, sum: boolean, slot: number, x: number, y: number, target?: number): void {
+  if (sim.c.Unit.kind[eid] !== Kind.Champion) return;
+  const a = champAbil(sim, eid);
+  a.walk = null;
+  const t = target !== undefined && target >= 0 ? target : -1;
+  const i: CastIntent = { sum, slot, x, y, target: t, targetSerial: t >= 0 ? sim.c.Unit.serial[t]! : 0 };
+  const r = tryCast(sim, eid, i);
+  if (r === null || (r === 'range' && a.walk)) return;
+  if (r === 'busy') {
+    a.queued = { ...i, until: Math.max(sim.tick + CAST_BUFFER_TICKS, a.cast ? a.cast.end + 1 : 0) };
+    return;
+  }
+  castFail(sim, eid, i, r);
+}
+
+/** Orders cancel a pending walk-into-range cast; a Stop also clears the input buffer. */
+export function cancelCastIntents(sim: Sim, eid: number, stop: boolean): void {
+  const a = (sim.state.abilities as AbilState | undefined)?.champs.get(eid);
+  if (!a) return;
+  a.walk = null;
+  if (stop) a.queued = null;
+}
+
+/** Input system, after this tick's commands: retry buffered casts, advance / fire walk-into-range casts. */
+export function updateCastIntents(sim: Sim): void {
+  const s = sim.state.abilities as AbilState | undefined;
+  if (!s) return;
+  const { Unit, Move } = sim.c;
+  for (const [eid, a] of s.champs) {
+    if (!a.queued && !a.walk) continue;
+    if (a.serial !== Unit.serial[eid] || !Unit.alive[eid]) {
+      a.queued = a.walk = null;
+      continue;
+    }
+    const q = a.queued;
+    if (q) {
+      if (q.target >= 0 && Unit.serial[q.target] !== q.targetSerial) q.target = -1; // target eid recycled
+      const r = tryCast(sim, eid, q);
+      if (r === 'busy' && sim.tick < q.until) continue; // still busy: keep it (a walk waits too)
+      a.queued = null;
+      if (r !== null && !(r === 'range' && a.walk)) castFail(sim, eid, q, r);
+      continue;
+    }
+    const w = a.walk!;
+    if (!isRef(sim, w.target, w.targetSerial) || !sees(sim, Unit.team[eid]!, w.target) || (Unit.untargetable[w.target] && Unit.team[w.target] !== Unit.team[eid])) {
+      // target died / vanished into fog: stop where we are (LoL)
+      a.walk = null;
+      if (Move.mode[eid] === 1) (Move.mode[eid] = 0), sim.paths.delete(eid);
+      continue;
+    }
+    if (isBusy(sim, eid)) continue;
+    if (!within(sim, eid, w.target, intentRange(sim, eid, w))) {
+      walkStep(sim, eid, w.target);
+      continue;
+    }
+    // in range: stop and cast standing (a failure here, e.g. mana spent meanwhile, reports castFail)
+    a.walk = null;
+    Move.mode[eid] = 0;
+    sim.paths.delete(eid);
+    const r = tryCast(sim, eid, w);
+    if (r !== null && !(r === 'range' && a.walk)) castFail(sim, eid, w, r);
+  }
+}
+
+/** Cast range of a stored targeted intent (ability rank range or summoner range). */
+function intentRange(sim: Sim, eid: number, i: CastIntent): number {
+  const a = champAbil(sim, eid);
+  if (i.sum) return summonerDef(a.sums[i.slot]!)?.range ?? 0;
+  return rv(abilityOf(sim, eid, i.slot).range, Math.max(1, a.ranks[i.slot]!));
 }
 
 /** Dashes, blinks and abilities flagged 'mobility' (e.g. Isolde R's leap) relocate the caster: roots block them. */
 const movesCaster = (ab: AbilityData): boolean => ab.type === 'dash' || ab.type === 'blink' || (ab.flags?.includes('mobility') ?? false);
 
-function pickTarget(sim: Sim, eid: number, ab: AbilityData, rank: number, x: number, y: number, target?: number): number {
+/** Target of a targeted ability: explicit, else the valid unit nearest the cursor (150). anyRange: ignore cast range. */
+function pickTarget(sim: Sim, eid: number, ab: AbilityData, rank: number, x: number, y: number, target: number | undefined, anyRange: boolean): number {
   const { Unit, Pos } = sim.c;
   const ally = ab.flags?.includes('ally_target') ?? false;
   const team = Unit.team[eid]!;
@@ -384,7 +530,7 @@ function pickTarget(sim: Sim, eid: number, ab: AbilityData, rank: number, x: num
     !Unit.untargetable[t] &&
     kindOk(Unit.kind[t]!) &&
     (ally ? Unit.team[t] === team && t !== eid : Unit.team[t] !== team && sees(sim, team, t)) &&
-    within(sim, eid, t, rv(ab.range, rank));
+    (anyRange || within(sim, eid, t, rv(ab.range, rank)));
   if (target !== undefined) return ok(target) ? target : -1;
   // no explicit target: the valid unit closest to the cursor (within 150)
   let best = -1;
@@ -691,7 +837,7 @@ function applyEffect(sim: Sim, ctx: EffectCtx, eff: Effect): void {
     if (!sim.c.Unit.alive[t]) continue;
     switch (eff.kind) {
       case 'damage':
-        dealDamage(sim, caster, t, scaleAmount(sim, eff.amount, caster, t, rank) * (ctx.dmgMult ?? 1), eff.type);
+        dealDamage(sim, caster, t, scaleAmount(sim, eff.amount, caster, t, rank) * (ctx.dmgMult ?? 1) * (sim.c.Unit.kind[t] === Kind.Champion ? CHAMP_ABILITY_DMG_MULT : 1), eff.type);
         break;
       case 'heal':
         healUnit(sim, t, healAmount(sim, caster, t, scaleAmount(sim, eff.amount, caster, t, rank)));
@@ -905,22 +1051,40 @@ export const abilitiesSystem: System = {
 
 // ------------------------------------------------------------------ summoners
 
-export function castSummoner(sim: Sim, eid: number, slot: number, x: number, y: number, target?: number): void {
+/**
+ * Cast a summoner spell now; null on success, else why not. Flash works during an own ability wind-up (R-Flash:
+ * the ability then resolves from the new position) except a targeted one, and not out of a dash / displacement /
+ * channel / Teleport ('busy': commandCast buffers it until that ends). Teleport never starts mid-cast ('busy' too). Targeted summoners
+ * (Ignite, Exhaust, Smite) out of range return 'range' and walk into range like targeted abilities.
+ */
+export function castSummoner(sim: Sim, eid: number, slot: number, x: number, y: number, target?: number): CastFailReason | null {
   const { Unit } = sim.c;
-  if (!Unit.alive[eid] || Unit.kind[eid] !== Kind.Champion || (slot !== 0 && slot !== 1)) return;
+  if (!Unit.alive[eid] || Unit.kind[eid] !== Kind.Champion || (slot !== 0 && slot !== 1)) return 'unlearned';
   const a = champAbil(sim, eid);
   const id = a.sums[slot]!;
   const def = summonerDef(id);
-  if (!def || def.todo) return;
-  if (id === 'teleport' && cancelTeleport(sim, eid)) return; // recast during the channel cancels it
-  if (sim.tick < a.sumCdUntil[slot]!) return;
-  // no Flash out of an own dash / displacement / wind-up, no Teleport channel started mid-cast
-  if ((id === 'sprung' || id === 'teleport') && isBusy(sim, eid)) return;
-  if (!castSummonerSpell(sim, eid, id, x, y, target)) return;
+  if (!def || def.todo) return 'unlearned';
+  if (id === 'teleport' && cancelTeleport(sim, eid)) return null; // recast during the channel cancels it
+  if (sim.tick < a.sumCdUntil[slot]!) return 'cooldown';
+  if (id !== 'reinigen' && (!canAttack(sim, eid) || (id === 'sprung' && !canMove(sim, eid)))) return 'cc';
+  const channel = a.channel !== null && a.channel.until > sim.tick;
+  // a targeted wind-up resolves without a new range check: Flash waits for it (buffered) instead of moving the caster
+  const targetedWindup = a.cast !== null && abilityOf(sim, eid, a.cast.slot).type === 'targeted';
+  if (id === 'sprung' && (isDisplacing(sim, eid) || channel || teleporting(sim, eid) || targetedWindup)) return 'busy';
+  if (id === 'teleport' && isBusy(sim, eid)) return 'busy';
+  if (!castSummonerSpell(sim, eid, id, x, y, target)) {
+    if (teleporting(sim, eid)) return 'busy'; // a Teleport channel blocks the other summoner
+    if (id === 'reinigen') return 'cc'; // airborne / suppressed / stasis
+    const far = summonerWalkTarget(sim, eid, id, x, y, target);
+    if (far < 0) return 'target';
+    startWalk(sim, eid, { sum: true, slot, x, y, target: far, targetSerial: Unit.serial[far]! });
+    return 'range';
+  }
   cancelRecall(sim, eid);
   const setup = sim.config.players.find((p) => p.slot === Unit.slot[eid]);
   a.sumCdTotal[slot] = sec(setup?.summonerCd?.[id] ?? summonerCooldown(sim, id));
   a.sumCdUntil[slot] = sim.tick + a.sumCdTotal[slot]!;
+  return null;
 }
 
 // ------------------------------------------------------------------ HUD

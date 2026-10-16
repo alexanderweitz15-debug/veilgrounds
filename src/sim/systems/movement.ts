@@ -1,25 +1,42 @@
-// Movement: path following (mode 1), chasing the attack target (mode 2), minion separation.
+// Movement: path following (mode 1), chasing the attack target (mode 2), unit collision (champions + minions).
 // Units do not move during attack windup (phase 1) or while rooted/stunned (Stats.ms === 0).
 
 import { query } from 'bitecs';
 import type { Sim } from '../sim';
 import type { System } from './index';
-import { DT, isMinion, isStructure } from '../types';
+import { DT, Kind, isMinion, isStructure } from '../types';
 import { findPath, lineWalkable, nearestWalkable, walkable } from '../map';
 import { isRef } from '../sim';
+import { MAX_ENT } from '../ecs';
+import { hasBuff } from '../buffs';
+import { isDisplacing } from './abilities';
 
 const REPATH_TICKS = 15;
+
+/** Per-unit tick (sim.tick + 1, i.e. the tick number after this step) of the last own walking step. */
+function walkTicks(sim: Sim): Int32Array {
+  return (sim.state.walked ??= new Int32Array(MAX_ENT)) as Int32Array;
+}
+
+/**
+ * True if the unit walked (path / chase step) in the last completed tick. Collision pushes, dashes, Flash and
+ * knockbacks do not count: render plays the run cycle only for real walking (snapshot `moving`).
+ */
+export const walkedLastTick = (sim: Sim, eid: number): boolean => (sim.state.walked as Int32Array | undefined)?.[eid] === sim.tick;
 
 export const movementSystem: System = {
   name: 'movement',
   update(sim) {
     const { Move, Pos, Unit, Stats, Atk, Face } = sim.c;
     const ents = query(sim.world, [Move]);
+    const walked = walkTicks(sim);
     for (let i = 0; i < ents.length; i++) {
       const eid = ents[i]!;
       if (!Unit.alive[eid] || Move.mode[eid] === 0 || Atk.phase[eid] === 1) continue;
       let step = Stats.ms[eid]! * DT;
       if (step <= 0) continue;
+      const sx = Pos.x[eid]!;
+      const sy = Pos.y[eid]!;
 
       if (Move.mode[eid] === 2) {
         const t = Atk.target[eid]!;
@@ -79,39 +96,95 @@ export const movementSystem: System = {
         }
       }
       if (path.length === 0 && Move.mode[eid] === 1) Move.mode[eid] = 0;
+      if (Pos.x[eid] !== sx || Pos.y[eid] !== sy) walked[eid] = sim.tick + 1;
     }
-    separateMinions(sim, ents);
+    separateUnits(sim, ents);
     collideStructures(sim, ents);
   },
 };
 
 /**
- * Soft separation so minion waves do not stack on one point. Champions pass through units.
- * ponytail: O(n^2) over minions (~90 max); spatial hash if bot-sim profiling shows it.
+ * Champion pairs (champion-champion, champion-minion) keep this fraction of the radius sum apart: LoL pathing radii
+ * are smaller than the hit radii, so bodies may touch and overlap a little, but never stand inside each other.
  */
-function separateMinions(sim: Sim, ents: ArrayLike<number>): void {
-  const { Pos, Unit } = sim.c;
-  const ms: number[] = [];
-  for (let i = 0; i < ents.length; i++) {
-    const e = ents[i]!;
-    if (Unit.alive[e] && isMinion(Unit.kind[e]!)) ms.push(e);
-  }
-  for (let i = 0; i < ms.length; i++) {
-    const a = ms[i]!;
-    for (let j = i + 1; j < ms.length; j++) {
-      const b = ms[j]!;
+export const BODY_OVERLAP = 0.75;
+/** Share of a champion-minion overlap the minion resolves (minions step aside, champions keep walking). */
+const MINION_YIELD = 0.8;
+/** Fraction of a champion overlap resolved per tick (soft: no jitter, a few ticks to separate). */
+const BODY_RATE = 0.5;
+
+/** Collision body: champions and lane minions; dashing/knocked-back units and Ghost (Geist) pass through. */
+function isBody(sim: Sim, e: number): boolean {
+  const k = sim.c.Unit.kind[e]!;
+  if (!sim.c.Unit.alive[e] || (k !== Kind.Champion && !isMinion(k))) return false;
+  if (isDisplacing(sim, e)) return false;
+  return !(k === Kind.Champion && hasBuff(sim, e, 'stat', 'geist'));
+}
+
+/**
+ * Soft unit collision. Minions separate fully (waves spread instead of stacking on one point); champions and minions
+ * / other champions keep BODY_OVERLAP of their radius sum apart. A minion in a walking champion's way is pushed
+ * aside (away from the champion's line of travel), so the champion walks around/through the wave instead of
+ * shoving it ahead. Pushes never go into walls (nudge). Deterministic: ascending entity order, fixed tie axis.
+ * ponytail: O(n^2) over ~100 bodies; spatial hash if bot-sim profiling shows it.
+ */
+function separateUnits(sim: Sim, ents: ArrayLike<number>): void {
+  const { Pos, Unit, Face } = sim.c;
+  const bodies: number[] = [];
+  for (let i = 0; i < ents.length; i++) if (isBody(sim, ents[i]!)) bodies.push(ents[i]!);
+  bodies.sort((p, q) => p - q);
+  const walked = walkTicks(sim);
+  for (let i = 0; i < bodies.length; i++) {
+    const a = bodies[i]!;
+    const aChamp = Unit.kind[a] === Kind.Champion;
+    for (let j = i + 1; j < bodies.length; j++) {
+      const b = bodies[j]!;
+      const bChamp = Unit.kind[b] === Kind.Champion;
       const dx = Pos.x[b]! - Pos.x[a]!;
       const dy = Pos.y[b]! - Pos.y[a]!;
-      const min = Unit.radius[a]! + Unit.radius[b]!;
+      const min = (Unit.radius[a]! + Unit.radius[b]!) * (aChamp || bChamp ? BODY_OVERLAP : 1);
       const d2 = dx * dx + dy * dy;
       if (d2 >= min * min) continue;
       const d = Math.sqrt(d2);
       // coincident: push apart along a fixed axis derived from eid order (deterministic)
       const ux = d > 0 ? dx / d : 1;
       const uy = d > 0 ? dy / d : 0;
-      const push = (min - d) * 0.25;
-      nudge(sim, a, Pos.x[a]! - ux * push, Pos.y[a]! - uy * push);
-      nudge(sim, b, Pos.x[b]! + ux * push, Pos.y[b]! + uy * push);
+      if (!aChamp && !bChamp) {
+        const push = (min - d) * 0.25;
+        nudge(sim, a, Pos.x[a]! - ux * push, Pos.y[a]! - uy * push);
+        nudge(sim, b, Pos.x[b]! + ux * push, Pos.y[b]! + uy * push);
+        continue;
+      }
+      const over = (min - d) * BODY_RATE;
+      if (aChamp && bChamp) {
+        nudge(sim, a, Pos.x[a]! - ux * over * 0.5, Pos.y[a]! - uy * over * 0.5);
+        nudge(sim, b, Pos.x[b]! + ux * over * 0.5, Pos.y[b]! + uy * over * 0.5);
+        continue;
+      }
+      // champion vs minion: the minion yields; sideways off a walking champion's path
+      const c = aChamp ? a : b;
+      const m = aChamp ? b : a;
+      const s = aChamp ? 1 : -1; // (ux, uy) * s points from champion to minion
+      let mx = ux * s;
+      let my = uy * s;
+      if (walked[c] === sim.tick + 1) {
+        const fx = Face.x[c]!;
+        const fy = Face.y[c]!;
+        const ahead = mx * fx + my * fy;
+        if (ahead > 0) {
+          // minion ahead of the champion: add the perpendicular toward the minion's side of the walking line
+          const side = mx * fy - my * fx >= 0 ? 1 : -1;
+          mx += fy * side * ahead;
+          my += -fx * side * ahead;
+          const l = Math.sqrt(mx * mx + my * my);
+          mx /= l;
+          my /= l;
+        }
+      }
+      const mp = over * MINION_YIELD;
+      const cp = over * (1 - MINION_YIELD);
+      nudge(sim, m, Pos.x[m]! + mx * mp, Pos.y[m]! + my * mp);
+      nudge(sim, c, Pos.x[c]! - ux * s * cp, Pos.y[c]! - uy * s * cp);
     }
   }
 }

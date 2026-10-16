@@ -143,3 +143,27 @@ Messung: `npm run bot-sim -- --rank=<r> --games=6 --minutes=15` (Seeds 1–6) un
 | Tilt | §4.2 | +1 pro Tod, −1 pro Kill oder 120 s, max 3; `withTilt` jetzt zur Laufzeit angewendet (war nie aufgerufen) und geloggt (`tilt`) | |
 | Log-Drosselung | §1 | Identische Entscheidung (Knoten, chosen, reason, Fehler) desselben Bots innerhalb 150 Ticks wird verworfen (Herzschlag alle 5 s) | Vorher pro Takt ein Eintrag |
 | Offene Punkte | | Spiele dauern 40–45 min, Kills 6–10 pro 25 min (Ziel ≈ 30 bis 25 min); höherer Rang gewinnt nicht messbar öfter (3/6); All-ins enden meist per Timeout oder unter dem Turm | Sim-Balance (Schaden/HP/Turm) + Kampf-Logik, nächster Schritt |
+
+## Mechanik-Feeling (Mechanik-Agent, 2026-10-16)
+
+Wind-up = Anteil der Angriffszeit (`base.windup`, Champion-JSON), Ticks = round(30 × windup / AS). LoL-Richtwerte
+(ca., nicht nachgemessen): Schützen 15–22 % (Jinx 16,9, Caitlyn 17,7, Ashe 21,9), Magier 15–25 %, Nahkämpfer 20–30 %.
+
+| Gruppe | Champions | windup vorher → jetzt | Wind-up Stufe 1 |
+|---|---|---|---|
+| Schützen (ADC, Ottilie) | mira, wren, tobin, ottilie 0,18; lysa 0,17; corvin 0,19 | 0,30 → 0,17–0,19 | 8 Ticks ≈ 270 ms (vorher 14 = 467 ms) |
+| Fernkampf-Magier/Supports | aurel, ferris, ilvane, kiran, lio, nyx, oda, seraphyne, thessaly | 0,30 → 0,20 | 10 Ticks ≈ 320 ms |
+| Kämpfer/Assassinen (Nahkampf) | isolde 0,22; kaelen, renn, vessa 0,23; harrow 0,24; dagny 0,25 | 0,30–0,35 → 0,22–0,25 | 10–12 Ticks |
+| Tanks/Juggernauts | grimald 0,26; brom, gorvam, hagen, oleth 0,27 | 0,35 → 0,26–0,27 | 12–13 Ticks (Brom vorher 17) |
+
+| Thema | Entscheidung | Grund |
+|---|---|---|
+| AS-Skalierung des Wind-ups | bleibt linear (Wind-up-Anteil konstant, `attack.ts windupTicks`) | entspricht LoLs Standard (Windup-Modifier 1); kein Champion braucht bisher einen abweichenden Modifier |
+| Minion-Wind-up | unverändert 0,3 (`spawnUnit`-Default, Balance-Agent) | Last-Hit-Vorhersage der Bots (`MINION_WINDUP`) und Wellen-Balance hängen daran |
+| `moving` im Snapshot | nur wenn die Einheit im letzten Tick gelaufen ist (Pfad-/Verfolgungsschritt); Dash, Flash, Kollisionsschub zählen nicht | Laufzyklus im Stand beim Angreifen (24 % der Champion-Ticks) |
+| Einheiten-Kollision | Champions und Lane-Minions: Champion↔Minion/Champion halten 75 % der Radiensumme Abstand (weich, 50 % der Überlappung je Tick); Minion weicht 80 % aus, vor einem laufenden Champion seitlich; Minion↔Minion unverändert; Dash/Knockback (`abilState.moves`) und Geist ignorieren Kollision; Monster, Pets, Dummies ausgenommen | LoL-Pathing-Radien kleiner als Trefferradien; Lager/Tests bleiben stabil |
+| Gezielte Zauber außer Reichweite | Champion läuft hin und wirkt in Reichweite (Ziel tot/unsichtbar → stehen bleiben); Abbruch durch Bewegen/Stopp/Angriff/Rückruf/neuen Zauber; auch Entflammen/Erschöpfen/Bannen | LoL |
+| Eingabe-Puffer | 1 Platz, 8 Ticks (≈ 0,25 s) bzw. bis zum Ende des laufenden Wind-ups; ein Druck während eigenem Wind-up/Dash/Kanalisieren/Teleport wird danach ausgeführt | R-Flash/Q-Flash-Kombos |
+| Flash im Wind-up | sofort während eines nicht gezielten Wind-ups (Zauber löst dann von der neuen Position aus); während eines gezielten Wind-ups, Dashes, Kanals: gepuffert | gezielte Wind-ups prüfen die Reichweite beim Auslösen nicht mehr (sonst Treffer aus 800+ Entfernung) |
+| `castFail`-Event | Gründe cooldown/mana/range/cc/busy/target/unlearned; nur in der Ansicht des Wirkenden | Rückmeldung wie LoL („Nicht genug Mana“) |
+| Automatisch angreifen | `PlayerSetup.autoAttack`: stehender Champion greift den nächsten Gegner in Reichweite an (keine Strukturen/Wards, keine Verfolgung, nicht nach Stopp bis zum nächsten Befehl, nicht beim Rückruf/unsichtbar); Sim-Default aus, Client setzt es für den Menschen (`game/modes.ts withClientSettings`, Default an) | Bots/Tests steuern Autos selbst |

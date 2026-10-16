@@ -111,6 +111,13 @@ export interface TickInput {
   cmd: Command;
 }
 
+/**
+ * Why a cast command failed: cooldown, not enough mana/energy/HP, out of range (only if no walk-into-range was
+ * possible), crowd control (stun/silence/airborne/suppress, root for dashes/Flash), still busy when the ~0.25 s input
+ * buffer ran out, no valid target near the cursor, ability not learned.
+ */
+export type CastFailReason = 'cooldown' | 'mana' | 'range' | 'cc' | 'busy' | 'target' | 'unlearned';
+
 /** Events are produced during a tick and consumed by render/stats. Cleared at the start of each tick. */
 export type SimEvent =
   | { e: 'damage'; src: number; dst: number; amount: number; type: DamageType; crit?: boolean; /** Basic attack (render-only info: death recap). */ auto?: true }
@@ -130,6 +137,11 @@ export type SimEvent =
   | { e: 'attack'; src: number; dst: number }
   /** Ability cast started (slot 0..3; rank for telegraphs). recast: second cast of a recast ability (no new wind-up). */
   | { e: 'cast'; src: number; slot: number; x: number; y: number; rank?: number; recast?: boolean; /** Wind-up end tick (incl. hook time mods). */ at?: number }
+  /**
+   * A cast/summoner command that could not be executed (render: message + error sound). Only delivered to the
+   * caster's own view. summoner: slot is the summoner slot 0/1 (D/F) instead of the ability slot.
+   */
+  | { e: 'castFail'; src: number; slot: number; reason: CastFailReason; summoner?: true }
   | { e: 'plate'; tower: number; team: number }
   | { e: 'wave'; lane: number; team: number; index: number }
   | { e: 'respawn'; eid: number }
@@ -158,6 +170,12 @@ export interface PlayerSetup {
   /** Sandbox/trainer summoner cooldown override in seconds by spell id (e.g. { sprung: 5 }). */
   summonerCd?: Record<string, number>;
   isHuman: boolean;
+  /**
+   * LoL "auto attack" option: a champion standing idle (no order, not after a Stop command) attacks the nearest
+   * enemy unit in attack range, without chasing. Sim default off (tests, bots issue their own autos); the client sets
+   * it for the human player (src/game/modes.ts withClientSettings, default on).
+   */
+  autoAttack?: boolean;
   /** Prägungen; omitted = champion's default preset (src/sim/items/runes.ts). */
   runes?: { keystone: string; minor: [string, string, string] };
   /** Bot-controlled slot (with isHuman false): rank profile + per-game variance (src/ai/runner.ts). */
@@ -219,3 +237,10 @@ export interface SimConfig {
   /** Spawn practice dummies at these positions at start. */
   dummies?: { x: number; y: number; team: TeamId; armor?: number; mr?: number }[];
 }
+
+/**
+ * Data-ability damage against champions x this (docs/DECISIONS.md, pacing): the kits carry 1-3 damage effects where
+ * LoL kits have 3-4 plus rune/passive procs, so a level-6 1v1 took ~2-3x LoL's time to kill and laning fights rarely
+ * ended in a kill. Minions, monsters and structures are unaffected (farm, jungle and siege balance stay as tuned).
+ */
+export const CHAMP_ABILITY_DMG_MULT = 1.4;

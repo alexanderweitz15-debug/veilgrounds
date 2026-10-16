@@ -416,17 +416,22 @@ describe('low priority sim fixes', () => {
     expect(trinketHud(sim, a).cdLeft).toBeGreaterThan(0);
   });
 
-  it('no Flash and no Teleport channel during an own wind-up', () => {
+  it('no Flash and no Teleport channel during an own targeted wind-up: both are buffered until it resolves', () => {
     const { sim, a } = solo('grimald', ['sprung', 'teleport']);
     learn(sim, a, 0);
     const m = enemyMinion(sim, CX + 250, CY);
     step(sim);
     cmd(sim, { t: 'cast', slot: 0, x: CX + 250, y: CY, target: m });
     expect(isBusy(sim, a)).toBe(true);
+    const hp = sim.c.Hp.cur[m]!;
     cmd(sim, { t: 'spell', slot: 0, x: CX - 400, y: CY });
     expect(sim.c.Pos.x[a]).toBe(CX);
     expect(champAbil(sim, a).sumCdUntil[0]).toBe(0);
-    // Teleport (fresh sim, Q ready): no channel started during the wind-up
+    steps(sim, 10); // Q (0.25 s) resolves in range, then the buffered Flash goes off
+    expect(sim.c.Hp.cur[m]).toBeLessThan(hp);
+    expect(sim.c.Pos.x[a]).toBeLessThan(CX - 300);
+    expect(champAbil(sim, a).sumCdUntil[0]).toBeGreaterThan(sim.tick);
+    // Teleport (fresh sim, Q ready): no channel started during the wind-up, it starts once Q resolved
     const t2 = solo('grimald', ['sprung', 'teleport']);
     learn(t2.sim, t2.a, 0);
     const m2 = enemyMinion(t2.sim, CX + 250, CY);
@@ -436,6 +441,8 @@ describe('low priority sim fixes', () => {
     expect(isBusy(t2.sim, t2.a)).toBe(true);
     cmd(t2.sim, { t: 'spell', slot: 1, x: tw.x, y: tw.y, target: tw.eid });
     expect(teleporting(t2.sim, t2.a)).toBe(false);
+    steps(t2.sim, 10);
+    expect(teleporting(t2.sim, t2.a)).toBe(true);
   });
 
   it('legendary items are unique (one of each)', () => {

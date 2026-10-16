@@ -452,7 +452,8 @@ describe('Isolde Q recast', () => {
     cmd(sim, cast(0, CX, CY));
     steps(sim, 50);
     cmd(sim, cast(0, CX, CY)); // recast inside the 1.5-3.5 s window
-    const hits = collect(sim, 40, m, { t: 'attack', target: d });
+    // 30 ticks: the auto lands after a 10-tick wind-up (windup 0.22), the 1 s slow is still on at the end
+    const hits = collect(sim, 30, m, { t: 'attack', target: d });
     const ad = sim.c.Stats.ad[m]!;
     expect(hits.slice(0, 3).map((h) => h.amount)).toEqual([ad, 0.2 * ad * 1.4 * 0.6, 0.2 * ad * 1.4 * 0.4].map((v) => expect.closeTo(v, 6)));
     expect(strongestSlow(sim, d)).toBe(25);

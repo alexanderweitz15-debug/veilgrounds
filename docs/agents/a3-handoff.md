@@ -14,8 +14,8 @@ docs/agents/orchestration.md; lead decisions in docs/agents/status.md. Report: d
 
 1. When A1's reflex lands on main (`git fetch origin && git merge origin/main`): check A3-4/A3-5 were wired
    (observeAttention per decision, attentionProbe in reflexState, LAPSE_SHARE gone), turn the `it.todo` of test 10
-   clause 3 into a real test, measure the distracted share per rank in bot-sim games (tools/scratch/a3attn.ts is a
-   local helper, not committed: drive BotRunner with a brain wrapper that calls observeAttention after think).
+   clause 3 into a real test, measure the distracted share per rank in bot-sim games (`npx tsx tools/scratch/a3attn.ts <rank> <min> <seeds>`;
+   it drives BotRunner with a brain wrapper that calls observeAttention after think; after wiring use the real runner).
 2. A2 logs intents under node `utility` (brain/a2-utility ecdd3f3); if that changes, adapt `INTENT_NODE` in src/ai/log.ts.
 3. Phase 6 tuning only when the lead says Phase 4 is on main: `git merge origin/main`, then §8 procedure exactly
    (fixed line-ups, rank vs itself 8 games, then --mirror 8 pairs per combination, only profile parameters of

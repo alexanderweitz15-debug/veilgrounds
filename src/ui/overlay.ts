@@ -24,7 +24,7 @@ interface Floater {
 /** HP-bar damage trail: hold the lost chunk, then drain at this rate (ms for a full bar). */
 const TRAIL_HOLD_MS = 350;
 const TRAIL_DRAIN_MS = 900;
-const DMG_COLORS ={ phys: '#ffb35c', magic: '#b98cff', true: '#ffffff' } as const;
+const DMG_COLORS = { phys: '#ffb35c', magic: '#b98cff', true: '#ffffff' } as const;
 
 export class Overlay {
   readonly canvas = document.createElement('canvas');

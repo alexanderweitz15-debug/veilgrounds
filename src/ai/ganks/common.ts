@@ -73,7 +73,10 @@ export function pathTo(n: NodeCtx, from: Pt, p: Pt): { path: Pt[]; length: numbe
 export function move(n: NodeCtx, pv: BotPerception, p: Pt): boolean {
   if (pv.self && dst(pv.self, p) < 150) return false;
   const last = tac<{ x: number; y: number; tick: number } | null>(pv, 'lastMove', () => null);
-  if (pv.self && last && dst(last, p) < 120 && pv.self.moving && n.snap.tick - last.tick < 15) return true;
+  // same goal while walking: keep the path (was re-issued every 0.5 s: needless re-paths and stutter); a moving goal
+  // (chased target) drifts past 120 and is re-issued then, at most every 0.5 s
+  if (pv.self && last && dst(last, p) < 120 && pv.self.moving && n.snap.tick - last.tick < 90) return true;
+  if (pv.self && last && pv.self.moving && n.snap.tick - last.tick < 15) return true;
   pv.mem.tactics.lastMove = { x: p.x, y: p.y, tick: n.snap.tick };
   n.out.push({ cmd: { t: 'move', x: Math.round(p.x), y: Math.round(p.y) } });
   return true;

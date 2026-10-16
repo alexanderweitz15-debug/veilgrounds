@@ -64,4 +64,6 @@ export interface NodeState {
   on?: boolean;
   since?: number;
   running?: string;
+  /** Teamfight focus: per-enemy-serial focus-score error rolled once per fight (rank focus quality). */
+  err?: Record<number, number>;
 }

@@ -54,6 +54,44 @@ Monster-Figurhöhe relativ zum Champion (170), `MONSTER_DRAWERS.world` (Zellhöh
 | Lebensbalken | Breite nach Monster-Radius (ui/overlay.ts, Lead) unverändert; der Anker folgt automatisch der größeren Figurhöhe (`barAnchor` → `spriteHeight`) | UI gehört dem Lead |
 | Animation | Monster laufen über dieselbe Sprite-Pipeline wie Champions (Anlauf über die gemessene Wind-up-Zeit, Treffer-Frame bei atkPhase 1→2, Tod als Leiche) – unverändert | bereits synchron |
 
+## Spieltempo + Bot-Pathing (Pacing-Agent, 2026-10-16)
+
+Ziel: Bot-Spiele ≈ 28–35 min mit Sieger, ≈ 40–60 Kills, erster Turm ≈ 12–16 min, Laner-CS/min nahe Tabelle A, höherer Rang gewinnt klar. Messung mit `npm run bot-sim` (neue Kennzahlen: erster Turm, Tode bis 15/25 min, Türme, CS bei 15:00, Pathing; `--mirror` spielt jeden Seed zweimal mit getauschten Rängen, damit Champion-Picks und Kartenseite sich aufheben). Vorher-/Nachher-Tabelle unten.
+
+| Thema | Vorher | Jetzt | Grund |
+|---|---|---|---|
+| Minion-Tempo | 300, Spawn −250 Mid / 750 Seite (Treffen 1:35 / 1:45) | **325** (LoL), Spawn 1275 Mid (zwischen Nexus und Inhibitor) / 2025 Seite (vor dem Inhibitor); Treffen 1:27 Mid / 1:38 Seite (Test: 1:28 ± 3 s / 1:38 ± 3 s) | LoL-Werte; ersetzt die Zeile „Minion-Laufzeit 1:35 / 1:45“ unter „Vom Lead entschieden“ |
+| Turmschuss vs. Minions | Nahkampf 50 %, Caster 80 % | **45 % / 70 %** (Belagerer 15 %, Super 7 % unverändert) | LoL: Caster stirbt an 2 Schüssen (Auto–Schuss–Auto), Nahkampf an 3 (Schuss–Schuss–Auto). Mit 50 % tötete der 2. Schuss den Nahkampf-Minion exakt, ohne Last-Hit-Fenster |
+| Fähigkeitsschaden gegen Champions | ×1 | **×1,4** (`CHAMP_ABILITY_DMG_MULT` in `sim/types.ts`, nur Daten-Fähigkeiten, nur Champion-Ziele; das Exchange-Modell rechnet mit) | Die Kits haben 1–3 Schadenseffekte statt LoL-üblich 3–4 plus Runen-/Passiv-Procs: Level-6-1v1 dauerte laut Exchange-Modell ≈ 15–20 s (LoL ≈ 5–8 s). Minions, Monster, Gebäude unverändert |
+| All-in-Entscheidung | Kill-Schätzung über 3 s (Trade-Horizont), daher fast nie All-in; All-in endete fest nach 12 s | Kill-Schätzung über 6 s (`ALLIN_HORIZON_S`); All-in endet, wenn das Ziel 5 s lang keine 5 Punkte HP verliert oder nach 20 s; verlorenes Ziel (Busch/Nebel) wird 2,5 s in Laufrichtung verfolgt (Silber+) | Gewinnende Kämpfe liefen in den Timeout |
+| Rückzug im All-in | Rückzugsknoten (vor dem Kampf im Baum) brach jedes All-in bei < 25 % HP oder Turm-Aggro ab | Bleibt, solange Kill wahrscheinlich (> 0,6), eigener Tod unwahrscheinlich (< 0,5) und das Ziel nicht gesünder ist | Tauchen war strukturell unmöglich |
+| Turm-Dive | nur mit Aggressions-Knob (≥ +2) und Ziel-HP unter Toleranz | zusätzlich **tödlicher Dive** ab Silber: Kill > 0,75 im 6-s-Horizont, Ziel < 35 % HP, eigene HP > 35 % | LoL-Dives auf sichere Kills |
+| Trade-Auslöser | Vergeltung, Bestrafen (Gold+), CS-Fenster (Diamant+), Power-Spike, wenig HP | + **„Vorteil“**: Exchange-Gewinnchance > 0,62 bei nicht schlechteren HP (jeder Rang; Fehlurteil über das Rang-Rauschen) | Gold-Bots tradeten fast nur als Reaktion |
+| Gebäude schlagen | nur mit ≥ 4 eigenen Minions am ersten Turm bzw. als Gruppe | `structureToHit`: nächstes offenes Gebäude der Schutzkette (Turm → Inhibitor → Nexustürme → Nexus, öffentliches Wissen) in 1300, Türme nur mit ≥ 2 tankenden Minions (oder 1 + 2 Verbündete) und nicht auf den Bot zielend, nie gegen mehr Gegner als Verbündete | Champions machten bis 15:00 fast keinen Turmschaden (0,9k von 12k) |
+| Spiel beenden | Belagerungsziel nur Lane-Türme (danach der tote Inhibitorturm), Gruppen 90 s je 180-s-Wurf | Belagerungsziel = nächstes stehendes Gebäude der Lane-Kette; **„Vorteil ausspielen“**: ≥ 2 mehr Lebende (bei ≥ 3), Ace oder eigener Schleierwächter-Buff → alle freien Bots pushen die tiefste Lane (Wurf pro Episode mit 50 % + 50 % × objectiveConversionPct: Iron 58 % … Challenger 98 %); Gruppen ab 20:00 bis zum nächsten Wurf | Spiele endeten fast nie (1/4 Nexus bis 45 min) |
+| Gank-Abbruch | Ziel 4 s unsichtbar → Abbruch | 7 s; danach anderes sichtbares Lane-Ziel (bis 12 s Gank-Dauer) | Die meisten Ganks endeten als „target lost“ vor der Ankunft |
+| Turm-Farmen | – | **Pre-Hit**: Auto vor dem Turmschuss, wenn danach der nächste Auto tötet (Chance pro Minion nach Skill: Iron 0 … Gold ≈ 0,5 … Challenger 1) | LoL-Turm-Last-Hits; ≈ 1,5 verlorene Minions/min pro Laner am eigenen Turm |
+| Rückzug → Heimweg | nach Rückzug unter 60 % HP heim, Gegnernähe unter 60 % gemieden | 40 % / 45 % | Jeder Turm-Aggro-Rückzug bei 55 % kostete einen ganzen Recall-Weg |
+| Rang-Mechanik | `skillshotHitPct` ungenutzt; Fokus-Ziel im Teamfight für alle Ränge gleich | Vorhalten bei Skillshots mit skillshotHitPct + 15 Punkte (Iron 45 % … Challenger 97 %), sonst Wurf auf die aktuelle Position; Fokus-Score mit Rang-Fehler (Iron ±60 %, Gold ±30 %, Challenger ±10 %, pro Kampf und Gegner gewürfelt); **Ausführung** pro Kampf-Entscheidung 55 % + 45 % × Skill/100 (Iron 57 %, Gold 75 %, Diamant 91 %, Challenger 100 %), sonst nur Autos (verspäteter Combo-Schritt); Rückzugslinie nach Skill 17 % + 13 % × Skill/100 (Iron 18 % … Challenger 30 %, vorher 25 % für alle) | Mechanik soll Kämpfe entscheiden |
+| Diamant+-Last-Hit unter Druck | Gank-Risiko ≥ 0,4 allein ließ Diamant+ jeden Vor-Lauf-Last-Hit auslassen | nur ein echter Gegner in Poke-Reichweite mit bereitem Poke zählt | Diamant farmte weniger als Gold (Laner-CS 3,64 vs. 3,92 in Diamant-gegen-Gold-Spielen) |
+| Pathing | Lane-Standpunkt folgte dem Wellenkontakt in 80er-Schritten (Stop-and-go), Gank/Roam/Flucht-Wege alle 0,5 s neu, Ziele im Turm-Fußabdruck (Einheit drückt gegen den Turm), Support stand genau hinter dem ADC (läuft in ihn), Unstuck erst nach 10 s, Leerlauf-Zappeln ±150 alle 3 s | Standpunkt-Hysterese (250, 6 s), Mindestschritt 120, gleiche Wegziele 3 s behalten, Ziele aus Gebäude-Fußabdrücken geschoben (`clearOfStructures`), Support 170 seitlich versetzt, Seitschritt nach 1,5 s ohne Fortschritt, Leerlauf ±100 alle 4–7 s | Nutzer: „die Bots pathen schlecht“; Kennzahlen in bot-sim (Moves/min, Richtungswechsel/min, Steck-s/min, Pfad-Effizienz) |
+
+**Messung** (bot-sim, Gold Seeds 1–4, Iron/Challenger Seed 1; vorher 45 min, nachher 40 min Limit; Rang-gegen-Rang nachher mit `--mirror`, Seeds 11–14 = 8 Spiele je Paarung). „Tode“ = alle Champion-Tode (auch durch Türme/Minions).
+
+| Kennzahl | vorher | nachher | Ziel |
+|---|---|---|---|
+| Spiele mit Sieger / Länge (Gold) | 1/4 (35,7 min), Rest offen bei 45 min | **4/4**, 29,6–34,7 min (Ø 31,5) | 28–35 min |
+| Erster Turm (Gold) | Ø 22,1 min (20,4–28,9) | Ø 18,1 min (15,4–22,8) | 12–16 min |
+| Tode bis 25:00 (Gold) | Ø 18 | Ø 28 | – |
+| Tode pro Spiel (Gold) | ≈ 28 in 45 min | ≈ 34 in ≈ 31 min | 40–60 Kills |
+| Laner-CS/min bei 15:00 Iron / Gold / Challenger | 2,40 / 2,80 / 3,45 | 2,07 / 2,83 / 3,73 | 5,0 / 6,8 / 8,6 |
+| Gold vs. Silber (Siege) | 3/6 bzw. 0/3 | 5/8 (gespiegelt) | ≳ 65 % |
+| Diamant vs. Gold (Siege) | 2/6 | 3/8 (gespiegelt) | ≳ 80 % |
+| K/D höherer Rang vs. niedrigerer (gespiegelt) | – | Gold 2,8/3,4 vs. Silber 2,0/4,2; Diamant 3,1/3,0 vs. Gold 2,2/4,5 | – |
+| Pathing (Gold Seed 1, 10 min, Mittel über 10 Bots): Moves/min, Richtungswechsel/min, Steck-s/min, Pfad-Effizienz | 34,6 / 3,31 / 1,04 / 0,915 | 25,5 / 2,15 / 0,18 / 0,933 (Mid: 6,6 → 2,5 Wechsel/min, 2,1 → 0,25 Steck-s/min) | – |
+
+Offen: (1) Rang-Siegquote: höhere Ränge gewinnen die Kämpfe jetzt deutlich (K/D), aber nicht die Spiele — die Team-Zusammenstellung/Kartenseite entscheidet (in 20 von 24 Spielen gewann Blau; dieselbe Aufstellung gewinnt meist beide Spiele eines gespiegelten Paares), und Diamant farmt in Spielen weniger als Gold (öfter abwesend: Shove-and-Recall, Roams). Blau-Vorteil prüfen (Sim/Karte, nicht die Bots: Bot-Code ist bis auf die Kartenspiegelung seitenneutral). (2) CS bei 15:00 bleibt bei ≈ 40 % von Tabelle A; allein in der Lane schaffen die Bots 5,6 (Iron) … 7,8 (Challenger) pro Minute über 10 min — der Verlust liegt in Abwesenheit (Recall-/Heilwege ≈ 30 % der Minions) und knappen Fenstern im Lane-Kampf. (3) Kills ≈ 34 statt 40–60 pro Spiel. (4) Erster Turm ≈ 18 statt 12–16 min.
+
 ## Phase 2: Zauber, Wards, Abnahme (Agent J, 2026-10-15)
 
 | Thema | Prompt | Entscheidung | Grund |
@@ -91,7 +129,7 @@ Monster-Figurhöhe relativ zum Champion (170), `MONSTER_DRAWERS.world` (Zellhöh
 | Item-Anzahl | 12 Basis + 16 Komponenten + 12 legendär = 40, aber Tabelle nennt 12 legendäre + 2 Aktiv-Items | 12 Basis (inkl. 5 Startitems) + 14 Komponenten + 14 legendär (12 + Zeitglas + Kettenrelais) = 40; Stiefel und Verbrauchsgüter zusätzlich | Gesamtzahl 40 und alle genannten Items bleiben erhalten |
 | Hüterstab-Preis | Legendär 2.600–3.400, Hüterstab 2.500 | 2.500 beibehalten | Konkreter Tabellenwert schlägt Spannweite |
 | „Ketenrelais“ | Tippfehler | Kettenrelais | – |
-| Minion-Laufzeit | 1:35 Mid / 1:45 Side | Minion-Tempo bzw. Spawnpunkt so getunt, dass beide Zeiten ±3 s treffen | Map-Geometrie (Nexus-Abstand ca. 17.500) und eine einheitliche Geschwindigkeit passen nicht exakt zu beiden Zeiten |
+| Minion-Laufzeit | 1:35 Mid / 1:45 Side | ~~Tempo 300, Treffen 1:35 / 1:45~~ → seit 2026-10-16 LoL-Tempo 325, Treffen 1:28 Mid / 1:38 Side (±3 s), Spawnpunkte entlang der Lane verschoben (siehe „Spieltempo + Bot-Pathing“) | Map-Geometrie (Nexus-Abstand ca. 17.500) und eine einheitliche Geschwindigkeit passen nicht exakt zu beiden Zeiten |
 
 ## Bot-Verhalten (docs/spec-bots.md, 2026-10-15)
 

@@ -147,7 +147,16 @@ function runGank(n: NodeCtx, pv: BotPerception, st: GankState): NodeResult {
   if (!target || target.dead) return end('done', target?.dead ? 'target died' : 'target unknown', true);
   if (tick - a.since > 20 * 30) return end('abort', 'gank took too long', false);
   const pos = trackPos(target);
-  if (!pos || (!target.visibleNow && tick - target.lastTick > 4 * 30 && !target.cloud)) return end('abort', 'target lost', false);
+  // a laner steps out of sight often (bush, fog behind its wave): the jungler keeps coming for 7 s (was 4 s: most
+  // ganks ended as "target lost" before the jungler arrived)
+  if (!pos || (!target.visibleNow && tick - target.lastTick > 7 * 30 && !target.cloud)) {
+    // another enemy of that lane in sight right now (the support, a laner back from base): gank that one instead
+    const alt = laneEnemies(pv, a.lane).filter((t) => !t.dead && t.visibleNow && t.slot !== a.slot).sort((x, y) => x.hpFrac - y.hpFrac)[0];
+    if (!alt || tick - a.since > 12 * 30) return end('abort', 'target lost', false);
+    a.slot = alt.slot;
+    log(n, pv, 'jungleGank', 'retarget', 'target lost, another lane enemy in sight', { lane: a.lane, slot: alt.slot });
+    return 'running';
+  }
   // Flash of the target during the gank: partial success; abort when the kill is unlikely (Iron chases on)
   const flashNow = (target.cds.flashReadyAt ?? -1) > tick && target.cds.flashReadyAt !== a.flashSeenAt;
   if (flashNow) {

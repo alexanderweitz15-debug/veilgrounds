@@ -22,6 +22,17 @@ export interface TradeState {
   ignite: boolean;
   /** Smoothed winProb over the trade (estimates are noisy per call). */
   win: number;
+  /** All-in progress: lowest target HP fraction seen and the tick it last dropped by >= 5 points (a winning all-in
+   *  does not time out; one that stalls does). Optional: older trade states / tests omit them. */
+  lowHp?: number;
+  progressAt?: number;
+  /** Target out of sight during an all-in: last seen position and tick (follow it a moment instead of giving up). */
+  lostAt?: number;
+  lastX?: number;
+  lastY?: number;
+  /** Latest all-in kill / death estimate (ALLIN_HORIZON_S): the retreat leaf runs before the trade leaf and reads it. */
+  kill?: number;
+  death?: number;
 }
 
 export interface WaveChoice {
@@ -92,6 +103,8 @@ export interface BotExt {
   overcommitUntil: number;
   overcommitRolledFor: number;
   aggroRollAt: number;
+  /** Lane stand point currently held (hysteresis against the wave front's jitter, see brain.ts laneLeaf). */
+  standAt: { x: number; y: number; lane: string; tick: number } | null;
   /** Tick of the last seal-ward placement attempt. */
   sealTryAt: number;
   /** Tilt stacks (spec §4.2 "gestorben -> Tilt +1"): +1 per death, -1 per kill or per TILT_DECAY_S alive. */
@@ -135,6 +148,7 @@ export const newExt = (): BotExt => ({
   overcommitUntil: -1,
   overcommitRolledFor: -1,
   aggroRollAt: -1e9,
+  standAt: null,
   sealTryAt: -1e9,
   tilt: 0,
   tiltAt: 0,

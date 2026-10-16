@@ -9,7 +9,7 @@
 // Emerald+ force baron without vision.
 
 import { Rng } from '../../sim/rng';
-import { BARON_HP_PER_MIN, CAMPS, MONSTER_HP_PER_LEVEL } from '../../sim/systems/jungle';
+import { BARON_HP_PER_MIN, CAMPS, MONSTER_HP_PER_LEVEL, SCHLEIER_BUFF_TICKS } from '../../sim/systems/jungle';
 import { Kind, type PlayerSetup } from '../../sim/types';
 import type { LaneName, MapData, Pt } from '../../sim/map';
 import type { RankProfile } from '../profiles/schema';
@@ -106,6 +106,10 @@ export class TeamAI {
   private readonly enemyStructuresDown = new Set<string>();
   /** Tick before which an objective is not started again (a try ran out without the kill). */
   private readonly retryAt: Record<ObjectiveId, number> = { leviathan: 0, schleierwaechter: 0, kesselbrut: 0 };
+  /** Own Schleierwaechter buff (own team took it, announced kill): until this tick. */
+  private baronUntil = -1;
+  /** Press-the-advantage episode: rolled once per episode (null = no advantage right now). */
+  private pressRoll: boolean | null = null;
 
   constructor(
     readonly team: number,
@@ -159,7 +163,12 @@ export class TeamAI {
         const at = n.snap.eventTicks?.[i] ?? tick;
         this.aliveFrom[o] = at + (campOf(o)?.respawn ?? 360) * 30;
         this.desires = this.desires.filter((d) => d.obj !== o);
-        this.teamLog(tick, 'objective_down', `${o} killed`, { obj: o, byTeam: ev.killer >= 0 && n.snap.entities.some((e) => e.id === ev.killer && e.team === this.team) });
+        const byTeam = ev.killer >= 0 && n.snap.entities.some((e) => e.id === ev.killer && e.team === this.team);
+        if (o === 'schleierwaechter' && byTeam) {
+          this.baronUntil = at + SCHLEIER_BUFF_TICKS;
+          this.nextEval = Math.min(this.nextEval, tick); // take the buff to a lane at once
+        }
+        this.teamLog(tick, 'objective_down', `${o} killed`, { obj: o, byTeam });
       }
     });
     if (tick === this.lastTick) return;
@@ -205,8 +214,8 @@ export class TeamAI {
         const p = this.map.objectives[o];
         d = { kind: 'take_objective', obj: o, score: 1, x: p.x, y: p.y, slots: alive, reason: 'won skirmish: convert', from: tick, until };
       } else {
-        const lane = this.weakestEnemyLane(n);
-        const p = this.map.sides[this.team === 1 ? 0 : 1].towers[lane][0]!;
+        const lane = this.siegeLane(n);
+        const p = this.siegeTarget(n, lane);
         d = { kind: 'push_lane', lane, score: 1, x: p.x, y: p.y, slots: alive, reason: 'won skirmish: convert to tower', from: tick, until };
       }
     } else {
@@ -236,17 +245,33 @@ export class TeamAI {
     return this.enemyStructuresDown.has(`${Math.round(p.x / 100)},${Math.round(p.y / 100)}`);
   }
 
-  /** First enemy tower (then inhibitor area) of a lane not known destroyed: the siege point. */
-  siegeTarget(lane: LaneName): Pt {
-    const towers = this.map.sides[this.team === 1 ? 0 : 1].towers[lane];
-    return towers.find((t) => !this.structureDown(t)) ?? towers[towers.length - 1]!;
+  /**
+   * Next enemy structure of a lane's chain (structures are always visible): lane towers outer -> inhibitor tower,
+   * inhibitor, then nexus towers and the nexus. `depth` 0..2 = lane towers, 3 = inhibitor, 4 = nexus tower, 5 = nexus.
+   */
+  nextStructure(n: NodeCtx, lane: LaneName): { p: Pt; depth: number } {
+    const side = this.map.sides[this.team === 1 ? 0 : 1];
+    const all = [...n.v.enemyTowers, ...n.v.enemyStructures];
+    const standing = (p: Pt): boolean => all.some((e) => dst(e, p) < 200);
+    const towers = side.towers[lane];
+    for (let i = 0; i < towers.length; i++) if (standing(towers[i]!)) return { p: towers[i]!, depth: i };
+    if (standing(side.inhibitors[lane])) return { p: side.inhibitors[lane], depth: 3 };
+    const nt = side.nexusTowers.filter(standing).sort((a, b) => dst(a, towers[towers.length - 1]!) - dst(b, towers[towers.length - 1]!))[0];
+    if (nt) return { p: nt, depth: 4 };
+    return { p: side.nexus, depth: 5 };
   }
 
-  /** Lane to siege: the one whose next enemy tower is closest to the enemy base already (furthest pushed). */
+  /** Siege point of a lane: its next standing enemy structure (inhibitor / nexus once the lane towers are down). */
+  siegeTarget(n: NodeCtx, lane: LaneName): Pt {
+    return this.nextStructure(n, lane).p;
+  }
+
+  /** Lane to siege: the one pushed deepest (next structure furthest down the chain), mid on ties; none down yet ->
+   *  the lane whose next structure is nearest to the team. */
   private siegeLane(n: NodeCtx): LaneName {
-    const down = (l: LaneName): number => this.map.sides[this.team === 1 ? 0 : 1].towers[l].filter((t) => this.structureDown(t)).length;
-    const best = LANES.slice().sort((a, b) => down(b) - down(a) || (a === 'mid' ? -1 : b === 'mid' ? 1 : 0))[0]!;
-    return down(best) > 0 ? best : this.weakestEnemyLane(n);
+    const depth = (l: LaneName): number => this.nextStructure(n, l).depth;
+    const best = LANES.slice().sort((a, b) => depth(b) - depth(a) || (a === 'mid' ? -1 : b === 'mid' ? 1 : 0))[0]!;
+    return depth(best) > 0 ? best : this.weakestEnemyLane(n);
   }
 
   private weakestEnemyLane(n: NodeCtx): LaneName {
@@ -254,8 +279,7 @@ export class TeamAI {
     let bestD = Infinity;
     const c = this.centroid(n);
     for (const l of LANES) {
-      const p = this.map.sides[this.team === 1 ? 0 : 1].towers[l][0]!;
-      if (!n.v.enemyTowers.some((t) => dst(t, p) < 200)) continue;
+      const p = this.nextStructure(n, l).p;
       if (dst(p, c) < bestD) (bestD = dst(p, c)), (best = l);
     }
     return best;
@@ -304,6 +328,27 @@ export class TeamAI {
         const pb = n.snap.entities.find((e) => e.kind === Kind.Champion && e.slot === b.slot);
         return (pa ? dst(pa, p) : 1e9) - (pb ? dst(pb, p) : 1e9);
       });
+    // press the advantage (LoL closing): numbers up after a fight (>= 2 more alive with >= 3 up, or the enemy wiped),
+    // or the Schleierwaechter buff with even numbers -> every free member pushes the deepest lane to its next
+    // structure (inhibitor, nexus towers, nexus once open). Rolled once per advantage episode with the conversion
+    // rate (Iron 58 % .. Challenger 98 %); re-checked every macro evaluation, so it ends when the advantage does.
+    {
+      const { own, enemy } = this.aliveCounts(n);
+      const baron = this.baronUntil > tick;
+      const adv = (own >= 3 && own - enemy >= 2) || (enemy === 0 && own >= 2) || (baron && own >= 3 && own >= enemy);
+      if (!adv) this.pressRoll = null;
+      else {
+        this.pressRoll ??= this.rng.chance(0.5 + 0.5 * (this.mean((m) => m.profile.behavior.objectiveConversionPct) / 100));
+        const g = free.filter((m) => !busy.has(m.slot));
+        if (this.pressRoll && g.length) {
+          const lane = this.siegeLane(n);
+          const p = this.siegeTarget(n, lane);
+          const why = baron && own - enemy < 2 ? 'schleierwaechter buff: siege' : `numbers ${own} vs ${enemy}: press`;
+          out.push({ kind: 'push_lane', lane, score: 0.9, x: p.x, y: p.y, slots: g.map((m) => m.slot), reason: why, from: tick, until: tick + 40 * 30 });
+          g.forEach((m) => busy.add(m.slot));
+        }
+      }
+    }
     // objectives (Iron: no objective decisions)
     if (latency !== null) {
       for (const o of OBJECTIVES) {
@@ -403,11 +448,13 @@ export class TeamAI {
       // side laners keep farming their lane with the profile's sideLaneFarmAfter15Pct (rolled per group episode)
       this.sideFarmers = new Set(this.members.filter((m) => (m.role === 'top' || m.role === 'adc') && this.rng.chance(m.profile.behavior.sideLaneFarmAfter15Pct / 100)).map((m) => m.slot));
     }
-    if ((this.groupRoll && tick - this.groupRollAt < 90 * 30) || this.groupPingUntil > tick) {
+    // a group lasts 90 s in the mid game; from 20:00 it holds until the next roll (sieges are not dropped half-way)
+    const groupS = time >= 20 * 60 ? GROUP_ROLL_S : 90;
+    if ((this.groupRoll && tick - this.groupRollAt < groupS * 30) || this.groupPingUntil > tick) {
       const g = free.filter((m) => !busy.has(m.slot) && (this.groupPingUntil > tick || !this.sideFarmers.has(m.slot))).map((m) => m.slot);
       const lane = this.groupPingUntil > tick ? 'mid' : this.siegeLane(n);
-      const p = this.siegeTarget(lane);
-      if (g.length) out.push({ kind: 'group_mid', lane, score: 0.5 * this.mean((m) => m.params.knobs.groupWeight) + (this.groupPingUntil > tick ? 0.3 : 0), x: p.x, y: p.y, slots: g, reason: this.groupPingUntil > tick ? 'group ping' : `group and siege ${lane}`, from: tick, until: this.groupPingUntil > tick ? tick + 90 * 30 : this.groupRollAt + 90 * 30 });
+      const p = this.siegeTarget(n, lane);
+      if (g.length) out.push({ kind: 'group_mid', lane, score: 0.5 * this.mean((m) => m.params.knobs.groupWeight) + (this.groupPingUntil > tick ? 0.3 : 0), x: p.x, y: p.y, slots: g, reason: this.groupPingUntil > tick ? 'group ping' : `group and siege ${lane}`, from: tick, until: this.groupPingUntil > tick ? tick + 90 * 30 : this.groupRollAt + groupS * 30 });
     }
     const changed = JSON.stringify(out.map((d) => [d.kind, d.obj, d.lane, d.slots])) !== JSON.stringify(this.desires.map((d) => [d.kind, d.obj, d.lane, d.slots]));
     this.desires = out;

@@ -43,6 +43,13 @@ function aimed(v: View, ctx: BotStatic, rng: Rng, p: { x: number; y: number }, m
   return { x: v.self.x + ex * d, y: v.self.y + ey * d };
 }
 
+/**
+ * Does the bot lead a moving target with this skillshot (aim at where it will be)? Profile skillshotHitPct + 15
+ * points (Iron 45 %, Gold 63 %, Challenger 97 %); otherwise it throws at the current position, which a moving target
+ * walks out of - the rank's mechanical gap in landing skillshots (on top of aimErrorDeg).
+ */
+const leads = (ctx: BotStatic, rng: Rng): boolean => rng.chance(Math.min(1, ctx.profile.behavior.skillshotHitPct / 100 + 0.15));
+
 /** True if an enemy non-champion unit sits on the segment (blocks minion-blocked skillshots). */
 function blocked(v: View, to: { x: number; y: number }, width: number): boolean {
   const ax = v.self.x;
@@ -83,7 +90,7 @@ export function castSlot(v: View, ctx: BotStatic, rng: Rng, t: SnapEntity, slot:
   switch (ab.type) {
     case 'skillshot_line': {
       if (d > Math.min(range, 1500) + t.radius) break;
-      const p = predict(t, ab.castTime + d / (ab.speed ?? 1500));
+      const p = predict(t, leads(ctx, rng) ? ab.castTime + d / (ab.speed ?? 1500) : 0);
       if (ab.flags?.includes('blocked_by_minions') && blocked(v, p, ab.width ?? 60)) break;
       const a = aimed(v, ctx, rng, p, range);
       return cast(a.x, a.y);
@@ -92,7 +99,7 @@ export function castSlot(v: View, ctx: BotStatic, rng: Rng, t: SnapEntity, slot:
     case 'zone':
     case 'summon': {
       if (d > Math.min(range, 1500) + (ab.radius ?? 0) * 0.5) break;
-      const p = aimed(v, ctx, rng, predict(t, ab.castTime + (ab.delay ?? 0)), range);
+      const p = aimed(v, ctx, rng, predict(t, leads(ctx, rng) ? ab.castTime + (ab.delay ?? 0) : 0), range);
       return cast(p.x, p.y);
     }
     case 'cone':

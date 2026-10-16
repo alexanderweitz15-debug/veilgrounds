@@ -36,14 +36,14 @@ export interface MinionStats {
 }
 
 export const MINION_STATS: Record<number, MinionStats> = {
-  [Kind.MinionMelee]: { hp: 460, ad: 12, as: 1.25, range: 110, armor: 0, mr: 0, radius: 48, gold: 21, xp: 59.4, towerPct: 0.5 },
-  [Kind.MinionCaster]: { hp: 290, ad: 23, as: 0.667, range: 550, armor: 0, mr: 0, radius: 48, gold: 14, xp: 29.4, towerPct: 0.8 },
+  [Kind.MinionMelee]: { hp: 460, ad: 12, as: 1.25, range: 110, armor: 0, mr: 0, radius: 48, gold: 21, xp: 59.4, towerPct: 0.45 },
+  [Kind.MinionCaster]: { hp: 290, ad: 23, as: 0.667, range: 550, armor: 0, mr: 0, radius: 48, gold: 14, xp: 29.4, towerPct: 0.7 },
   [Kind.MinionSiege]: { hp: 900, ad: 40, as: 1.0, range: 300, armor: 0, mr: 0, radius: 65, gold: 60, xp: 93, towerPct: 0.15 },
   [Kind.MinionSuper]: { hp: 1600, ad: 190, as: 0.85, range: 170, armor: 30, mr: 30, radius: 65, gold: 60, xp: 97, towerPct: 0.07 },
 };
 
-/** Tuned (with the spawn offsets in waves.ts) so waves meet at ~1:35 mid / ~1:45 side. */
-export const MINION_MS = 300;
+/** LoL value (325). With the spawn offsets in waves.ts the waves meet at ~1:28 mid / ~1:38 side (was 300, 1:35 / 1:45). */
+export const MINION_MS = 325;
 export const MINION_VISION = 1100;
 export const AGGRO_RANGE = 500;
 export const CALL_RANGE = 1000;

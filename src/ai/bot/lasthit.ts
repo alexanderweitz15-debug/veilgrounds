@@ -29,6 +29,9 @@ const PROJ_SPEED: Partial<Record<number, number>> = { [Kind.MinionCaster]: 650, 
 /** Share of the profile's errorInjectionPct that becomes a per-minion attention lapse (the rest of the rank's CS gap
  *  comes from the timing error, trades, recalls and deaths; calibrated with npm run bot-sim against Table A). */
 const LAPSE_SHARE = 0.5;
+/** Pre-hit under the own tower (auto - tower shot - auto on casters): probability per minion by skill, Iron 0 ..
+ *  Gold ~0.5 .. Challenger 1 (LoL: low ranks lose most tower-farm CS). */
+const prehitChance = (skill: number): number => Math.max(0, Math.min(1, (skill - 5) / 80));
 /** Prediction horizon (ticks). */
 const HORIZON = 75;
 
@@ -42,7 +45,7 @@ export interface LastHitMem {
   /** Own champion: last wind-up start (recorded tick). */
   ownStart: number;
   /** Enemy minion id -> rolled timing error (ticks) and attention lapse. */
-  roll: Map<number, { bias: number; skip: boolean }>;
+  roll: Map<number, { bias: number; skip: boolean; pre?: boolean }>;
   lastTick: number;
   /** Diagnostics (bot-sim / tests): minion id -> outcome of the latest plan ('skip', 'noWindow', 'tooLate', 'wait', 'go'). */
   why: Map<number, { s: string; t: number }>;
@@ -236,13 +239,14 @@ export function planLastHit(v: View, ctx: BotStatic, mem: LastHitMem, rng: Rng, 
   let nextWindow = Infinity;
   let approach: { m: SnapEntity; a: number } | null = null;
   let spell: BotAction | null = null;
+  let prehit: { m: SnapEntity; delay: number } | null = null;
   for (const m of v.enemyMinions) {
     const d = dst(v.self, m);
     const reach = v.reach + m.radius;
     if (d > reach + 700) continue;
     let r = mem.roll.get(m.id);
     if (!r) {
-      r = { bias: (rng.normal() * b.lastHitJitterMs * 30) / 1000, skip: rng.chance((b.errorInjectionPct / 100) * LAPSE_SHARE) };
+      r = { bias: (rng.normal() * b.lastHitJitterMs * 30) / 1000, skip: rng.chance((b.errorInjectionPct / 100) * LAPSE_SHARE), pre: rng.chance(prehitChance(ctx.params.skill)) };
       mem.roll.set(m.id, r);
     }
     if (r.skip) {
@@ -254,6 +258,15 @@ export function planLastHit(v: View, ctx: BotStatic, mem: LastHitMem, rng: Rng, 
     const w = killWindow(m, hits, dmg, T);
     if (w.a === Infinity || w.a >= w.b) {
       if (!spell && w.b - T < 40) spell = spellLastHit(v, ctx, m, hits, r.bias, ctx.params.playstyle.farmPriority);
+      // pre-hit (tower farming): an auto now so that the big hit (tower shot) leaves the minion inside the next auto
+      if (r.pre && !prehit && w.b - T < HORIZON && d <= reach + 30) {
+        const land1 = ready + windup + Math.max(0, travelTicks(d, m.radius, proj) - 1);
+        const land2 = land1 + Math.floor(period);
+        if (land1 < w.b - 1 && ready - (T + 1) <= intervalTicks) {
+          const w2 = killWindow(m, [...hits, { at: land1, dmg }].sort((p, q) => p.at - q.at), dmg, T);
+          if (w2.a > land1 && land2 + r.bias >= w2.a && land2 + r.bias < w2.b) prehit = { m, delay: Math.max(0, ready - (T + 1)) };
+        }
+      }
       mem.why.set(m.id, { s: w.a === Infinity ? 'noWindow' : 'emptyWindow', t: T });
       continue;
     }
@@ -283,6 +296,10 @@ export function planLastHit(v: View, ctx: BotStatic, mem: LastHitMem, rng: Rng, 
   const plan: LastHitPlan = { action: null, nextWindow, period, windup, ...(approach ? { approach: approach.m } : {}) };
   if (!best || (spell && best.delay > 0)) {
     if (spell) plan.action = spell;
+    else if (prehit && !best) {
+      mem.why.set(prehit.m.id, { s: 'prehit', t: T });
+      plan.action = prehit.delay > 0 ? { cmd: { t: 'attack', target: prehit.m.id }, delay: prehit.delay, tag: 'lh' } : { cmd: { t: 'attack', target: prehit.m.id } };
+    }
     return plan;
   }
   plan.target = { id: best.m.id, a: best.a, b: best.b, land: best.land };

@@ -21,10 +21,11 @@ export const waveInterval = (tick: number): number => (tick < T15 ? sec(30) : ti
 const siegeEvery = (tick: number): number => (tick < T15 ? 3 : tick < T25 ? 2 : 1);
 
 /**
- * Distance along the lane (from own nexus) where the front row spawns. Tuned with MINION_MS = 300 so the
- * fronts meet at ~1:35 mid and ~1:45 side (tests/waves.test.ts). Negative = behind the nexus centre.
+ * Distance along the lane (from own nexus) where the front row spawns. Tuned with MINION_MS = 325 so the
+ * fronts meet at ~1:28 mid and ~1:38 side like LoL (tests/waves.test.ts). Mid spawns between nexus and inhibitor, side
+ * lanes just in front of the inhibitor (was -250 / 750 with MINION_MS 300 for 1:35 / 1:45).
  */
-export const SPAWN_DIST = { mid: -250, side: 750 };
+export const SPAWN_DIST = { mid: 1275, side: 2025 };
 const ROW_GAP = 130;
 const COL_GAP = 100;
 

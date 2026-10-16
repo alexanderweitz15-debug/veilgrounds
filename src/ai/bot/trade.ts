@@ -20,6 +20,7 @@ import { towerCovering } from './perception';
 import type { TradeState } from '../bt/state';
 import type { ExchangeResult } from '../contract';
 
+const SILVER = rankIdx('silver');
 const GOLD = rankIdx('gold');
 const DIAMOND = rankIdx('diamond');
 const PLATINUM = rankIdx('platinum');
@@ -69,8 +70,18 @@ interface Window {
   score: number;
   trigger: string;
   ex: ExchangeResult;
+  /** Kill estimate over ALLIN_HORIZON_S (all-in decision); the 3-s trade estimate almost never shows a kill. */
+  exK: ExchangeResult;
   failed: string[];
 }
+
+/** Horizon (s) of the kill estimate behind all-in decisions: a committed all-in runs a few seconds (LoL 3-6 s). */
+export const ALLIN_HORIZON_S = 6;
+/** An all-in ends when the target's HP has not dropped by 5 points for this long, or after ALLIN_MAX_S. */
+const ALLIN_STALL_S = 5;
+const ALLIN_MAX_S = 20;
+/** Target out of sight during an all-in on a low target: follow its last seen heading this long (bush / fog edge). */
+const ALLIN_FOLLOW_S = 2.5;
 
 /** Evaluate the trade window against the closest enemy (spec §6). Cached per decision tick. */
 const windowCache = new WeakMap<object, { tick: number; w: Window | null }>();
@@ -111,12 +122,17 @@ function evalWindow(n: NodeCtx): Window | null {
   // triggers (one is enough)
   let trigger = '';
   const ex = estimateExchange(n.v, n.ctx, t, 3, n.rng, { orbwalk: 0.7 + 0.3 * k.orbwalkChance });
+  // kill estimate over the all-in horizon (only worth computing on a hurt target or a gank focus)
+  const exK = hpPct(t) < 0.65 || focus ? estimateExchange(n.v, n.ctx, t, ALLIN_HORIZON_S, n.rng, { orbwalk: 0.7 + 0.3 * k.orbwalkChance }) : ex;
   if (focus && focus.eid === t.id) trigger = 'gank_focus';
   else if (t.atkTarget === n.v.self.id) trigger = 'retaliate';
   else if (ri >= DIAMOND && (ext.csWindowAt.get(t.serial) ?? -1e9) > n.v.tick - 30) trigger = 'cs_window';
   else if (ri >= GOLD && (ext.enemyCastAt.get(t.serial) ?? -1e9) > n.v.tick - 7 * 30) trigger = 'punish';
   else if (ext.levelUpAt > n.v.tick - 150 && [2, 3, 6].includes(n.v.me.level) && n.v.me.level > t.level) trigger = 'power_spike';
-  else if (hpPct(t) < 0.5 && ex.killProb > 0.3) trigger = 'low_hp';
+  else if (hpPct(t) < 0.5 && exK.killProb > 0.3) trigger = 'low_hp';
+  // a clearly winning exchange (HP / level / cooldown lead) is a reason to trade at every rank; whether the bot reads
+  // it right is the rank's exchange noise (Iron +-40 % .. Challenger +-7 %): low ranks take bad trades and miss good ones
+  else if (ex.winProb > 0.62 && n.v.hpPct >= hpPct(t) - 0.05) trigger = 'advantage';
 
   let injected: 'trade_on_cooldown' | 'fight_in_enemy_wave' | undefined = waveErr ? 'fight_in_enemy_wave' : undefined;
   if (!trigger) {
@@ -132,12 +148,12 @@ function evalWindow(n: NodeCtx): Window | null {
   }
   const thr = k.tradeWinThreshold * k.tradeWindowMult;
   if (ex.winProb <= thr) failed.push('winProb');
-  if (safety?.allowTrade === 'killOnly' && ex.killProb <= 0.9) failed.push('gankRisk');
-  // passive bots still take near-certain kills
+  if (safety?.allowTrade === 'killOnly' && exK.killProb <= 0.9) failed.push('gankRisk');
+  // passive bots still take near-certain kills (all-in horizon; the enemy tower is in the estimate when it covers us)
   let score = failed.length ? 0 : 0.5 * (ex.winProb / thr) * k.fightWeight;
-  if (ex.killProb > 0.8 && failed.every((f) => f === 'winProb' || f === 'trigger')) score = Math.max(score, 0.6);
+  if (exK.killProb > 0.8 && exK.deathProb < 0.5 && failed.every((f) => f === 'winProb' || f === 'trigger')) score = Math.max(score, 0.6);
   if (injected && score > 0) n.log('tradeWindow', 'error', injected, { target: t.slot }, {}, injected);
-  return { target: t, score, trigger: trigger || 'loosened', ex, failed };
+  return { target: t, score, trigger: trigger || 'loosened', ex, exK, failed };
 }
 
 export const tradeWindowScore = (n: NodeCtx): number => (n.mem.ext.trade || n.v.tick < n.mem.ext.disengageUntil || n.v.tick - n.mem.ext.lastTradeEnd < 45 ? 0 : tradeWindow(n)?.score ?? 0);
@@ -153,14 +169,24 @@ export function tradeStart(n: NodeCtx): NodeResult {
     if (!o || !t || dst(t, n.v.self) > 1300) return 'failure';
     w = { ...o.w, target: t };
   }
-  const allIn = isAllIn(n, w.ex);
+  const allIn = isAllIn(n, w.exK);
   const kind = allIn ? 'allin' : 'trade';
   const combo = chooseCombo(n, kind, n.rng);
-  n.mem.ext.trade = { serial: w.target.serial, id: w.target.id, kind, start: n.v.tick, trigger: w.trigger, combo, step: 0, stepAt: n.v.tick, comboDone: false, flash: false, ignite: false, win: w.ex.winProb };
+  n.mem.ext.trade = { serial: w.target.serial, id: w.target.id, kind, start: n.v.tick, trigger: w.trigger, combo, step: 0, stepAt: n.v.tick, comboDone: false, flash: false, ignite: false, win: w.ex.winProb, kill: w.exK.killProb, death: w.exK.deathProb };
   n.mem.mode = 'fight';
   n.mem.fightTarget = w.target.serial;
-  n.log('trade', kind, `trigger ${w.trigger}`, { target: w.target.slot, combo: combo.join('-') }, { win: w.ex.winProb, kill: w.ex.killProb, death: w.ex.deathProb, score: w.score });
+  n.log('trade', kind, `trigger ${w.trigger}`, { target: w.target.slot, combo: combo.join('-') }, { win: w.ex.winProb, kill: w.exK.killProb, death: w.exK.deathProb, score: w.score });
   return tradeRun(n);
+}
+
+/**
+ * Lethal dive (Silver+): the kill is likely within the all-in horizon, the target is low and the bot healthy enough
+ * to take a few tower shots (the estimate counts the tower once the bot is inside its reach). Iron/Bronze dive only
+ * through the aggression knob / overcommit error.
+ */
+export function lethalDive(n: NodeCtx, t: SnapEntity, exK: ExchangeResult): boolean {
+  if (rankIdx(n.ctx.profile.rank) < SILVER) return false;
+  return exK.killProb > 0.75 && exK.deathProb < Math.max(0.35, n.p.knobs.allInDeathProb) && hpPct(t) < 0.35 && n.v.hpPct > Math.max(0.35, hpPct(t) + 0.1);
 }
 
 function isAllIn(n: NodeCtx, ex: ExchangeResult): boolean {
@@ -199,6 +225,16 @@ export function tradeRun(n: NodeCtx): NodeResult {
   const tr = n.mem.ext.trade;
   if (!tr) return 'failure';
   const t = n.v.enemies.find((e) => e.serial === tr.serial);
+  if (!t && tr.kind === 'allin' && (tr.lowHp ?? 1) < 0.4 && n.v.hpPct > 0.25 && tr.lastX !== undefined && rankIdx(n.ctx.profile.rank) >= SILVER) {
+    // a low target slipped out of sight (bush, fog edge): follow its heading a moment instead of dropping the kill
+    tr.lostAt ??= n.v.tick;
+    if (n.v.tick - tr.lostAt <= ALLIN_FOLLOW_S * 30) {
+      const p = { x: tr.lastX, y: tr.lastY! };
+      if (!(n.mem.lastMove && dst(n.mem.lastMove, p) < 100)) n.out.push(moveCmd(p));
+      n.mem.lastMove = { ...p, tick: n.v.tick };
+      return 'running';
+    }
+  }
   if (!t) {
     // vanished: chase into fog by profile chaseIntoFogPct + aggression shift (rolled once)
     const last = n.mem.aware.get(tr.serial);
@@ -217,14 +253,28 @@ export function tradeRun(n: NodeCtx): NodeResult {
     }
     return chase ? 'success' : 'failure';
   }
-  const ex = estimateExchange(n.v, n.ctx, t, tr.kind === 'allin' ? 8 : 3, n.rng);
+  tr.lostAt = undefined;
+  // heading for a short follow if the target slips out of sight (1 s lead on its current velocity)
+  tr.lastX = t.x + (t.x - t.px) * 30;
+  tr.lastY = t.y + (t.y - t.py) * 30;
+  // kill estimate over the all-in horizon (escalation, dive, retreat override); trades keep the 3-s estimate
+  const exK = estimateExchange(n.v, n.ctx, t, ALLIN_HORIZON_S, n.rng);
+  const ex = tr.kind === 'allin' ? exK : estimateExchange(n.v, n.ctx, t, 3, n.rng);
+  tr.kill = exK.killProb;
+  tr.death = exK.deathProb;
   const elapsed = (n.v.tick - tr.start) / 30;
   // escalate to all-in
-  if (tr.kind === 'trade' && isAllIn(n, ex)) {
+  if (tr.kind === 'trade' && isAllIn(n, exK)) {
     tr.kind = 'allin';
-    n.log('trade', 'allin', 'kill window', { target: t.slot }, { kill: ex.killProb, death: ex.deathProb });
+    tr.progressAt = n.v.tick;
+    n.log('trade', 'allin', 'kill window', { target: t.slot }, { kill: exK.killProb, death: exK.deathProb });
   }
   if (tr.kind === 'allin') {
+    const th = hpPct(t);
+    if (tr.lowHp === undefined || th <= tr.lowHp - 0.05) {
+      tr.lowHp = th;
+      tr.progressAt = n.v.tick;
+    }
     // §6 overcommit_after_kill (Iron): right after a kill the bot dives on, even at 20 % HP (rolled once per kill)
     const ext = n.mem.ext;
     if (ext.lastKillAt > ext.overcommitRolledFor && n.v.tick - ext.lastKillAt < 10 * 30) {
@@ -235,11 +285,13 @@ export function tradeRun(n: NodeCtx): NodeResult {
       }
     }
     if (ex.deathProb > 0.6 && ex.killProb < 0.5 && n.v.tick >= ext.overcommitUntil) return endTrade(n, tr, 'all-in lost', true), 'failure';
-    if (elapsed > 12) return endTrade(n, tr, 'all-in timeout', true), 'failure';
-    // do not chase under the enemy tower unless the dive is allowed (aggression knob + profile tolerance)
+    // a winning all-in does not time out: it ends when the target's HP stalls (5 s without -5 points) or after 20 s
+    if (elapsed > ALLIN_MAX_S || n.v.tick - (tr.progressAt ?? tr.start) > ALLIN_STALL_S * 30) return endTrade(n, tr, 'all-in stalled', true), 'failure';
+    // do not chase under the enemy tower unless the dive is allowed: aggression knob + profile tolerance, or (Silver+)
+    // a lethal dive - a kill within the all-in horizon on a low target while the bot can take a few tower shots
     const tol = n.ctx.profile.behavior.diveHpTolerancePct + n.p.knobs.diveTolerancePctShift;
     const overcommit = n.v.tick < ext.overcommitUntil;
-    if (!overcommit && towerCovering(n.v, t) && !(n.p.knobs.towerDive && hpPct(t) * 100 <= tol)) return endTrade(n, tr, 'target under tower', true), 'failure';
+    if (!overcommit && towerCovering(n.v, t) && !(n.p.knobs.towerDive && hpPct(t) * 100 <= tol) && !lethalDive(n, t, exK)) return endTrade(n, tr, 'target under tower', true), 'failure';
   } else {
     tr.win = 0.6 * tr.win + 0.4 * ex.winProb;
     const why = shouldAbort(n.p.knobs, { elapsedS: elapsed, comboDone: tr.comboDone, myHp: n.v.hpPct, theirHp: hpPct(t), winProb: tr.win });
@@ -277,8 +329,19 @@ function summoners(n: NodeCtx, tr: TradeState, t: SnapEntity, ex: ExchangeResult
   }
 }
 
+/**
+ * Mechanical execution per decision in a fight (Iron 57 % .. Gold 75 % .. Diamond 91 % .. Challenger 100 %): a missed
+ * decision casts nothing (late / fumbled combo step, ability held too long) and only keeps auto-attacking. With the
+ * same champions the higher rank lands its damage sooner, which decides even fights.
+ */
+export const executes = (n: NodeCtx): boolean => n.rng.chance(0.55 + 0.45 * Math.min(1, Math.max(0, n.ctx.params.skill / 100)));
+
 function execute(n: NodeCtx, tr: TradeState, t: SnapEntity, ex: ExchangeResult): void {
   const interval = decisionInterval(n);
+  if (!executes(n)) {
+    orbwalkAttack(n, t, interval);
+    return;
+  }
   while (!tr.comboDone) {
     const tok = tr.combo[tr.step];
     if (tok === undefined) {

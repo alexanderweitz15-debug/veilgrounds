@@ -11,7 +11,7 @@ import { growthFactor } from '../sim/systems/stats';
 import { towerBaseDamage, TOWER_AS, TOWER_RADIUS, TOWER_RANGE } from '../sim/systems/towers';
 import { MINION_DMG_VS_CHAMP_STRUCT, MINION_STATS, minionScale } from '../sim/systems/minions';
 import type { Snapshot, SnapEntity } from '../sim/snapshot';
-import { Kind, TICK_HZ, isMinion } from '../sim/types';
+import { CHAMP_ABILITY_DMG_MULT, Kind, TICK_HZ, isMinion } from '../sim/types';
 import type { ExchangeResult } from './contract';
 
 export interface FighterStats {
@@ -172,7 +172,7 @@ function sideOutput(side: FighterSpec[], foes: FighterSpec[], T: number, skill: 
         if (e.kind === 'damage' && !isOwnSide(e)) {
           const raw = scale(e.amount, f, st, rank, target);
           const m = e.type === 'phys' ? mit(armor) : e.type === 'magic' ? mit(mr) : 1;
-          damage += raw * m * casts * avail;
+          damage += raw * m * casts * avail * CHAMP_ABILITY_DMG_MULT;
         } else if ((e.kind === 'heal' || e.kind === 'shield') && (e.target === 'self' || e.target === 'ally' || e.target === 'allies')) {
           sustain += scale(e.amount, f, st, rank, undefined) * casts * avail;
         }

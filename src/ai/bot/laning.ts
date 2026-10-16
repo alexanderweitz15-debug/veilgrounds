@@ -1,5 +1,6 @@
 // Laning (positioning behind the own wave, last hits, light push, tower hits) and jungle routing.
 
+import { Kind } from '../../sim/types';
 import { MINION_STATS, minionScale } from '../../sim/systems/minions';
 import { TOWER_AS } from '../../sim/systems/towers';
 import { CAMPS } from '../../sim/systems/jungle';
@@ -91,6 +92,61 @@ export function pushTarget(v: View, ctx: BotStatic): number {
     .filter((t) => v.ownMinions.filter((m) => dst(m, t) < 850).length >= 2 || (t.atkTarget !== v.me.eid && v.allies.filter((a) => dst(a, t) < 1100).length >= 2))
     .sort((a, b) => dst(v.self, a) - dst(v.self, b));
   return base[0]?.id ?? -1;
+}
+
+/**
+ * Enemy structures open to attack now. The protection chain is public game knowledge (structures are always in the
+ * snapshot): per lane the first standing tower, then the inhibitor; nexus towers once any inhibitor is down; the
+ * nexus once both nexus towers are down.
+ */
+export function openEnemyStructures(v: View, ctx: BotStatic): SnapEntity[] {
+  const side = ctx.map.sides[1 - ctx.team]!;
+  const all = [...v.enemyTowers, ...v.enemyStructures];
+  const at = (p: Pt): SnapEntity | undefined => all.find((e) => dst(e, p) < 200);
+  const out: SnapEntity[] = [];
+  let inhibDown = false;
+  for (const lane of ['top', 'mid', 'bot'] as const) {
+    let open = true;
+    for (const p of side.towers[lane]) {
+      const t = at(p);
+      if (!t) continue;
+      if (open) out.push(t);
+      open = false;
+    }
+    const inh = at(side.inhibitors[lane]);
+    if (!inh) inhibDown = true;
+    else if (open) out.push(inh);
+  }
+  const nexusTowers = side.nexusTowers.map(at).filter((t): t is SnapEntity => !!t);
+  if (inhibDown) out.push(...nexusTowers);
+  if (!nexusTowers.length) {
+    const nx = at(side.nexus);
+    if (nx) out.push(nx);
+  }
+  return out;
+}
+
+/**
+ * Structure to hit now (-1 = none): an open enemy structure within 1300 that is safe to hit - a tower (also nexus
+ * towers) needs own minions tanking it (>= 2 within 800, or 1 with two allies along) and must not be aiming at the
+ * bot; inhibitor / nexus deal no damage. In every case no more enemy champions around than allies (incl. the bot).
+ * LoL players take plates and towers whenever the wave sits at the tower and the defender is missing.
+ */
+export function structureToHit(v: View, ctx: BotStatic): number {
+  let best: SnapEntity | null = null;
+  for (const t of openEnemyStructures(v, ctx)) {
+    const d = dst(v.self, t);
+    if (d > 1300 || (best && d >= dst(v.self, best))) continue;
+    const shoots = t.kind === Kind.Tower;
+    if (shoots && t.atkTarget === v.me.eid) continue;
+    const tank = v.ownMinions.filter((m) => dst(m, t) < 800).length;
+    const allies = 1 + v.allies.filter((a) => dst(a, t) < 1300).length;
+    const foes = [...v.enemies, ...v.unnoticed].filter((e) => dst(e, t) < 1400).length;
+    if (foes >= allies) continue;
+    if (shoots && !(tank >= 2 || (tank >= 1 && allies >= 3))) continue;
+    best = t;
+  }
+  return best ? best.id : -1;
 }
 
 /** Static camp timers (game knowledge, src/sim/systems/jungle.ts): first spawn and respawn in seconds. */

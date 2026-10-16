@@ -10,7 +10,7 @@ import { sampleReactionMs } from '../profiles';
 import type { BotAction, BotMemory, BotStatic, Brain, PlayerHud, SnapEntity } from './types';
 import { near, ticksOfMs, towerCovering, type View } from './perception';
 import { escapeCast, hpPct, offensiveCast, supportCast } from './combat';
-import { jungle, laneSpot, pushTarget, incomingDps } from './laning';
+import { jungle, laneSpot, pushTarget, incomingDps, structureToHit } from './laning';
 import { planLastHit } from './lasthit';
 import { shop, spendable } from './shop';
 import { dst, laneProgress, lanePoint } from './geo';
@@ -51,8 +51,27 @@ export const think: Brain = (snap, ctx, mem, rng) => {
 // ------------------------------------------------------------------ helpers
 
 /** Move with throttling: every move runs A* in the sim, so only re-issue for a new goal or when stopped. */
-export function moveTo(v: View, mem: BotMemory, p: Pt): BotAction | null {
-  if (dst(v.self, p) < 80 || v.tick < mem.holdUntil) return null;
+/**
+ * A move goal inside a tower / inhibitor / nexus footprint cannot be reached: the unit pushes against the structure
+ * and jitters in place (stuck seconds in the pathing metric; lane stand points before the first wave sit right at the
+ * own tower). Push such a goal radially out of the footprint.
+ */
+export function clearOfStructures(v: View, p: Pt): Pt {
+  for (const s of [...v.ownTowers, ...v.enemyTowers, ...v.enemyStructures]) {
+    const need = s.radius + v.self.radius + 15;
+    const d = dst(s, p);
+    if (d >= need) continue;
+    const ux = d > 1 ? (p.x - s.x) / d : (v.self.x - s.x) / (dst(s, v.self) || 1);
+    const uy = d > 1 ? (p.y - s.y) / d : (v.self.y - s.y) / (dst(s, v.self) || 1);
+    return { x: s.x + ux * need, y: s.y + uy * need };
+  }
+  return p;
+}
+
+export function moveTo(v: View, mem: BotMemory, goal: Pt): BotAction | null {
+  const p = clearOfStructures(v, goal);
+  // < 120: close enough (smaller corrections are the stop-and-go creep the pathing metrics flag)
+  if (dst(v.self, p) < 120 || v.tick < mem.holdUntil) return null;
   if (mem.lastMove && dst(mem.lastMove, p) < 200 && v.self.moving && v.tick - mem.lastMove.tick < 300) return null;
   mem.lastMove = { x: p.x, y: p.y, tick: v.tick };
   return { cmd: { t: 'move', x: p.x, y: p.y } };
@@ -172,14 +191,25 @@ export function retreat(n: NodeCtx): NodeResult {
   const { v, ctx, mem } = n;
   if (inFountain(n) || ctx.mode === 'arena') return 'failure'; // arena: no way home, fight it out
   if (mem.ext.trade && v.tick < mem.ext.overcommitUntil) return 'failure'; // overcommit_after_kill: no retreat
+  // a committed all-in that is winning (kill likely, own death unlikely, target lower than the bot) is not dropped for
+  // low HP or tower aggro: the trade leaf's own exits (lost / stalled / under tower without a lethal dive) end it
+  const tr = mem.ext.trade;
+  if (tr?.kind === 'allin' && (tr.kill ?? 0) > 0.6 && (tr.death ?? 1) < 0.5 && v.hpPct > 0.08) {
+    const t = v.enemies.find((e) => e.serial === tr.serial);
+    if (t && hpPct(t) < v.hpPct + 0.15) return 'failure';
+  }
   const home = fountainOf(n);
   const foes = near(v.enemies, v.self, 1200);
   const friends = near(v.allies, v.self, 1200);
   const towerOnMe = v.enemyTowers.some((t) => t.atkTarget === v.me.eid);
-  const lowHp = 0.25 - n.p.playstyle.aggression * 0.016; // aggressive bots stay longer
+  // retreat line by skill (Iron 18 % .. Gold 23 % .. Challenger 30 %: low ranks stay too long and die), aggressive
+  // bots stay longer (was 25 % for every rank)
+  const lowHp = 0.17 + 0.13 * Math.min(1, Math.max(0, n.ctx.params.skill / 100)) - n.p.playstyle.aggression * 0.016;
   const low = v.hpPct < lowHp && foes.length > 0;
   const outnumbered = v.hpPct < 0.55 && foes.length >= friends.length + 2;
-  const stillUnsafe = mem.mode === 'retreat' && v.hpPct < 0.6 && foes.length > 0;
+  // after a retreat: keep away from enemies below 45 % HP, walk home (recall) below 40 % (was 60 % / 60 %: every
+  // tower-aggro retreat at 55 % HP cost a full recall trip - LoL laners stay in lane at half HP)
+  const stillUnsafe = mem.mode === 'retreat' && v.hpPct < 0.45 && foes.length > 0;
   if (low || outnumbered || stillUnsafe || towerOnMe) {
     if (mem.mode !== 'retreat') n.log('retreat', 'retreat', towerOnMe ? 'tower aggro' : low ? 'low hp' : outnumbered ? 'outnumbered' : 'still unsafe', { foes: foes.length, friends: friends.length }, { hp: v.hpPct });
     mem.mode = 'retreat';
@@ -199,7 +229,7 @@ export function retreat(n: NodeCtx): NodeResult {
   }
   // low HP (or after a retreat): walk / recall home. Gold-driven recalls are the macro recall score's job.
   const safe = near([...v.enemies, ...v.unnoticed], v.self, 1600).length === 0 && near(v.monsters, v.self, 800).length === 0;
-  const goHome = v.hpPct < lowHp || (mem.mode === 'retreat' && v.hpPct < 0.6) || mem.mode === 'home';
+  const goHome = v.hpPct < lowHp || (mem.mode === 'retreat' && v.hpPct < 0.4) || mem.mode === 'home';
   if (goHome) {
     // a recall broken by damage (DoT, unseen attacker) is retried only after 6 s of walking home: no recall spam
     if (safe && dst(v.self, home) > 2500 && near(v.enemyMinions, v.self, 650).length === 0 && v.tick - mem.ext.recallTryAt > 6 * 30) {
@@ -303,6 +333,17 @@ function pressure(n: NodeCtx, lane: LaneName): SnapEntity | null {
   return n.v.enemies.find((e) => dst(e, n.v.self) < n.v.me.stats.range + 450) ?? null;
 }
 
+/** Attack an enemy structure that is safe to hit (laning.ts structureToHit); `wait`: a last-hit window is due. */
+function hitStructure(n: NodeCtx, wait: boolean): boolean {
+  if (wait || n.v.self.atkPhase === 1) return false;
+  const s = structureToHit(n.v, n.ctx);
+  if (s < 0) return false;
+  n.mem.lastMove = null;
+  if (n.v.self.atkTarget !== s) n.out.push({ cmd: { t: 'attack', target: s } });
+  n.log('lane', 'hit_structure', 'wave at the structure, no defenders', { target: s });
+  return true;
+}
+
 /**
  * Laning: last hits (with pressure rules), wave state (freeze/hold = last hits only and further back, crash =
  * push everything, slow-push = push while ahead), support follows the ADC. Returns failure when there is nothing
@@ -340,10 +381,23 @@ export function laneLeaf(n: NodeCtx): NodeResult {
     if (adc && dst(adc, home) > 2500) {
       farm = false; // leave the CS to the ADC
       const pts = ctx.map.sides[ctx.team].lanes[lane];
-      spot = lanePoint(pts, Math.max(0, laneProgress(pts, adc).s - 150));
+      // beside and a little behind the ADC, not on its line: a point straight behind it is walked into (units block
+      // each other) and reads as the support glued to the ADC's back
+      const along = Math.max(0, laneProgress(pts, adc).s - 120);
+      const at = lanePoint(pts, along);
+      const ahead = lanePoint(pts, along + 50);
+      const dl = dst(at, ahead) || 1;
+      const side = 1; // same sign for both teams: the lane geometry is point-mirrored, so the offset mirrors too
+      spot = { x: at.x - ((ahead.y - at.y) / dl) * 170 * side, y: at.y + ((ahead.x - at.x) / dl) * 170 * side };
       behind += 150;
     }
   }
+  // stand-point hysteresis: the wave contact point jitters by a minion step every second; a player holds a spot and
+  // re-positions in steps. Keep the held point while the new one is within 250 of it (for up to 6 s), so the bot
+  // does not creep forward and back in 80-unit stop-and-go moves (pathing metric: reversals/min, moves/min)
+  const held = mem.ext.standAt;
+  if (held && held.lane === lane && dst(held, spot) < 250 && v.tick - held.tick < 180) spot = { x: held.x, y: held.y };
+  else mem.ext.standAt = { x: spot.x, y: spot.y, lane, tick: v.tick };
   if (v.self.atkPhase === 1) return 'running'; // never cancel own wind-up
   // §6 ignore_minion_aggro (Iron-Silver): auto-attacks the enemy champion while standing in the enemy wave
   // (minions switch to the bot); rolled at most every 10 s while the situation lasts
@@ -373,7 +427,9 @@ export function laneLeaf(n: NodeCtx): NodeResult {
       const pr = pressure(n, lane);
       const target = v.enemyMinions.find((m) => m.id === (lh.cmd as { target: number }).target);
       const walkUp = target ? dst(v.self, target) > v.reach + target.radius + 250 : false;
-      const pokeReady = pr && pr !== v.self ? (mem.ext.enemyCastAt.get(pr.serial) ?? -1e9) < v.tick - 6 * 30 : true;
+      // only a real enemy champion in poke range counts (gank risk alone already moves the stand point back; skipping
+      // every walk-up last hit on it cost Diamond+ more CS than Gold)
+      const pokeReady = pr && pr !== v.self ? (mem.ext.enemyCastAt.get(pr.serial) ?? -1e9) < v.tick - 6 * 30 : false;
       if (pr && rankIdx(ctx.profile.rank) >= rankIdx('diamond') && n.p.playstyle.farmPriority < 5 && walkUp && pokeReady) {
         n.log('lane', 'skip_last_hit', 'last hit under pressure', { minionHp: Math.round(target?.hp ?? 0) });
       } else {
@@ -389,6 +445,12 @@ export function laneLeaf(n: NodeCtx): NodeResult {
       const p = { x: m.x + ((v.self.x - m.x) * r) / d, y: m.y + ((v.self.y - m.y) * r) / d };
       if (!towerCovering(v, p) && push(n, moveTo(v, mem, p))) return 'running';
     }
+    // wave at an enemy structure, defenders missing: hit it (plates, towers, base) unless a last hit is due now
+    if (hitStructure(n, holdTimer && near(v.enemyMinions, v.self, 800).length > 0)) return 'running';
+  } else if (!farm && hitStructure(n, false)) {
+    return 'running';
+  }
+  if (farm && !(mem.wardTrip >= 0 && v.tick - mem.wardTrip < 8 * 30)) {
     if (dst(v.self, spot) < 700 && pushOk) {
       const ahead = v.ownMinions.filter((m) => dst(m, spot) < 1200).length - v.enemyMinions.filter((m) => dst(m, spot) < 1200).length;
       let want = -1;
@@ -427,9 +489,10 @@ export function laneLeaf(n: NodeCtx): NodeResult {
 /** Movement/idle: shuffle around the lane spot like a player does (no 10 s statues), unstick. */
 export function idle(n: NodeCtx): NodeResult {
   const { v, mem, rng } = n;
-  if (v.tick - (mem.lastMove?.tick ?? 0) > 90) {
+  // a small step every 4-7 s (was +-150 every 3 s: read as jitter)
+  if (v.tick - (mem.lastMove?.tick ?? 0) > 120 + Math.floor(rng.next() * 90)) {
     const base = mem.lastMove ?? v.self;
-    const p = { x: base.x + (rng.next() * 2 - 1) * 150, y: base.y + (rng.next() * 2 - 1) * 150 };
+    const p = clearOfStructures(v, { x: base.x + (rng.next() * 2 - 1) * 100, y: base.y + (rng.next() * 2 - 1) * 100 });
     mem.lastMove = { ...p, tick: v.tick };
     n.out.push({ cmd: { t: 'move', x: p.x, y: p.y } });
   }
@@ -442,6 +505,21 @@ export function stuckCheck(n: NodeCtx): void {
   const { v, mem, rng } = n;
   mem.trail.push({ x: v.self.x, y: v.self.y, tick: v.tick });
   while (mem.trail.length && v.tick - mem.trail[0]!.tick > 330) mem.trail.shift();
+  // blocked by a unit standing in the way (no progress for 1.5 s while the goal is still away): side-step around it
+  // at once instead of pushing against it until the 10-s unstick below
+  const recent = mem.trail.find((t) => v.tick - t.tick <= 45);
+  if (recent && v.tick - recent.tick >= 40 && mem.lastMove && v.self.atkPhase === 0 && dst(v.self, mem.lastMove) > 150 && dst(recent, v.self) < 20) {
+    const d = dst(v.self, mem.lastMove) || 1;
+    const ux = (mem.lastMove.x - v.self.x) / d;
+    const uy = (mem.lastMove.y - v.self.y) / d;
+    const sgn = rng.next() < 0.5 ? -1 : 1;
+    const p = clearOfStructures(v, { x: v.self.x + ux * 60 - uy * 180 * sgn, y: v.self.y + uy * 60 + ux * 180 * sgn });
+    n.out.push({ cmd: { t: 'move', x: p.x, y: p.y } });
+    mem.lastMove = null;
+    mem.holdUntil = v.tick + 20;
+    mem.trail = [];
+    return;
+  }
   const old = mem.trail[0];
   if (!old || !mem.lastMove || v.tick - old.tick < 300) return;
   if (dst(v.self, mem.lastMove) > 300 && dst(old, v.self) < 80) {

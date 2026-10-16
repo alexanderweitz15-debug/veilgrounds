@@ -50,22 +50,34 @@ describe('structures', () => {
     sim.tick = tick;
     const t = outer(sim, 0, Lane.Mid);
     const melee = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Mid, 8000, 8000);
-    expect(shotsToKill(sim, t, melee)).toBe(2);
+    // LoL: melee 3 shots (two shots leave 10 %: shot-shot-auto), caster 2 shots (auto-shot-auto)
+    expect(shotsToKill(sim, t, melee)).toBe(3);
     const siege = spawnMinion(sim, Kind.MinionSiege, 1, Lane.Mid, 8000, 8000);
     const n = shotsToKill(sim, t, siege);
     expect(n).toBeGreaterThanOrEqual(6);
     expect(n).toBeLessThanOrEqual(7);
-    // caster: one tower shot leaves 20 %; at 1:05 a level-1 ADC auto (60 AD) finishes it
+    // caster: one tower shot leaves 30 %; at 1:05 a level-1 ADC (60 AD) needs auto - shot - auto
     const caster = spawnMinion(sim, Kind.MinionCaster, 1, Lane.Mid, 8000, 8000);
     const adc = spawnChamp(sim, 0, 8000, 8000);
+    if (tick === 0) {
+      dealDamage(sim, adc, caster, 60, 'phys', { isAuto: true });
+      expect(sim.c.Unit.alive[caster]).toBe(1);
+    }
+    const before = sim.c.Hp.cur[caster]!;
     const s = towerShotDamage(sim, t, caster);
     dealDamage(sim, t, caster, s.amount, s.type, { raw: s.raw });
     expect(sim.c.Unit.alive[caster]).toBe(1);
-    expect(sim.c.Hp.cur[caster]).toBeCloseTo(sim.c.Hp.max[caster]! * 0.2);
+    expect(sim.c.Hp.cur[caster]).toBeCloseTo(before - sim.c.Hp.max[caster]! * 0.7);
     if (tick === 0) {
       dealDamage(sim, adc, caster, 60, 'phys', { isAuto: true });
       expect(sim.c.Unit.alive[caster]).toBe(0);
     }
+    const m2 = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Mid, 8000, 8000);
+    for (let i = 0; i < 2; i++) {
+      const sh = towerShotDamage(sim, t, m2);
+      dealDamage(sim, t, m2, sh.amount, sh.type, { raw: sh.raw });
+    }
+    expect(sim.c.Hp.cur[m2]).toBeCloseTo(sim.c.Hp.max[m2]! * 0.1);
     const c2 = spawnMinion(sim, Kind.MinionCaster, 1, Lane.Mid, 8000, 8000);
     expect(shotsToKill(sim, t, c2)).toBe(2);
   });

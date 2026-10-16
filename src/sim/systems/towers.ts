@@ -10,7 +10,9 @@
 //   nexus         5500     0         -
 // Towers: range 750 (edge to edge, like attack ranges), 0.83 attacks/s, windup 0, radius 88, vision 1350.
 // Warming vs champions: +40 % per consecutive shot on the same champion, max +120 %.
-// vs minions: raw % of max HP (melee 50 %, caster 80 %, siege 15 %, super 7 %), so shot counts never drift.
+// vs minions: raw % of max HP (melee 45 %, caster 70 %, siege 15 %, super 7 %), so shot counts never drift: like LoL
+// a caster dies to 2 shots (auto-shot-auto to last-hit it), a melee to 3 (shot-shot-auto). Was 50 % / 80 %: the 2nd
+// shot killed a melee exactly, no last-hit window.
 // Plates: plate gold goes to the champion landing the breaking hit; if a non-champion breaks it, it is split evenly
 // between enemy champions within 1000. At 14:00 remaining plates fall (no gold) and outer towers lose 50 % armor.
 

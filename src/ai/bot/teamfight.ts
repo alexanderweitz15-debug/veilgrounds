@@ -11,8 +11,9 @@ import type { SnapEntity } from './types';
 import { dst } from './geo';
 import { offensiveCast } from './combat';
 import { estimateExchange, rankIdx, rollError } from '../bt/deps';
+import { exchangeNoise } from '../exchange';
 import { carrySpot, fightRole, focusScore, moveCmd, orbwalkAttack, peelSpot } from './kite';
-import { decisionInterval } from './trade';
+import { decisionInterval, executes } from './trade';
 import { focusSerial } from './social';
 
 const CHALLENGER = rankIdx('challenger');
@@ -34,12 +35,20 @@ export function teamfight(n: NodeCtx): NodeResult {
   const { enemies } = fightUnits(n);
   if (!enemies.length) return 'failure';
   const st = n.mem.bt.get('_tf') ?? {};
-  if (st.since === undefined || n.v.tick - (st.until ?? 0) > 60) st.since = n.v.tick;
+  if (st.since === undefined || n.v.tick - (st.until ?? 0) > 60) {
+    st.since = n.v.tick;
+    st.err = {};
+  }
   st.until = n.v.tick;
   n.mem.bt.set('_tf', st);
   const running = (n.v.tick - st.since!) / 30;
   const focus = focusSerial(n);
-  const t = enemies.reduce((a, e) => (focusScore(n, e, focus) > focusScore(n, a, focus) ? e : a));
+  // focus quality by rank: the score is read with an error (Iron +-60 %, Gold +-30 %, Challenger +-10 %), rolled
+  // once per fight and enemy, so low ranks spread damage over the wrong targets while high ranks focus the kill
+  const noise = 1.5 * exchangeNoise(n.ctx.params.skill);
+  const err = (st.err ??= {});
+  const scored = (e: (typeof enemies)[number]): number => focusScore(n, e, focus) * (1 + (err[e.serial] ??= noise * (n.rng.next() * 2 - 1)));
+  const t = enemies.reduce((a, e) => (scored(e) > scored(a) ? e : a));
   const role = fightRole(n);
   const ri = rankIdx(n.ctx.profile.rank);
   const ex = estimateExchange(n.v, n.ctx, t, 6, n.rng);
@@ -50,7 +59,7 @@ export function teamfight(n: NodeCtx): NodeResult {
     return 'failure';
   }
   const attack = (target: SnapEntity): NodeResult => {
-    const cast = offensiveCast(n.v, n.ctx, n.rng, target);
+    const cast = executes(n) ? offensiveCast(n.v, n.ctx, n.rng, target) : null;
     if (cast) n.out.push(cast);
     else orbwalkAttack(n, target, decisionInterval(n));
     return 'running';

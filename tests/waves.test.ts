@@ -88,12 +88,12 @@ describe('wave schedule', () => {
     const m = spawnMinion(sim, Kind.MinionCaster, 0, Lane.Mid, 8000, 8000);
     expect(sim.c.Hp.max[m]).toBeCloseTo(290 * 1.18);
     expect(sim.c.Stats.ad[m]).toBeCloseTo(23 * 1.18);
-    expect(MINION_STATS[Kind.MinionCaster]!.towerPct).toBe(0.8);
+    expect(MINION_STATS[Kind.MinionCaster]!.towerPct).toBe(0.7);
   });
 });
 
 describe('wave arrival', () => {
-  it('waves meet in the lane middle at ~1:35 mid and ~1:45 side (+-3 s)', () => {
+  it('waves meet in the lane middle at ~1:28 mid and ~1:38 side (+-3 s)', () => {
     const sim = newSim();
     const meet: (number | null)[] = [null, null, null];
     const { Unit, Pos } = sim.c;
@@ -115,9 +115,9 @@ describe('wave arrival', () => {
         }
       }
     }
-    expect(Math.abs(meet[Lane.Mid]! - 95)).toBeLessThanOrEqual(3);
-    expect(Math.abs(meet[Lane.Top]! - 105)).toBeLessThanOrEqual(3);
-    expect(Math.abs(meet[Lane.Bot]! - 105)).toBeLessThanOrEqual(3);
+    expect(Math.abs(meet[Lane.Mid]! - 88)).toBeLessThanOrEqual(3);
+    expect(Math.abs(meet[Lane.Top]! - 98)).toBeLessThanOrEqual(3);
+    expect(Math.abs(meet[Lane.Bot]! - 98)).toBeLessThanOrEqual(3);
   });
 
   it('waveState reports front, minion difference and next wave', () => {

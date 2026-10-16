@@ -34,6 +34,8 @@ export class InputController {
   mouseY = -1;
   hover: SnapEntity | null = null;
   showRange = false;
+  /** Ability key held with "cast with indicator": aim preview until the key is released. */
+  aiming: { slot: 0 | 1 | 2 | 3; code: string } | null = null;
   /** performance.now() until which the camera lock is suspended (minimap peek). */
   cameraPeekUntil = 0;
   private centerHeld = false;
@@ -75,6 +77,7 @@ export class InputController {
     on(window, 'blur', () => {
       // keys/buttons released while the window was in the background never send keyup/mouseup
       this.centerHeld = this.rightHeld = this.showRange = false;
+      this.aiming = null;
       this.dragFrom = null; // middle-mouse camera drag
       this.wheel.hide(); // ping wheel (G held): closes without pinging
       this.wheelAt = null;
@@ -165,7 +168,8 @@ export class InputController {
   private keyDown(e: KeyboardEvent): void {
     if (this.host.menuOpen()) return;
     if (e.code === 'Escape') {
-      if (this.armed) this.setArmed(null);
+      if (this.aiming) this.aiming = null; // cancel the held ability indicator
+      else if (this.armed) this.setArmed(null);
       else this.host.openMenu();
       return;
     }
@@ -192,6 +196,8 @@ export class InputController {
     const abilitySlot = ({ q: 0, w: 1, e: 2, r: 3 } as Partial<Record<Action, 0 | 1 | 2 | 3>>)[action];
     if (abilitySlot !== undefined) {
       if (levelMod) this.send({ t: 'levelUp', slot: abilitySlot });
+      // LoL "quick cast with indicator": hold to aim (fx shows range + shape), release casts (keyUp)
+      else if (settings.castIndicator && !e.altKey) this.aiming = { slot: abilitySlot, code: e.code };
       else this.cast('cast', abilitySlot, e.altKey);
       return;
     }
@@ -289,6 +295,12 @@ export class InputController {
   }
 
   private keyUp(e: KeyboardEvent): void {
+    if (this.aiming && e.code === this.aiming.code) {
+      const slot = this.aiming.slot;
+      this.aiming = null;
+      if (!this.host.menuOpen()) this.cast('cast', slot, false);
+      return;
+    }
     const action = actionFor(e.code);
     if (action === 'pingWheel' && this.wheel.isOpen) {
       const kind = this.wheel.pick(this.mouseX, this.mouseY);
@@ -316,6 +328,8 @@ export class InputController {
     const mx = this.mouseX - r.left;
     const my = this.mouseY - r.top;
     this.refreshHover();
+    if (this.aiming && this.host.menuOpen()) this.aiming = null;
+    world.fx.showAim(state, this.aiming ? this.aiming.slot : null, this.aiming ? this.cursorGround() : null);
     this.el.style.cursor = this.armed ? 'crosshair' : this.hoveredEnemy() ? 'pointer' : '';
 
     if (this.rightHeld && !state.paused && now - this.lastHoldMove > HOLD_MOVE_MS) this.rightClick(now, false);

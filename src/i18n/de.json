@@ -412,5 +412,6 @@
   "showcase.hint": "Fahre über ein Symbol, um zu sehen, was die Fähigkeit macht.",
   "classic.botDifficulty": "Bot-Schwierigkeit (alle Bots)",
   "classic.advanced": "Erweitert",
-  "classic.rankMixed": "Gemischte Ränge (unter „Erweitert“ einzeln gesetzt) – ein Klick oben setzt wieder alle gleich."
+  "classic.rankMixed": "Gemischte Ränge (unter „Erweitert“ einzeln gesetzt) – ein Klick oben setzt wieder alle gleich.",
+  "set.castIndicator": "Zauber mit Anzeige (Taste halten zielt, loslassen wirkt)"
 }

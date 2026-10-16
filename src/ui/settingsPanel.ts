@@ -99,6 +99,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.uiScale'), slider('uiScale', 80, 150, 5, (v) => `${v}%`));
     row(t('set.damageNumbers'), check('damageNumbers'));
     row(t('set.attackMoveOnCursor'), check('attackMoveOnCursor'));
+    row(t('set.castIndicator'), check('castIndicator'));
     row(t('set.edgeScroll'), check('edgeScroll'));
     row(t('set.cameraLocked'), check('cameraLocked'));
     row(t('set.fullscreenLock'), check('fullscreenLock'));

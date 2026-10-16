@@ -242,6 +242,8 @@ export class Fx {
   private readonly lastCast = new Map<number, { ab: AbilityData; ox: number; oy: number; dx: number; dy: number }>();
   private readonly range: THREE.Mesh;
   private readonly towerRings: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>[] = [];
+  private readonly aimRange = new THREE.Mesh(new THREE.RingGeometry(0.988, 1, 96).rotateX(-Math.PI / 2), groundMat('#8fd0ff', 0.6));
+  private readonly aimViews: ShapeView[] = [];
   private readonly towerLines: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>[] = [];
   private readonly m = new THREE.Matrix4();
   private readonly q = new THREE.Quaternion();
@@ -273,6 +275,9 @@ export class Fx {
     this.range = new THREE.Mesh(new THREE.RingGeometry(0.985, 1, 96).rotateX(-Math.PI / 2), groundMat('#f2e7b6', 0.7));
     this.range.visible = false;
     this.group.add(this.range);
+    this.aimRange.renderOrder = 3;
+    this.aimRange.visible = false;
+    this.group.add(this.aimRange);
     for (let i = 0; i < 3; i++) {
       const ring = new THREE.Mesh(new THREE.RingGeometry(0.988, 1, 96).rotateX(-Math.PI / 2), groundMat('#f0d8a0', 0.5));
       const line = new THREE.Mesh(flatPlane, groundMat('#f0d8a0', 0.5));
@@ -285,6 +290,39 @@ export class Fx {
     this.chanRing.renderOrder = this.chanArc.renderOrder = 3;
     this.chanRing.visible = this.chanArc.visible = false;
     this.group.add(this.chanRing, this.chanArc);
+  }
+
+  /**
+   * Held ability key ("cast with indicator"): the ability's range circle around the champion and its exact hitbox
+   * shape at the cursor (same geometry as the cast telegraph). `slot` null hides it.
+   */
+  showAim(state: ClientState, slot: number | null, at: { x: number; y: number } | null): void {
+    const me = state.me();
+    const hud = state.snap?.me;
+    const ab = slot !== null && me?.champ ? champions[me.champ]?.abilities[slot] : undefined;
+    if (!ab || !me || !hud || !at) {
+      this.aimRange.visible = false;
+      for (const v of this.aimViews) v.hide();
+      return;
+    }
+    const rank = Math.max(1, hud.abilities[slot!]?.rank ?? 1);
+    const mx = state.x(me);
+    const my = state.y(me);
+    const range = Array.isArray(ab.range) ? ab.range[Math.min(ab.range.length, rank) - 1]! : ab.range;
+    const ready = (hud.abilities[slot!]?.cdLeft ?? 0) <= 0.05 && (hud.abilities[slot!]?.rank ?? 0) > 0;
+    const col = ready ? '#8fd0ff' : '#9a9080';
+    this.aimRange.visible = range > 0;
+    this.aimRange.position.set(mx, 4, -my);
+    this.aimRange.scale.setScalar(range + me.radius);
+    this.aimRange.material.color.set(col);
+    const tel = castTelegraph(ab, rank, mx, my, at.x, at.y, me.fx, me.fy);
+    const shapes = tel?.shapes ?? [];
+    while (this.aimViews.length < shapes.length) this.aimViews.push(new ShapeView(this.group));
+    this.aimViews.forEach((v, i) => {
+      const s = shapes[i];
+      if (s) v.show(s, col, 1, 0.14, 0.85);
+      else v.hide();
+    });
   }
 
   /** Level-up: golden ring burst + rising light column at the champion. */

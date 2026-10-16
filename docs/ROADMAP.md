@@ -165,7 +165,7 @@ Screenshots: `~/.claude/projects/C--Users-Alex-Documents-Moba/aba13fc4-a91c-4600
   `nomana` wenn Kosten > Mana.
 
 **Wichtig**
-- [ ] **Nur Schnellzauber, keine Anzeige vor dem Wirken.** controller.ts `cast()` sendet beim Tastendruck; kein
+- [x] **Nur Schnellzauber, keine Anzeige vor dem Wirken.** (erledigt: „Zauber mit Anzeige“ als Standard – Taste halten zeigt Reichweite + Form, loslassen wirkt, Esc bricht ab; Einstellung) controller.ts `cast()` sendet beim Tastendruck; kein
   Normal-Cast, kein „Schnellzauber mit Anzeige“ (Taste halten = Reichweite + Form, loslassen = wirken); C zeigt nur
   die AA-Reichweite. Fix: keydown → `castTelegraph()` am Cursor zeigen, keyup → senden; Modus je Taste einstellbar.
 - [ ] **Kein Eingabe-Puffer.** `castAbility` verwirft Eingaben während Wind-up/Dash/Kanalisieren (`a.cast ||

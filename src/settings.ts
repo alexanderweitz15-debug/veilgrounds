@@ -25,6 +25,8 @@ export interface Settings {
   damageNumbers: boolean;
   /** A immediately attack-moves to the cursor instead of arming a left-click. */
   attackMoveOnCursor: boolean;
+  /** LoL "quick cast with indicator": hold an ability key to aim (range + shape at the cursor), release to cast. */
+  castIndicator: boolean;
   edgeScroll: boolean;
   cameraLocked: boolean;
   /** Enter fullscreen + Keyboard Lock on game start so Ctrl+W/Q reach the game (Chromium). */
@@ -49,6 +51,7 @@ const DEFAULTS: Settings = {
   graphics: 'medium',
   damageNumbers: true,
   attackMoveOnCursor: false,
+  castIndicator: true,
   edgeScroll: true,
   cameraLocked: false,
   fullscreenLock: true,

@@ -202,7 +202,7 @@ export class Overlay {
       const hc = settings.highContrast;
       for (const e of snap.entities) {
         if (!e.alive || e.maxHp <= 0) continue;
-        const champ = e.kind === Kind.Champion;
+        const champ = e.kind === Kind.Champion || !!e.look; // decoys (Sev E) get the fake champion bar
         const structure = e.kind >= Kind.Tower && e.kind <= Kind.Nexus;
         const dummy = e.kind === Kind.Dummy;
         const a = world.barAnchor(e, state.x(e), state.y(e));
@@ -268,7 +268,7 @@ export class Overlay {
           ctx.textBaseline = 'middle';
           ctx.fillText(String(e.level), x - 13, y + bh / 2 + 2);
           // name label (Agent H)
-          const name = champName(e.champ);
+          const name = champName(e.look ?? e.champ);
           ctx.font = '600 12px system-ui, sans-serif';
           ctx.textBaseline = 'bottom';
           ctx.lineWidth = 3;

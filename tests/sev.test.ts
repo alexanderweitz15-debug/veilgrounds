@@ -7,6 +7,7 @@ import { addBuff, buffs, canCast, ccLevel, hasBuff, healMult, isFeared } from '.
 import { castSummonerSpell } from '../src/sim/summoners';
 import { abilityHud, castSummoner, levelAbility, refreshCooldowns } from '../src/sim/systems/abilities';
 import { missingHooks } from '../src/sim/champions';
+import { buildSnapshot } from '../src/sim/snapshot';
 import { dealDamage } from '../src/sim/damage';
 import { spawnDummy } from '../src/sim/systems/champions';
 import { petsOf } from '../src/sim/summons';
@@ -134,6 +135,17 @@ describe('Sev E Trugbild', () => {
     expect(sim.c.Hp.max[d]).toBe(sim.c.Hp.max[s]);
     steps(sim, sec(2.5) + 2);
     expect(sevDecoy(sim, s)).toBe(-1);
+  });
+
+  it('snapshots show the decoy as Sev (look + level) to the enemy team', () => {
+    const { sim, s } = setup([0, 0, 1, 0], [[300, 0]]);
+    cmd(sim, cast(2, CX + 450, CY));
+    const d = sevDecoy(sim, s);
+    const snap = buildSnapshot(sim, 1, 1);
+    const e = snap.entities.find((x) => x.id === d)!;
+    expect(e.look).toBe('sev');
+    expect(e.level).toBe(sim.c.Champ.level[s]);
+    expect(e.maxMana).toBe(sim.c.Mana.max[s]);
   });
 
   it('an enemy ability hitting the decoy gives the attacker a Nachbild; autos do not', () => {

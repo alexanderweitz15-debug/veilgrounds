@@ -302,6 +302,8 @@ export const hooks: ChampionHooks = {
         projectileSpeed: 1600,
       });
       Hp.max[d] = Hp.max[sev]!; // fake health bar: the same numbers as Sev
+      sim.c.Mana.max[d] = sim.c.Mana.max[sev]!;
+      sim.c.Mana.cur[d] = sim.c.Mana.cur[sev]!;
       Pos.px[d] = x;
       Pos.py[d] = y;
       Face.x[d] = Face.x[sev]!;

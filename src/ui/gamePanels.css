@@ -195,6 +195,9 @@
 .score-table td.sums { white-space: nowrap; }
 .sb-sum { position: relative; display: inline-block; width: 22px; height: 22px; margin-right: 2px; vertical-align: middle; border: 1px solid #4d4233; background: #15120f center / cover no-repeat; }
 .sb-sum.enemy { cursor: pointer; }
+.sb-sum.hidden { display: none; }
+/* enemy items as last seen (B): dimmed when the sighting is older than a few seconds */
+.score-table td.items-cell.stale { opacity: 0.55; }
 .sb-sum.enemy:hover { border-color: #c8aa6e; }
 .sb-sum .cd { position: absolute; inset: 0; pointer-events: none; background: conic-gradient(rgba(0, 0, 0, 0.72) calc(var(--p, 0) * 360deg), transparent 0); }
 .sb-sum .num { position: absolute; inset: 0; display: grid; place-items: center; font: 800 10.5px 'Barlow Condensed', sans-serif; color: #fff; text-shadow: 0 0 3px #000, 0 0 2px #000; pointer-events: none; }

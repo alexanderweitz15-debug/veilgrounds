@@ -7,6 +7,7 @@ import { FIRST_WAVE_TICK } from '../sim/systems/waves';
 import { playAnnounce, type AnnounceTone } from '../audio/sfx';
 import { t } from '../i18n';
 import { champName } from './names';
+import { binds, keyLabel } from '../input/keybinds';
 import raw from '../data/map.json';
 import { CAMPS, KESSELBRUT_MAX_STACKS } from '../sim/systems/jungle';
 
@@ -40,8 +41,9 @@ export class Announcer {
   private readonly streak = new Map<string, { n: number; at: number }>();
   private readonly aced = [false, false];
   /** Own Kesselbrut stacks last seen, and when they last rose (pending banner), -1 = none pending. */
-  private kessel = 0;
-  private kesselRoseAt = -1;
+  /** Kesselbrut stacks per team as last seen and when they last rose (one banner once the count settled). */
+  private kessel: [number, number] = [0, 0];
+  private kesselRoseAt: [number, number] = [-1, -1];
   private kesselSpawned = false;
 
   constructor(parent: HTMLElement, private readonly mode?: string) {
@@ -66,6 +68,11 @@ export class Announcer {
     const snap = state.snap;
     if (!snap) return;
     const mine = state.myTeam;
+    if (ev.e === 'tpUnlocked') {
+      // B4: top laner reached 1500 minion gold - Teleport is the third summoner (own champion only)
+      if (ev.eid === snap.me?.eid) this.push(t('ann.tpUnlocked'), 'good', 1, t('ann.tpUnlockedSub', { key: keyLabel(binds.tp) }));
+      return;
+    }
     if (ev.e === 'wave') {
       if (!this.spawned) {
         this.spawned = true;
@@ -152,19 +159,23 @@ export class Announcer {
         this.warned = true;
         this.push(t('ann.minions30'), 'neutral', 1);
       }
-      // Kesselbrut: first spawn is public (classic schedule); grubs are small monsters, so their deaths stay in the
-      // fog: the banner comes from the own team's stack count instead
+      // Kesselbrut: first spawn is public (classic schedule); grub kills are public for both teams since B6
+      // (Snapshot.objectives.kesselbrut): one banner per team once its stack count settled
       const first = CAMPS.kesselbrut.first;
       if (!this.kesselSpawned && this.mode === 'classic' && snap.time >= first && snap.time < first + 10) {
         this.kesselSpawned = true;
         this.push(t('ann.kesselbrutSpawn'), 'neutral', 1);
       }
-      const k = snap.kesselbrut ?? 0;
-      if (k > this.kessel) this.kesselRoseAt = now;
-      this.kessel = k;
-      if (this.kesselRoseAt >= 0 && now - this.kesselRoseAt >= KESSEL_SETTLE_MS) {
-        this.kesselRoseAt = -1;
-        this.push(t('ann.kesselbrutOwn'), 'epic', 1, t('ann.kesselbrutStacks', { n: k, max: KESSELBRUT_MAX_STACKS }));
+      const mine = state.myTeam;
+      for (const team of [0, 1] as const) {
+        const k = snap.objectives?.kesselbrut[team] ?? (team === mine ? (snap.kesselbrut ?? 0) : 0);
+        if (k > this.kessel[team]) this.kesselRoseAt[team] = now;
+        this.kessel[team] = k;
+        if (this.kesselRoseAt[team] >= 0 && now - this.kesselRoseAt[team] >= KESSEL_SETTLE_MS) {
+          this.kesselRoseAt[team] = -1;
+          const own = team === mine;
+          this.push(t(own ? 'ann.kesselbrutOwn' : 'ann.kesselbrutEnemy'), own ? 'epic' : 'bad', 1, t('ann.kesselbrutStacks', { n: k, max: KESSELBRUT_MAX_STACKS }));
+        }
       }
       for (const team of [0, 1]) if (this.aced[team] && snap.players.some((r) => r.team === team && !r.dead)) this.aced[team] = false;
     }

@@ -154,7 +154,7 @@ export class InputController {
       // LoL: a plain left click selects the unit under the cursor for the target frame, ground clears it
       if (!this.armed) this.host.select?.(this.hover ? this.hover.id : null);
       if (this.armed === 'attackMove') {
-        this.send({ t: 'attackMove', x: g.x, y: g.y });
+        this.send(settings.attackMoveTargetCursor ? { t: 'attackMove', x: g.x, y: g.y, cursor: true } : { t: 'attackMove', x: g.x, y: g.y });
         this.host.world.fx.clickMarker(g.x, g.y, true, now);
       } else if (this.armed === 'teleport') this.send({ t: 'cheat', op: 'teleport', x: g.x, y: g.y });
       else if (this.armed === 'spawnDummy') this.send({ t: 'cheat', op: 'spawnDummy', x: g.x, y: g.y });
@@ -238,6 +238,9 @@ export class InputController {
         return this.cast('spell', 0, e.altKey);
       case 'f':
         return this.cast('spell', 1, e.altKey);
+      case 'tp':
+        // unlocked Teleport (B4): the sim ignores the command while the slot does not exist
+        return this.cast('spell', 2, e.altKey);
       case 'stop':
         this.send({ t: 'stop' });
         return;
@@ -245,7 +248,7 @@ export class InputController {
         if (settings.attackMoveOnCursor) {
           const g = this.cursorGround();
           if (g) {
-            this.send({ t: 'attackMove', x: g.x, y: g.y });
+            this.send(settings.attackMoveTargetCursor ? { t: 'attackMove', x: g.x, y: g.y, cursor: true } : { t: 'attackMove', x: g.x, y: g.y });
             this.host.world.fx.clickMarker(g.x, g.y, true, performance.now());
           }
         } else this.setArmed('attackMove');
@@ -319,7 +322,7 @@ export class InputController {
     const st = this.host.state;
     const me = st.me();
     if (self && me) {
-      this.send(t === 'cast' ? { t, slot: slot as 0 | 1 | 2 | 3, x: me.x, y: me.y, target: me.id } : { t, slot: slot as 0 | 1, x: me.x, y: me.y, target: me.id });
+      this.send(t === 'cast' ? { t, slot: slot as 0 | 1 | 2 | 3, x: me.x, y: me.y, target: me.id } : { t, slot: slot as 0 | 1 | 2, x: me.x, y: me.y, target: me.id });
       return;
     }
     const g = this.cursorGround();
@@ -327,7 +330,7 @@ export class InputController {
     const enemy = this.hoveredEnemy();
     const target = enemy?.id;
     if (t === 'cast') this.send(target !== undefined ? { t, slot: slot as 0 | 1 | 2 | 3, x: g.x, y: g.y, target } : { t, slot: slot as 0 | 1 | 2 | 3, x: g.x, y: g.y });
-    else this.send(target !== undefined ? { t, slot: slot as 0 | 1, x: g.x, y: g.y, target } : { t, slot: slot as 0 | 1, x: g.x, y: g.y });
+    else this.send(target !== undefined ? { t, slot: slot as 0 | 1 | 2, x: g.x, y: g.y, target } : { t, slot: slot as 0 | 1 | 2, x: g.x, y: g.y });
   }
 
   private ping(kind: PingKind, x: number, y: number, target?: number): void {

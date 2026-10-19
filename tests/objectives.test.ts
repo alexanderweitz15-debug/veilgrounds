@@ -1,5 +1,5 @@
-// C2: client-side objective tracker (src/game/objectives.ts): respawn timers match the sim exactly, Leviathan
-// stacks / soul, Schleierwaechter buff, inhibitor respawn, and sim snapshot fields win once they exist.
+// C2/C3: objective tracker (src/game/objectives.ts): respawn timers and objectives come from the snapshot (B), the
+// epic (re)spawn countdowns from public epic death events; post-game timeline, summoner timers, minimap ghosts.
 import { describe, expect, it } from 'vitest';
 import { ObjectiveTracker } from '../src/game/objectives';
 import { SummonerTimers, baseSummonerCd } from '../src/game/summonerTimers';
@@ -8,7 +8,6 @@ import { kill } from '../src/sim/damage';
 import { step } from '../src/sim/sim';
 import { Kind, type SimEvent } from '../src/sim/types';
 import { LEVIATHAN_MAX_STACKS } from '../src/sim/systems/jungle';
-import { INHIB_RESPAWN } from '../src/sim/systems/towers';
 import raw from '../src/data/map.json';
 import { makeSim, NO_RUNES } from './combat-helpers';
 
@@ -26,7 +25,7 @@ const death = (kind: number, team: number, x: number, y: number, more: Partial<E
   e: 'death', eid: 900, kind, team, killer: 3, x, y, ...more,
 });
 const monsterKill = (at: { x: number; y: number }, killerTeam: number, killerKind: number = Kind.Champion): SimEvent =>
-  death(Kind.Monster, 2, at.x, at.y, { killerTeam, killerKind });
+  death(Kind.Monster, 2, at.x, at.y, { killerTeam, killerKind, epic: true });
 
 describe('respawn timers', () => {
   it('match the sim respawn time of a champion of either team', () => {
@@ -87,7 +86,7 @@ describe('respawn timers', () => {
     }
   });
 
-  it('prefers ScoreRow.respawnIn from the sim; alive rows have none', () => {
+  it('reads ScoreRow.respawnIn; alive rows have none', () => {
     const tr = new ObjectiveTracker();
     const dead = { ...row(5, 1, 'wren', true), respawnIn: 12.5 } as ScoreRow;
     tr.ingest(snap(100, [], [row(0, 0, 'mira'), dead]));
@@ -154,7 +153,7 @@ describe('post-game samples and objective timeline (C6)', () => {
     const ward = { id: 50, kind: Kind.Ward, team: 0, ward: 'veil', alive: true, x: 0, y: 0 } as Snapshot['entities'][number];
     const lev = { id: 60, kind: Kind.Monster, team: 2, radius: 130, alive: true, x: OBJ.leviathan.x, y: OBJ.leviathan.y } as Snapshot['entities'][number];
     ms.ingest(snap(30 * 400, [], players, { me, entities: [ward, lev] }));
-    ms.ingest(snap(30 * 410, [death(Kind.Tower, 1, 9000, 6000), death(Kind.Monster, 2, OBJ.leviathan.x, OBJ.leviathan.y, { eid: 60, killerTeam: 1, killerKind: Kind.Champion })], players, { me }));
+    ms.ingest(snap(30 * 410, [death(Kind.Tower, 1, 9000, 6000), death(Kind.Monster, 2, OBJ.leviathan.x, OBJ.leviathan.y, { eid: 60, killerTeam: 1, killerKind: Kind.Champion, epic: true })], players, { me }));
     const s = ms.summary();
     expect(s.samples[0]).toMatchObject({ xp: 420, lead: 600, wards: 1 });
     expect(s.objectives).toEqual([
@@ -180,47 +179,19 @@ describe('manual enemy summoner timers', () => {
 });
 
 describe('objectives', () => {
-  it('counts Leviathan stacks per killer team, champion kills only, soul at the maximum', () => {
-    const tr = new ObjectiveTracker();
-    tr.ingest(snap(10, [monsterKill(OBJ.leviathan, 1, Kind.MinionMelee)]));
-    expect(tr.team(1).leviathan).toBe(0);
-    for (let i = 0; i < LEVIATHAN_MAX_STACKS + 1; i++) tr.ingest(snap(20 + i, [monsterKill(OBJ.leviathan, 0)]));
-    tr.ingest(snap(40, [monsterKill(OBJ.leviathan, 1)]));
-    expect(tr.team(0)).toMatchObject({ leviathan: LEVIATHAN_MAX_STACKS, soul: true });
-    expect(tr.team(1)).toMatchObject({ leviathan: 1, soul: false });
-  });
-
-  it('Schleierwaechter buff: 180 s for the killing team, ends when every holder died', () => {
-    const tr = new ObjectiveTracker();
-    const players = ROWS();
-    players[1]!.dead = true; // brom dead at the kill: no buff for him
-    tr.ingest(snap(3000, [monsterKill(OBJ.schleierwaechter, 0)], players, {}), () => ({ radius: 160 }));
-    expect(tr.team(0).schleierLeft).toBeCloseTo(180 - 1 / 30, 5);
-    expect(tr.team(1).schleierLeft).toBe(0);
-    tr.ingest(snap(3300, [], players));
-    expect(tr.team(0).schleierLeft).toBeCloseTo(170 - 1 / 30, 5);
-    tr.ingest(snap(3400, [death(Kind.Champion, 0, 0, 0, { champ: 'mira' })], players));
-    expect(tr.team(0).schleierLeft).toBe(0);
-  });
-
-  it('inhibitor respawn timer until it stands again', () => {
-    const tr = new ObjectiveTracker();
-    tr.ingest(snap(600, [death(Kind.Inhibitor, 1, 11000, 3500)]));
-    expect(tr.team(1).inhibRespawn).toEqual([(INHIB_RESPAWN - 1) / 30]);
-    expect(tr.team(0).inhibRespawn).toEqual([]);
-    const inhib = { id: 7, kind: Kind.Inhibitor, team: 1, x: 11000, y: 3500, alive: true } as Snapshot['entities'][number];
-    tr.ingest(snap(700, [], ROWS(), { entities: [inhib] }));
-    expect(tr.team(1).inhibRespawn).toEqual([]);
-  });
-
-  it('Kesselbrut: both teams from Snapshot.kesselbrutTeams (absent = 0 for both)', () => {
+  it('reads Snapshot.objectives (soul at the maximum, inhibitors sorted); zeros without it', () => {
     const tr = new ObjectiveTracker();
     tr.ingest(snap(10, [], ROWS()));
-    expect([tr.team(0).kesselbrut, tr.team(1).kesselbrut]).toEqual([0, 0]);
-    tr.ingest(snap(11, [], ROWS(), { kesselbrut: 3, kesselbrutTeams: [3, 1] }));
-    expect([tr.team(0).kesselbrut, tr.team(1).kesselbrut]).toEqual([3, 1]);
-    const withSim = { ...snap(12, [], ROWS(), { kesselbrut: 3 }), objectives: { kesselbrut: [3, 2] as [number, number], leviathan: [1, 2] as [number, number], schleierLeft: [0, 0] as [number, number], inhibs: [] } };
-    tr.ingest(withSim);
-    expect(tr.team(1)).toMatchObject({ kesselbrut: 2, leviathan: 2 });
+    expect(tr.team(1)).toEqual({ leviathan: 0, soul: false, kesselbrut: 0, schleierLeft: 0, inhibRespawn: [] });
+    const objectives = { leviathan: [LEVIATHAN_MAX_STACKS, 1] as [number, number], kesselbrut: [3, 2] as [number, number], schleierLeft: [0, 95] as [number, number], inhibs: [{ team: 1, lane: 2 as const, left: 80 }, { team: 1, lane: 0 as const, left: 20 }] };
+    tr.ingest({ ...snap(11, [], ROWS()), objectives });
+    expect(tr.team(0)).toMatchObject({ leviathan: LEVIATHAN_MAX_STACKS, soul: true, kesselbrut: 3, inhibRespawn: [] });
+    expect(tr.team(1)).toEqual({ leviathan: 1, soul: false, kesselbrut: 2, schleierLeft: 95, inhibRespawn: [20, 80] });
+  });
+
+  it('epic timers ignore non-epic monsters (no epic flag) near the pits', () => {
+    const tr = new ObjectiveTracker();
+    tr.ingest(snap(30 * 420 + 1, [death(Kind.Monster, 2, OBJ.leviathan.x + 300, OBJ.leviathan.y, { killerTeam: 0, killerKind: Kind.Champion })]));
+    expect(tr.epicTimers().find((x) => x.kind === 'leviathan')?.left).toBeNull();
   });
 });

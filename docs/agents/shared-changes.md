@@ -222,6 +222,7 @@ Log of C's additive changes to `src/settings.ts`:
   = follow `castIndicator`).
 - 2026-10-20 (`c7: hp bar style, enemy skillshot outline setting`): `Settings.hpBarStyle` ('segmented' | 'thousands' |
   'plain', default 'segmented'; used by src/ui/overlay.ts), `Settings.enemySkillshotOutline` (boolean, default false).
+- 2026-10-20 (`c: B requests`): `Settings.attackMoveTargetCursor` (boolean, default false; input sends B5's `cursor: true`).
 
 ## 2026-10-20 · C → D · src/render/telegraph.ts · read `settings.enemySkillshotOutline` · proposed
 

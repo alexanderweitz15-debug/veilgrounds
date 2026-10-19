@@ -57,6 +57,8 @@ interface RowView {
   level: HTMLElement;
   kda: HTMLElement;
   cs: HTMLElement;
+  vision: HTMLElement;
+  damage: HTMLElement;
   gold: HTMLElement;
   items: HTMLElement;
   itemKey: string;
@@ -67,8 +69,6 @@ interface ObjView {
   key: string;
 }
 
-/** Optional per-row summoner cooldowns from the sim (own team; proposal in docs/agents/shared-changes.md). */
-type RowExt = ScoreRow & { summonerCds?: { left: number; total: number }[] };
 
 /** Playstyle of a bot slot as tooltip text (spec-bots §2; same pure roll as the worker, src/ai/params.ts). */
 function styleTitle(setup: PlayerSetup | undefined): string {
@@ -115,8 +115,14 @@ export class Scoreboard {
       set(v.level, String(p.level));
       set(v.kda, `${p.kills} / ${p.deaths} / ${p.assists}`);
       set(v.cs, String(p.cs));
+      set(v.vision, p.visionScore !== undefined ? String(Math.round(p.visionScore)) : '–');
+      set(v.damage, p.champDamage !== undefined ? String(p.champDamage) : '–');
       set(v.gold, String(p.gold ?? p.itemValue));
       this.drawSummoners(v, p, snap, p.slot === meSlot);
+      // enemies: items as last seen (B); older than a few seconds -> dimmed with the age in the tooltip
+      const seenAgo = p.itemsSeen !== undefined ? Math.max(0, (snap.tick - p.itemsSeen) / 30) : 0;
+      v.items.classList.toggle('stale', seenAgo > 3);
+      v.items.title = seenAgo > 3 ? t('score.itemsSeen', { s: mmss(seenAgo) }) : '';
       const ik = (p.items ?? []).join(',');
       if (ik !== v.itemKey) {
         v.itemKey = ik;
@@ -135,12 +141,18 @@ export class Scoreboard {
   private drawSummoners(v: RowView, p: ScoreRow, snap: Snapshot, isMe: boolean): void {
     const own = p.team === snap.team;
     v.sums.forEach((s, i) => {
+      // third slot: Teleport unlocked for the top laner (B4) - own champion from the HUD, allies from summonerCds
+      if (i === 2) {
+        const has = isMe && snap.me ? !!snap.me.abilities[6] : (p.summonerCds?.length ?? 0) > 2;
+        s.root.classList.toggle('hidden', !has);
+        if (!has) return;
+      }
       let cd: { left: number; total: number } | null = null;
       if (isMe && snap.me) {
         const a = snap.me.abilities[4 + i];
         if (a && a.cdLeft > 0.05) cd = { left: a.cdLeft, total: a.cdTotal };
       } else if (own) {
-        const c = (p as RowExt).summonerCds?.[i];
+        const c = p.summonerCds?.[i];
         if (c && c.left > 0.05) cd = c;
       } else cd = this.timers.left(p.slot, i, this.time);
       const pct = cd ? String(Math.min(1, cd.left / Math.max(1, cd.total))) : '0';
@@ -209,7 +221,7 @@ export class Scoreboard {
       const own = team === snap.team;
       const tab = el('table', `score-table ${own ? 'ally' : 'enemy'}`, r);
       const hr = el('tr', '', el('thead', '', tab));
-      for (const h of ['score.champ', 'score.player', 'score.summoners', 'score.level', 'score.kda', 'score.cs', own ? 'score.gold' : 'score.itemValue', 'score.items'])
+      for (const h of ['score.champ', 'score.player', 'score.summoners', 'score.level', 'score.kda', 'score.cs', 'score.vision', 'score.damage', own ? 'score.gold' : 'score.itemValue', 'score.items'])
         el('th', '', hr, t(h));
       const body = el('tbody', '', tab);
       for (const p of rows.filter((x) => x.team === team).sort((a, b) => a.slot - b.slot)) {
@@ -225,8 +237,10 @@ export class Scoreboard {
         const name = el('td', 'name', tr, playerLabel(setup));
         name.title = styleTitle(setup);
         const sumCell = el('td', 'sums', tr);
-        const sums = (setup?.summoners ?? []).map((id, i): SumView => {
-          const root = el('span', `sb-sum${own ? '' : ' enemy'}`, sumCell);
+        // own team: a hidden third slot for Teleport (top laner after 1500 minion gold, B4)
+        const spells = [...(setup?.summoners ?? []), ...(own && !setup?.summoners.includes('teleport') ? ['teleport'] : [])];
+        const sums = spells.map((id, i): SumView => {
+          const root = el('span', `sb-sum${own ? '' : ' enemy'}${i === 2 ? ' hidden' : ''}`, sumCell);
           setIcon(root, summonerIcon(id));
           const cd = el('span', 'cd', root);
           const num = el('span', 'num', root);
@@ -247,9 +261,11 @@ export class Scoreboard {
         const level = el('td', '', tr);
         const kda = el('td', 'kda', tr);
         const cs = el('td', '', tr);
+        const vision = el('td', '', tr);
+        const damage = el('td', '', tr);
         const gold = el('td', 'gold-cell', tr);
         const items = el('td', 'items-cell', tr);
-        this.rows.set(p.slot, { tr, pic, respawn, sums, level, kda, cs, gold, items, itemKey: '-' });
+        this.rows.set(p.slot, { tr, pic, respawn, sums, level, kda, cs, vision, damage, gold, items, itemKey: '-' });
       }
     }
   }

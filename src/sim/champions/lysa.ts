@@ -54,7 +54,7 @@ const pierced = (sim: Sim): Map<number, number> => stateMap<number>(sim, 'lysaPi
 /**
  * Snapshot (read-only): P = thread stacks on the HUD badge (n/8, timer until they lapse) and as pips on the current
  * target. E's wire is already drawn by the generic zone event (telegraph HOOK_LINE 'perpendicular'); not duplicated.
- * The wire is stealthed (ability flag 'stealth'): enemies only get its zone event under true sight (wards.ts).
+ * The wire is visible to enemies like any zone (user decision 19.10.; the ability flag 'stealth' would hide it).
  */
 function lysaVisuals(sim: Sim, eid: number): ChampionVisuals {
   const t = peekState<Thread>(sim, 'lysaThread')?.get(eid);

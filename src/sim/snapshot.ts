@@ -19,6 +19,7 @@ import { projectileSource } from './systems/projectiles';
 import { walkedLastTick } from './systems/movement';
 import { teleportLeft } from './summoners';
 import { trainerHud, type TrainerHud } from './trainer';
+import { seenItems } from './seenItems';
 import { sandboxFlags } from './trainer/sandbox';
 import { kesselbrutStacks, leviathanStacks } from './systems/jungle';
 import { inhibitorTimers } from './systems/towers';
@@ -259,7 +260,10 @@ export interface ScoreRow {
   dead: boolean;
   /** Own team only. */
   gold?: number;
+  /** Own team: live inventory. Enemies: the inventory as last seen while visible (absent if never seen; no fog updates). */
   items?: (string | null)[];
+  /** Enemies: tick of that last sighting (items are as of then). */
+  itemsSeen?: number;
   /** Sum of item costs (both teams). */
   itemValue: number;
   /** Dead champions (both teams, public): seconds until respawn. */
@@ -284,7 +288,7 @@ function scoreRows(sim: Sim, team: number): ScoreRow[] {
       cs: Champ.cs[e]!,
       dead: Unit.alive[e] !== 1,
       ...(Unit.alive[e] !== 1 && Champ.respawnAt[e]! > 0 ? { respawnIn: Math.max(0, (Champ.respawnAt[e]! - sim.tick) / 30) } : {}),
-      ...(own ? { gold: Math.floor(Champ.gold[e]!), items: [...inventory(sim, e)], summonerCds: abilityHud(sim, e).slice(4).map((h) => ({ left: h.cdLeft, total: h.cdTotal })) } : {}),
+      ...(own ? { gold: Math.floor(Champ.gold[e]!), items: [...inventory(sim, e)], summonerCds: abilityHud(sim, e).slice(4).map((h) => ({ left: h.cdLeft, total: h.cdTotal })) } : seenRow(sim, team, Unit.slot[e]!)),
       itemValue: itemValue(sim, e),
     };
   });
@@ -295,6 +299,12 @@ function wardFields(sim: Sim, e: number, team: number): { ward?: WardType; visio
   // jungle vision points (river vision, Spähfrucht): own team gets the radius for the fog overlay
   if (!w) return sim.c.Unit.team[e] === team ? { sight: sim.c.Vision.r[e]! } : {};
   return sim.c.Unit.team[e] === team ? { ward: w, vision: sim.c.Vision.r[e]! } : { ward: w };
+}
+
+/** Enemy items as last seen by `team` (seenItems.ts). */
+function seenRow(sim: Sim, team: number, slot: number): { items?: (string | null)[]; itemsSeen?: number } {
+  const s = seenItems(sim, team, slot);
+  return s ? { items: [...s.items], itemsSeen: s.tick } : {};
 }
 
 /** Public objective state (both teams). Read-only. */
@@ -573,7 +583,7 @@ export function teamEvents(sim: Sim, team: number): { events: SimEvent[]; audio:
       case 'castFail':
         return Unit.team[ev.src] === team; // team-private (buildSnapshot narrows it to the own champion)
       case 'zone':
-        // stealthed zones (Lysa E wire): enemies only under true sight at the moment it is placed
+        // stealthed zones (ability flag 'stealth'): enemies only under true sight at the moment it is placed
         if (ev.team === team) return true;
         return ev.stealth && (team === 0 || team === 1) ? trueSight(sim, team, ev.x, ev.y, ev.r) : pointVisible(sim, team, ev.x, ev.y);
       case 'gold':

@@ -215,3 +215,13 @@ settings (minimap scale/side, HP-bar style, enemy skillshot outline, quick-cast 
 Proposal: allow C to add fields to `Settings`/`DEFAULTS` in `src/settings.ts` (additive only, no renames), or move the
 file to `src/ui/settings.ts`. Until decided, C7 waits.
 
+
+## 2026-10-19 · Agent B · user decisions 19.10. (snapshot, additive) -> C please read
+
+1. Lysa E wire is visible again (lysa.json without the `stealth` flag): enemies get its zone event by normal point
+   vision. Seeds/traps/Schleierwards stay stealthed. The `stealth` ability flag still works (no ability uses it).
+2. Enemy items like LoL: `ScoreRow.items` now also for enemies = inventory as last seen while that champion was
+   visible (new system `src/sim/seenItems.ts` right after vision, per team; nothing updates from the fog), plus
+   `ScoreRow.itemsSeen` = tick of that sighting. Absent if the champion was never seen. Own team: live as before.
+   **For C:** scoreboard and target frame can show `row.items` for enemies (optionally dimmed / "seen x s ago" from
+   `itemsSeen`). A targeted enemy is visible, so its row is current that tick. Brain team unaffected (may read it).

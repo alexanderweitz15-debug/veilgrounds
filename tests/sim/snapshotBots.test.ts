@@ -96,6 +96,26 @@ describe('B3 snapshot additions', () => {
     expect(snap(sim, 0).entities.find((e) => e.id === a)!.exposed).toBeUndefined();
   });
 
+  it('enemy items as last seen: shown while visible, frozen in the fog, absent if never seen', () => {
+    const { sim, a, b } = duel();
+    const row = () => snap(sim, 0).players.find((r) => r.slot === 5)!;
+    expect(row().items).toBeUndefined(); // brom was never in blue's vision
+    inventory(sim, b)[0] = 'langschwert';
+    place(sim, b, CX + 400, CY);
+    step(sim);
+    expect(row().items![0]).toBe('langschwert');
+    const seenAt = row().itemsSeen!;
+    place(sim, b, CX + 6000, CY);
+    steps(sim, 3);
+    inventory(sim, b)[1] = 'langschwert';
+    steps(sim, 3);
+    expect(row().items![1]).toBeNull(); // bought in the fog: not known
+    expect(row().itemsSeen).toBeLessThanOrEqual(seenAt + 3);
+    expect(snap(sim, 1).players.find((r) => r.slot === 5)!.items![1]).toBe('langschwert'); // own team: live
+    expect(snap(sim, 1).players.find((r) => r.slot === 0)!.items).toBeDefined(); // red saw mira at CX
+    void a;
+  });
+
   it('atkTarget: tower and minion target choice is in the view; hidden targets are masked to -1', () => {
     const { sim, a, b } = duel();
     // red champion visible to blue, "attacking" a unit blue cannot see

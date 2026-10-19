@@ -158,7 +158,7 @@ export type SimEvent =
       until?: number;
       /** Centre follows the caster until it resolves (self AoEs with a delay). */
       follow?: boolean;
-      /** Stealthed zone (ability flag 'stealth', Lysa E wire): enemies get it only under true sight (wards.ts). */
+      /** Stealthed zone (ability flag 'stealth'; unused since the Lysa wire is visible): enemies get it only under true sight. */
       stealth?: true;
     }
   | { e: 'gameOver'; winner: number };

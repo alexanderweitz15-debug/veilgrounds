@@ -21,6 +21,24 @@ const laneTowerAlive = (towers: SnapEntity[], p: Pt): boolean => towers.some((t)
 export function laneSpot(v: View, ctx: BotStatic, lane: LaneName, behind: number): Pt {
   const side = ctx.map.sides[ctx.team];
   const pts = side.lanes[lane];
+  const f = laneFronts(v, ctx, lane);
+  let stand = f.anchor - behind;
+  if (f.enemyTower < Infinity && f.ownFront < f.enemyTower - 700) stand = Math.min(stand, f.enemyTower - 1050);
+  return lanePoint(pts, Math.max(0, stand));
+}
+
+/** Wave fronts and lane towers along the lane polyline; cached per entity list (the reflex layer's per-team view is
+ *  shared by the team's bots every tick). */
+const FRONTS = new WeakMap<readonly SnapEntity[], Map<string, { anchor: number; ownFront: number; enemyTower: number }>>();
+
+function laneFronts(v: View, ctx: BotStatic, lane: LaneName): { anchor: number; ownFront: number; enemyTower: number } {
+  let byKey = FRONTS.get(v.snap.entities);
+  if (!byKey) FRONTS.set(v.snap.entities, (byKey = new Map()));
+  const key = `${ctx.team}:${lane}`;
+  const hit = byKey.get(key);
+  if (hit) return hit;
+  const side = ctx.map.sides[ctx.team];
+  const pts = side.lanes[lane];
   let ownFront = -Infinity;
   for (const m of v.ownMinions) {
     const p = laneProgress(pts, m);
@@ -38,9 +56,9 @@ export function laneSpot(v: View, ctx: BotStatic, lane: LaneName, behind: number
   let anchor: number;
   if (ownFront > -Infinity) anchor = enemyFront < Infinity ? Math.min(ownFront, enemyFront) : ownFront;
   else anchor = enemyFront < Infinity ? enemyFront : ownTower + 700;
-  let stand = anchor - behind;
-  if (enemyTower < Infinity && ownFront < enemyTower - 700) stand = Math.min(stand, enemyTower - 1050);
-  return lanePoint(pts, Math.max(0, stand));
+  const out = { anchor, ownFront, enemyTower };
+  byKey.set(key, out);
+  return out;
 }
 
 /** Damage per second currently aimed at enemy minion `m` by the bot's own minions and towers (all visible). */

@@ -217,6 +217,8 @@ export interface Snapshot {
   kesselbrut?: number;
   /** Public objective state of both teams (index = team), C2 proposal; absent for spectators. */
   objectives?: SnapObjectives;
+  /** Kesselbrut stacks of both teams [blue, red] (same as objectives.kesselbrut; C reads it); absent while both 0. */
+  kesselbrutTeams?: [number, number];
   /** Active true-sight areas of the viewing team (own Siegelward circles, running Suchfeuer sweeps); absent if none. */
   reveals?: SnapReveal[];
 }
@@ -484,6 +486,7 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
   return {
     tick: sim.tick, time: sim.tick / 30, team, entities, projectiles, objects, me: hud, events, audio, players: scoreRows(sim, team),
     ...(trainer ? { trainer } : {}), ...(kessel ? { kesselbrut: kessel } : {}), ...(objectives ? { objectives } : {}),
+    ...(objectives && (objectives.kesselbrut[0] || objectives.kesselbrut[1]) ? { kesselbrutTeams: objectives.kesselbrut } : {}),
     ...(reveals.length ? { reveals } : {}),
   };
 }

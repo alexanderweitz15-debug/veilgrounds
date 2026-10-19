@@ -1,0 +1,12 @@
+{
+  "note": "Gold value per stat point for the shop's gold efficiency (C7/FEATURE-GAP 5.3). Stats that have a single-stat basic item (or boots: msFlat) are derived from that item at runtime (src/ui/goldEfficiency.ts); these are the reference values for stats without one, from the LoL wiki method (14.x), scaled to Veilgrounds basic-item prices where a LoL counterpart exists.",
+  "reference": {
+    "critPct": 40,
+    "lifestealPct": 37.5,
+    "lethality": 30,
+    "haste": 50,
+    "msPct": 39.5,
+    "healShieldPowerPct": 55,
+    "manaRegenPct": 4
+  }
+}

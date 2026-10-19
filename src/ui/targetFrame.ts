@@ -132,7 +132,7 @@ export class TargetFrame {
     const row = champ ? snap.players.find((p) => p.slot === e.slot) : undefined;
     const info = row ? `${row.kills} / ${row.deaths} / ${row.assists} · CS ${row.cs}` : '';
     if (this.info.textContent !== info) this.info.textContent = info;
-    // items: own team only (enemy items are not in the fog-filtered snapshot)
+    // items of any row that carries them (own team today; enemies once the sim sends last-seen items, user 19 Oct)
     const items = row?.items ?? [];
     const ik = items.join(',');
     if (ik !== this.itemKey) {

@@ -137,7 +137,7 @@ function afterGame(config: SimConfig | null, r?: SessionResult): void {
   if (!r.analysis && !auto) return mainMenu();
   const s = screen();
   void Promise.all([import('./ui/postGame'), import('./game/session')]).then(([{ renderPostGame }, { isTrainerMode }]) => {
-    if (s.isConnected) renderPostGame(s, r.summary, mainMenu, isTrainerMode(config.mode) ? () => afterGame(config, { ...r, retry: true }) : undefined);
+    if (s.isConnected) renderPostGame(s, r.summary, mainMenu, isTrainerMode(config.mode) || config.mode === 'classic' ? () => afterGame(config, { ...r, retry: true }) : undefined);
   });
 }
 

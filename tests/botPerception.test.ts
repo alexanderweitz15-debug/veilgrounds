@@ -274,7 +274,9 @@ describe('snapshot audio cues (sim side)', () => {
 });
 
 describe('spec test 7: no omniscience', () => {
-  const L_NODES = new Set(['escape', 'gankRisk', 'jungleGank', 'counterGank', 'roam', 'enemyRoam']);
+  // + BRAIN-REWORK log nodes (reflex plans, utility intents, attention windows, error episodes): any x/y they log must
+  // carry the seen/cloud/self/static tag (supervisor, review-checklist §1 #6)
+  const L_NODES = new Set(['escape', 'gankRisk', 'jungleGank', 'counterGank', 'roam', 'enemyRoam', 'reflex', 'utility', 'intent', 'wave', 'plan', 'attention', 'error']);
 
   it('1000 random states: the log never contains an enemy position the team has not seen (scripted)', () => {
     const rng = new Rng(77);
@@ -339,11 +341,14 @@ describe('spec test 7: no omniscience', () => {
 });
 
 describe('fog guard (static)', () => {
-  it('perception, gank and roam modules never import sim state (sim, ecs, vision, bitecs)', () => {
+  it('perception, gank, roam, reflex, utility and humanize modules never import sim state (sim, ecs, vision, bitecs) or clocks', () => {
     const sources = {
       ...import.meta.glob<string>('../src/ai/perception/*.ts', { query: '?raw', import: 'default', eager: true }),
       ...import.meta.glob<string>('../src/ai/ganks/*.ts', { query: '?raw', import: 'default', eager: true }),
       ...import.meta.glob<string>('../src/ai/roams/*.ts', { query: '?raw', import: 'default', eager: true }),
+      // BRAIN-REWORK directories (supervisor, review-checklist §1 #6): guarded before they exist; perf timing belongs
+      // to harness/runner, never to brain code
+      ...import.meta.glob<string>(['../src/ai/reflex/*.ts', '../src/ai/plan.ts', '../src/ai/utility/*.ts', '../src/ai/humanize/*.ts', '../src/ai/errors.ts'], { query: '?raw', import: 'default', eager: true }),
     };
     expect(Object.keys(sources).length).toBeGreaterThan(12);
     for (const [f, src] of Object.entries(sources)) {

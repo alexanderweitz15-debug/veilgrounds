@@ -25,10 +25,24 @@ Ist-Zustand mit Screenshots: [docs/IST-ZUSTAND.md](IST-ZUSTAND.md) · Bot-Gehirn
 - [~] Kills ~34 statt 40–60, erster Turm ~18 min statt 12–16
 - [~] CS der Bots ~40 % von Tabelle A in Partien (allein auf der Lane 5,6–7,8 CS/min; Verluste durch Abwesenheit)
 - [ ] Trainingsplan + Verlauf über mehrere Matches (Phase 5)
-- [ ] Großes Bot-Gehirn-Rework (Farm: Bots stehen zwischen Last-Hits herum, siehe BRAIN-IST.md §9) – Prompt vom Nutzer folgt
-- [ ] Scoreboard: Drachen/Seele/Objective-Übersicht; tote Gegner/Verbündete mit Timer über der Minimap
-- [ ] Manche Fähigkeiten halten den Champion fälschlich an (z. B. W-artige Fähigkeiten, die im Laufen gehen sollten)
-- [ ] Toplane: nach 1500 Gold aus Minions Teleport als 3. Beschwörerzauber
+- [~] Großes Bot-Gehirn-Rework (docs/BRAIN-REWORK.md; Stand nach Integrations-Merge e576592, DECISIONS „Integration … ohne Gate-Review", 2026-10-19). Alles liegt auf main, aber **im Spiel ist nichts davon aktiv** (Reflex-Schicht nur mit `--reflex=true`, Nutzenmodell nur mit `BOT_UTILITY=1`, Aufmerksamkeitsmodell nicht verdrahtet):
+  - [x] Phase 0 Messbasis (A1): bot-sim `--report`, csLossByCause, `--variance=0`, `--scenario=laneAlone`; offen: Gold/Diamant/Challenger-Baseline im Bericht (a1.md Platzhalter) nachtragen
+  - [~] Phase 1 Reflex-Schicht + Angriffs-Scheduler (A1): Gate rot – Lane-allein Iron 69 (< 70), Gold out_of_range, Reflex-Kosten 0,10 ms (Ziel 0,05), Reflex an farmt schlechter als aus (2,68 vs 3,08 CS/min); Tests 2 + 4 übersprungen (tests/brainReflex.test.ts); Reflex im Spiel (`src/sim/worker.ts`) erst nach grünem Gate einschalten
+  - [ ] Phase 2 Wellenzustände + Harass (A1): nicht begonnen; Voraussetzung B1–B3 ist seit dem Merge erfüllt
+  - [~] Phase 3 Nutzenmodell (A2): Gerüst hinter `BOT_UTILITY=1`; mit Flag 3,33 CS/min, aber Recalls 1,36/min und Roams 0 → Wertkalibrierung; Baum-Einbindung A2-1/A2-2/A2-3 (shared-changes.md) noch Vorschlag; Kesselbrut-Kandidat, Jungler-Platten-Dive, Belagern ab 11:00, `convert:`-Log, Team-KI-Takt nach Rang offen
+  - [~] Phase 4 Kampf (A2): Chase-Abbruch, Dive-Aggro-Wechsel, Fokus-Hysterese, Commit-Regel nur hinter dem Flag; Gate (Kills 45–55, Tode ohne Gegner ≤ 5 %) nicht gemessen
+  - [~] Phase 5 Menschlichkeit (A3): Modell + Daten + F9-Spalten fertig, aber nicht verdrahtet (A3-4..A3-9: runner.ts, lasthit.ts, leaves.ts, Fehler-Aufrufstellen, Ping „Mein Fehler"); Test 10 Klausel 3 todo
+  - [ ] Phase 6 Rang-Tuning (A3): wartet auf Phase 4
+  - [ ] Gate-Messungen je Phase durch den Aufsichts-Agenten (docs/agents/review-checklist.md) – bisher keine; Fog-Guard-Erweiterung docs/agents/supervisor-fog-guards.patch (cdb56e7) noch nicht angewendet
+  - [ ] docs/BRAIN-IST.md komplett neu schreiben (A3, nach Phase 6)
+- [x] Scoreboard: Objective-Leiste, Todestimer über der Minimap, Beschwörerzauber-Timer (C2, docs/ist/c2-*); offen: Browserprüfung durch S, Spielstil-Skalen/Rang-Kalibrierung pro Bot (braucht A3-API), exakte gegnerische Kesselbrut-Stacks (C-Vorschlag an B in shared-changes.md)
+- [x] Manche Fähigkeiten halten den Champion fälschlich an → B2: `movesWhileCasting` + `castTime` für alle 26×4 + Beschwörer (docs/ability-cast-audit.md); offen: brain.ts `busyUntil` soll diese Casts nicht mehr sperren (B-Hinweis, shared-changes.md)
+- [ ] Toplane: nach 1500 Gold aus Minions Teleport als 3. Beschwörerzauber (B4, nicht begonnen)
+- [ ] Agent B offen: B5 Mechanik-Feinschliff (Dash-/Knock-up-Flags, atkStart/atkEnd im Render, Blickrichtung, Auto-Reset, Treffer-Aufhellung), B6 Kesselbrut als Objective, B7 Ladezeit (gebackene Atlanten), B8 Branch-bot-sim/volle Suite nach B3 nachholen
+- [ ] Agent C offen: C5 Lobby (Prägungen-Editor, Bann-Phase, Rollentausch, Bot-Konfiguration prüfen), C7 Einstellungen (braucht Entscheidung zu src/settings.ts), Shop-Rückgängig (Sim-Befehl, B), „Nochmal" nach Classic (issues.md), Post-Game-Fehlerliste + Spielstil-Skalen (nach A3)
+- [ ] Agent D offen: D1 Fähigkeiten-Anzeige-Audit der 23 Champions (nur Motiv-JSON begonnen, ungetestet), D2 Kampf-Lesbarkeit, D3 Maßstab/Karte, D4 Sprite-Revision (lokaler Stand docs/style/revision pushen), D5 Trainer-Reste (Trainingsplan, Verlauf), D6 Tooltips/Texte; Portrait-Ausschnitte (issues.md)
+- [ ] Agent E: Champion „Sev Aschenblick" (docs/champions/sev.md): Daten, Registry, Hooks (Nachbild, Q-Finte, Schwarzglut, Trugbild, R-Bann), Sim-Erweiterungen Fear-CC + `uncleansable` (B-Gebiet, shared-changes.md), Tests, Sprite/UI, Bot-Regeln (issues.md) – noch kein Code
+- [ ] 5-Minuten-Browserprüfung nach den C/D-Merges (AGENTS-PLAN §2) und Screenshot-Abnahme der D-Änderungen durch S
 
 ---
 

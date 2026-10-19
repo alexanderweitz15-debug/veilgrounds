@@ -13,6 +13,12 @@ describe('i18n', () => {
     expect(e.filter((k) => !(k in de)), 'missing in de.json').toEqual([]);
   });
 
+  it('loading-screen tips are numbered tip.1 .. tip.12 without gaps (classicLobby TIP_COUNT)', () => {
+    const n = Object.keys(de).filter((k) => /^tip\.\d+$/.test(k)).length;
+    expect(n).toBe(12);
+    for (let i = 1; i <= n; i++) expect(de).toHaveProperty([`tip.${i}`]);
+  });
+
   it('placeholders match and no string is empty', () => {
     const D = de as Record<string, string>;
     const E = en as Record<string, string>;

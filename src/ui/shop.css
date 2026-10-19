@@ -65,6 +65,8 @@
 .sp-cost { display: flex; align-items: center; gap: 6px; margin-top: 4px; font: 700 17px 'Barlow Condensed', sans-serif; color: #ffd24a; }
 .sp-full { color: #8f866f; text-decoration: line-through; font-size: 14px; }
 .sp-stats { display: flex; flex-direction: column; gap: 3px; }
+.sp-goldeff { margin: 6px 0 2px; font-size: 12.5px; color: #c8bfa8; cursor: help; }
+.sp-goldeff.good { color: #f3d98c; }
 .sp-stat { display: flex; align-items: center; gap: 6px; color: #cfe3b0; font-size: 14px; }
 .sp-stat-icon { width: 18px; height: 18px; background-size: cover; }
 .sp-effect { padding: 6px 8px; background: rgba(255, 255, 255, 0.03); border-left: 2px solid #8a7550; font-size: 13px; color: #d8d0bf; }

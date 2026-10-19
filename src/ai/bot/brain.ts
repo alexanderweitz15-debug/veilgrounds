@@ -234,7 +234,9 @@ export function retreat(n: NodeCtx): NodeResult {
   // brain rework §4.6 heal path: with the utility model the walk home is the recall candidate's decision (stay-death
   // > 0.3 or an item, src/ai/utility/value.ts recallValue); retreat only flees
   const util = utilityOn(ctx);
-  const goHome = !util && (v.hpPct < lowHp || (mem.mode === 'retreat' && v.hpPct < 0.4) || mem.mode === 'home');
+  // (below the retreat line the bot still walks home with the flag: measured 17 % deaths without an enemy champion
+  // when the utility sent such bots back to the wave / tower, A2 calibration 19 Oct)
+  const goHome = v.hpPct < lowHp || (!util && ((mem.mode === 'retreat' && v.hpPct < 0.4) || mem.mode === 'home'));
   if (goHome) {
     // a recall broken by damage (DoT, unseen attacker) is retried only after 6 s of walking home: no recall spam
     if (safe && dst(v.self, home) > 2500 && near(v.enemyMinions, v.self, 650).length === 0 && v.tick - mem.ext.recallTryAt > 6 * 30) {

@@ -68,7 +68,9 @@ export function farmValue(w: World): CandidateValue | null {
   const presence = w.laneRate * h * (h / (h + travel));
   const benefit = Math.max(near, presence);
   const risk = w.gankRisk * w.deathCost * W.farmRisk;
-  return { benefit, cost: risk, horizonS: h, terms: { minions: near, presence, travelS: travel, gankRisk: w.gankRisk, risk } };
+  // staying in contact at low HP (minions, tower, a poke): the death the bot risks by not going home (§4.6)
+  const exposure = stayDeathProb(w) * w.deathCost * W.exposureFarm;
+  return { benefit, cost: risk + exposure, horizonS: h, terms: { minions: near, presence, travelS: travel, gankRisk: w.gankRisk, risk, exposure } };
 }
 
 // ------------------------------------------------------------------ poke (ability harass, §4.3 / §5)
@@ -239,7 +241,9 @@ export function pushValue(w: World): CandidateValue | null {
   const benefit = plates + structure + wavePush;
   const risk = w.gankRisk * w.deathCost * W.pushGankRisk;
   const ret = laneOpponentAway(w, lane) ? 0 : w.deathCost * W.pushEnemyReturn * 0.1;
-  return { benefit, cost: risk + ret, horizonS: h, terms: { plates, structure, wave: wavePush, risk, enemyReturn: ret, afterGank: jungler ? 1 : 0 }, ...(jungler ? { data: { lane } } : {}) };
+  // pushing walks into the enemy wave / tower: low HP costs more here than when farming behind the wave
+  const exposure = stayDeathProb(w) * w.deathCost * W.exposurePush;
+  return { benefit, cost: risk + ret + exposure, horizonS: h, terms: { plates, structure, wave: wavePush, risk, enemyReturn: ret, exposure, afterGank: jungler ? 1 : 0 }, ...(jungler ? { data: { lane } } : {}) };
 }
 
 // ------------------------------------------------------------------ roam (§5, §7.3)

@@ -46,6 +46,16 @@
 .classic-panel .preset-card.selected { border-color: var(--gold, #c8aa6e); background: rgba(200,170,110,0.08); }
 .classic-panel .preset-card .preset-name { font-family: var(--font-label, sans-serif); text-transform: uppercase; letter-spacing: 0.05em; color: var(--gold-hi, #f0e6d2); }
 .classic-panel .preset-card .preset-desc, .classic-panel .preset-card .runes { font-size: 12px; color: var(--text-dim, #a09b8c); margin-top: 2px; }
+/* C5: own rune page editor (classic lobby) */
+.re-toggle { margin-top: 6px; }
+.rune-editor { margin-top: 6px; padding: 8px; border: 1px solid #2c2c30; background: rgba(255, 255, 255, 0.02); }
+.re-label { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold, #c8aa6e); margin: 4px 0; }
+.re-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.re-rune { width: 32px; height: 32px; padding: 0; border: 1px solid #3a3226; background: #15120f center / cover no-repeat; cursor: pointer; opacity: 0.55; }
+.re-rune.key { width: 40px; height: 40px; }
+.re-rune.on { opacity: 1; border-color: var(--gold, #c8aa6e); box-shadow: 0 0 0 1px var(--gold, #c8aa6e); }
+.re-save { margin-top: 8px; }
+.re-save:disabled { opacity: 0.45; cursor: default; }
 .rank-row { display: flex; align-items: center; gap: 12px; }
 .rank-slider { flex: 1; accent-color: var(--gold, #c8aa6e); }
 .rank-value { min-width: 110px; font-family: var(--font-label, sans-serif); text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold-hi, #f0e6d2); }

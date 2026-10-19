@@ -26,6 +26,16 @@ describe('settings export / import', () => {
     expect(r.skipped.sort()).toEqual(['bogus', 'keybind:nope', 'keybind:w', 'lang', 'runePresets', 'uiScale']);
   });
 
+  it('per-key cast modes: unknown keys/modes dropped; default follows castIndicator', async () => {
+    const { castModeFor } = await import('../src/input/castMode');
+    const text = JSON.stringify({ version: 1, settings: { castModes: { q: 'normal', w: 'fast', x: 'quick' } }, keybinds: {} });
+    const r = parseSettingsFile(text, DEFAULT_SETTINGS, ACTIONS);
+    expect(r.settings.castModes).toEqual({ q: 'normal' });
+    const s = { castIndicator: true, castModes: r.settings.castModes };
+    expect([0, 1, 2, 3].map((i) => castModeFor(s, i as 0))).toEqual(['normal', 'indicator', 'indicator', 'indicator']);
+    expect(castModeFor({ castIndicator: false }, 2)).toBe('quick');
+  });
+
   it('throws on invalid JSON', () => {
     expect(() => parseSettingsFile('{nope', DEFAULT_SETTINGS, ACTIONS)).toThrow();
   });

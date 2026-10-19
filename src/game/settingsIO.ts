@@ -40,6 +40,13 @@ export function parseSettingsFile(text: string, defaults: Readonly<Settings>, ac
     const key = k as keyof Settings;
     const d = defaults[key];
     const ok = d !== undefined && typeof v === typeof d && (typeof d !== 'object' || (v !== null && !Array.isArray(v))) && (!ENUMS[key] || ENUMS[key]!.includes(v as string)) && (typeof v !== 'number' || Number.isFinite(v));
+    if (key === 'castModes' && ok) {
+      // per-key cast modes: only known keys and modes survive
+      const cm: Settings['castModes'] = {};
+      for (const [ck, cv] of Object.entries(v as object)) if (['q', 'w', 'e', 'r'].includes(ck) && ['quick', 'indicator', 'normal'].includes(cv as string)) cm[ck as 'q'] = cv as 'quick';
+      out.castModes = cm;
+      continue;
+    }
     const range = RANGES[key];
     if (ok) (out as Record<string, unknown>)[key] = range ? Math.min(range[1], Math.max(range[0], v as number)) : v;
     else skipped.push(k);

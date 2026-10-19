@@ -211,6 +211,8 @@ Log of C's additive changes to `src/settings.ts`:
 - 2026-10-19 (`c7: minimap size/side, settings export/import`): `Settings.minimapScale` (80..150, default 100),
   `Settings.minimapLeft` (default false), `export const DEFAULT_SETTINGS` (read-only alias of DEFAULTS for the import
   validator in src/game/settingsIO.ts). No rename, no removal.
+- 2026-10-19 (`c7: per-key cast modes`): `Settings.castModes` (per Q/W/E/R: quick / indicator / normal; default `{}`
+  = follow `castIndicator`).
 
 `src/settings.ts` is not in C's file list (AGENTS-PLAN §7 lists src/ui, src/game, src/i18n, src/input). C7 needs new
 settings (minimap scale/side, HP-bar style, enemy skillshot outline, quick-cast per key, settings export/import).

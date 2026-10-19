@@ -41,6 +41,8 @@ export interface Settings {
   minimapScale: number;
   /** Minimap at the bottom left instead of the bottom right (C7). */
   minimapLeft: boolean;
+  /** Cast mode per ability key (C7, src/input/castMode.ts); missing keys follow castIndicator. */
+  castModes: Partial<Record<'q' | 'w' | 'e' | 'r', 'quick' | 'indicator' | 'normal'>>;
 }
 
 const DEFAULTS: Settings = {
@@ -64,6 +66,7 @@ const DEFAULTS: Settings = {
   runePresets: {},
   minimapScale: 100,
   minimapLeft: false,
+  castModes: {},
 };
 
 /** Default values (settings import validates keys and types against them). */

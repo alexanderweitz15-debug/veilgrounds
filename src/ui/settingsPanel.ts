@@ -4,6 +4,7 @@ import { t } from '../i18n';
 import { DEFAULT_SETTINGS, settings, updateSettings, type Settings } from '../settings';
 import { ACTIONS, applyBinds, binds, keyLabel, resetBinds, setBind, type Action } from '../input/keybinds';
 import { exportSettings, parseSettingsFile } from '../game/settingsIO';
+import { CAST_KEYS, CAST_MODES, type CastMode } from '../input/castMode';
 
 export function buildSettingsPanel(onLang: () => void): HTMLElement {
   const root = document.createElement('div');
@@ -103,6 +104,16 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.damageNumbers'), check('damageNumbers'));
     row(t('set.attackMoveOnCursor'), check('attackMoveOnCursor'));
     row(t('set.castIndicator'), check('castIndicator'));
+    // cast mode per ability key (LoL: quick / quick with indicator / normal)
+    for (const k of CAST_KEYS) {
+      const cur = settings.castModes?.[k] ?? 'default';
+      row(t('set.castMode', { key: keyLabel(binds[k]) }), select<CastMode | 'default'>(cur, [['default', t('set.castMode.default')], ...CAST_MODES.map((m): [CastMode, string] => [m, t(`set.castMode.${m}`)])], (v) => {
+        const next = { ...settings.castModes };
+        if (v === 'default') delete next[k];
+        else next[k] = v;
+        updateSettings({ castModes: next });
+      }));
+    }
     row(t('set.edgeScroll'), check('edgeScroll'));
     row(t('set.cameraLocked'), check('cameraLocked'));
     row(t('set.fullscreenLock'), check('fullscreenLock'));

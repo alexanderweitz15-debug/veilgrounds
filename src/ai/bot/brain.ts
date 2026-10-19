@@ -336,6 +336,9 @@ function currentLane(n: NodeCtx): LaneName {
   return n.mem.ext.laneOverride ?? n.ctx.lane ?? (['top', 'mid', 'bot'] as const)[Math.floor(n.v.time / (2 * b.macroIntervalS)) % 3]!;
 }
 
+/** §4.3: no harass filler from this gank risk on. */
+const HARASS_MAX_GANK_RISK = 0.6;
+
 /** Reflex wave label of the tree's wave state (rework §4.5 names; Phase 2 replaces chooseWave). */
 const REFLEX_WAVE: Record<string, LaneIntent['wave']> = { crash: 'push', default: 'neutral', slowPush: 'slowPush', freeze: 'freeze', hold: 'hold' };
 
@@ -400,7 +403,8 @@ export function laneLeaf(n: NodeCtx): NodeResult {
     farm: farm && !wardWalk,
     pushMinions: farm && !wardWalk && pushOk && slowPushOk,
     hitStructures: true,
-    harass: false, // Phase 2 (§4.3)
+    // §4.3 harass filler (budget, aggro and CS-window rules in the reflex layer): not under high gank risk
+    harass: !wardWalk && (n.pv.gankRisk[lane] ?? 0) < HARASS_MAX_GANK_RISK,
     behind,
     ...(side ? { side } : {}),
     setTick: v.tick,

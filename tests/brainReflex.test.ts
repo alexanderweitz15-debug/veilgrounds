@@ -74,6 +74,54 @@ describe('reflex layer: last hits independent of the decision rate (tests 2, 4)'
   }, 300_000);
 });
 
+describe.skip('reflex layer: harass without CS loss (test 5)', () => {
+  it('Gold vs a passive enemy laner in reach, 3 min from 1:40: >= 12 harass autos, no lane minion lost while harassing', () => {
+    const players: PlayerSetup[] = [
+      { slot: 0, team: 0, champion: 'mira', role: 'mid', summoners: ['sprung', 'heilen'], isHuman: false, bot: { rank: 'gold', variance: 'normal', playstyle: { vision: -5 } } },
+      { slot: 5, team: 1, champion: 'ilvane', role: 'mid', summoners: ['sprung', 'heilen'], isHuman: true },
+    ];
+    seedPersonalities(6, players);
+    const config: SimConfig = { seed: 6, mode: 'laneOnly', minionLanes: [Lane.Mid], players };
+    const sim = createSim(config);
+    const bots = new BotRunner(config, undefined, { noVariance: true, noSpells: true, reflex: true });
+    const me = sim.slots[0]!;
+    const foe = sim.slots[5]!;
+    const { Unit, Pos, Atk, Stats } = sim.c;
+    let harass = 0;
+    let lostWhileHarassing = 0;
+    while (sim.tick < 280 * 30) {
+      const inputs = bots.tick(sim).filter((i) => i.cmd.t !== 'cast' && i.cmd.t !== 'recall' && i.cmd.t !== 'ward');
+      // the passive enemy laner: stands beside its own wave (450 off the lane, as when it steps up for a last hit), never attacks
+      if (sim.tick % 15 === 0) {
+        let fx = 0;
+        let fy = 0;
+        let n = 0;
+        for (let e = 0; e < 4096; e++) {
+          if (!Unit.alive[e] || Unit.team[e] !== 1 || !isMinion(Unit.kind[e]!)) continue;
+          fx += Pos.x[e]!;
+          fy += Pos.y[e]!;
+          n++;
+        }
+        const tx = n ? fx / n + 320 : 9000;
+        const ty = n ? fy / n - 320 : 9000;
+        if (Math.hypot(Pos.x[foe]! - tx, Pos.y[foe]! - ty) > 80) inputs.push({ slot: 5, cmd: { t: 'move', x: tx, y: ty } });
+      }
+      step(sim, inputs);
+      if (sim.tick < 100 * 30) continue;
+      for (const ev of sim.events) {
+        if (ev.e === 'damage' && ev.src === me && ev.dst === foe && ev.auto) harass++;
+        if (ev.e === 'death' && isMinion(ev.kind) && ev.team === 1 && ev.killer !== me) {
+          const d = Math.hypot(Pos.x[me]! - ev.x, Pos.y[me]! - ev.y);
+          if (d <= Stats.range[me]! + 200 && Atk.target[me] === foe) lostWhileHarassing++;
+        }
+      }
+    }
+    console.log(`harass autos 1:40-4:40: ${harass}, lane minions lost while harassing: ${lostWhileHarassing}`);
+    expect(harass).toBeGreaterThanOrEqual(12);
+    expect(lostWhileHarassing).toBe(0);
+  }, 300_000);
+});
+
 describe('reflex layer: window collisions (test 3)', () => {
   it('Diamond loses fewer last hits to colliding windows than Gold (window preparation 80 % vs 30 %)', () => {
     const lost = (rank: Rank): { coll: number; cs: number } => {

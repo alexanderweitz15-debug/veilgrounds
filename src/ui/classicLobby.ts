@@ -9,6 +9,7 @@ import { SUMMONERS } from '../sim/summoners';
 import { RUNES, runePresets } from '../sim/items/runes';
 import { CUSTOM_ID, customPage, loadRunePages, runesFor } from '../game/runePages';
 import { renderRuneEditor } from './runePages';
+import { MAX_BANS, applyBans, toggleBan } from '../game/bans';
 import { classicConfig } from '../ai/runner';
 import { botNames } from '../ai/humanize/names';
 import { RANKS, type Rank } from '../ai/profiles/schema';
@@ -61,6 +62,9 @@ const pick = {
   advanced: false,
   /** Own rune page editor open (C5). */
   editRunes: false,
+  /** Optional ban phase (C5): banned champion ids and whether the ban grid is open. */
+  bans: new Set<string>(),
+  banOpen: false,
 };
 
 export const championsFor = (role: Role): string[] =>
@@ -82,6 +86,7 @@ export function buildClassicConfig(): SimConfig {
     runes: runesFor(champ, presetId),
     variance: pick.variance,
   });
+  applyBans(cfg.players, pick.bans, championsFor, Object.keys(CHAMPION_DATA).sort());
   cfg.botToxicity = settings.botToxicity;
   const bots = cfg.players.filter((p) => !p.isHuman && p.bot);
   const names = botNames(new Rng(pick.seed ^ 0x5eed), bots.length, 'realistic', Object.values(CHAMPION_DATA).map((c) => c.name));
@@ -172,7 +177,9 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
     const grid = el('div', 'champ-grid', left);
     for (const id of championsFor(pick.role)) {
       const d = CHAMPION_DATA[id]!;
-      const c = el('button', `champ-card${id === pick.champ ? ' selected' : ''}`, grid);
+      const banned = pick.bans.has(id);
+      const c = el('button', `champ-card${id === pick.champ ? ' selected' : ''}${banned ? ' banned' : ''}`, grid);
+      c.disabled = banned;
       setPortrait(el('div', 'champ-portrait', c, champName(id).charAt(0)), id);
       el('div', 'champ-name', c, champName(id));
       el('div', 'champ-title', c, d.title[settings.lang]);
@@ -281,6 +288,17 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
         setPortrait(el('span', 'bot-portrait', row), p.champion);
         el('span', 'bot-champ', row, champName(p.champion));
         el('span', 'bot-name', row, p.isHuman ? t('score.you') : (p.bot?.name ?? 'Bot'));
+        // role swap with an allied bot (LoL champ select): you take its role, it takes yours
+        if (!p.isHuman && team === 0) {
+          const sw = el('button', 'role-swap', row, '⇄');
+          sw.title = t('classic.roleSwap', { role: t(`role.${p.role}`) });
+          sw.addEventListener('click', () => {
+            pick.role = p.role;
+            if (!championsFor(pick.role).includes(pick.champ)) pick.champ = championsFor(pick.role).find((c) => !pick.bans.has(c)) ?? pick.champ;
+            pick.summoners = null;
+            draw();
+          });
+        }
         if (!p.isHuman && p.bot) {
           if (!pick.advanced) {
             el('span', `bot-rank-badge rank-${p.bot.rank}`, row, t(`rank.${p.bot.rank}`));
@@ -306,11 +324,31 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
       pick.seed = (Math.random() * 2 ** 31) | 0;
       draw();
     });
+    const banBtn = el('button', `menu-btn secondary${pick.banOpen ? ' active' : ''}`, tools, `${t('classic.bans', { n: pick.bans.size, max: MAX_BANS })} ${pick.banOpen ? '▾' : '▸'}`);
+    banBtn.addEventListener('click', () => {
+      pick.banOpen = !pick.banOpen;
+      draw();
+    });
     const adv = el('button', `menu-btn secondary${pick.advanced ? ' active' : ''}`, tools, `${t('classic.advanced')} ${pick.advanced ? '▾' : '▸'}`);
     adv.addEventListener('click', () => {
       pick.advanced = !pick.advanced;
       draw();
     });
+    if (pick.banOpen) {
+      // ban phase (optional): click champions to ban them; bots that rolled one get another of their role
+      el('div', 'field-label', right, t('classic.bansHint'));
+      const bg = el('div', 'ban-grid', right);
+      for (const id of Object.keys(CHAMPION_DATA).sort((a, b) => champName(a).localeCompare(champName(b)))) {
+        const b = el('button', `ban-card${pick.bans.has(id) ? ' banned' : ''}`, bg);
+        setPortrait(el('span', 'ban-portrait', b, champName(id).charAt(0)), id);
+        b.title = champName(id);
+        b.disabled = id === pick.champ;
+        b.addEventListener('click', () => {
+          toggleBan(pick.bans, id, pick.champ);
+          draw();
+        });
+      }
+    }
     if (pick.advanced) {
       el('div', 'field-label', right, t('classic.variance'));
       const vr = el('div', 'role-tabs', right);

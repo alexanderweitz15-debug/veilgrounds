@@ -90,6 +90,8 @@ function iconEl(parent: HTMLElement, id: string, cls = 'sp-icon'): HTMLElement {
 export interface ShopHooks {
   buy(item: string): void;
   sell(slot: number): void;
+  /** Team chat line (Alt+click item ping, C4). */
+  say?(text: string): void;
 }
 
 export class ShopPanel {
@@ -315,6 +317,16 @@ export class ShopPanel {
     }
   }
 
+  private pingItem(it: ItemData): void {
+    const me = this.me;
+    if (!me || !this.hooks.say) return;
+    const name = it.name[settings.lang];
+    if (me.items.includes(it.id)) return this.hooks.say(t('chat.itemPing', { item: name }));
+    const q = this.canBuy(me, it);
+    const missing = Math.max(0, Math.ceil(q.price - me.gold));
+    this.hooks.say(missing > 0 ? t('chat.itemBuyingMissing', { item: name, gold: missing }) : t('chat.itemBuying', { item: name }));
+  }
+
   private card(me: PlayerHud, id: string, parent: HTMLElement, rec: boolean): void {
     const it = itemById(id);
     if (!it) return;
@@ -326,7 +338,11 @@ export class ShopPanel {
     if (q.price !== it.cost) price.classList.add('reduced');
     setTip(c, `item:${id}`);
     this.cards.push({ el: c, it, price });
-    c.addEventListener('click', () => this.select(id));
+    c.addEventListener('click', (e) => {
+      // LoL: Alt+click pings the item to the team (owned / buying, gold still missing)
+      if (e.altKey) return this.pingItem(it);
+      this.select(id);
+    });
     // right click buys directly (like LoL); checked against the latest gold, not the one at build time
     c.addEventListener('contextmenu', (e) => {
       e.preventDefault();

@@ -219,6 +219,15 @@ Log of C's additive changes to `src/settings.ts`:
   validator in src/game/settingsIO.ts). No rename, no removal.
 - 2026-10-19 (`c7: per-key cast modes`): `Settings.castModes` (per Q/W/E/R: quick / indicator / normal; default `{}`
   = follow `castIndicator`).
+- 2026-10-20 (`c7: hp bar style, enemy skillshot outline setting`): `Settings.hpBarStyle` ('segmented' | 'thousands' |
+  'plain', default 'segmented'; used by src/ui/overlay.ts), `Settings.enemySkillshotOutline` (boolean, default false).
+
+## 2026-10-20 · C → D · src/render/telegraph.ts · read `settings.enemySkillshotOutline` · proposed
+
+Affected: D only. The setting exists (settings panel row, import/export). Request: when it is on, enemy skillshot
+telegraphs (line / zone / cone of `e.team !== myTeam`) get a stronger outline (e.g. 2 px `REL.enemy` stroke at 0.9
+alpha, fill unchanged). No change for own/ally telegraphs. The settings row says "Darstellung folgt durch Agent D"
+until this lands; remove that suffix in de/en.json (`set.enemySkillshotOutline`) with the change.
 
 `src/settings.ts` is not in C's file list (AGENTS-PLAN §7 lists src/ui, src/game, src/i18n, src/input). C7 needs new
 settings (minimap scale/side, HP-bar style, enemy skillshot outline, quick-cast per key, settings export/import).

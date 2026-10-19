@@ -301,6 +301,14 @@ export class InputController {
         if (g) this.ping('missing', g.x, g.y);
         return;
       }
+      case 'pingQuestion': {
+        // '?' on the hovered unit (enemy / objective) or the ground under the cursor
+        const g = this.cursorGround();
+        const h = this.hover;
+        if (h) this.ping('question', h.x, h.y, h.id);
+        else if (g) this.ping('question', g.x, g.y);
+        return;
+      }
     }
   }
 

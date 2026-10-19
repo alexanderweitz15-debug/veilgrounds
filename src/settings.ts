@@ -43,6 +43,10 @@ export interface Settings {
   minimapLeft: boolean;
   /** Cast mode per ability key (C7, src/input/castMode.ts); missing keys follow castIndicator. */
   castModes: Partial<Record<'q' | 'w' | 'e' | 'r', 'quick' | 'indicator' | 'normal'>>;
+  /** Champion HP bar ticks (C7, src/ui/overlay.ts): every 100 + 1000 HP (LoL), only 1000, or none. */
+  hpBarStyle: 'segmented' | 'thousands' | 'plain';
+  /** Outline enemy skillshots more strongly (C7 data; drawn by the render telegraphs, agent D). */
+  enemySkillshotOutline: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -67,6 +71,8 @@ const DEFAULTS: Settings = {
   minimapScale: 100,
   minimapLeft: false,
   castModes: {},
+  hpBarStyle: 'segmented',
+  enemySkillshotOutline: false,
 };
 
 /** Default values (settings import validates keys and types against them). */

@@ -244,11 +244,11 @@ export class Overlay {
           ctx.lineWidth = 1.5;
           ctx.strokeRect(x - 1, y - 1, bw + 2, bh + 2);
         }
-        if (champ || dummy) {
-          // 100-HP ticks
+        if ((champ || dummy) && settings.hpBarStyle !== 'plain') {
+          // 100-HP ticks (setting hpBarStyle: segmented = LoL, thousands = only every 1000 HP, plain = none)
           ctx.fillStyle = 'rgba(0,0,0,0.45)';
           // LoL: thin tick every 100 HP, thick one every 1000 (thin ones dropped only when they would merge)
-          const thin = (bw * 100) / total >= 2.5;
+          const thin = settings.hpBarStyle !== 'thousands' && (bw * 100) / total >= 2.5;
           for (let v = 100; v < e.maxHp; v += 100) {
             const k = v % 1000 === 0;
             if (k || thin) ctx.fillRect(x + (bw * v) / total, y, k ? 2 : 1, bh * (k ? 1 : 0.6));

@@ -1,16 +1,16 @@
 # Agent C handoff
 
-- Branch: `ui/c-features` (origin), merged main `e0f40bb` on 19 Oct (fast-forward), then block 2 on top. Last commit:
+- Branch: `ui/c-features` (origin), merged main `fcbf223` on 20 Oct, block 3 on top. Last commit:
   `git log origin/ui/c-features -1`.
-- Done: C1, C2 (+ kesselbrutTeams), C3, C4, C5 own rune page, C6 part 1, C7 gold efficiency, loading tips, minimap
-  size/side, settings export/import, per-key cast modes. Details, commits, screenshots: docs/agents/c.md.
+- Done: C1-C7 except the A3-/B-dependent parts (block 3, 20 Oct: ban phase, role swap, ? ping, shop item ping,
+  minimap fit, HP-bar ticks, skillshot-outline setting for D). Details, commits, screenshots: docs/agents/c.md.
 - Half-done: nothing.
-- Next steps (c.md "Open after block 2"): 4.3 bans + 4.4 role swap (classicLobby.ts), 4.1 screenshot, 2.1/2.3 pings,
-  minimap-left overlap above ~115 %, A3-dependent parts (scoreboard playstyle scales + rank calibration, post-game
-  error list) once A3 publishes `rankCalibration` and a player-error log format, B-dependent fields (enemy items -
-  UI already reads any row's `items`; ally summoner CDs `ScoreRow.summonerCds`; vision score; Teleport slot).
+- Next steps: A3-dependent parts (scoreboard playstyle
+  scales + rank calibration, post-game error list) once A3 publishes `rankCalibration` and a player-error log format;
+  B-dependent fields (enemy items - UI already reads any row's `items`; ally summoner CDs; vision score; Teleport slot);
+  D: skillshot outline drawing (shared-changes.md).
 - src/settings.ts is open to C for additive keys (lead, 19 Oct); log every addition in shared-changes.md.
-- Issues for others: docs/agents/issues.md (portrait crops -> D, "Nochmal" in main.ts -> lead, item cast-fail -> B).
+- Issues for others: docs/agents/issues.md (portrait crops -> D, "Nochmal" fixed by the lead in fcbf223, item cast-fail -> B).
 
 ## How to take screenshots (1280x720, built game)
 

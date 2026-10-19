@@ -48,7 +48,7 @@ function frame(parent: HTMLElement, title: string, duration: number, yMax: numbe
     const v = (yMax * i) / 4;
     svg('line', { x1: PAD.l, x2: W - PAD.r, y1: y(v), y2: y(v), stroke: COL.grid }, root);
     // small axes (max 1-2) need decimals, else the labels read 0, 0, 1, 1, 1
-    svg('text', { x: PAD.l - 6, y: y(v) + 4, 'text-anchor': 'end', fill: COL.axis, 'font-size': 11 }, root, yMax < 4 && v % 1 ? v.toFixed(1) : String(Math.round(v)));
+    svg('text', { x: PAD.l - 6, y: y(v) + 4, 'text-anchor': 'end', fill: COL.axis, 'font-size': 11 }, root, yMax < 4 && v % 1 ? String(Math.round(v * 100) / 100) : String(Math.round(v)));
   }
   const step = duration > 1200 ? 300 : duration > 300 ? 120 : 60;
   for (let s = 0; s <= duration; s += step) svg('text', { x: x(s), y: H - 6, 'text-anchor': 'middle', fill: COL.axis, 'font-size': 11 }, root, clock(s));

@@ -2,7 +2,33 @@
 
 Branch `ui/c-features` (base `0bbc3d0`). Spec: docs/AGENTS-PLAN.md §5 (C1-C7). Newest block on top.
 
-## Ready for merge
+## Ready for merge (block 3, on top of main `fcbf223`)
+
+| Package | Commits | Merge note |
+|---|---|---|
+| C5 ban phase + role swap, C7 minimap fit | `39b01d1` | new src/game/bans.ts; `fitMinimap` in display.ts, called from Hud.applyScale |
+| C4 '?' ping key + shop item ping | `f5887d3` | new keybind action `pingQuestion` (default H) |
+| C7 HP-bar tick style + skillshot outline setting | `da0ec05` | src/settings.ts additive (logged); request to D in shared-changes.md |
+| post-game axis labels, screenshots, docs | next commits | – |
+
+## Block 3 (2026-10-20): open items from the lead's list
+
+| Item | What | Proof |
+|---|---|---|
+| Ban phase (4.3) | "Banns (n/10)" in the lobby tools row opens a portrait grid; up to 10 bans, own champion not bannable, banned champions greyed/struck in the own champion grid; after `classicConfig` bots with a banned champion get the next free one of their role (default rune page for it); names, ranks, playstyles unchanged | tests/lobbyBans.test.ts, docs/ist/c5-bans-after.jpg |
+| Role swap (4.4) | "⇄" on every allied bot row takes that bot's role (champion kept if it fits the role, summoners reset to the role default) | c5-bans-after.jpg (swapped to top) |
+| `?` ping (2.1) | own rebindable action `pingQuestion`, default H (LoL has no default key): pings the unit under the cursor (with target) or the ground | c4-pings2-after.jpg (kill feed "Aurel Stundenwerk: ?") |
+| Shop item ping (2.3) | Alt+click an item card: "Ich habe X." / "Ich kaufe X." / "Ich spare auf X (fehlen N Gold)." to team chat | c4-pings2-after.jpg |
+| Minimap overlap (3.7) | `--mm` is capped so the minimap never reaches the centred bottom panel (both sides; 1280 px: max ~112 %); re-fitted on HUD mount, resize, settings change | lobbyBans.test.ts "minimap fit", c7-minimap-fit-after.jpg (150 % asked, 112 % used, 7 px gap) |
+| HP-bar style (3.10) | `hpBarStyle`: ticks every 100 + 1000 HP (LoL), only 1000, or none (src/ui/overlay.ts is C's) | c7-settings2-after.jpg, c7-minimap-fit-after.jpg ("none") |
+| Skillshot outline (3.11) | setting `enemySkillshotOutline` + row; drawing is D's (request in shared-changes.md); the row says so | c7-settings2-after.jpg |
+| Post-game y axis | small axes now show 0, 0.25, 0.5, 0.75, 1 | c6-postgame-after-charts.jpg (refreshed) |
+
+Also: 4.1 verified in the built game (docs/ist/c5-botconfig-after.jpg), post-game refreshed after the 2-decimal axis fix.
+Still open for C: 4.5 portrait crops (D, issues.md), A3-/B-dependent
+items as listed in block 2.
+
+## Ready for merge (older blocks)
 
 Block 1 (C1-C4, C6 part 1) is on main (`e0f40bb`). Block 2 commits since then, all merge-ready (branch is
 fast-forward from main `e0f40bb`):

@@ -12,6 +12,7 @@ import { CUM_XP } from '../sim/systems/economy';
 import type { PlayerSetup } from '../sim/types';
 import { ShopPanel, itemAbbr, itemName } from './shop';
 import { Scoreboard, mmss } from './scoreboard';
+import { fitMinimap } from './display';
 import { DeathBar } from './deathBar';
 import { TargetFrame, drawChips, unitChips } from './targetFrame';
 import { BotDebugPanel } from './botDebug';
@@ -288,6 +289,8 @@ export class Hud {
   applyScale(): void {
     // --ui lives on <html> (src/ui/display.ts) so chat, trainer panels and menus scale too
     this.root.style.removeProperty('--ui');
+    // the minimap cap depends on the bottom panel's width: measure once the HUD is in the DOM (src/ui/display.ts)
+    requestAnimationFrame(() => fitMinimap());
   }
 
   togglePanel(p: Panel, on?: boolean): void {

@@ -40,6 +40,8 @@ export const think: Brain = (snap, ctx, mem, rng) => {
   for (const a of out) {
     if (a.cmd.t !== 'cast') continue;
     const ab = ctx.champ.abilities[a.cmd.slot];
+    // B2: wind-ups of movesWhileCasting abilities do not stop the champion: the bot may keep moving/deciding
+    if (ab.movesWhileCasting && !ab.flags?.includes('channel')) continue;
     const rank = snap.me?.abilities[a.cmd.slot]?.rank ?? 1;
     const dur = ab.duration === undefined ? 0 : typeof ab.duration === 'number' ? ab.duration : ab.duration[Math.max(0, rank - 1)] ?? 0;
     const busy = ab.castTime + (ab.flags?.includes('channel') ? dur : 0);

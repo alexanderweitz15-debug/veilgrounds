@@ -1,6 +1,8 @@
 // D2 combat readability helpers: facing smoothing, hit-flash throttle, knock-up / dash lift.
 import { describe, expect, it } from 'vitest';
 import { FlashGate, READ, airborneLift, dashLift, flashAmp, turnToward } from '../src/render/readability';
+import { BAR_MAX_STEPS, stackBars } from '../src/render/barLayout';
+import { CC_GLYPH_KEYS, drawCcGlyph } from '../src/render/ccGlyphs';
 
 describe('facing smoothing', () => {
   it('turns 180 deg in facingMs180, never overshoots, takes the short way round', () => {
@@ -24,6 +26,40 @@ describe('hit flash', () => {
     expect(g.accept(8, 500)).toBe(true);
     expect(flashAmp('minion', false)).toBeLessThan(flashAmp('champion', false));
     expect(flashAmp('champion', true)).toBe(READ.hitFlash.ampReduceMotion);
+  });
+});
+
+describe('HP bar stacking', () => {
+  it('fixed bars stay; overlapping minion bars move up, separate ones stay', () => {
+    const off = stackBars([
+      { id: 1, x: 100, y: 100, w: 54, h: 5, fixed: false },
+      { id: 2, x: 110, y: 101, w: 54, h: 5, fixed: false },
+      { id: 3, x: 400, y: 100, w: 54, h: 5, fixed: false },
+      { id: 4, x: 90, y: 98, w: 104, h: 11, fixed: true },
+    ]);
+    expect(off.get(4)).toBe(0);
+    expect(off.get(3)).toBe(0);
+    expect(off.get(1)!).toBeLessThan(0);
+    expect(off.get(2)!).toBeLessThan(off.get(1)!);
+    expect(off.get(2)!).toBeGreaterThanOrEqual(-BAR_MAX_STEPS * (5 + 2));
+  });
+});
+
+describe('CC glyphs', () => {
+  it('every CC type draws its own shape (headless mock context)', () => {
+    const calls: string[] = [];
+    const g = new Proxy({} as Record<string, unknown>, {
+      get: (_t, k) => (typeof k === 'string' && ['strokeStyle', 'fillStyle', 'lineWidth', 'lineCap', 'lineJoin'].includes(k) ? '' : (...a: unknown[]) => calls.push(`${String(k)}:${a.length}`)),
+      set: () => true,
+    }) as unknown as CanvasRenderingContext2D;
+    const sigs = new Set<string>();
+    for (const k of CC_GLYPH_KEYS) {
+      calls.length = 0;
+      drawCcGlyph(g, k, 10, 10, 14, '#fff', 0);
+      expect(calls.length).toBeGreaterThan(3);
+      sigs.add(calls.join(','));
+    }
+    expect(sigs.size).toBe(CC_GLYPH_KEYS.length);
   });
 });
 

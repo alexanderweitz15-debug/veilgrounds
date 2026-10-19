@@ -212,3 +212,32 @@ settings (minimap scale/side, HP-bar style, enemy skillshot outline, quick-cast 
 Proposal: allow C to add fields to `Settings`/`DEFAULTS` in `src/settings.ts` (additive only, no renames), or move the
 file to `src/ui/settings.ts`. Until decided, C7 waits.
 
+## 2026-10-19 · D · src/ui/overlay.ts (C) · CC symbols + HP-bar stacking (D2, FEATURE-GAP 7.6 / 7.8) · proposed
+
+Affects: C only (render-free UI file). Helpers are on art/d-visuals, pure and tested (tests/readability.test.ts):
+`src/render/ccGlyphs.ts` (`drawCcGlyph(ctx, key, x, y, size, color, tMs)`, one shape per CC type) and
+`src/render/barLayout.ts` (`stackBars(rects)` -> y offset per id; champions/structures/hovered fixed, minion and
+monster bars lifted up to 3 steps when they overlap).
+
+1. CC chip with symbol (in `drawCc`, after the chip background):
+   ```diff
+   +import { drawCcGlyph } from '../render/ccGlyphs';
+   ...
+   -    const w = ctx.measureText(text).width + 10;
+   +    const icon = champ ? 14 : 10;
+   +    const w = ctx.measureText(text).width + 10 + icon + 2;
+        const cy = champ ? y - 32 : y - 14;
+        ctx.fillStyle = 'rgba(12,10,8,0.85)';
+        ctx.fillRect(x + bw / 2 - w / 2, cy - 8, w, 16);
+        ctx.fillStyle = color;
+        ctx.fillRect(x + bw / 2 - w / 2, cy + 6, w, 2);
+   +    drawCcGlyph(ctx, key, x + bw / 2 - w / 2 + 5 + icon / 2, cy - 1, icon, color, performance.now());
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+   -    ctx.fillText(text, x + bw / 2, cy);
+   +    ctx.fillText(text, x + bw / 2 + (icon + 2) / 2, cy);
+   ```
+2. HP-bar stacking (in `draw`, two passes): first collect `{ id: e.id, x, y, w: bw, h: bh, fixed: champ || structure
+   || dummy || e.id === hoverId }` for every bar, `const off = stackBars(rects)`, then draw with `y + (off.get(e.id) ?? 0)`
+   (CC chip and marks use the same shifted y). Minion bars could also go 5 -> 4 px high if the stack still looks busy.
+

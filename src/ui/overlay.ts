@@ -143,6 +143,37 @@ export class Overlay {
         mx += 4;
         continue;
       }
+      if (m.id === 'sev_w' || m.id === 'sev_nachbild') {
+        // Sev: black ember (black flame, copper core) / Nachbild (copper ring with a dark centre)
+        ctx.save();
+        ctx.translate(mx + 7, cy);
+        ctx.fillStyle = 'rgba(12,10,8,0.9)';
+        ctx.beginPath();
+        ctx.arc(0, 0, 8, 0, Math.PI * 2);
+        ctx.fill();
+        if (m.id === 'sev_w') {
+          ctx.fillStyle = '#17121a';
+          ctx.beginPath();
+          ctx.moveTo(0, -9);
+          ctx.quadraticCurveTo(6, -2, 5, 3);
+          ctx.quadraticCurveTo(0, 8, -5, 3);
+          ctx.quadraticCurveTo(-6, -3, 0, -9);
+          ctx.fill();
+          ctx.fillStyle = '#ff7a3c';
+          ctx.beginPath();
+          ctx.arc(0, 2, 2.6, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.strokeStyle = '#c8582e';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(0, 0, 5, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+        mx += 18;
+        continue;
+      }
       ctx.save();
       ctx.translate(mx + 7, cy);
       ctx.rotate(Math.PI / 4);

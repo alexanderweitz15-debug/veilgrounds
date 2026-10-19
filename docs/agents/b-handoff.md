@@ -2,8 +2,7 @@
 
 - Branch: `sim/b-mechanics` (pushed, merged with origin/main at 3d48b5a). B1-B6 done, see b.md.
 - Half-done: nothing in code.
-- Next steps: (1) if the final full suite in b.md is not listed as green, run `npx vitest run` (background, ~8 min)
-  and `npm run bot-sim -- --rank=gold --games=4 --minutes=20` (background, ~10 min); (2) B7 only with D / the lead
+- Next steps: (1) final full suite + bot-sim done (b.md); (2) B7 only with D / the lead
   (proposal in shared-changes.md); (3) user question ranged hitbox 55/65; (4) answer C/D/A requests in
   shared-changes.md as they come.
 - Waiting on others: C (minimap stealth symbol, TP slot F2/T + announcement, attack-move cursor setting, enemy items

@@ -64,7 +64,10 @@ optional Playwright bake step, menu placeholder background) in shared-changes.md
 - Full suite before B6/attack-move/vision score: 867 passed, 1 failed = tests/brainReflex.test.ts reflex cost
   timing (A1, wall clock, 0.147 ms vs 0.05 under load from 5 agents; not touched by B).
 - Determinism / sideMirror / phase1: green after the seenItems system (19.10.).
-- Final full suite: see b-handoff.md (run at the end of the session).
+- Final full suite (HEAD e26437a, 19.10.): 881 passed, 2 skipped, 1 todo, 1 failed = the same brainReflex cost
+  timing (0.05 ms limit, wall clock under load). Everything B touched is green.
+- Final bot-sim on the branch (B1-B6 + main): numbers identical to merged main e0f40bb below (CS/min 3.37, deaths
+  2.30, gold/min 223.7, towers/game 0.5): B4-B6 are bot-neutral, no regression.
 - Bot-sim gold 4x20 min: base 0bbc3d0: CS/min 3.13, deaths 2.02, gold/min 219.1, towers/game 1.3, wards/min 0.23.
   Merged main e0f40bb (all agents incl. B1-B3): CS/min 3.37, deaths 2.30, gold/min 223.7, towers/game 0.5,
   wards/min 0.21. Not attributable to B alone (A1-A3/C/D/E changes merged at the same time).

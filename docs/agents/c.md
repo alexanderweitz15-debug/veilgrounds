@@ -13,6 +13,10 @@ Branch `ui/c-features` (base `0bbc3d0`). Spec: docs/AGENTS-PLAN.md §5 (C1-C7). 
 
 ## Block 3 (2026-10-20): open items from the lead's list
 
+Test status (full suite on `12b96ce`): 69 files, 874 passed, 2 skipped, 1 todo, 1 failed - again only A1's
+wall-clock gate tests/brainReflex.test.ts "reflex logic < 0.05 ms per bot and tick" (CPU shared by several agents;
+src/ai not touched by C). `tsc --noEmit` exit 0, `vite build` exit 0, no console errors in any capture.
+
 | Item | What | Proof |
 |---|---|---|
 | Ban phase (4.3) | "Banns (n/10)" in the lobby tools row opens a portrait grid; up to 10 bans, own champion not bannable, banned champions greyed/struck in the own champion grid; after `classicConfig` bots with a banned champion get the next free one of their role (default rune page for it); names, ranks, playstyles unchanged | tests/lobbyBans.test.ts, docs/ist/c5-bans-after.jpg |

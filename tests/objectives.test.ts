@@ -219,7 +219,7 @@ describe('objectives', () => {
     expect([tr.team(0).kesselbrut, tr.team(1).kesselbrut]).toEqual([0, 0]);
     tr.ingest(snap(11, [], ROWS(), { kesselbrut: 3, kesselbrutTeams: [3, 1] }));
     expect([tr.team(0).kesselbrut, tr.team(1).kesselbrut]).toEqual([3, 1]);
-    const withSim = { ...snap(12, [], ROWS(), { kesselbrut: 3 }), objectives: { kesselbrut: [3, 2] as [number, number], leviathan: [1, 2] as [number, number] } };
+    const withSim = { ...snap(12, [], ROWS(), { kesselbrut: 3 }), objectives: { kesselbrut: [3, 2] as [number, number], leviathan: [1, 2] as [number, number], schleierLeft: [0, 0] as [number, number], inhibs: [] } };
     tr.ingest(withSim);
     expect(tr.team(1)).toMatchObject({ kesselbrut: 2, leviathan: 2 });
   });

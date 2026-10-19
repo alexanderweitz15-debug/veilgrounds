@@ -1,4 +1,4 @@
-// B1 (AGENTS-PLAN §4): stealth. Schleierwards, Nyx seeds, Grimald traps and the Lysa E wire are hidden from the enemy
+// B1 (AGENTS-PLAN §4): stealth. Schleierwards, Nyx seeds, Grimald traps (and abilities flagged 'stealth') are hidden from the enemy
 // team unless (a) an enemy Siegelward is within 450, (b) an enemy Suchfeuer covers them, (c) a Spaehfrucht pop / Nyx R
 // revealed them within the last 3 s. Siegelwards are always visible (normal vision rules).
 import { describe, expect, it } from 'vitest';
@@ -9,6 +9,7 @@ import { isRevealed } from '../../src/sim/buffs';
 import { sees } from '../../src/sim/vision';
 import { inventory } from '../../src/sim/items/inventory';
 import { levelAbility } from '../../src/sim/systems/abilities';
+import { championData } from '../../src/sim/champions';
 import { addGroundObject, groundObjects } from '../../src/sim/summons';
 import { plantState } from '../../src/sim/systems/plants';
 import { walkable } from '../../src/sim/map';
@@ -153,9 +154,12 @@ describe('B1 stealthed ground objects and zones', () => {
     expect(tags(0)).not.toContain('grimald_trap'); // 1000 away
   });
 
-  it('Lysa E wire: the zone event reaches enemies only under true sight', () => {
-    const run = (withSeal: boolean): boolean => {
+  it('Lysa E wire is visible to enemies (user 19.10.); an ability flagged stealth reaches them only under true sight', () => {
+    const run = (withSeal: boolean, stealthFlag = false): boolean => {
       const { sim, a, b } = duel('mira', 'lysa');
+      const ab = championData('lysa').abilities[2]!;
+      const flags = ab.flags;
+      if (stealthFlag) ab.flags = [...(flags ?? []), 'stealth'];
       place(sim, b, CX + 600, CY);
       sim.c.Champ.skillPoints[b] = 1;
       levelAbility(sim, b, 2);
@@ -168,10 +172,13 @@ describe('B1 stealthed ground objects and zones', () => {
         seen ||= teamEvents(sim, 0).events.some((e) => e.e === 'zone' && e.team === 1);
         step(sim);
       }
+      ab.flags = flags;
       return seen;
     };
-    expect(run(false)).toBe(false);
-    expect(run(true)).toBe(true);
+    expect(championData('lysa').abilities[2]!.flags).not.toContain('stealth');
+    expect(run(false)).toBe(true);
+    expect(run(false, true)).toBe(false);
+    expect(run(true, true)).toBe(true);
   });
 });
 

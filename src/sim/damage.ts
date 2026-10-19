@@ -2,19 +2,25 @@
 // events (modifyDamage, onDamageTaken, onKill, onTakedown). Every damage source goes through dealDamage.
 
 import type { Sim } from './sim';
+import { MAX_ENT } from './ecs';
 import { despawn } from './sim';
 import { Kind, isStructure, sec, type DamageType } from './types';
 import { onDeath } from './systems/economy';
 import { damageDealtMult, damageTakenMult, healMult, statMods } from './buffs';
 import { passiveHooksOf } from './champions';
-import { KESSELBRUT_STRUCT_PCT, kesselbrutStacks } from './systems/jungle';
+import { KESSELBRUT_STRUCT_PCT, isEpicMonster, kesselbrutStacks } from './systems/jungle';
 
 export interface DamageOpts {
   isAuto?: boolean;
   crit?: boolean;
   /** Skip armor/MR (already-mitigated values, e.g. tower %-HP shots against minions). */
   raw?: boolean;
+  /** Damage-over-time tick (buffs.ts): hit flash throttled. */
+  dot?: boolean;
 }
+
+/** Hit flash (B5): champion hits always flash, every other hit (DoT ticks, minions, towers, monsters) at most every this many ticks per target (4/s). */
+export const FLASH_MIN_TICKS = 8;
 
 /** Takedown window for onTakedown (champion damaged the victim within this many ticks). */
 export const TAKEDOWN_TICKS = sec(3);
@@ -27,11 +33,13 @@ interface CombatLog {
   pair: Map<number, Map<number, number>>;
   /** Re-entrancy depth: hook events fire only for top-level damage (no reflect ping-pong). */
   depth: number;
+  /** Last hit-flash tick per target eid. */
+  flash: Int32Array;
 }
 
 function combatLog(sim: Sim): CombatLog {
   let s = sim.state.damage as CombatLog | undefined;
-  if (!s) sim.state.damage = s = { dealt: new Map(), taken: new Map(), pair: new Map(), depth: 0 };
+  if (!s) sim.state.damage = s = { dealt: new Map(), taken: new Map(), pair: new Map(), depth: 0, flash: new Int32Array(MAX_ENT).fill(-1000) };
   return s;
 }
 
@@ -115,7 +123,9 @@ export function dealDamage(sim: Sim, src: number, dst: number, amount: number, t
         m.set(src, sim.tick);
       }
     }
-    sim.events.push({ e: 'damage', src, dst, amount: dmg, type, crit: opts.crit, ...(opts.isAuto ? { auto: true as const } : {}) });
+    const flash = (srcChamp && !opts.dot) || sim.tick - log.flash[dst]! >= FLASH_MIN_TICKS;
+    if (flash) log.flash[dst] = sim.tick;
+    sim.events.push({ e: 'damage', src, dst, amount: dmg, type, crit: opts.crit, ...(opts.isAuto ? { auto: true as const } : {}), ...(flash ? { flash: true as const } : {}) });
     if (top && dmg > 0) for (const h of passiveHooksOf(sim, dst)) h.onDamageTaken?.(sim, dst, src, { amount: dmg, absorbed, type, isAuto: !!opts.isAuto });
     if (Hp.cur[dst]! <= 0 && Unit.alive[dst]) {
       if (Unit.kind[dst] === Kind.Dummy) {
@@ -153,6 +163,7 @@ export function kill(sim: Sim, victim: number, killer: number): void {
     ...(vChamp !== undefined ? { champ: vChamp } : {}),
     ...(killer >= 0 ? { killerKind: Unit.kind[killer]!, killerTeam: Unit.team[killer]! } : {}),
     ...(kChamp !== undefined ? { killerChamp: kChamp } : {}),
+    ...(Unit.kind[victim] === Kind.Monster && isEpicMonster(sim, victim) ? { epic: true as const } : {}),
   });
   onDeath(sim, victim, killer); // rewards, respawn timers, structure state (economy.ts)
   // hook events while the victim's position is still valid

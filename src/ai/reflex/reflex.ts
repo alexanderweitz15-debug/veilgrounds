@@ -19,7 +19,7 @@ import { dst } from '../bot/geo';
 import { laneSpot, structureToHit } from '../bot/laning';
 import { clearOfStructures } from '../bot/brain';
 import { ORBWALK } from '../bot/kite';
-import { entityIndex, observeAttacks, ownAttack, predictWindows, prehitFits, prehitRoll, spellLastHitFor, windowAfterHit, type MinionWindow, type OwnAttack } from '../bot/lasthit';
+import { type LastHitMem, entityIndex, observeAttacks, ownAttack, predictWindows, prehitFits, prehitRoll, spellLastHitFor, windowAfterHit, type MinionWindow, type OwnAttack } from '../bot/lasthit';
 import { FARM_KINDS, insertPlan, type CancelReason, type Plan } from '../plan';
 import { reflexState, UTIL_WINDOW, type ReflexState } from './state';
 import { reflexView } from './view';
@@ -57,6 +57,12 @@ const isWindup = (v: View): boolean => v.self.atkPhase === 1;
 const FILLER_WALK_TICKS = 15;
 /** A filler keeps this many ticks of slack before every protected window closes (prediction error of the closing hit). */
 const PROTECT_SAFETY = 3;
+/** Pre-hits are considered for minions whose killing hit lands within this many ticks. */
+const PREHIT_LOOKAHEAD = 75;
+/** Own minion within this distance of an enemy minion = the enemy minion has another target than the bot. */
+const TANK_R = 700;
+/** Extra distance kept to the reach of untanked enemy minions (stand point) - a step of the minion. */
+const AGGRO_MARGIN = 100;
 
 export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng, io: ReflexIO): BotAction[] {
   const st = reflexState(mem);
@@ -97,6 +103,7 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
   const busy = T < mem.busyUntil && T >= mem.busyFrom - 1;
   const distracted = st.attention?.(T)?.distracted ?? false;
   const windows = intent.farm ? predictWindows(v, lh, own) : [];
+  st.last = { tick: T, windows, ready: own.ready, period: own.period };
   const byId = new Map<number, MinionWindow>();
   for (const w of windows) byId.set(w.m.id, w);
   const canIssue = !io.thinkIssued && !busy;
@@ -249,7 +256,7 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
 
   // ---- 4. attack scheduler: fill the free attack period
   if (own.ready <= T + 1) {
-    const choice = chooseFiller(v, ctx, st, intent, windows, protectedWins, farmPlan, own, P, rng, T);
+    const choice = chooseFiller(v, ctx, st, intent, windows, protectedWins, farmPlan, own, P, rng, T, lh);
     if (choice) {
       st.filler = choice.target;
       if (v.self.atkTarget !== choice.target) {
@@ -361,6 +368,11 @@ function attackSpotSafe(v: View, m: { x: number; y: number; radius: number }): b
   return v.ownMinions.filter((o) => dst(o, t) < 800).length >= 2;
 }
 
+/** Enemy minions with no own minion near them (they would target the bot). */
+function untankedMinions(v: View): View['enemyMinions'] {
+  return v.enemyMinions.filter((m) => dst(m, v.self) < 1200 && !v.ownMinions.some((o) => dst(o, m) < TANK_R));
+}
+
 /** Busy time of a reflex cast (same rule as brain.think for decision casts). */
 function markCast(ctx: BotStatic, mem: BotMemory, a: BotAction, T: number): void {
   if (a.cmd.t !== 'cast') return;
@@ -376,6 +388,24 @@ function markCast(ctx: BotStatic, mem: BotMemory, a: BotAction, T: number): void
  */
 function standPoint(v: View, ctx: BotStatic, intent: NonNullable<ReflexState['intent']>, plan: Plan | null, byId: Map<number, MinionWindow>): { x: number; y: number } {
   let p = intent.side ?? laneSpot(v, ctx, intent.lane, intent.behind);
+  // no own minions at the enemy wave: its minions target the bot (minion aggro). Stand outside their reach
+  // (+ a step), unless a planned last hit needs the walk-in (below)
+  const untanked = untankedMinions(v);
+  if (untanked.length) {
+    for (let i = 0; i < 3; i++) {
+      let pushed = false;
+      for (const m of untanked) {
+        const keep = (MINION_STATS[m.kind]?.range ?? 0) + m.radius + v.self.radius + AGGRO_MARGIN;
+        const d = dst(p, m);
+        if (d >= keep) continue;
+        const dx = d > 1 ? (p.x - m.x) / d : (v.self.x - m.x) / (dst(v.self, m) || 1);
+        const dy = d > 1 ? (p.y - m.y) / d : (v.self.y - m.y) / (dst(v.self, m) || 1);
+        p = { x: m.x + dx * keep, y: m.y + dy * keep };
+        pushed = true;
+      }
+      if (!pushed) break;
+    }
+  }
   const w = plan ? byId.get(plan.targetId) : undefined;
   if (w) {
     const r = v.reach + w.m.radius - 30;
@@ -407,7 +437,8 @@ function chooseFiller(
   P: ReflexParams,
   rng: Rng,
   T: number,
-): { target: number; kind: 'minion' | 'structure' | 'prepare' } | null {
+  lh: LastHitMem,
+): { target: number; kind: 'minion' | 'structure' | 'prepare' | 'prehit' } | null {
   const next = T + 1 + Math.floor(own.period);
   const bias = (w: MinionWindow): number => (plan && plan.targetId === w.m.id ? plan.biasTicks : 0);
   // window preparation: the next two windows collide (one auto cannot serve both): hit one now so its window
@@ -440,12 +471,24 @@ function chooseFiller(
   }
   // every protected window must stay servable with the timer taken until `next`
   for (const w of protectedWins) if (!feasible(w, bias(w), next, own, PROTECT_SAFETY)) return null;
+  // pre-hit: a minion whose next incoming hit jumps over the own damage (no kill window) gets an auto now, so the
+  // next auto lands inside the window that opens (tower shots, stacked minion hits); chance by skill per minion
+  if (intent.farm) {
+    for (const w of windows) {
+      if (w.walk > 0 || !(w.a === Infinity || w.a >= w.b) || w.b === Infinity || w.b - T >= PREHIT_LOOKAHEAD) continue;
+      if (!attackSpotSafe(v, w.m) || !prehitFits(w, T + 1 + w.lead, own.period, 0, T)) continue;
+      if (!prehitRoll(lh, w.m, ctx.params.skill, rng)) continue;
+      return { target: w.m.id, kind: 'prehit' };
+    }
+  }
   if (intent.pushMinions) {
     let best: MinionWindow | null = null;
     for (const w of windows) {
       // a short step in (melee behind the wave) is fine; the attack order walks it
       if (w.walk > FILLER_WALK_TICKS || (plan && plan.targetId === w.m.id)) continue;
       if (protectedWins.includes(w) || !attackSpotSafe(v, w.m)) continue;
+      // no own minion at it: hitting it draws the whole enemy wave onto the bot (minion aggro)
+      if (!v.ownMinions.some((o) => dst(o, w.m) < TANK_R)) continue;
       const land = T + 1 + w.lead;
       const nw = windowAfterHit(w, land, T);
       if (nw.b <= land) continue; // would be a kill: the planner handles kills

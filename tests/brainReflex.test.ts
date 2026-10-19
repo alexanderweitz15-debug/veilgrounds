@@ -57,7 +57,7 @@ describe('reflex layer: scheduler fills the attack timer (test 1)', () => {
   }, 300_000);
 });
 
-describe.skip('reflex layer: last hits independent of the decision rate (tests 2, 4)', () => {
+describe('reflex layer: last hits independent of the decision rate (tests 2, 4)', () => {
   it('Iron (2 Hz decisions) alone in lane, 10 min, autos only: >= 70 CS (was ~51)', () => {
     const g = runLaneAlone('iron', { seed: 1 });
     const s = g.stats[0]!;

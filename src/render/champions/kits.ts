@@ -1,4 +1,4 @@
-// The 26 champion kits (+ Hark in wolf.ts): body type, layered outfit, muted world palette with one accent,
+// The 27 champion kits (+ Hark in wolf.ts): body type, layered outfit, muted world palette with one accent,
 // carry/attack/cast style and signature props. Both teams use the same champion colours (team = ground ring).
 // Proportions are semi-realistic (~6.5 heads); props are large but plausible.
 import { m, type Mat } from './core';
@@ -40,6 +40,7 @@ import {
   tablet,
   trailingThreads,
 } from './props2';
+import { ashSwirls, copperHem, crackedEye, emberEye, noseCollar, SEV_COPPER } from './sev';
 import type { Kit } from './types';
 
 const SKIN = { fair: '#e9c6a4', light: '#ddb08a', tan: '#c08a62', brown: '#946244', dark: '#6a4430', pale: '#e8cfba', old: '#d6b094', ash: '#c8b8a8' };
@@ -851,4 +852,32 @@ kit({
   cast: 'raise',
   gait: 'light',
   props: [waterJug],
+});
+
+kit({
+  id: 'sev',
+  name: 'Sev Aschenblick',
+  world: 198,
+  look: 'tall silent deserter in a floor-length high-collared charcoal coat with a copper hem and grey ash swirls, collar up to the nose; right arm held out palm up with a small floating black-ember eye; left eye copper-red with a three-armed crack',
+  feature: 'outstretched palm with a floating ember eye',
+  body: { ...MALE, H: 188, shW: 18, hipW: 13, chestD: 10.5, girth: 0.86, headR: 12.6, legs: 0.52, hunch: 0.04 },
+  outfit: {
+    skin: SKIN.ash,
+    top: cloth(P.coal),
+    sleeves: cloth('#26242a'),
+    forearms: cloth('#26242a'),
+    hands: m(SKIN.ash, 'skin'),
+    legs: cloth('#222026'),
+    boots: leather('#1e1c20'),
+    bootH: 0.5,
+    coat: { mat: cloth(P.coal), len: 1.62, flare: 0.32, open: metal(SEV_COPPER), collar: cloth('#26242a') },
+    belt: { mat: leather('#1e1c20'), buckle: metal(P.copper), y: 0.1 },
+    hair: { style: 'crop', mat: hair('#b4aea8') },
+    face: { brows: 1.2 },
+  },
+  hold: 'palm',
+  attack: 'staff',
+  cast: 'forward',
+  gait: 'light',
+  props: [noseCollar, crackedEye, copperHem, ashSwirls, emberEye],
 });

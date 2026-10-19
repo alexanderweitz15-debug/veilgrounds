@@ -95,7 +95,7 @@ describe('Sev W Schwarzglut', () => {
   });
 
   it('jumps once to the nearest enemy within 300 when the target dies', () => {
-    const { sim, s, foes } = setup([0, 1, 0, 0], [[400, 0], [400, 200], [400, -280]]);
+    const { sim, foes } = setup([0, 1, 0, 0], [[400, 0], [400, 200], [400, -280]]);
     const [a, b, c] = foes as [number, number, number];
     cmd(sim, cast(1, CX + 400, CY, a));
     steps(sim, 12);

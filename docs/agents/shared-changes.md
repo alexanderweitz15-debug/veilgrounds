@@ -274,3 +274,19 @@ file to `src/ui/settings.ts`. Until decided, C7 waits.
   re-acquisitions (target died) use the champion again.
 - **For C:** settings toggle ("Angriffsbewegung: Ziel am Cursor" / "Attack move: target nearest to cursor"),
   `src/input` sends `cursor: true` when it is on. Bots are unaffected (they never set it).
+
+## 2026-10-19 · Agent B · B7 load time: proposal for D (src/render) + lead (build), not implemented by B
+
+AGENTS-PLAN B7 is listed under B, but every file it touches is D's (src/render/sheets.ts, champions/atlas.ts,
+spriteWorker.ts) or the lead's (build scripts / package.json). B did not edit them. Proposal (meets "< 5 s with a
+warm cache" without a Node canvas dependency):
+1. Persistent cell cache in the browser: after a cell is baked (spriteWorker result `bmp`), store it as PNG blob in
+   Cache Storage (`caches.open('vg-atlas-v<ATLAS_VERSION>')`, key `/<id>/<master>/<frame>/<cell>`), done in the worker
+   via `OffscreenCanvas.convertToBlob`. `buildChampionAtlasAsync` first asks the cache per champion; hits are decoded
+   with `createImageBitmap(blob)` (worker, parallel) and blitted, misses are baked as today. Cache per champion,
+   not per match id set (sheets.ts caches only the last id set in memory today).
+2. `ATLAS_VERSION` = hash of src/render/champions/** at build time (Vite `define`), so art changes invalidate.
+3. Optional later: a `tools/bakeSprites.ts` Playwright step that loads the dev build, bakes all 26 + minions +
+   monsters and writes PNGs to `public/atlas/` (true pre-baked atlases, cold cache fast too). Needs the lead (CI).
+4. Main menu first frame: a static CSS gradient background on the menu root until menuScene's first render.
+Measure: console lines `champion atlas: ... in N ms` (sheets.ts) cold vs warm, 10 runs, under the usual load.

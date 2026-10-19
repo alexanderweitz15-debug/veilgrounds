@@ -404,8 +404,9 @@ function untankedMinions(v: View): View['enemyMinions'] {
 const HARASS_PER_AGGRESSION = 0.6;
 /** One step: an enemy champion this far beyond auto reach still counts as harassable (§4.3). */
 const HARASS_STEP = 150;
-/** Enemy minions within this distance of the attack spot react to an attack on their champion (minion aggro). */
-const AGGRO_R = 500;
+/** "In the enemy wave" (§4.3): enemy minions this close to the bot's attack spot. Minions further back still answer
+ *  the call for help (sim CALL_RANGE 1000), but a bot outside the wave can step back out of their reach. */
+const AGGRO_R = 350;
 
 /**
  * Harass target (§4.3) or -1. Budget: profile harassPerMin + aggression axis, counted over the last 60 s (autos the

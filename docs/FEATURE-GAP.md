@@ -74,7 +74,7 @@ Stand: 16.10.2026, Agent C (Audit des Codes auf `main` @ `0bbc3d0`). Quelle der 
 
 | # | Funktion | LoL-Verhalten | Stand | Nutzen | Aufwand | Agent | Beleg / Lücke |
 |---|---|---|---|---|---|---|---|
-| 4.1 | Lobby-Bot-Konfiguration pro Slot | (Veilgrounds-eigen) Rang, Archetyp, Achsen, Varianz | teilweise | 4 | S | C | `classicLobby.ts` „Erweitert“: Rang pro Bot, Varianz, Archetyp-Preset, 10-Achsen-Editor. Ungeprüft: Rolle/Champion der Bots wählbar. → C5 |
+| 4.1 | Lobby-Bot-Konfiguration pro Slot | (Veilgrounds-eigen) Rang, Archetyp, Achsen, Varianz | da | 4 | S | C | `classicLobby.ts` „Erweitert“: Rang pro Bot, Archetyp-Preset, 10-Achsen-Skalen + Editor („Stil“), Varianz; im gebauten Spiel geprüft (9 Rang- und 9 Archetyp-Auswahlen), docs/ist/c5-botconfig-after.jpg. Kein eigener UI-Test (DOM). |
 | 4.2 | Prägungen-Editor mit speicherbaren Seiten | Eigene Seiten anlegen, benennen, speichern | da | 3 | M | C | C5 `e627710`: „Eigene Seite“ pro Champion (Schlüsselprägung + 3 verschiedene kleine), in IndexedDB gespeichert, wählbar wie ein Preset; docs/ist/c5-runes-after.jpg; Test tests/runePages.test.ts. Nur eine Seite pro Champion, nur in der Classic-Lobby. |
 | 4.3 | Champion-Auswahl mit Bann-Phase | 3+3 bzw. 5+5 Banns | da | 2 | M | C | C5 `39b01d1`: optionale Bann-Phase (bis 10, eigener Champion nicht bannbar, gebannte im eigenen Raster gesperrt); Bots mit gebanntem Champion bekommen den nächsten freien ihrer Rolle + Standard-Prägungen; Test tests/lobbyBans.test.ts; docs/ist/c5-bans-after.jpg. |
 | 4.4 | Rollentausch | Tausch mit Mitspieler in der Auswahl | da | 2 | S | C | C5: „⇄“ in jeder verbündeten Bot-Zeile übernimmt dessen Rolle (Champion bleibt, wenn er passt); docs/ist/c5-bans-after.jpg (getauscht zu Oben). |

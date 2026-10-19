@@ -24,7 +24,8 @@ Branch `ui/c-features` (base `0bbc3d0`). Spec: docs/AGENTS-PLAN.md §5 (C1-C7). 
 | Skillshot outline (3.11) | setting `enemySkillshotOutline` + row; drawing is D's (request in shared-changes.md); the row says so | c7-settings2-after.jpg |
 | Post-game y axis | small axes now show 0, 0.25, 0.5, 0.75, 1 | c6-postgame-after-charts.jpg (refreshed) |
 
-Still open for C: 4.1 screenshot of "Erweitert" (code exists), 4.5 portrait crops (D, issues.md), A3-/B-dependent
+Also: 4.1 verified in the built game (docs/ist/c5-botconfig-after.jpg), post-game refreshed after the 2-decimal axis fix.
+Still open for C: 4.5 portrait crops (D, issues.md), A3-/B-dependent
 items as listed in block 2.
 
 ## Ready for merge (older blocks)

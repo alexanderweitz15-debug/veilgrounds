@@ -5,7 +5,7 @@
 - Done: C1-C7 except the A3-/B-dependent parts (block 3, 20 Oct: ban phase, role swap, ? ping, shop item ping,
   minimap fit, HP-bar ticks, skillshot-outline setting for D). Details, commits, screenshots: docs/agents/c.md.
 - Half-done: nothing.
-- Next steps: 4.1 screenshot of the lobby "Erweitert" view (code exists); A3-dependent parts (scoreboard playstyle
+- Next steps: A3-dependent parts (scoreboard playstyle
   scales + rank calibration, post-game error list) once A3 publishes `rankCalibration` and a player-error log format;
   B-dependent fields (enemy items - UI already reads any row's `items`; ally summoner CDs; vision score; Teleport slot);
   D: skillshot outline drawing (shared-changes.md).

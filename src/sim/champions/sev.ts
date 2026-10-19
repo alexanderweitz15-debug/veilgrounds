@@ -210,7 +210,8 @@ function sevVisuals(sim: Sim, eid: number): ChampionVisuals {
     if (!Unit.alive[e] || Unit.team[e] === Unit.team[eid]) continue;
     for (const b of buffs(sim, e)) {
       if (b.until <= sim.tick || b.src !== eid) continue;
-      if (b.kind === 'mark' && b.id === NACHBILD) (marks.push({ target: e, id: NACHBILD, left: b.until - sim.tick }), (marked += isChampLike(sim, e) ? 1 : 0));
+      // Nachbild itself reaches the unit marks generically (snapshot: champion-prefixed mark buffs); count it for the badge
+      if (b.kind === 'mark' && b.id === NACHBILD) marked += isChampLike(sim, e) ? 1 : 0;
       else if (b.kind === 'dot' && b.id === EMBER) marks.push({ target: e, id: EMBER, left: b.until - sim.tick });
     }
   }

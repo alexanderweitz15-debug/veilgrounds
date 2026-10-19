@@ -13,6 +13,9 @@ names or branches remain.
 | 4f29a96 | decoy looks like Sev: snapshot `look`/level, champion sprite + fake champion bar |
 | cc48f6c | docs: `docs/champion-hooks.md` (Sev section, 107 hooks / 26 champions), `docs/spec-champions.md` roster #27 + roles, shared-changes, bot wishes in issues.md |
 | 46f0929 | `tests/sim/castMovement.test.ts`: dummy gets a Nachbild so Sev R can be cast |
+| c4476d4 | overlay: black-ember / Nachbild glyphs next to the HP bar; e.md + handoff |
+| 8279a7f | merge origin/main c15e402 (conflicts in buffs/damage/snapshot + docs resolved keeping both sides); champ/e-sev now contains main and fast-forwards |
+| (last) | visuals: no duplicate Nachbild mark (the snapshot already lists champion-prefixed mark buffs); screenshots |
 
 ### Kit as implemented (numbers in sev.json; hook constants at the top of sev.ts)
 - Passive Nachbild: every ability hit marks 3 s (`mark` buff `sev_nachbild`); autos on marked enemies +10-30 (+15 % AP)
@@ -35,8 +38,11 @@ names or branches remain.
   while 4+ agents shared the CPU; timing test, not related to Sev) - re-run it alone on a quiet machine.
 - `npx tsc --noEmit`: clean.
 
-### Screenshots (dev build first; replaced by the vite build + preview run, see below)
-`docs/ist/e-sev-lobby.jpg`, `e-sev-ingame-idle.jpg`, `e-sev-q.jpg`, `e-sev-w.jpg`, `e-sev-e-decoy.jpg`, `e-sev-r.jpg`.
+### Screenshots (1280x720, `npx vite build` + `vite preview --port 5392`, headless Edge, no console errors)
+`docs/ist/e-sev-lobby.jpg` (classic lobby, Sev card + ability icons), `e-sev-ingame-idle.jpg`, `e-sev-q.jpg` (Q wind-up
+telegraph), `e-sev-w.jpg` (ember + Nachbild glyphs on the dummy), `e-sev-e-decoy.jpg` (Sev + decoy with fake champion
+bar), `e-sev-r.jpg` (fear: ring, three phantoms, "Verängstigt"). Lobby shot is from the dev server run (same code).
+Sprite close-ups were checked in the stylelab (`window.__champSheet`).
 
 ### Bot games (gold, 15 min, Sev in blue mid; tools/scratch/sevCasts.ts)
 | seed | Sev casts Q/W/E/R | fear s | Sev cs / k-d / dmg to champs | enemy mid |
@@ -44,6 +50,9 @@ names or branches remain.
 | 1 | 14/6/2/0 | 0 | 42 / 1-1 / 1570 | Ilvane 56 / 1-1 / 1460 |
 | 2 | 16/9/7/3 | 4.4 | 35 / 4-1 / 4735 | Kaelen 35 / 1-3 / 2763 |
 Bots play him without crashes and cast every ability (R only when a Nachbild is up). Bots never fake Q (no brain logic).
+Official run `npm run bot-sim -- --rank=gold --games=2 --minutes=15 --champion=sev`: exit 0, same numbers (deterministic).
+Build: `npx vite build` green (one earlier run under heavy load printed "error during build" without details; the
+re-run on the same tree passed in 3m42s).
 
 ## Open items (exact next steps)
 1. **Balance decision on the ember jump** (spec "Einwand"): 2 games are too few. Run

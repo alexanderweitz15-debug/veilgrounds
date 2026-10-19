@@ -23,8 +23,14 @@ Branch `ui/c-features` (base `0bbc3d0`). Spec: docs/AGENTS-PLAN.md §5 (C1-C7). 
 | snapshot fields under C's names | `ScoreRow.respawnIn`, `Snapshot.objectives`, `summonerCds`, `visionScore`, `champDamage` used directly; new columns Sicht / Schaden. Removed the duplicating client fallbacks in src/game/objectives.ts (respawn from death events, Leviathan/Schleier/inhibitor bookkeeping); kept only the epic (re)spawn countdowns, now keyed on `ev.epic` |
 
 Tests: objectives.test.ts rewritten to the snapshot contract (respawn timers still compared with the sim end-to-end),
-settingsIO.test.ts (default keys T / H, no duplicate default key). Screenshots: c2-scoreboard-b-after.jpg (vision,
-damage, enemy items), c2-scoreboard-tp-after.jpg (third summoner) - see handoff if missing.
+settingsIO.test.ts (default keys T / H, no duplicate default key). Screenshot: c2-scoreboard-b-after.jpg (vision, damage,
+ally summoner cooldowns, enemy items with a stale one dimmed). Full suite on `71cd27c`: 73 files, 894 passed, 1 todo,
+0 failed; tsc and build green.
+
+Not seen in a game: the Teleport slot. Bot top laners already carry Teleport (runner.ts SUMMONERS.top), so B4 never
+unlocks for them; it triggers for a player top laner (lobby default Flash + Ignite) after 1500 minion gold, which
+the headless runs (player standing in the fountain) never reach. An 18-minute headless game showed no unlock, so
+FEATURE-GAP 1.18 stays "teilweise" until someone plays it (or the brain team gives bot tops Flash + Ignite).
 
 ## Block 4 (2026-10-20): supervisor browser-check fixes (`6348bef`)
 

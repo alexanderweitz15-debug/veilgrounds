@@ -84,6 +84,8 @@ interface Displace {
   dy: number;
   speed: number;
   left: number;
+  /** Full distance at the start (snapshot dash progress). */
+  total: number;
   /** Dash of the caster's own ability (resolve at end), -1 for knockback/pull. */
   slot: number;
   rank: number;
@@ -316,6 +318,13 @@ export function noteDashEnd(sim: Sim, eid: number, slot: number): void {
 export function isDisplacing(sim: Sim, eid: number): boolean {
   const m = (sim.state.abilities as AbilState | undefined)?.moves.get(eid);
   return !!m && m.serial === sim.c.Unit.serial[eid];
+}
+
+/** Dash / knockback / pull progress 0..1 of a displaced unit, -1 if none (snapshot flag, read-only). */
+export function displaceProgress(sim: Sim, eid: number): number {
+  const m = (sim.state.abilities as AbilState | undefined)?.moves.get(eid);
+  if (!m || m.serial !== sim.c.Unit.serial[eid] || m.total <= 0) return -1;
+  return Math.min(1, Math.max(0, 1 - m.left / m.total));
 }
 
 /** Casting (wind-up), channelling, dashing or being displaced: no movement, no autos. */
@@ -615,7 +624,11 @@ function execute(sim: Sim, eid: number, slot: number, rank: number, x: number, y
   const ctx = (hits: number[], cx: number, cy: number): EffectCtx => ({ ...base, hits, x: cx, y: cy });
   const payload = (): AbilityPayload => ({ t: 'ability', caster: eid, casterSerial: Unit.serial[eid]!, slot, rank, flags: ab.flags ?? [], hit: [], dx, dy, cx: x, cy: y, tag: '', ret: 0 });
 
-  if (ab.flags?.includes('auto_reset')) Atk.nextReady[eid] = sim.tick;
+  // auto reset (B5): the attack timer is ready at once and a running backswing ends (the next auto can start now)
+  if (ab.flags?.includes('auto_reset')) {
+    Atk.nextReady[eid] = sim.tick;
+    if (Atk.phase[eid] === 2) Atk.phase[eid] = 0;
+  }
   if (ab.flags?.includes('channel')) a.channel = { slot, rank, start: sim.tick, until: sim.tick + sec(rv(ab.duration, rank)) };
   switch (ab.type) {
     case 'skillshot_line':
@@ -671,7 +684,7 @@ function execute(sim: Sim, eid: number, slot: number, rank: number, x: number, y
       if (ab.flags?.includes('unstoppable')) addBuff(sim, eid, { kind: 'unstoppable', id: ab.id, src: eid, ticks: Math.ceil((plan.distance / plan.speed) * 30) + 1 });
       const t = plan.target;
       abilState(sim).moves.set(eid, {
-        serial: Unit.serial[eid]!, dx: plan.dx, dy: plan.dy, speed: plan.speed, left: plan.distance, slot, rank,
+        serial: Unit.serial[eid]!, dx: plan.dx, dy: plan.dy, speed: plan.speed, left: plan.distance, total: plan.distance, slot, rank,
         target: t, targetSerial: t >= 0 ? Unit.serial[t]! : 0, stopAtEnemy: plan.stopAtEnemy, cx: x, cy: y,
       });
       break;
@@ -915,7 +928,7 @@ export function leapTo(sim: Sim, src: number, t: number, x: number, y: number, t
   const speed = (d * 30) / Math.max(1, ticks);
   if (!addBuff(sim, t, { kind: 'airborne', id: 'leap', src, ticks: Math.ceil((d / speed) * 30) + 1 })) return;
   onMoveCommand(sim, t);
-  abilState(sim).moves.set(t, { serial: sim.c.Unit.serial[t]!, dx, dy, speed, left: d, slot: -1, rank: 0, target: -1, targetSerial: 0, stopAtEnemy: 0, cx: 0, cy: 0, through: 1 });
+  abilState(sim).moves.set(t, { serial: sim.c.Unit.serial[t]!, dx, dy, speed, left: d, total: d, slot: -1, rank: 0, target: -1, targetSerial: 0, stopAtEnemy: 0, cx: 0, cy: 0, through: 1 });
 }
 
 /** Move t to (x, y) over `overTicks` (airborne while moving). */
@@ -930,7 +943,7 @@ function moveUnit(sim: Sim, src: number, t: number, dx: number, dy: number, d: n
   const speed = overTicks && overTicks > 0 ? (d * 30) / overTicks : DISPLACE_SPEED;
   if (!addBuff(sim, t, { kind: 'airborne', id: 'displace', src, ticks: Math.ceil((d / speed) * 30) + 1 })) return;
   onMoveCommand(sim, t);
-  abilState(sim).moves.set(t, { serial: sim.c.Unit.serial[t]!, dx, dy, speed, left: d, slot: -1, rank: 0, target: -1, targetSerial: 0, stopAtEnemy: 0, cx: 0, cy: 0 });
+  abilState(sim).moves.set(t, { serial: sim.c.Unit.serial[t]!, dx, dy, speed, left: d, total: d, slot: -1, rank: 0, target: -1, targetSerial: 0, stopAtEnemy: 0, cx: 0, cy: 0 });
 }
 
 // ------------------------------------------------------------------ movement helpers (dash, blink, Flash)

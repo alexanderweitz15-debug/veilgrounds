@@ -236,3 +236,17 @@ file to `src/ui/settings.ts`. Until decided, C7 waits.
 - **For C:** HUD slot F2 (default key T, rebindable) shown when `me.abilities[6]` exists, announcement on
   `tpUnlocked` ("Teleport freigeschaltet" / "Teleport unlocked"), scoreboard third summoner. Not done by B.
 - **For the brain team:** issue in docs/agents/issues.md (bots ignore abilities[6]).
+
+## 2026-10-19 · Agent B · B5 mechanic feel, sim side (additive) -> D: render
+
+- `SnapEntity.dash?: number` 0..1 progress of a dash / knockback / pull (own dashes and displacements);
+  `SnapEntity.air?: number` 0..1 of the longest airborne CC (knock-up arc). **D:** flight arc from these; the dash
+  animation should end when `dash` disappears.
+- Damage events carry `flash?: true`: champion hits always, all other hits (DoT ticks, minions, towers, monsters) at
+  most every 8 ticks (4/s) per target. **D:** `render/world.ts onEvent` should call `units.flash` only when
+  `ev.flash` (today: every damage event).
+- `atkStart` / `atkEnd` were already in the snapshot (since before B3): **D** can drive the wind-up animation exactly.
+- Facing: decision B = the sim keeps the exact facing (cast direction and bot prediction depend on it); the 180 deg
+  turn smoothing (~80 ms) belongs to the render (D2 "Blickrichtung geglättet").
+- Dagny Q: castTime 0.2 -> 0; auto resets (flag `auto_reset`) now also end a running backswing, so the next auto starts
+  the same tick.

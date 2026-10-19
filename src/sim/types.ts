@@ -121,7 +121,7 @@ export type CastFailReason = 'cooldown' | 'mana' | 'range' | 'cc' | 'busy' | 'ta
 
 /** Events are produced during a tick and consumed by render/stats. Cleared at the start of each tick. */
 export type SimEvent =
-  | { e: 'damage'; src: number; dst: number; amount: number; type: DamageType; crit?: boolean; /** Basic attack (render-only info: death recap). */ auto?: true }
+  | { e: 'damage'; src: number; dst: number; amount: number; type: DamageType; crit?: boolean; /** Basic attack (render-only info: death recap). */ auto?: true; /** Hit flash (B5): champion hits, others max 4/s per target. */ flash?: true }
   | {
       e: 'death'; eid: number; kind: number; team: number; killer: number; x: number; y: number;
       /** Victim champion id (champions only). */

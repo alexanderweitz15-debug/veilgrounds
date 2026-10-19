@@ -4,13 +4,13 @@ import { query } from 'bitecs';
 import type { Sim } from './sim';
 import { pointVisible, sees } from './vision';
 import { Kind, VARIANTS, enemyOf, isStructure, type LaneId, type SimEvent, type Variant } from './types';
-import { abilityHud, armedSlot, type AbilityHud } from './systems/abilities';
+import { abilityHud, armedSlot, displaceProgress, type AbilityHud } from './systems/abilities';
 import { CHAMPION_DATA, championHooks, champIdOf } from './champions';
 import type { ChampionVisuals, HintMarker, VisualShape } from './champions/hooks';
 import { inFountain, inventory, itemValue } from './items/inventory';
 import { itemCooldownHud } from './items/itemHooks';
 import { champions, kda } from './systems/economy';
-import { buffs, isRevealed } from './buffs';
+import { airborneProgress, buffs, isRevealed } from './buffs';
 import { groundObjects } from './summons';
 import { isStealthUnit, stealthPointSeen, trinketHud, trueSight, trueSightAreas, wardTypeOf, type TrinketId, type WardType } from './wards';
 import { ccLevel, ccState } from './buffs';
@@ -82,6 +82,10 @@ export interface SnapEntity {
   sight?: number;
   /** Outer towers: plates left (5 -> 0; all fall at 14:00). Public, both teams. */
   plates?: number;
+  /** Dash / knockback / pull in progress: 0..1 along the path (render: flight arc, animation ends with it). */
+  dash?: number;
+  /** Knocked up (airborne CC): 0..1 of the arc. */
+  air?: number;
   /** Enemy unit under a reveal of this team (Mira W, Nyx seed / R, Tobin E, Spaehfrucht, Siegelward / Suchfeuer). */
   revealed?: true;
   /** Own unit currently revealed to the enemy team (LoL "revealed" indicator; own wards under enemy true sight). */
@@ -323,6 +327,14 @@ function objectiveState(sim: Sim): SnapObjectives {
   };
 }
 
+/** Dash / knock-up progress (2 decimals) of a visible unit. */
+function motionFields(sim: Sim, e: number, alive: boolean): { dash?: number; air?: number } {
+  if (!alive) return {};
+  const d = displaceProgress(sim, e);
+  const a = airborneProgress(sim, e);
+  return { ...(d >= 0 ? { dash: Math.round(d * 100) / 100 } : {}), ...(a >= 0 ? { air: Math.round(a * 100) / 100 } : {}) };
+}
+
 /** Reveal state of a visible unit: enemy under this team's reveal, or own unit revealed to the enemy. */
 function revealFields(sim: Sim, e: number, team: number, alive: boolean): { revealed?: true; exposed?: true } {
   if (!alive || (team !== 0 && team !== 1)) return {};
@@ -383,6 +395,7 @@ export function snapshotEntities(sim: Sim, team: number): SnapEntity[] {
       ...(k === Kind.Ward && isStealthUnit(sim, e) ? { stealth: true as const } : {}),
       ...(k === Kind.Tower && sim.c.Tower.tier[e] === 0 ? { plates: sim.c.Tower.plates[e]! } : {}),
       ...revealFields(sim, e, team, alive),
+      ...motionFields(sim, e, alive),
       ...(Unit.variant[e] ? { variant: VARIANTS[Unit.variant[e]!] } : {}),
     });
   }

@@ -71,7 +71,8 @@ export type Command =
   | { t: 'attackMove'; x: number; y: number }
   | { t: 'stop' }
   | { t: 'cast'; slot: 0 | 1 | 2 | 3; x: number; y: number; target?: number }
-  | { t: 'spell'; slot: 0 | 1; x: number; y: number; target?: number }
+  /** Summoner spell: 0 D, 1 F, 2 Teleport of the top laner once unlocked (B4). */
+  | { t: 'spell'; slot: 0 | 1 | 2; x: number; y: number; target?: number }
   | { t: 'levelUp'; slot: 0 | 1 | 2 | 3 }
   | { t: 'recall' }
   /** Team ping at a map point; target = entity eid for focus/objective pings. */
@@ -161,6 +162,8 @@ export type SimEvent =
       /** Stealthed zone (ability flag 'stealth'; unused since the Lysa wire is visible): enemies get it only under true sight. */
       stealth?: true;
     }
+  /** B4: the top laner unlocked Teleport as summoner slot `slot` (team-only event). */
+  | { e: 'tpUnlocked'; eid: number; team: number; slot: number }
   | { e: 'gameOver'; winner: number };
 
 export interface PlayerSetup {

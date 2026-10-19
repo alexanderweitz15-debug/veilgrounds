@@ -20,3 +20,10 @@ when `onRetry` is given.
 The sim emits `castFail` only for abilities; item actives that fail (cooldown, no target, out of range) are silent.
 The HUD already shows any `castFail` reason it receives (`hud.ts onEvent`), so an event with the same shape for item
 slots is enough.
+
+## 2026-10-19 · B · bots never use the top laner's unlocked Teleport (B4) · medium · brain team (A2 macro)
+
+Sim side done (sim/b-mechanics): after 1500 lane-minion gold the lobby top laner gets Teleport as summoner slot 2
+(`PlayerHud.abilities[6]`, id 'teleport'; command `{ t: 'spell', slot: 2, x, y }` onto an own tower, or minion/ward
+after 10:00; event `tpUnlocked` to the own team). Bots only look at abilities[4] / [5] (brain.ts, laning.ts). Wanted
+(AGENTS-PLAN B4): lane return after a recall, and bot-lane fights once ahead in gold.

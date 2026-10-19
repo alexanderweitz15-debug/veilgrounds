@@ -102,7 +102,8 @@ interface ChampAbil {
   ranks: number[];
   cdUntil: number[];
   cdTotal: number[];
-  sums: [string, string];
+  /** Summoner spells: the two picked ones, plus Teleport as a third for the top laner (B4, topTeleport.ts). */
+  sums: string[];
   sumCdUntil: number[];
   sumCdTotal: number[];
   cast: CastState | null;
@@ -1075,8 +1076,9 @@ export const abilitiesSystem: System = {
  */
 export function castSummoner(sim: Sim, eid: number, slot: number, x: number, y: number, target?: number): CastFailReason | null {
   const { Unit } = sim.c;
-  if (!Unit.alive[eid] || Unit.kind[eid] !== Kind.Champion || (slot !== 0 && slot !== 1)) return 'unlearned';
+  if (!Unit.alive[eid] || Unit.kind[eid] !== Kind.Champion || slot < 0) return 'unlearned';
   const a = champAbil(sim, eid);
+  if (slot >= a.sums.length) return 'unlearned';
   const id = a.sums[slot]!;
   const def = summonerDef(id);
   if (!def || def.todo) return 'unlearned';
@@ -1112,6 +1114,15 @@ function recastHud(sim: Sim, a: ChampAbil, slot: number): { recast?: AbilityHud[
   return { recast: { opensIn: Math.max(0, w.from - sim.tick) / 30, left: (w.until - sim.tick) / 30, total: Math.max(1, w.until - Math.max(w.from, 0)) / 30 } };
 }
 
+/** Adds a summoner spell slot (Teleport for the top laner, B4); returns its slot index. */
+export function addSummonerSlot(sim: Sim, eid: number, id: string): number {
+  const a = champAbil(sim, eid);
+  a.sums.push(id);
+  a.sumCdUntil.push(0);
+  a.sumCdTotal.push(0);
+  return a.sums.length - 1;
+}
+
 /** Slot of the armed next-auto empowerment (read-only, no state creation), -1 = none. Snapshot: weapon glow. */
 export function armedSlot(sim: Sim, eid: number): number {
   const a = (sim.state.abilities as AbilState | undefined)?.champs.get(eid);
@@ -1136,7 +1147,7 @@ export function abilityHud(sim: Sim, eid: number): AbilityHud[] {
       ...(a.armed && a.armed.slot === slot && a.armed.until >= sim.tick ? { armed: (a.armed.until - sim.tick) / 30 } : {}),
     };
   });
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < a.sums.length; i++) {
     const def = summonerDef(a.sums[i]!);
     out.push({
       id: a.sums[i]!,

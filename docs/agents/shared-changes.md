@@ -225,3 +225,14 @@ file to `src/ui/settings.ts`. Until decided, C7 waits.
    `ScoreRow.itemsSeen` = tick of that sighting. Absent if the champion was never seen. Own team: live as before.
    **For C:** scoreboard and target frame can show `row.items` for enemies (optionally dimmed / "seen x s ago" from
    `itemsSeen`). A targeted enemy is visible, so its row is current that tick. Brain team unaffected (may read it).
+
+## 2026-10-19 · Agent B · B4 Teleport for top (additive) -> C: HUD slot, brain: bot use
+
+- Sim: `src/sim/topTeleport.ts`. Lobby role `top` counts gold from lane-minion kills; at 1500
+  (`summoners.json teleport.topUnlockGold`) Teleport becomes summoner slot 2 (unless the champion already took it).
+  Cooldown as Teleport (360, 240 from 10:00). `ChampAbil.sums` is now `string[]` (2 or 3 entries).
+- Command: `{ t: 'spell', slot: 2, ... }` (type `slot: 0 | 1 | 2`). HUD: `PlayerHud.abilities[6]` exists only after
+  the unlock; `ScoreRow.summonerCds` gets a third entry. Event `{ e: 'tpUnlocked', eid, team, slot }`, own team only.
+- **For C:** HUD slot F2 (default key T, rebindable) shown when `me.abilities[6]` exists, announcement on
+  `tpUnlocked` ("Teleport freigeschaltet" / "Teleport unlocked"), scoreboard third summoner. Not done by B.
+- **For the brain team:** issue in docs/agents/issues.md (bots ignore abilities[6]).

@@ -586,6 +586,8 @@ export function teamEvents(sim: Sim, team: number): { events: SimEvent[]; audio:
         // stealthed zones (ability flag 'stealth'): enemies only under true sight at the moment it is placed
         if (ev.team === team) return true;
         return ev.stealth && (team === 0 || team === 1) ? trueSight(sim, team, ev.x, ev.y, ev.r) : pointVisible(sim, team, ev.x, ev.y);
+      case 'tpUnlocked':
+        return ev.team === team;
       case 'gold':
       case 'level':
       case 'lastHitMiss':

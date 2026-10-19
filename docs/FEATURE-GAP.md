@@ -39,9 +39,9 @@ Stand: 16.10.2026, Agent C (Audit des Codes auf `main` @ `0bbc3d0`). Quelle der 
 
 | # | Funktion | LoL-Verhalten | Stand | Nutzen | Aufwand | Agent | Beleg / Lücke |
 |---|---|---|---|---|---|---|---|
-| 2.1 | Ping-Rad | Gefahr, Achtung, Auf dem Weg, Zurück, Vermisst, Vision erbeten, Hilfe, Sammeln | teilweise | 3 | S | C | `pingWheel.ts` WHEEL: danger, onMyWay, help, vision, missing, back, group, ok + alert in der Mitte. `focus`, `objective`, `question` existieren als PingKind, sind aber nur per Alt+Klick (`objective`/`focus`) bzw. gar nicht erreichbar. |
+| 2.1 | Ping-Rad | Gefahr, Achtung, Auf dem Weg, Zurück, Vermisst, Vision erbeten, Hilfe, Sammeln | da | 3 | S | C | Rad mit 8 Pings + Achtung; „?“-Ping auf eigener Taste (H, änderbar) auf die Einheit unter dem Cursor oder den Boden (C4 `f5887d3`, docs/ist/c4-pings2-after.jpg); Fokus/Objective per Alt+Klick. |
 | 2.2 | Objective-Ping mit Timer | „Drache in 1:20“ als Chat-Zeile | da | 4 | S | C | C4 `28c5ab5`: Klick auf Objective-Timer → Teamchat „Flussleviathan in 1:20 (6:40)“ / „ist da!“. |
-| 2.3 | Gegenstands-Ping aus dem Inventar | Alt+Klick auf Item: „X hat Y fertig“ / „Y: 2 Teile fehlen“ | teilweise | 2 | S | C | C4: Alt+Klick auf Inventar-Item → „Ich habe X.“; im Shop und „fehlende Teile“ fehlt. |
+| 2.3 | Gegenstands-Ping aus dem Inventar | Alt+Klick auf Item: „X hat Y fertig“ / „Y: 2 Teile fehlen“ | da | 2 | S | C | C4: Alt+Klick auf Inventar-Item → „Ich habe X.“; Alt+Klick auf ein Item im Shop → „Ich kaufe X.“ bzw. „Ich spare auf X (fehlen N Gold).“ (docs/ist/c4-pings2-after.jpg). |
 | 2.4 | Minimap-Pings | Alt+Klick auf Minimap / Ping-Rad auf Minimap, Türme/Objectives anpingbar | teilweise | 3 | S | C | C4: Alt+Klick auf die Minimap rastet auf gegnerische Gebäude (Fokus), eigene (Gefahr), Objective-Gruben (Objective) ein; Test tests/chatPings.test.ts. Kein Ping-Rad auf der Minimap. |
 | 2.5 | Beschwörerzauber-Ping | Klick auf Gegner-Zauber im Scoreboard schreibt „Flash 4:32“ in den Chat | da | 4 | S | C | C2/C4: Klick auf gegnerischen Zauber im Scoreboard startet den Timer und schreibt „Wren Sprung bis 12:34“ ins Team; Test (Timer). |
 | 2.6 | Team-Chat | Enter, Teamzeilen | da | 1 | – | C | `chat.ts`; Bot-Zeilen kommen aus der Sim. |
@@ -60,11 +60,11 @@ Stand: 16.10.2026, Agent C (Audit des Codes auf `main` @ `0bbc3d0`). Quelle der 
 | 3.4 | Level-up-Modifier | Ctrl + Taste | da | 2 | – | C | `controller.ts` `levelMod` = Ctrl oder Shift. Kein Test. |
 | 3.5 | Kamera-Sperre mit Taste | Y | da | 2 | – | C | `toggleCameraLock` (KeyY), Einstellung `cameraLocked`. |
 | 3.6 | Kamera-Geschwindigkeit | Regler | da | 2 | – | C | `settings.cameraSpeed`, Regler in `settingsPanel.ts`. |
-| 3.7 | Minimap-Skalierung und -Seite | Regler + „Minimap links“ | da | 2 | S | C | C7 `003c3a8`: Minimap-Größe 80–150 % und „Minimap links“ (Chat rückt hoch, Todesleiste folgt); docs/ist/c7-minimap-left-after.jpg. Links ab ~115 % berührt die Minimap den Rand der unteren Leiste. |
+| 3.7 | Minimap-Skalierung und -Seite | Regler + „Minimap links“ | da | 2 | S | C | C7: Minimap-Größe 80–150 % und „Minimap links“; die Größe wird so begrenzt, dass die Minimap die untere Leiste nie überdeckt (bei 1280 px max. ~112 %, Test „minimap fit“; docs/ist/c7-minimap-fit-after.jpg). |
 | 3.8 | HUD-Skalierung | Regler | da | 2 | – | C | `uiScale` / `uiScaleAuto` (`display.ts`). |
 | 3.9 | Schadenszahlen an/aus | Einstellung | da | 1 | – | C | `settings.damageNumbers`. |
-| 3.10 | HP-Leisten-Stil | Segmentierung, Farben, Rahmen | fehlt | 2 | S | C (+D Render) | HP-Balken im Overlay ohne Optionen. |
-| 3.11 | Gegner-Skillshot-Hervorhebung | Umrisse gegnerischer Skillshots (Einstellung) | fehlt | 3 | S | C (+D) | Telegraphs existieren, keine Einstellung. |
+| 3.10 | HP-Leisten-Stil | Segmentierung, Farben, Rahmen | da | 2 | S | C (+D Render) | C7 `da0ec05`: Lebensleisten-Striche der Champions: alle 100 + 1000 Leben (LoL), nur 1000 oder keine (src/ui/overlay.ts); Einstellung + Import/Export (docs/ist/c7-settings2-after.jpg, c7-minimap-fit-after.jpg zeigt „keine“). |
+| 3.11 | Gegner-Skillshot-Hervorhebung | Umrisse gegnerischer Skillshots (Einstellung) | teilweise | 3 | S | C (+D) | C7: Einstellung `enemySkillshotOutline` vorhanden (Panel, Import/Export); die Darstellung in src/render/telegraph.ts fehlt (Anfrage an D in shared-changes.md). |
 | 3.12 | Angriffsbewegung „Ziel am Cursor“ | Player Attack Move Click | teilweise | 3 | S | B + C | `attackMoveOnCursor` existiert (A sofort an den Cursor). B5 prüft „Ziel am Cursor“. |
 | 3.13 | Einstellungen Export/Import (JSON) | (Veilgrounds-eigen) | da | 1 | S | C | C7: Export (Datei veilgrounds-settings.json mit Einstellungen + Tasten) und Import mit Prüfung von Schlüsseln, Typen, Enum-Werten und Reglerbereichen; docs/ist/c7-settings-io-after.jpg; Test tests/settingsIO.test.ts. |
 | 3.14 | Sprache DE/EN vollständig | – | da | 2 | S | C | Test tests/i18n.test.ts (gleiche Schlüssel, gleiche Platzhalter, keine leeren Texte); t() ersetzt jedes Vorkommen eines Platzhalters. |
@@ -76,11 +76,11 @@ Stand: 16.10.2026, Agent C (Audit des Codes auf `main` @ `0bbc3d0`). Quelle der 
 |---|---|---|---|---|---|---|---|
 | 4.1 | Lobby-Bot-Konfiguration pro Slot | (Veilgrounds-eigen) Rang, Archetyp, Achsen, Varianz | teilweise | 4 | S | C | `classicLobby.ts` „Erweitert“: Rang pro Bot, Varianz, Archetyp-Preset, 10-Achsen-Editor. Ungeprüft: Rolle/Champion der Bots wählbar. → C5 |
 | 4.2 | Prägungen-Editor mit speicherbaren Seiten | Eigene Seiten anlegen, benennen, speichern | da | 3 | M | C | C5 `e627710`: „Eigene Seite“ pro Champion (Schlüsselprägung + 3 verschiedene kleine), in IndexedDB gespeichert, wählbar wie ein Preset; docs/ist/c5-runes-after.jpg; Test tests/runePages.test.ts. Nur eine Seite pro Champion, nur in der Classic-Lobby. |
-| 4.3 | Champion-Auswahl mit Bann-Phase | 3+3 bzw. 5+5 Banns | fehlt | 2 | M | C | Treffer für „ban“ sind nur der Beschwörerzauber „Bannen“. → C5 (optional) |
-| 4.4 | Rollentausch | Tausch mit Mitspieler in der Auswahl | fehlt | 2 | S | C | Rolle frei wählbar, Bots werden passend aufgefüllt; Tausch mit einem Bot-Slot fehlt. → C5 |
+| 4.3 | Champion-Auswahl mit Bann-Phase | 3+3 bzw. 5+5 Banns | da | 2 | M | C | C5 `39b01d1`: optionale Bann-Phase (bis 10, eigener Champion nicht bannbar, gebannte im eigenen Raster gesperrt); Bots mit gebanntem Champion bekommen den nächsten freien ihrer Rolle + Standard-Prägungen; Test tests/lobbyBans.test.ts; docs/ist/c5-bans-after.jpg. |
+| 4.4 | Rollentausch | Tausch mit Mitspieler in der Auswahl | da | 2 | S | C | C5: „⇄“ in jeder verbündeten Bot-Zeile übernimmt dessen Rolle (Champion bleibt, wenn er passt); docs/ist/c5-bans-after.jpg (getauscht zu Oben). |
 | 4.5 | Porträt-Ausschnitte | Kopf im Kachelausschnitt | teilweise | 1 | S | C (+D Sprites) | IST-ZUSTAND §2: Ilvane/Seraphyne angeschnitten. → C5 |
 | 4.6 | Ladebildschirm-Tipps / Lore | Tipps unter den Karten | da | 2 | S | C (Texte D6) | C7 `d8bddf9`: 12 Trainings-Tipps (de/en), wechseln alle 7 s; docs/ist/c7-loading-after.jpg; Test (Tipp-Schlüssel lückenlos). Lore-Texte fehlen (D6). |
-| 4.7 | Spielende-Bildschirm mit Statistik und „Nochmal“ | Sieg/Niederlage → Statistik → Nochmal | teilweise | 3 | S | C | Overlay nur Titel + Beenden; Post-Game automatisch nach Classic ≥ 60 s; „Nochmal“ nur für Trainer (`main.ts afterGame`). |
+| 4.7 | Spielende-Bildschirm mit Statistik und „Nochmal“ | Sieg/Niederlage → Statistik → Nochmal | da | 3 | S | C | Overlay mit Sieg/Niederlage → Auswertung (Classic ≥ 60 s) mit „Nochmal“ (Lead `fcbf223`); docs/ist/c6-postgame-after-charts.jpg. |
 | 4.8 | Profil mit Verlauf | Match-Historie, Statistik pro Champion | fehlt | 3 | M | C (+D Verlauf) | Treffer für „profile“ sind nur Bot-Profile. D5 baut den Verlauf (IndexedDB); C die Ansicht. |
 | 4.9 | Enzyklopädie | (Collection) | da | 2 | – | C | `encyclopedia.ts`; Screenshot `docs/ist/12-enzyklopaedie.jpg`. |
 | 4.10 | Hauptmenü erster Frame | Kein dunkler Frame | teilweise | 1 | S | B (B7) | IST-ZUSTAND §1. |

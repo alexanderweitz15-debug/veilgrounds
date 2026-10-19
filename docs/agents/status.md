@@ -48,6 +48,6 @@ atkTarget masked), C1-C4 + C6 UI, D motif JSON, F9 overlay columns (show "-" unt
 
 ## Questions for the user (collected)
 
-- Lysa E wire is now invisible to enemies (B grouped it with seeds/traps; spec-champions does not say so). Keep?
-- Enemy items in target frame / scoreboard: LoL shows them, the snapshot hides them on purpose (C's question). Show?
-- Sev: keep the Schwarzglut jump-on-death (spec "Einwand") until the first bot-sim run, or drop it now?
+- ANSWERED 19 Oct: Lysa E wire visible to enemies (B).
+- ANSWERED 19 Oct: show enemy items like LoL, last state seen while visible (B snapshot, C UI).
+- ANSWERED (spec): Sev ember jump decided after the first bot-sim run (E).

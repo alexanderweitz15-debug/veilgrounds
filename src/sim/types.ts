@@ -235,6 +235,8 @@ export interface SimConfig {
   botToxicity?: boolean;
   /** Language of bot chat lines (client UI language); default German. */
   botLang?: 'de' | 'en';
+  /** Bot brain rework: the utility selector (src/ai/utility, BOT_UTILITY=1 in node). Off by default. */
+  botUtility?: boolean;
   /** Lanes that spawn minions. Default: all three. */
   minionLanes?: LaneId[];
   minionsEnabled?: boolean;

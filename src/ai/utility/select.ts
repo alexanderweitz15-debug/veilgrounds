@@ -14,6 +14,7 @@ import { teamfightNear } from '../bot/teamfight';
 import { roamActive } from '../roams/roam';
 import { gankActive } from '../ganks/jungle';
 import { VALUES, styleFactor } from './values';
+import { dst } from '../bot/geo';
 import { buildWorld } from './world';
 import { CANDIDATES } from './value';
 import { runIntent } from './intents';
@@ -64,7 +65,9 @@ function committed(n: NodeCtx, st: UtilityState): IntentId | null {
   if (n.mem.ext.trade) return 'trade';
   if (roamActive(n)) return 'roam';
   if (gankActive(n)) return 'gank';
-  if (st.intent === 'recall' && (n.mem.mode === 'recall' || n.mem.mode === 'home')) return 'recall';
+  // the walk home / channel of a recall holds until the bot is home (the fountain leaf takes over there)
+  const home = n.ctx.map.sides[n.ctx.team].fountain;
+  if (st.intent === 'recall' && (n.mem.mode === 'recall' || n.mem.mode === 'home') && dst(n.v.self, home) >= VALUES.recall.homeRange) return 'recall';
   if (st.intent === 'fight' && teamfightNear(n) && n.v.tick - st.evalAt < C.commitReevalS * 30) return 'fight';
   return null;
 }

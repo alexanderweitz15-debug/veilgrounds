@@ -24,6 +24,9 @@ export function applyDisplaySettings(): void {
   root.style.setProperty('--red', REL.enemy);
   root.classList.toggle('reduce-motion', settings.reduceMotion);
   root.classList.toggle('high-contrast', settings.highContrast);
+  // minimap size / side (C7): .minimap-wrap scales by --ui * --mm, html.minimap-left moves it (and the chat) over
+  root.style.setProperty('--mm', ((settings.minimapScale ?? 100) / 100).toFixed(3));
+  root.classList.toggle('minimap-left', !!settings.minimapLeft);
 }
 
 let installed = false;

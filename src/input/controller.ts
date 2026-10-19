@@ -6,6 +6,7 @@ import type { SimLink } from '../game/link';
 import type { World } from '../render/world';
 import { settings, updateSettings } from '../settings';
 import { actionFor, type Action } from './keybinds';
+import { castModeFor } from './castMode';
 import { PingWheel } from '../ui/pingWheel';
 import { Kind, type PingKind } from '../sim/types';
 
@@ -38,7 +39,7 @@ export class InputController {
   hover: SnapEntity | null = null;
   showRange = false;
   /** Ability key held with "cast with indicator": aim preview until the key is released. */
-  aiming: { slot: 0 | 1 | 2 | 3; code: string } | null = null;
+  aiming: { slot: 0 | 1 | 2 | 3; code: string; /** Normal cast: stays until a left click casts (right click cancels). */ click?: boolean } | null = null;
   /** performance.now() until which the camera lock is suspended (minimap peek). */
   cameraPeekUntil = 0;
   private centerHeld = false;
@@ -120,6 +121,13 @@ export class InputController {
     this.mouseY = e.clientY;
     this.refreshHover();
     const now = performance.now();
+    // normal cast (C7): the shown indicator casts on left click, right click cancels it
+    if (this.aiming?.click && (e.button === 0 || e.button === 2)) {
+      const slot = this.aiming.slot;
+      this.aiming = null;
+      if (e.button === 0) this.cast('cast', slot, false);
+      return;
+    }
     if (e.button === 2) {
       if (this.armed) {
         this.setArmed(null);
@@ -214,8 +222,13 @@ export class InputController {
     if (abilitySlot !== undefined) {
       if (levelMod) this.send({ t: 'levelUp', slot: abilitySlot });
       // LoL "quick cast with indicator": hold to aim (fx shows range + shape), release casts (keyUp)
-      else if (settings.castIndicator && !e.altKey) this.aiming = { slot: abilitySlot, code: e.code };
-      else this.cast('cast', abilitySlot, e.altKey);
+      else if (e.altKey) this.cast('cast', abilitySlot, true);
+      else {
+        // per-key cast mode (src/input/castMode.ts): quick, hold-and-release indicator, or indicator + left click
+        const mode = castModeFor(settings, abilitySlot);
+        if (mode === 'quick') this.cast('cast', abilitySlot, false);
+        else this.aiming = { slot: abilitySlot, code: e.code, click: mode === 'normal' };
+      }
       return;
     }
     switch (action) {
@@ -312,7 +325,7 @@ export class InputController {
   }
 
   private keyUp(e: KeyboardEvent): void {
-    if (this.aiming && e.code === this.aiming.code) {
+    if (this.aiming && !this.aiming.click && e.code === this.aiming.code) {
       const slot = this.aiming.slot;
       this.aiming = null;
       if (!this.host.menuOpen()) this.cast('cast', slot, false);

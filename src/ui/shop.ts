@@ -13,6 +13,7 @@ import { itemIcon, setIcon, statIcon } from './icons';
 import { shopLayoutKey } from './shopLayout';
 import './icons.css';
 import { setTip } from './tooltip';
+import { goldEfficiency } from './goldEfficiency';
 
 const TIERS: ItemTier[] = ['starter', 'boots', 'basic', 'component', 'legendary', 'consumable'];
 const PCT: ReadonlySet<ItemStat> = new Set(['asPct', 'critPct', 'lifestealPct', 'msPct', 'hpRegenPct', 'manaRegenPct', 'healShieldPowerPct']);
@@ -235,6 +236,12 @@ export class ShopPanel {
         const url = STAT_ICON[k] ? statIcon(STAT_ICON[k]!) : null;
         if (url) setIcon(ic, url);
         s.append(`+${v}${PCT.has(k) ? ' %' : ''} ${t(`stat.${k}`)}`);
+      }
+      // gold efficiency of the stats (LoL wiki method; passives/actives are not priced)
+      const ge = goldEfficiency(sel);
+      if (ge) {
+        const g = el('div', `sp-goldeff${ge.pct >= 100 ? ' good' : ''}`, det, t('shop.goldEff', { pct: ge.pct, value: ge.value }));
+        setTip(g, `text:${t('shop.goldEffTip')}`);
       }
       if (sel.passive) this.effect(det, t('shop.passive'), sel.passive.name[settings.lang], sel.passive.desc[settings.lang]);
       if (sel.active) this.effect(det, t('shop.active'), sel.active.name[settings.lang], `${sel.active.desc[settings.lang]} (${sel.active.cooldown} s)`);

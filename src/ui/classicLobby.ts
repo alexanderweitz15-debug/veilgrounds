@@ -6,7 +6,9 @@ import './botDifficulty.css';
 import type { PlayerSetup, SimConfig } from '../sim/types';
 import { CHAMPION_DATA } from '../sim/champions';
 import { SUMMONERS } from '../sim/summoners';
-import { RUNES, runePresets, runesFromPreset } from '../sim/items/runes';
+import { RUNES, runePresets } from '../sim/items/runes';
+import { CUSTOM_ID, customPage, loadRunePages, runesFor } from '../game/runePages';
+import { renderRuneEditor } from './runePages';
 import { classicConfig } from '../ai/runner';
 import { botNames } from '../ai/humanize/names';
 import { RANKS, type Rank } from '../ai/profiles/schema';
@@ -57,6 +59,8 @@ const pick = {
   expanded: new Set<number>(),
   /** "Erweitert": per-bot rank, variance and playstyle editors (default: one difficulty for all bots). */
   advanced: false,
+  /** Own rune page editor open (C5). */
+  editRunes: false,
 };
 
 export const championsFor = (role: Role): string[] =>
@@ -75,7 +79,7 @@ export function buildClassicConfig(): SimConfig {
   const cfg = classicConfig(champ, pick.role, RANKS[pick.rank]!, {
     seed: pick.seed,
     summoners: pick.summoners ?? DEFAULT_SUMMONERS[pick.role],
-    runes: runesFromPreset(champ, presetId),
+    runes: runesFor(champ, presetId),
     variance: pick.variance,
   });
   cfg.botToxicity = settings.botToxicity;
@@ -206,7 +210,8 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
     // runes
     el('div', 'field-label', left, t('lobby.runes'));
     const presets = runePresets(pick.champ);
-    const chosen = presets.find((p) => p.id === settings.runePresets[pick.champ])?.id ?? presets[0]?.id;
+    const own = customPage(pick.champ);
+    const chosen = settings.runePresets[pick.champ] === CUSTOM_ID && own ? CUSTOM_ID : (presets.find((p) => p.id === settings.runePresets[pick.champ])?.id ?? presets[0]?.id);
     const pg = el('div', 'preset-grid', left);
     const runeName = (id: string): string => (RUNES.find((x) => x.id === id) as { name?: { de: string; en: string } } | undefined)?.name?.[settings.lang] ?? id;
     for (const p of presets) {
@@ -225,6 +230,33 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
         draw();
       });
     }
+    // own page (C5): select it, or open the editor to build / change it
+    const oc = el('button', `preset-card own-page${chosen === CUSTOM_ID ? ' selected' : ''}`, pg);
+    el('div', 'preset-name', oc, t('runes.own'));
+    if (own) {
+      const rr = el('div', 'rune-icons', oc);
+      [own.keystone, ...own.minor].forEach((id, k) => {
+        const ic = el('span', `rune-icon${k === 0 ? ' key' : ''}`, rr);
+        setIcon(ic, runeIcon(id, k === 0));
+        setTip(ic, `rune:${id}`);
+      });
+    } else el('div', 'preset-desc', oc, t('runes.ownEmpty'));
+    oc.addEventListener('click', () => {
+      if (own) updateSettings({ runePresets: { ...settings.runePresets, [pick.champ]: CUSTOM_ID } });
+      else pick.editRunes = true;
+      draw();
+    });
+    const eb = el('button', 'menu-btn secondary re-toggle', left, `${t('runes.edit')} ${pick.editRunes ? '▾' : '▸'}`);
+    eb.addEventListener('click', () => {
+      pick.editRunes = !pick.editRunes;
+      draw();
+    });
+    if (pick.editRunes)
+      renderRuneEditor(left, pick.champ, () => {
+        pick.editRunes = false;
+        updateSettings({ runePresets: { ...settings.runePresets, [pick.champ]: CUSTOM_ID } });
+        draw();
+      });
 
     // bots: ONE difficulty for all bots (user request); per-bot ranks, variance and playstyles only under "Erweitert"
     el('div', 'field-label', right, t('classic.botDifficulty'));
@@ -292,6 +324,8 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
     }
   };
   draw();
+  // saved own rune pages (IndexedDB) arrive asynchronously
+  void loadRunePages().then(() => root.isConnected && draw());
 
   const row = el('div', 'row-buttons', panel);
   el('button', 'menu-btn secondary', row, t('menu.back')).addEventListener('click', onBack);
@@ -302,6 +336,10 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
  * Loading screen: both teams with champion, bot name and rank. Bakes the match's sprite atlases meanwhile (the game
  * picks them up from the cache) and calls onDone once they are ready and a short delay or a click has passed.
  */
+/** Loading-screen tips `tip.1` .. `tip.N` in de/en.json, rotated every TIP_MS. */
+const TIP_COUNT = 12;
+const TIP_MS = 7000;
+
 export function renderLoading(root: HTMLElement, cfg: SimConfig, onDone: () => void): void {
   root.textContent = '';
   root.classList.add('menu-screen', 'loading-screen');
@@ -318,6 +356,15 @@ export function renderLoading(root: HTMLElement, cfg: SimConfig, onDone: () => v
     if (team === 0) el('div', 'loading-vs', root, 'VS');
   }
   const hint = el('div', 'loading-hint', root, t('classic.clickToStart'));
+  // training tips while the sprites are painted (FEATURE-GAP 4.6): a random one, then the next every TIP_MS
+  const tip = el('div', 'loading-tip', root);
+  let ti = Math.floor(Math.random() * TIP_COUNT);
+  const showTip = (): void => {
+    if (!tip.isConnected) return clearInterval(tipTimer); // loading screen left
+    tip.textContent = `${t('tip.label')} ${t(`tip.${(ti++ % TIP_COUNT) + 1}`)}`;
+  };
+  const tipTimer = window.setInterval(showTip, TIP_MS);
+  showTip();
   const bar = el('div', 'loading-bake', root);
   bar.style.cssText = 'font-size:13px;letter-spacing:0.06em;color:#a09b8c;min-height:1.2em';
   const paint = (k: number): void => {

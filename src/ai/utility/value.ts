@@ -3,6 +3,7 @@
 // precondition does not hold. Every number comes from values.json, the rank profile, the knobs or public game rules.
 
 import { PLATE_COUNT, PLATE_HP, PLATES_FALL_TICK } from '../../sim/systems/towers';
+import { deathTimerTicks } from '../../sim/systems/economy';
 import type { LaneName, Pt } from '../../sim/map';
 import type { NodeCtx } from '../bt/types';
 import type { SnapEntity } from '../bot/types';
@@ -213,6 +214,16 @@ export function pushValue(w: World): CandidateValue | null {
 
 // ------------------------------------------------------------------ roam (§5, §7.3)
 
+/**
+ * Gold a successful roam / gank kill is worth to the team: bounty + the assist share of the ally that helps, plus
+ * the wave the dead opponent loses while respawning (public death timer x lane rate).
+ */
+function roamPrize(w: World, targetLevel: number): number {
+  const k = G.kill;
+  const respawnS = deathTimerTicks(Math.max(1, targetLevel), w.tick) / 30;
+  return killGold() * (1 + k.assistShare) + w.laneRate * respawnS * VALUES.lane.absenceLossFrac.neutral;
+}
+
 interface RoamCache {
   at: number;
   opts: ReturnType<typeof roamOptions>;
@@ -229,10 +240,11 @@ export function roamValue(w: World): CandidateValue | null {
   const travel = ev && w.pv ? walkS(n, { x: ev.target.lastX, y: ev.target.lastY }) : 0;
   const h = travel + H.roamExtra;
   const support = n.ctx.role === 'support' ? 1 - n.p.knobs.supportAdcBinding : 1;
-  const benefit = active ? killGold() * W.roamKillConversion : (ev?.score ?? 0) * killGold() * W.roamKillConversion * support;
+  const prize = roamPrize(w, ev?.target.level ?? n.v.me.level);
+  const benefit = (active ? 1 : ev?.score ?? 0) * prize * W.roamKillConversion * support;
   const plateRisk = w.waveAtOwnTower ? G.plate * W.roamPlateRisk : 0;
   const cost = absenceLoss(w, travel * 2 + H.roamExtra) + plateRisk;
-  return { benefit, cost, horizonS: Math.max(1, h), terms: { score: ev?.score ?? 1, travelS: travel, wave: absenceLoss(w, travel * 2 + H.roamExtra), plateRisk, active: active ? 1 : 0 }, data: { roam: ev } };
+  return { benefit, cost, horizonS: Math.max(1, h), terms: { score: ev?.score ?? 1, prize, travelS: travel, wave: absenceLoss(w, travel * 2 + H.roamExtra), plateRisk, active: active ? 1 : 0 }, data: { roam: ev } };
 }
 
 // ------------------------------------------------------------------ jungle gank (§4.3 with the utility's costs)
@@ -253,9 +265,10 @@ export function gankValue(w: World): CandidateValue | null {
   if (!active && !ev) return null;
   const travel = ev ? walkS(n, { x: ev.target.lastX, y: ev.target.lastY }) : 0;
   const h = travel + H.roamExtra;
-  const benefit = active ? killGold() * W.roamKillConversion : (ev?.score ?? 0) * killGold() * W.roamKillConversion;
+  const prize = roamPrize(w, ev?.target.level ?? n.v.me.level);
+  const benefit = (active ? 1 : ev?.score ?? 0) * prize * W.roamKillConversion;
   const cost = VALUES.jungle.campGoldPerS * h * 0.5;
-  return { benefit, cost, horizonS: Math.max(1, h), terms: { score: ev?.score ?? 1, travelS: travel, camps: cost, active: active ? 1 : 0 }, data: { gank: ev } };
+  return { benefit, cost, horizonS: Math.max(1, h), terms: { score: ev?.score ?? 1, prize, travelS: travel, camps: cost, active: active ? 1 : 0 }, data: { gank: ev } };
 }
 
 // ------------------------------------------------------------------ recall (§4.6, §7.2)
@@ -273,7 +286,7 @@ export function recallValue(w: World): CandidateValue | null {
   const n = w.n;
   const v = n.v;
   const fountain = n.ctx.map.sides[n.ctx.team].fountain;
-  if (dst(v.self, fountain) < 3000 || n.mem.ext.trade || v.me.recallLeft > 0) return null;
+  if (dst(v.self, fountain) < VALUES.recall.homeRange || n.mem.ext.trade || v.me.recallLeft > 0) return null;
   const gold = spendable(v.me, n.mem);
   const price = nextItemPrice(n.ctx, n.mem);
   // item term (spec-bots §8): gold for the next item and at least the profile's recall gold threshold (null: Iron

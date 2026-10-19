@@ -14,6 +14,7 @@ import { query } from 'bitecs';
 import type { Sim } from '../sim';
 import type { System } from './index';
 import { DT, Kind, isMinion, isStructure, sec } from '../types';
+import { noteLaneMinionGold } from '../topTeleport';
 import { dist2 } from '../vec';
 import { heal } from '../damage';
 import { clearAttackOrders, onMoveCommand } from './attack';
@@ -174,7 +175,9 @@ function minionDeath(sim: Sim, victim: number, killer: number): void {
   const team = Unit.team[victim]!;
   if (killer >= 0 && Unit.kind[killer] === Kind.Champion && Unit.team[killer] !== team) {
     Champ.cs[killer] = Champ.cs[killer]! + 1;
-    reward(sim, killer, s.gold * minionGoldMult(sim, killer)); // Jägerzahn malus (src/sim/items/itemHooks.ts)
+    const g = s.gold * minionGoldMult(sim, killer); // Jägerzahn malus (src/sim/items/itemHooks.ts)
+    reward(sim, killer, g);
+    if (Unit.lane[victim]! <= 2) noteLaneMinionGold(sim, killer, g); // B4 Teleport for top
   }
   const x = Pos.x[victim]!;
   const y = Pos.y[victim]!;

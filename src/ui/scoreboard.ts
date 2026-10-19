@@ -185,8 +185,8 @@ export class Scoreboard {
     setTip(lev, `text:${o.soul ? t('score.obj.soul') : t('score.obj.leviathan', { n: o.leviathan, max: LEVIATHAN_MAX_STACKS })}`);
     const kb = el('span', 'sb-obj-item', r);
     setIcon(el('span', 'sb-ico kessel', kb), kesselbrutIcon());
-    el('b', '', kb, o.kesselbrut === null ? '?' : String(o.kesselbrut));
-    setTip(kb, `text:${o.kesselbrut === null ? t('score.obj.kesselbrutUnknown') : t('score.obj.kesselbrut', { n: o.kesselbrut })}`);
+    el('b', '', kb, String(o.kesselbrut));
+    setTip(kb, `text:${t('score.obj.kesselbrut', { n: o.kesselbrut })}`);
     if (o.schleierLeft > 0) {
       const sw = el('span', 'sb-obj-item sb-schleier', r);
       setIcon(el('span', 'sb-ico', sw), objectiveIcon('schleier'));

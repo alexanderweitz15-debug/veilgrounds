@@ -68,10 +68,12 @@ export type PingKind = (typeof PING_KINDS)[number];
 export type Command =
   | { t: 'move'; x: number; y: number }
   | { t: 'attack'; target: number }
-  | { t: 'attackMove'; x: number; y: number }
+  /** cursor: LoL 'Player Attack Move Click' (target nearest to the click instead of to the champion). */
+  | { t: 'attackMove'; x: number; y: number; cursor?: boolean }
   | { t: 'stop' }
   | { t: 'cast'; slot: 0 | 1 | 2 | 3; x: number; y: number; target?: number }
-  | { t: 'spell'; slot: 0 | 1; x: number; y: number; target?: number }
+  /** Summoner spell: 0 D, 1 F, 2 Teleport of the top laner once unlocked (B4). */
+  | { t: 'spell'; slot: 0 | 1 | 2; x: number; y: number; target?: number }
   | { t: 'levelUp'; slot: 0 | 1 | 2 | 3 }
   | { t: 'recall' }
   /** Team ping at a map point; target = entity eid for focus/objective pings. */
@@ -120,7 +122,7 @@ export type CastFailReason = 'cooldown' | 'mana' | 'range' | 'cc' | 'busy' | 'ta
 
 /** Events are produced during a tick and consumed by render/stats. Cleared at the start of each tick. */
 export type SimEvent =
-  | { e: 'damage'; src: number; dst: number; amount: number; type: DamageType; crit?: boolean; /** Basic attack (render-only info: death recap). */ auto?: true }
+  | { e: 'damage'; src: number; dst: number; amount: number; type: DamageType; crit?: boolean; /** Basic attack (render-only info: death recap). */ auto?: true; /** Hit flash (B5): champion hits, others max 4/s per target. */ flash?: true }
   | {
       e: 'death'; eid: number; kind: number; team: number; killer: number; x: number; y: number;
       /** Victim champion id (champions only). */
@@ -130,6 +132,8 @@ export type SimEvent =
       killerTeam?: number;
       /** Killer champion id (champion kills only). */
       killerChamp?: string;
+      /** Epic objective monster (B6): the kill is announced to both teams. */
+      epic?: true;
     }
   | { e: 'gold'; eid: number; amount: number; x: number; y: number }
   | { e: 'lastHitMiss'; eid: number; target: number; earlyHp?: number; lateMs?: number }
@@ -141,7 +145,8 @@ export type SimEvent =
    * A cast/summoner command that could not be executed (render: message + error sound). Only delivered to the
    * caster's own view. summoner: slot is the summoner slot 0/1 (D/F) instead of the ability slot.
    */
-  | { e: 'castFail'; src: number; slot: number; reason: CastFailReason; summoner?: true }
+  /** item: slot is an inventory slot (item active / consumable that could not be used). */
+  | { e: 'castFail'; src: number; slot: number; reason: CastFailReason; summoner?: true; item?: true }
   | { e: 'plate'; tower: number; team: number }
   | { e: 'wave'; lane: number; team: number; index: number }
   | { e: 'respawn'; eid: number }
@@ -158,9 +163,11 @@ export type SimEvent =
       until?: number;
       /** Centre follows the caster until it resolves (self AoEs with a delay). */
       follow?: boolean;
-      /** Stealthed zone (ability flag 'stealth', Lysa E wire): enemies get it only under true sight (wards.ts). */
+      /** Stealthed zone (ability flag 'stealth'; unused since the Lysa wire is visible): enemies get it only under true sight. */
       stealth?: true;
     }
+  /** B4: the top laner unlocked Teleport as summoner slot `slot` (team-only event). */
+  | { e: 'tpUnlocked'; eid: number; team: number; slot: number }
   | { e: 'gameOver'; winner: number };
 
 export interface PlayerSetup {
@@ -235,6 +242,8 @@ export interface SimConfig {
   botToxicity?: boolean;
   /** Language of bot chat lines (client UI language); default German. */
   botLang?: 'de' | 'en';
+  /** Bot brain rework: the utility selector (src/ai/utility, BOT_UTILITY=1 in node). Off by default. */
+  botUtility?: boolean;
   /** Lanes that spawn minions. Default: all three. */
   minionLanes?: LaneId[];
   minionsEnabled?: boolean;

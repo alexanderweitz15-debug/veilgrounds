@@ -20,7 +20,8 @@ const envFlag = (): boolean => {
 const cache = new WeakMap<object, boolean>();
 
 /** True if this bot runs the utility selector (constant for a game). */
-export function utilityOn(ctx: BotStatic): boolean {
+export function utilityOn(ctx: BotStatic | undefined): boolean {
+  if (!ctx) return envFlag(); // team-AI fixtures without a bot context
   let on = cache.get(ctx);
   if (on === undefined) {
     const own = (ctx as { utility?: boolean }).utility;

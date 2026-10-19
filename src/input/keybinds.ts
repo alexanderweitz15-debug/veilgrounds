@@ -10,7 +10,7 @@ export type Action =
   | 'recall' | 'centerCamera' | 'toggleCameraLock' | 'pause' | 'showRange'
   | 'item1' | 'item2' | 'item3' | 'item4' | 'item5' | 'item6' | 'trinket'
   | 'scoreboard' | 'debug' | 'shop'
-  | 'pingWheel' | 'pingMissing';
+  | 'pingWheel' | 'pingMissing' | 'pingQuestion';
 
 export const DEFAULT_BINDS: Record<Action, string> = {
   stop: 'KeyS',
@@ -38,6 +38,8 @@ export const DEFAULT_BINDS: Record<Action, string> = {
   shop: 'KeyP',
   pingWheel: 'KeyG',
   pingMissing: 'KeyV',
+  /** LoL '?' ping (no LoL default key; H is free here). */
+  pingQuestion: 'KeyH',
 };
 
 export const ACTIONS = Object.keys(DEFAULT_BINDS) as Action[];
@@ -64,6 +66,18 @@ export function setBind(a: Action, code: string): void {
   // a key can only do one thing: unbind the previous owner
   for (const other of ACTIONS) if (other !== a && binds[other] === code) binds[other] = '';
   binds[a] = code;
+  version++;
+  void kvSet('keybinds', { ...binds });
+}
+
+/** Replace several binds at once (settings import); unlisted actions keep their key, conflicts unbind the older one. */
+export function applyBinds(map: Partial<Record<Action, string>>): void {
+  for (const a of ACTIONS) {
+    const code = map[a];
+    if (code === undefined) continue;
+    for (const other of ACTIONS) if (other !== a && binds[other] === code && code) binds[other] = '';
+    binds[a] = code;
+  }
   version++;
   void kvSet('keybinds', { ...binds });
 }

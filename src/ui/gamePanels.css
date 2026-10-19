@@ -46,6 +46,27 @@
 .classic-panel .preset-card.selected { border-color: var(--gold, #c8aa6e); background: rgba(200,170,110,0.08); }
 .classic-panel .preset-card .preset-name { font-family: var(--font-label, sans-serif); text-transform: uppercase; letter-spacing: 0.05em; color: var(--gold-hi, #f0e6d2); }
 .classic-panel .preset-card .preset-desc, .classic-panel .preset-card .runes { font-size: 12px; color: var(--text-dim, #a09b8c); margin-top: 2px; }
+/* C5: ban phase + role swap (classic lobby) */
+.ban-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 4px; margin-bottom: 8px; }
+.ban-card { position: relative; width: 38px; height: 38px; padding: 0; border: 1px solid #3a3226; background: #15120f; cursor: pointer; }
+.ban-card:disabled { opacity: 0.35; cursor: default; }
+.ban-portrait { position: absolute; inset: 0; display: grid; place-items: center; background: #1c1824 center / cover no-repeat; color: #f1e6c8; font: 800 13px sans-serif; }
+.ban-card.banned { border-color: #c8553a; }
+.ban-card.banned .ban-portrait { filter: grayscale(1) brightness(0.55); }
+.ban-card.banned::after, .champ-card.banned::after { content: ''; position: absolute; inset: 0; background: linear-gradient(45deg, transparent 46%, #e0604a 46%, #e0604a 54%, transparent 54%); pointer-events: none; }
+.champ-card.banned { position: relative; opacity: 0.45; cursor: default; }
+.role-swap { margin-left: auto; padding: 0 6px; border: 1px solid #4d4233; background: transparent; color: #c8aa6e; cursor: pointer; font-size: 13px; }
+.role-swap:hover { border-color: #c8aa6e; color: #f3d98c; }
+/* C5: own rune page editor (classic lobby) */
+.re-toggle { margin-top: 6px; }
+.rune-editor { margin-top: 6px; padding: 8px; border: 1px solid #2c2c30; background: rgba(255, 255, 255, 0.02); }
+.re-label { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold, #c8aa6e); margin: 4px 0; }
+.re-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.re-rune { width: 32px; height: 32px; padding: 0; border: 1px solid #3a3226; background: #15120f center / cover no-repeat; cursor: pointer; opacity: 0.55; }
+.re-rune.key { width: 40px; height: 40px; }
+.re-rune.on { opacity: 1; border-color: var(--gold, #c8aa6e); box-shadow: 0 0 0 1px var(--gold, #c8aa6e); }
+.re-save { margin-top: 8px; }
+.re-save:disabled { opacity: 0.45; cursor: default; }
 .rank-row { display: flex; align-items: center; gap: 12px; }
 .rank-slider { flex: 1; accent-color: var(--gold, #c8aa6e); }
 .rank-value { min-width: 110px; font-family: var(--font-label, sans-serif); text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold-hi, #f0e6d2); }
@@ -72,6 +93,7 @@
 .loading-card .bot-rank { font-family: var(--font-label, sans-serif); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold, #c8aa6e); }
 .loading-vs { font-family: var(--font-display, Georgia); color: var(--gold, #c8aa6e); font-size: 22px; }
 .loading-hint { font-size: 12px; color: var(--text-dim, #a09b8c); }
+.loading-tip { max-width: 760px; margin: 6px auto 0; font-size: 14px; line-height: 1.4; color: #d8cfb6; text-align: center; min-height: 2.8em; }
 
 /* ---------------------------------------------------------------- HUD item slots + buffs */
 .hud .gold { pointer-events: auto; cursor: pointer; }

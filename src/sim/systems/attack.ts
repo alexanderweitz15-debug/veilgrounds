@@ -42,6 +42,8 @@ interface AttackState {
   projSerial: Int32Array;
   /** Attack-move: 1 while chasing an acquired target (resume walking to amx/amy when it dies). */
   amChasing: Uint8Array;
+  /** Attack-move with 'target at cursor' (LoL Player Attack Move Click): the first acquisition measures from the click. */
+  amCursor: Uint8Array;
   /** Stop command: no idle auto-acquire until the next move/attack order. */
   holdFire: Uint8Array;
   /** Current target came from idle auto-acquire (dropped instead of chased when it leaves range). */
@@ -61,6 +63,7 @@ function attackState(sim: Sim): AttackState {
       projSpeed: new Float64Array(MAX_ENT),
       projSerial: new Int32Array(MAX_ENT).fill(-1),
       amChasing: new Uint8Array(MAX_ENT),
+      amCursor: new Uint8Array(MAX_ENT),
       holdFire: new Uint8Array(MAX_ENT),
       idleAcq: new Uint8Array(MAX_ENT),
       windSerial: new Int32Array(MAX_ENT),
@@ -104,7 +107,12 @@ export function clearAttackOrders(sim: Sim, eid: number): void {
   Atk.attackMove[eid] = 0;
   Atk.phase[eid] = 0;
   const s = attackState(sim);
-  s.amChasing[eid] = s.holdFire[eid] = s.idleAcq[eid] = 0;
+  s.amChasing[eid] = s.amCursor[eid] = s.holdFire[eid] = s.idleAcq[eid] = 0;
+}
+
+/** Attack-move order: target nearest to the click (cursor: true) or to the champion (default) on the first acquisition. */
+export function setAttackMoveCursor(sim: Sim, eid: number, on: boolean): void {
+  attackState(sim).amCursor[eid] = on ? 1 : 0;
 }
 
 /** Stop command (on) / any other order (off): idle auto-acquire paused until the next order. */
@@ -183,7 +191,7 @@ function updateUnit(sim: Sim, eid: number): void {
     // recycled eid: the previous occupant's fractional attack-timer carry made mirrored units attack a tick apart
     st.owner[eid] = Unit.serial[eid]!;
     st.carry[eid] = 0;
-    st.amChasing[eid] = st.holdFire[eid] = st.idleAcq[eid] = 0;
+    st.amChasing[eid] = st.amCursor[eid] = st.holdFire[eid] = st.idleAcq[eid] = 0;
   }
   let t = Atk.target[eid]!;
   let valid = isRef(sim, t, Atk.targetSerial[eid]!);
@@ -207,8 +215,9 @@ function updateUnit(sim: Sim, eid: number): void {
 
   // attack-move: acquire the nearest enemy, otherwise (re)walk to the attack-move point
   if (Atk.attackMove[eid] && t < 0 && Atk.phase[eid] !== 1) {
-    const found = acquire(sim, eid);
+    const found = acquire(sim, eid, ACQUIRE_EXTRA, true, st.amCursor[eid] ? Atk.amx[eid]! : undefined, Atk.amy[eid]!);
     if (found >= 0) {
+      st.amCursor[eid] = 0;
       Atk.target[eid] = t = found;
       Atk.targetSerial[eid] = Unit.serial[found]!;
       Move.mode[eid] = 2;
@@ -270,7 +279,8 @@ function face(sim: Sim, eid: number, t: number): void {
 }
 
 /** Nearest attackable enemy within attack range + extra (plants never; structures and wards only if `structures`). */
-function acquire(sim: Sim, eid: number, extra = ACQUIRE_EXTRA, structures = true): number {
+/** Nearest valid target in attack range (+extra); distance from (ox, oy) when given (attack-move at cursor). */
+function acquire(sim: Sim, eid: number, extra = ACQUIRE_EXTRA, structures = true, ox?: number, oy = 0): number {
   const { Unit, Pos } = sim.c;
   let best = -1;
   let bestD = Infinity;
@@ -279,8 +289,8 @@ function acquire(sim: Sim, eid: number, extra = ACQUIRE_EXTRA, structures = true
     const e = ents[i]!;
     const k = Unit.kind[e]!;
     if (k === Kind.Plant || (!structures && (isStructure(k) || k === Kind.Ward)) || !canTarget(sim, eid, e) || !inAttackRange(sim, eid, e, extra)) continue;
-    const dx = Pos.x[e]! - Pos.x[eid]!;
-    const dy = Pos.y[e]! - Pos.y[eid]!;
+    const dx = Pos.x[e]! - (ox ?? Pos.x[eid]!);
+    const dy = Pos.y[e]! - (ox !== undefined ? oy : Pos.y[eid]!);
     const d = dx * dx + dy * dy;
     if (best < 0 || nearer(d, Unit.serial[e]!, bestD, Unit.serial[best]!)) {
       bestD = d;

@@ -15,6 +15,7 @@ import { cancelOrbwalk, moveCmd, orbwalkAttack } from './kite';
 import { decisionInterval, summonerReady } from './trade';
 import { emitPing, say } from './social';
 import treeData from '../../data/bots/tree.json';
+import { utilityOn } from '../utility/flag';
 import wardSpotsJson from '../../data/bots/wardSpots.json';
 
 const RECALL = treeData.params.recall;
@@ -262,7 +263,9 @@ function takeObjective(n: NodeCtx, d: Desire, logOnce: (c: string, r: string) =>
   const v = n.v;
   const p = { x: d.x, y: d.y };
   // epic pit monsters (the pits hold nothing else; Kesselbrut's three are smaller than the others)
-  const mon = v.monsters.filter((m) => dst(m, p) < 700 && m.radius >= 100).sort((a, b) => a.hp - b.hp)[0];
+  // Kesselbrut larvae are small (radius 70): with the utility flag they count as the objective's monsters (§7.4)
+  const small = d.obj === 'kesselbrut' && utilityOn(n.ctx);
+  const mon = v.monsters.filter((m) => dst(m, p) < 700 && (small || m.radius >= 100)).sort((a, b) => a.hp - b.hp)[0];
   // group up first: start only with >= 3 of the assigned bots at the pit (or after 20 s); a lone bot tanks the
   // monster, retreats and the monster resets
   const here = [v.self, ...v.allies].filter((a) => d.slots.includes(a.slot) && dst(a, p) < 1300).length;

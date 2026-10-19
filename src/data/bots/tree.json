@@ -54,6 +54,7 @@
           { "type": "action", "name": "dodge" },
           { "type": "action", "name": "peel" },
           { "type": "action", "name": "arena" },
+          { "type": "action", "name": "utilitySelect" },
           {
             "type": "selector",
             "id": "combat",

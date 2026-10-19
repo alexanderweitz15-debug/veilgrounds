@@ -2,18 +2,106 @@
 
 Branch `ui/c-features` (base `0bbc3d0`). Spec: docs/AGENTS-PLAN.md §5 (C1-C7). Newest block on top.
 
-## Ready for merge
+## Ready for merge (block 3, on top of main `fcbf223`)
 
 | Package | Commits | Merge note |
 |---|---|---|
-| C1 feature-gap audit | `7914764` | docs only |
-| C2 scoreboard objectives + death timers | `feb41a2` (+ screenshots in `17f1a41`) | works without sim changes; shared-change proposal below makes enemy Kesselbrut / ally summoner CDs exact |
-| C3 HUD additions | `4bdc78b` | – |
-| C4 pings + chat | `28c5ab5` | – |
-| C6 post-game (without A3 parts) | `17f1a41` | – |
+| C5 ban phase + role swap, C7 minimap fit | `39b01d1` | new src/game/bans.ts; `fitMinimap` in display.ts, called from Hud.applyScale |
+| C4 '?' ping key + shop item ping | `f5887d3` | new keybind action `pingQuestion` (default H) |
+| C7 HP-bar tick style + skillshot outline setting | `da0ec05` | src/settings.ts additive (logged); request to D in shared-changes.md |
+| post-game axis labels, screenshots, docs | next commits | – |
 
-Also merge-ready: `f31d89f` (minimap symbol for revealed enemy wards, B1's request - inert until B1's `stealth`
-field is on main; screenshots; docs). Wind-down on lead's request: C5 and C7 not started (next steps below).
+## Block 4 (2026-10-20): supervisor browser-check fixes (`6348bef`)
+
+| Finding (docs/ist/s-check-03-death.jpg) | Fix | Proof |
+|---|---|---|
+| "Unter Turmbeschuss!" drawn while dead, over the death title | cues.ts: no tower warning while the own champion is dead | docs/ist/c3-dead-fix-after.jpg |
+| caption "[X ist gefallen]" across the recap's last row | no caption for the own death (overlay + recap show it); while dead other captions stack above the recap | c3-dead-fix-after.jpg |
+| camera stays at the death spot after respawn | controller.ts: on dead -> alive the camera focuses the champion (LoL) | headless check: camera moved to (7500, 7500) while dead, after respawn the footprint centre is back at the fountain (900, 1155 for the champion at 900, 900, same offset as a locked camera); c3-respawn-camera-after.jpg |
+
+## Block 3 (2026-10-20): open items from the lead's list
+
+Test status (full suite on `12b96ce`): 69 files, 874 passed, 2 skipped, 1 todo, 1 failed - again only A1's
+wall-clock gate tests/brainReflex.test.ts "reflex logic < 0.05 ms per bot and tick" (CPU shared by several agents;
+src/ai not touched by C). `tsc --noEmit` exit 0, `vite build` exit 0, no console errors in any capture.
+
+| Item | What | Proof |
+|---|---|---|
+| Ban phase (4.3) | "Banns (n/10)" in the lobby tools row opens a portrait grid; up to 10 bans, own champion not bannable, banned champions greyed/struck in the own champion grid; after `classicConfig` bots with a banned champion get the next free one of their role (default rune page for it); names, ranks, playstyles unchanged | tests/lobbyBans.test.ts, docs/ist/c5-bans-after.jpg |
+| Role swap (4.4) | "⇄" on every allied bot row takes that bot's role (champion kept if it fits the role, summoners reset to the role default) | c5-bans-after.jpg (swapped to top) |
+| `?` ping (2.1) | own rebindable action `pingQuestion`, default H (LoL has no default key): pings the unit under the cursor (with target) or the ground | c4-pings2-after.jpg (kill feed "Aurel Stundenwerk: ?") |
+| Shop item ping (2.3) | Alt+click an item card: "Ich habe X." / "Ich kaufe X." / "Ich spare auf X (fehlen N Gold)." to team chat | c4-pings2-after.jpg |
+| Minimap overlap (3.7) | `--mm` is capped so the minimap never reaches the centred bottom panel (both sides; 1280 px: max ~112 %); re-fitted on HUD mount, resize, settings change | lobbyBans.test.ts "minimap fit", c7-minimap-fit-after.jpg (150 % asked, 112 % used, 7 px gap) |
+| HP-bar style (3.10) | `hpBarStyle`: ticks every 100 + 1000 HP (LoL), only 1000, or none (src/ui/overlay.ts is C's) | c7-settings2-after.jpg, c7-minimap-fit-after.jpg ("none") |
+| Skillshot outline (3.11) | setting `enemySkillshotOutline` + row; drawing is D's (request in shared-changes.md); the row says so | c7-settings2-after.jpg |
+| Post-game y axis | small axes now show 0, 0.25, 0.5, 0.75, 1 | c6-postgame-after-charts.jpg (refreshed) |
+
+Also: 4.1 verified in the built game (docs/ist/c5-botconfig-after.jpg), post-game refreshed after the 2-decimal axis fix.
+Still open for C: 4.5 portrait crops (D, issues.md), A3-/B-dependent
+items as listed in block 2.
+
+## Ready for merge (older blocks)
+
+Block 1 (C1-C4, C6 part 1) is on main (`e0f40bb`). Block 2 commits since then, all merge-ready (branch is
+fast-forward from main `e0f40bb`):
+
+| Package | Commits | Merge note |
+|---|---|---|
+| C2 follow-up | `9fd59b1` | enemy Kesselbrut from B's `Snapshot.kesselbrutTeams`, "?" removed |
+| C7 gold efficiency + loading tips | `d8bddf9`, `f127470` | new data file src/ui/goldValues.json |
+| C5 own rune page | `e627710` | – |
+| C7 minimap size/side, settings export/import | `003c3a8` | touches src/settings.ts (additive, lead-approved, logged in shared-changes.md) |
+| C7 per-key cast modes | `fce34a6` | touches src/settings.ts (additive), src/input/controller.ts |
+| screenshots/docs | `2c92dd9`, next docs commit | – |
+
+## Block 2 (2026-10-19): merge of main, C2 follow-up, C5 rune page, C7 settings
+
+### Done
+
+| Pkg | Files | What |
+|---|---|---|
+| C2 | src/game/objectives.ts, src/ui/scoreboard.ts | Kesselbrut of both teams from `Snapshot.kesselbrutTeams` (B3, absent = 0 for both); the "?" fallback and its i18n key are gone. Enemy items (user decision 19 Oct): scoreboard and target frame already render any row's `items`, nothing to change until B sends them |
+| C7 5.3 | src/ui/goldEfficiency.ts (new), src/ui/goldValues.json (new), src/ui/shop.ts, shop.css | Shop detail: "Gold-Effizienz der Werte: 97 % (Wert 2421 Gold)", gold per stat from the single-stat basic items (AD 35, AP 21.75, HP 2.67, armor 20, MR 16, AS% 25, mana 1.4, msFlat from boots), reference values for the rest in JSON |
+| C7 4.6 | src/ui/classicLobby.ts, gamePanels.css, i18n | 12 training tips on the loading screen, rotating every 7 s |
+| C5 4.2 | src/game/runePages.ts (new, storage + rules), src/ui/runePages.ts (new, editor), src/ui/classicLobby.ts, css, i18n | "Eigene Seite" next to the presets: keystone row + pick three minors, save = select; IndexedDB `runePages`; invalid/missing page falls back to the preset |
+| C7 3.7 | src/settings.ts (+`minimapScale`, `minimapLeft`), src/ui/display.ts (`--mm`, `html.minimap-left`), style.css, settingsPanel.ts | minimap 80-150 % and left side (frame mirrored, death bar follows, chat lifted above it) |
+| C7 3.13 | src/game/settingsIO.ts (new), src/input/keybinds.ts (`applyBinds`), settingsPanel.ts, settings.ts (`DEFAULT_SETTINGS`) | export settings + keybinds as JSON file, import validates keys, types, enum values, clamps slider ranges, reports skipped entries |
+| C7 3.2 | src/input/castMode.ts (new), controller.ts, settings.ts (`castModes`), settingsPanel.ts | per Q/W/E/R: quick / with indicator (hold-release) / normal (indicator, left click casts, right click or Esc cancels). Verified in the built game: Q cooldown 0 after key release in normal mode, 5 s after the click |
+
+### Tests (new in block 2)
+
+tests/goldEfficiency.test.ts, tests/runePages.test.ts, tests/settingsIO.test.ts (round trip, validation, cast modes),
+tests/i18n.test.ts (tip keys), tests/objectives.test.ts (kesselbrutTeams). Each green; `tsc --noEmit` clean.
+
+Full suite on `9134f0b` (19 Oct, machine shared with other agents): 68 files, 871 passed, 2 skipped, 1 todo,
+**1 failed: tests/brainReflex.test.ts "reflex logic < 0.05 ms per bot and tick" measured 0.152 ms** - a wall-clock
+performance gate in A1's area (src/ai/reflex), not touched by C; it depends on CPU load (five agents running).
+`tsc --noEmit` exit 0, `vite build` exit 0.
+
+### Screenshots (block 2, 1280x720, built game, no console errors)
+
+c7-shop-before/after (gold efficiency line), c7-loading-before/after (tip), c5-runes-before/after (own page + editor),
+c7-settings-before/after and c7-settings-io-before/after (minimap rows, cast modes, export/import),
+c7-minimap-left-before/after (left, 120 %), c7-castmode-settings-after, c7-castmode-indicator-after (indicator stays
+after releasing Q in normal mode).
+
+### Open after block 2 (exact next steps)
+
+- 4.3 optional ban phase, 4.4 role swap with a bot slot (classicLobby.ts post-processing; low training value 2).
+- 4.1: open "Erweitert" in the lobby, screenshot, set FEATURE-GAP 4.1 to `da` (code exists).
+- 2.1 '?' ping in the wheel, 2.3 item ping from the shop ("missing parts").
+- 3.7 caveat: on the left at > ~115 % the minimap touches the bottom HUD panel; either cap the left-side scale or
+  shift `.hud-bottom` when `html.minimap-left` (needs a screenshot check).
+- 3.10 HP-bar style / 3.11 enemy skillshot outline: settings keys can be added (src/settings.ts open for C), the
+  drawing is D's (render).
+- A3-dependent: playstyle mini-scales + rank calibration in the scoreboard, post-game error list.
+- B-dependent: enemy items (decided, B), ally summoner CDs, vision score / damage, Teleport slot (B4), item cast-fail
+  events.
+- src/main.ts "Nochmal" after classic (issues.md).
+
+---
+
+Block 1 history below (C5/C7 "not started" there is superseded by block 2).
 
 ## Block 1 (2026-10-16): C1-C4, C6 part 1
 

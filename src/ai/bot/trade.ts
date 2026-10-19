@@ -22,7 +22,6 @@ import { VALUES, rankCurve } from '../utility/values';
 import type { TradeState } from '../bt/state';
 import type { ExchangeResult } from '../contract';
 import { utilityOn } from '../utility/flag';
-import { utilitySelect } from '../utility/select';
 
 const SILVER = rankIdx('silver');
 const GOLD = rankIdx('gold');
@@ -230,15 +229,8 @@ export function shouldAbort(
   return null;
 }
 
-/**
- * First leaf of the combat selector. With the utility flag on (BOT_UTILITY=1, src/ai/utility/flag.ts) it hands the
- * whole non-reflexive decision to the utility selector - an interim hook until the dedicated 'utilitySelect' tree
- * node is merged (docs/agents/shared-changes.md); flag off: the classic trade leaf, unchanged.
- */
-export function tradeRun(n: NodeCtx): NodeResult {
-  if (utilityOn(n.ctx)) return utilitySelect(n);
-  return tradeRunCore(n);
-}
+/** Classic trade leaf (combat selector). With the utility flag the 'utilitySelect' tree node runs before it. */
+export const tradeRun = (n: NodeCtx): NodeResult => tradeRunCore(n);
 
 /** Continue the running trade / all-in (combo, then autos + casts), or abort it. */
 export function tradeRunCore(n: NodeCtx): NodeResult {

@@ -96,7 +96,7 @@ Status: proposed (sim/b-mechanics). Affects: brain team (reads them), C (scorebo
 - `SnapEntity.plates?: number` on outer towers (both teams; 5 -> 0, all fall at 14:00).
 - `SnapEntity.revealed?: true` on enemy units under a reveal of the viewing team; `SnapEntity.exposed?: true` on own
   units currently revealed to the enemy (Nyx seed, Mira W, own ward under enemy Siegelward/Suchfeuer).
-- `Snapshot.kesselbrutTeams?: [blue, red]` (absent while both 0); the old own-team `kesselbrut` stays.
+- (superseded 2026-10-19: `kesselbrutTeams` replaced by C's `Snapshot.objectives`, see the C2 entry: merged.)
 - `Snapshot.reveals?: SnapReveal[]` own true-sight areas `{ kind: 'seal' | 'sweep', x, y, r, until? }`.
 - Behaviour change: `SnapEntity.atkTarget` is now masked to -1 when the target is not in the same view (no eid
   leak, e.g. an enemy champion hitting a camp in the fog). atkPhase/atkStart/atkEnd/atkTarget were already there for
@@ -130,11 +130,17 @@ Status: proposed (sim/b-mechanics). Affects: brain team (reads them), C (scorebo
   `own || structure || alive && sees()`), which duplicates the entity field mapping of buildSnapshot. An official
   lite variant would keep one source of truth for the snapshot fields.
 - Status: proposed (not blocking; the runner copy works and goes through onPerceive).
+- B 2026-10-19: done differently: `snapshotEntities(sim, team)` exported from src/sim/snapshot.ts (fog rule, all entity
+  fields incl. stealth/plates/revealed/exposed, hidden atkTarget masked; no visuals/marks/auras). buildSnapshot uses it.
+  A1 can replace `BotRunner.buildTeamEntities` with it (runner.ts is A1's file; not edited by B).
 
 ## Pre-authorised edits of src/ai/bot/brain.ts `laneLeaf` (A1, Phase 1)
 
 | date | commit | change |
 |---|---|---|
+| 2026-10-16 | 227ab5b (lead's WIP commit of A1's tree) | `laneLeaf`: with `reflexState(mem).enabled` it only computes wave state / stand distance / support side point and sets the lane intent (no last-hit timing, no holdTimer, no move/stop to free the timer, no 6-s stand hysteresis); otherwise `laneLeafLegacy` = the unchanged pre-rework code. Imports `reflexState/setIntent`. |
+| 2026-10-19 | 43b455d | `think()`: casts of `movesWhileCasting` abilities (not channels) no longer set `busyUntil` (agent B's B2 request; lead decision 2). Affects both reflex on and off. |
+
 ## A2 (brain/a2-utility)
 
 All A2 hooks keep flag-off behaviour bit-identical: every changed line is behind `utilityOn(ctx)`
@@ -142,12 +148,12 @@ All A2 hooks keep flag-off behaviour bit-identical: every changed line is behind
 
 | # | Date | File | Change | Reason | Status |
 |---|---|---|---|---|---|
-| A2-1 | 2026-10-16 | src/data/bots/tree.json, src/ai/bt/leaves.ts | Insert `{ "type": "action", "name": "utilitySelect" }` into the `main` selector directly after `arena` (before `combat`). Registry line in leaves.ts: `utilitySelect: (n) => (utilityOn(n.ctx) ? utilitySelect(n) : 'failure'),` with `import { utilityOn } from '../utility/flag'; import { utilitySelect } from '../utility/select';`. After the merge A2 removes the interim hook (first line of `tradeRun` in trade.ts). | §3/§5: the utility selector replaces the order of combat / objective / recall / idleAfterShove / role / vision; survive, dodge, peel, dead/recallChannel/fountain, housekeeping stay before it. Flag off: the node fails at once (no rng, no log, no memory write), the selector falls through unchanged. Interim until merged: `tradeRun` (first leaf of `combat`, A2's file) calls `utilitySelect` when the flag is on - F9 then shows `combat/tradeRun` as the running branch. | proposed |
-| A2-2 | 2026-10-16 | src/sim/types.ts, src/ai/bot/types.ts, src/ai/runner.ts (A1) | `SimConfig.botUtility?: boolean`; `BotStatic.utility?: boolean`; runner: `utility: config.botUtility,` in the BotStatic literal. | Browser/lobby switch for the utility model (the env variable only exists in node). `utilityOn` already reads `ctx.utility` untyped; the harness sets it per bot (tests/utilityHarness.ts). Default switch (§12) only after A1 Phase 2 is on main. | proposed |
-| A2-3 | 2026-10-16 | src/ai/bot/brain.ts `retreat` | `const goHome = !utilityOn(ctx) && (v.hpPct < lowHp \|\| (mem.mode === 'retreat' && v.hpPct < 0.4) \|\| mem.mode === 'home');` and `if (mem.mode === 'retreat' \|\| (mem.mode === 'home' && !utilityOn(ctx))) mem.mode = 'lane';` | §4.6 "retreat führt nicht mehr automatisch heim": with the flag the flee part stays (survive), the walk home becomes the recall candidate (`recallValue`: stay-death > 0.3 or an item). Measured (Diamond, 8 min, flag on, seed 1): 29 of 34 laner recalls came from this branch ("recall / low hp"), so test 8 cannot hold until it is gated. | proposed |
+| A2-1 | 2026-10-16 | src/data/bots/tree.json, src/ai/bt/leaves.ts | Insert `{ "type": "action", "name": "utilitySelect" }` into the `main` selector directly after `arena` (before `combat`). Registry line in leaves.ts: `utilitySelect: (n) => (utilityOn(n.ctx) ? utilitySelect(n) : 'failure'),` with `import { utilityOn } from '../utility/flag'; import { utilitySelect } from '../utility/select';`. After the merge A2 removes the interim hook (first line of `tradeRun` in trade.ts). | §3/§5: the utility selector replaces the order of combat / objective / recall / idleAfterShove / role / vision; survive, dodge, peel, dead/recallChannel/fountain, housekeeping stay before it. Flag off: the node fails at once (no rng, no log, no memory write), the selector falls through unchanged. Interim until merged: `tradeRun` (first leaf of `combat`, A2's file) calls `utilitySelect` when the flag is on - F9 then shows `combat/tradeRun` as the running branch. | approved by the lead 19 Oct, applied on brain/a2-utility (flag-off hash seed 1 / 4 min a5913c9c = main 7afff90) |
+| A2-2 | 2026-10-16 | src/sim/types.ts, src/ai/bot/types.ts, src/ai/runner.ts (A1) | `SimConfig.botUtility?: boolean`; `BotStatic.utility?: boolean`; runner: `utility: config.botUtility,` in the BotStatic literal. | Browser/lobby switch for the utility model (the env variable only exists in node). `utilityOn` already reads `ctx.utility` untyped; the harness sets it per bot (tests/utilityHarness.ts). Default switch (§12) only after A1 Phase 2 is on main. | approved by the lead 19 Oct, applied on brain/a2-utility (flag-off hash seed 1 / 4 min a5913c9c = main 7afff90) |
+| A2-3 | 2026-10-16 | src/ai/bot/brain.ts `retreat` | `const goHome = !utilityOn(ctx) && (v.hpPct < lowHp \|\| (mem.mode === 'retreat' && v.hpPct < 0.4) \|\| mem.mode === 'home');` and `if (mem.mode === 'retreat' \|\| (mem.mode === 'home' && !utilityOn(ctx))) mem.mode = 'lane';` | §4.6 "retreat führt nicht mehr automatisch heim": with the flag the flee part stays (survive), the walk home becomes the recall candidate (`recallValue`: stay-death > 0.3 or an item). Measured (Diamond, 8 min, flag on, seed 1): 29 of 34 laner recalls came from this branch ("recall / low hp"), so test 8 cannot hold until it is gated. | approved by the lead 19 Oct, applied on brain/a2-utility (flag-off hash seed 1 / 4 min a5913c9c = main 7afff90) |
 | A2-4 | 2026-10-16 | docs/agents/plan-api.md / src/ai/plan.ts (A1) | Second intent kind for reflex filling during a trade disengage (§6.1): `{ kind: 'disengage'; lane: LaneName; from: number /* enemy eid */; back: Pt /* own stand point side */; until: number; harass: boolean }`. Reflex: orbwalk toward `back`, fill free attack periods with autos on minions in reach (or the champion when `harass`), last-hit plans as in laneFarm. A2's trade intent sets it when a trade ends (`endTrade`) for `disengageUntil`. | §6.1 "nach dem Abbruch Disengage per Orbwalk zum Stehpunkt; währenddessen läuft der Angriffs-Scheduler weiter". | proposed (A1 accepted the idea in review-2026-10-16) |
 | A2-5 | 2026-10-16 | A3: profiles + playstyleAxes.json | A2 reads `RankBehavior.utilityNoisePct` (A3-1) and the knobs `utilFarm`, `utilHarass`, `utilTrade`, `utilPush`, `utilRoam`, `utilRecall`, `utilObjective`, `utilVision`, `utilGroup`, `utilCatchLane` (A3-2) when present; fallbacks until merged: `exchangeNoise(skill)` (same numbers) and the axis mappings in values.json `style`. Logged under node `intent` (A3-10, `VALUES.selection.logNode`). | No new shared change; listed so the merge order is clear. | info |
-## 2026-10-16 · C · src/sim/snapshot.ts · public objective + respawn fields (C2) · proposed
+## 2026-10-16 · C · src/sim/snapshot.ts · public objective + respawn fields (C2) · merged by B on sim/b-mechanics 2026-10-19 (objectives {leviathan, kesselbrut, schleierLeft, inhibs}, ScoreRow.respawnIn, ScoreRow.summonerCds; visionScore/champDamage NOT done: no sim source yet; tests/objectives.test.ts fixture got the two new required fields)
 
 Affected: B (owner, B3/B6 add the same kind of data — please use these names or tell C yours), A1–A3 (bots may read
 the same public fields; nothing hidden is added). **Nothing blocks:** C2 already works without these fields through a
@@ -205,7 +211,23 @@ Also related (B6): if Kesselbrut becomes `epic: true` / radius 130, its death ev
 client counts enemy grubs without the `objectives` field. `src/ui/announce.ts` currently assumes grub deaths stay in
 the fog (banner from the own stack count) — C adapts it when B6 lands.
 
-## 2026-10-16 · C · src/settings.ts · settings outside C's area (C7 heads-up) · proposed
+## 2026-10-16 · C · src/settings.ts · settings outside C's area (C7 heads-up) · approved (lead, 19 Oct: additive changes, log here)
+
+Log of C's additive changes to `src/settings.ts`:
+- 2026-10-19 (`c7: minimap size/side, settings export/import`): `Settings.minimapScale` (80..150, default 100),
+  `Settings.minimapLeft` (default false), `export const DEFAULT_SETTINGS` (read-only alias of DEFAULTS for the import
+  validator in src/game/settingsIO.ts). No rename, no removal.
+- 2026-10-19 (`c7: per-key cast modes`): `Settings.castModes` (per Q/W/E/R: quick / indicator / normal; default `{}`
+  = follow `castIndicator`).
+- 2026-10-20 (`c7: hp bar style, enemy skillshot outline setting`): `Settings.hpBarStyle` ('segmented' | 'thousands' |
+  'plain', default 'segmented'; used by src/ui/overlay.ts), `Settings.enemySkillshotOutline` (boolean, default false).
+
+## 2026-10-20 · C → D · src/render/telegraph.ts · read `settings.enemySkillshotOutline` · proposed
+
+Affected: D only. The setting exists (settings panel row, import/export). Request: when it is on, enemy skillshot
+telegraphs (line / zone / cone of `e.team !== myTeam`) get a stronger outline (e.g. 2 px `REL.enemy` stroke at 0.9
+alpha, fill unchanged). No change for own/ally telegraphs. The settings row says "Darstellung folgt durch Agent D"
+until this lands; remove that suffix in de/en.json (`set.enemySkillshotOutline`) with the change.
 
 `src/settings.ts` is not in C's file list (AGENTS-PLAN §7 lists src/ui, src/game, src/i18n, src/input). C7 needs new
 settings (minimap scale/side, HP-bar style, enemy skillshot outline, quick-cast per key, settings export/import).
@@ -269,3 +291,55 @@ Affects: C (src/ui/trainerMenu.ts, src/i18n), whoever owns src/main.ts (lead). D
 4. A3: when `stats/rankCalibration` exists, D maps `calibrateMatch` onto it (types `RankCalibration`,
    `CategoryCalibration` in src/stats/rankCalibration.ts are the contract D consumes).
 
+
+## 2026-10-19 · Agent B · user decisions 19.10. (snapshot, additive) -> C please read
+
+1. Lysa E wire is visible again (lysa.json without the `stealth` flag): enemies get its zone event by normal point
+   vision. Seeds/traps/Schleierwards stay stealthed. The `stealth` ability flag still works (no ability uses it).
+2. Enemy items like LoL: `ScoreRow.items` now also for enemies = inventory as last seen while that champion was
+   visible (new system `src/sim/seenItems.ts` right after vision, per team; nothing updates from the fog), plus
+   `ScoreRow.itemsSeen` = tick of that sighting. Absent if the champion was never seen. Own team: live as before.
+   **For C:** scoreboard and target frame can show `row.items` for enemies (optionally dimmed / "seen x s ago" from
+   `itemsSeen`). A targeted enemy is visible, so its row is current that tick. Brain team unaffected (may read it).
+
+## 2026-10-19 · Agent B · B4 Teleport for top (additive) -> C: HUD slot, brain: bot use
+
+- Sim: `src/sim/topTeleport.ts`. Lobby role `top` counts gold from lane-minion kills; at 1500
+  (`summoners.json teleport.topUnlockGold`) Teleport becomes summoner slot 2 (unless the champion already took it).
+  Cooldown as Teleport (360, 240 from 10:00). `ChampAbil.sums` is now `string[]` (2 or 3 entries).
+- Command: `{ t: 'spell', slot: 2, ... }` (type `slot: 0 | 1 | 2`). HUD: `PlayerHud.abilities[6]` exists only after
+  the unlock; `ScoreRow.summonerCds` gets a third entry. Event `{ e: 'tpUnlocked', eid, team, slot }`, own team only.
+- **For C:** HUD slot F2 (default key T, rebindable) shown when `me.abilities[6]` exists, announcement on
+  `tpUnlocked` ("Teleport freigeschaltet" / "Teleport unlocked"), scoreboard third summoner. Not done by B.
+- **For the brain team:** issue in docs/agents/issues.md (bots ignore abilities[6]).
+
+## 2026-10-19 · Agent B · B5 mechanic feel, sim side (additive) -> D: render
+
+- `SnapEntity.dash?: number` 0..1 progress of a dash / knockback / pull (own dashes and displacements);
+  `SnapEntity.air?: number` 0..1 of the longest airborne CC (knock-up arc). **D:** flight arc from these; the dash
+  animation should end when `dash` disappears.
+- Damage events carry `flash?: true`: champion hits always, all other hits (DoT ticks, minions, towers, monsters) at
+  most every 8 ticks (4/s) per target. **D:** `render/world.ts onEvent` should call `units.flash` only when
+  `ev.flash` (today: every damage event).
+- `atkStart` / `atkEnd` were already in the snapshot (since before B3): **D** can drive the wind-up animation exactly.
+- Facing: decision B = the sim keeps the exact facing (cast direction and bot prediction depend on it); the 180 deg
+  turn smoothing (~80 ms) belongs to the render (D2 "Blickrichtung geglättet").
+- Dagny Q: castTime 0.2 -> 0; auto resets (flag `auto_reset`) now also end a running backswing, so the next auto starts
+  the same tick.
+
+## 2026-10-19 · Agent B · B6 Kesselbrut as epic objective (additive) -> C: announce.ts, A2: team AI
+
+- `CampDef.epic` for Leviathan, Kesselbrut, Schleierwaechter (jungle.ts); `isEpicMonster(sim, eid)`.
+- Death events of epic monsters carry `epic: true` and reach both teams (teamEvents rule was `radius >= 130`, so
+  Kesselbrut kills now become public; Leviathan/Schleierwaechter unchanged). `SnapEntity.epic?: true` on those monsters.
+  Radius stays 70 (no gameplay change). Stacks of both teams: `Snapshot.objectives.kesselbrut` (C2 entry).
+- **For C:** `src/ui/announce.ts` assumed grub deaths stay in the fog; enemy grub kills now arrive as events.
+- **For A2:** objective logic can key on `e.epic` / `ev.epic` instead of radius.
+
+## 2026-10-19 · Agent B · B5 attack-move "target at cursor" (additive) -> C: setting + input
+
+- Command `{ t: 'attackMove', x, y, cursor?: true }`: the first target of that attack-move is the valid enemy in
+  range nearest to the click instead of nearest to the champion (LoL "Player Attack Move Click"). Later
+  re-acquisitions (target died) use the champion again.
+- **For C:** settings toggle ("Angriffsbewegung: Ziel am Cursor" / "Attack move: target nearest to cursor"),
+  `src/input` sends `cursor: true` when it is on. Bots are unaffected (they never set it).

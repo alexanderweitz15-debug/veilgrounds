@@ -47,7 +47,7 @@
         "en": "Auto reset: next basic attack deals bonus damage; 15% damage reduction for 2 s."
       },
       "type": "self",
-      "castTime": 0.2,
+      "castTime": 0,
       "movesWhileCasting": true,
       "range": 0,
       "cooldown": 7,

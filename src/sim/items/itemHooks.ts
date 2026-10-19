@@ -358,8 +358,11 @@ export function useItem(sim: Sim, eid: number, slot: number, x?: number, y?: num
   if (!it) return false;
   const hook = it.active?.hook ?? (it.tier === 'consumable' ? it.passive?.hook : undefined);
   const fn = hook ? USE[hook] : undefined;
-  if (!fn || itemCooldownLeft(sim, eid, it.id) > 0) return false;
-  if (!fn(sim, eid, x ?? Pos.x[eid]!, y ?? Pos.y[eid]!)) return false;
+  if (!fn) return false;
+  // failed actives report a castFail like abilities (HUD message + sound; issue from agent C, FEATURE-GAP 1.15)
+  const fail = (reason: 'cooldown' | 'cc' | 'target'): false => (sim.events.push({ e: 'castFail', src: eid, slot, reason, item: true }), false);
+  if (itemCooldownLeft(sim, eid, it.id) > 0) return fail('cooldown');
+  if (!fn(sim, eid, x ?? Pos.x[eid]!, y ?? Pos.y[eid]!)) return fail(canAttack(sim, eid) ? 'target' : 'cc');
   if (it.active) {
     const s = itemState(sim);
     let m = s.cd.get(eid);

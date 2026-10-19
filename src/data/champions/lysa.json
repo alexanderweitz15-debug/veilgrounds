@@ -99,7 +99,7 @@
       "width": 40,
       "radius": 250,
       "duration": 4,
-      "flags": ["ground_target", "stealth"],
+      "flags": ["ground_target"],
       "effects": [
         { "kind": "root", "duration": 0.75 },
         { "kind": "hook", "id": "lysa_e_tripwire" }

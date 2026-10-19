@@ -12,13 +12,14 @@ docs/agents/plan-api.md (contract + "Changes" 1-12), docs/agents/a1.md (numbers,
 | Runner wiring | src/ai/runner.ts | reflex pass after decisions; per-team reflex view (`buildTeamEntities`, same fog rule + B3 atkTarget masking) through onPerceive; cost split view/reflex |
 | laneLeaf | src/ai/bot/brain.ts | `laneLeaf` = intent for reflex if `reflexState(mem).enabled`, else `laneLeafLegacy`; `think()` no busyUntil for movesWhileCasting casts (B2) |
 | Last-hit prediction | src/ai/bot/lasthit.ts | `predictWindows` (reflex horizon 120 ticks), legacy `planLastHit` unchanged (horizon 75) |
-| Tests | tests/brainReflex.test.ts | 6 tests (1-4, 11, 12) green on 289c506's predecessor; test 4 fix in 289c506 |
+| Tests | tests/brainReflex.test.ts | tests 1-4, 11, 12 green (b24ea8e); test 5 describe.skip (harass gate) |
 
 ## Next steps (in order)
 
 1. Lead decision pending: switch reflex on in src/sim/worker.ts (criterion met: 4 Gold games seeds 1-4, laner
    CS/min 3.27 on vs 2.90 off; lane-alone means meet the gate).
-2. Phase 2 only with the lead's go (B1-B3 are on main).
+2. Phase 2: harass filler is in (reflex only) but far below the gate (a1.md open item 5 has the diagnosis and the
+   next steps); wave states not started. Test 5 is describe.skip until harass meets its gate.
 3. Open items 1-3 and 6 in a1.md.
 
 ## How to measure (scratch scripts, not committed; recreate if needed)

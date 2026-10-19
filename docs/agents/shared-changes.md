@@ -136,6 +136,7 @@ Status: proposed (sim/b-mechanics). Affects: brain team (reads them), C (scorebo
 | date | commit | change |
 |---|---|---|
 | 2026-10-16 | 227ab5b (lead's WIP commit of A1's tree) | `laneLeaf`: with `reflexState(mem).enabled` it only computes wave state / stand distance / support side point and sets the lane intent (no last-hit timing, no holdTimer, no move/stop to free the timer, no 6-s stand hysteresis); otherwise `laneLeafLegacy` = the unchanged pre-rework code. Imports `reflexState/setIntent`. |
+| 2026-10-19 | 796bcb0 | `laneLeaf` (reflex path): `intent.harass` = no ward walk and gank risk < 0.6 (§4.3); constant HARASS_MAX_GANK_RISK. |
 | 2026-10-19 | 43b455d | `think()`: casts of `movesWhileCasting` abilities (not channels) no longer set `busyUntil` (agent B's B2 request; lead decision 2). Affects both reflex on and off. |
 
 ## A2 (brain/a2-utility)

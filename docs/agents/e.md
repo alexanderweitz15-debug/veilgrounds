@@ -15,7 +15,7 @@ names or branches remain.
 | 46f0929 | `tests/sim/castMovement.test.ts`: dummy gets a Nachbild so Sev R can be cast |
 | c4476d4 | overlay: black-ember / Nachbild glyphs next to the HP bar; e.md + handoff |
 | 8279a7f | merge origin/main c15e402 (conflicts in buffs/damage/snapshot + docs resolved keeping both sides); champ/e-sev now contains main and fast-forwards |
-| (last) | visuals: no duplicate Nachbild mark (the snapshot already lists champion-prefixed mark buffs); screenshots |
+| 14c2252 | visuals: no duplicate Nachbild mark (the snapshot already lists champion-prefixed mark buffs); screenshots |
 
 ### Kit as implemented (numbers in sev.json; hook constants at the top of sev.ts)
 - Passive Nachbild: every ability hit marks 3 s (`mark` buff `sev_nachbild`); autos on marked enemies +10-30 (+15 % AP)
@@ -26,7 +26,7 @@ names or branches remain.
 - E Trugbild: blink 450, decoy pet at the start for 2.5 s with Sev's HP/mana (fake bar), 0 AD autos at Sev's target.
 - R Augenbann: needs a Nachbild target (otherwise the cast fails 'target'); 0.5 s wind-up = eye contact (lost sight
   cancels, refund, 2 s CD); 1.5 s fear (tenacity applies) + 50 % slow + reveal; end damage, x1.5 with ember.
-- Fear CC: no attacks/casts/summoners (Reinigen too), breaks channels/recall/Teleport, unit walks away from the source
+- Fear CC (bot consumers of `me.cc` in src/ai/ganks/escape.ts and src/ai/bot/spells.ts only compare `>= 3` / `< 3` / `>= 5`, so 3.5 reads as hard CC; spells.ts may then try Reinigen, which fails with 'cc' under fear): no attacks/casts/summoners (Reinigen too), breaks channels/recall/Teleport, unit walks away from the source
   (movement pre-pass), ccLevel 3.5 (between root 3 and stun 4), CC_BIT 256, HUD label "Verängstigt"/"Feared".
 
 ### Tests
@@ -36,12 +36,16 @@ names or branches remain.
 - Full `npx vitest run` (under heavy CPU load): 886 passed, 2 failed -> castMovement/sev fixed in 46f0929 (re-run
   green); `tests/brainReflex.test.ts` "reflex logic < 0.05 ms per bot and tick" failed on time budget (test took 239 s
   while 4+ agents shared the CPU; timing test, not related to Sev) - re-run it alone on a quiet machine.
+- Post-merge full `npx vitest run` (tree 14c2252 = main c15e402 + Sev): 919 passed, 1 failed:
+  `tests/botStyle.test.ts` spec test 9 throws `TypeError ... reading 'utility'` in `src/ai/utility/flag.ts:26`
+  (TeamAI.evaluate called without a ctx; brom-only test, no Sev involved; src/ai and that test are identical to main
+  -> brain team). brainReflex passed this time.
 - `npx tsc --noEmit`: clean.
 
 ### Screenshots (1280x720, `npx vite build` + `vite preview --port 5392`, headless Edge, no console errors)
 `docs/ist/e-sev-lobby.jpg` (classic lobby, Sev card + ability icons), `e-sev-ingame-idle.jpg`, `e-sev-q.jpg` (Q wind-up
 telegraph), `e-sev-w.jpg` (ember + Nachbild glyphs on the dummy), `e-sev-e-decoy.jpg` (Sev + decoy with fake champion
-bar), `e-sev-r.jpg` (fear: ring, three phantoms, "Verängstigt"). Lobby shot is from the dev server run (same code).
+bar), `e-sev-r.jpg` (fear: ring, three phantoms, "Verängstigt"). All six from the preview build.
 Sprite close-ups were checked in the stylelab (`window.__champSheet`).
 
 ### Bot games (gold, 15 min, Sev in blue mid; tools/scratch/sevCasts.ts)

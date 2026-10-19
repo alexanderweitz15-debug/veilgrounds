@@ -41,7 +41,7 @@ describe('history', () => {
     expect(r.deathsPer30).toBeCloseTo(3, 5);
     expect(r.win).toBe(true);
     expect(Object.keys(r.calibration).sort()).toEqual(['economy', 'farming', 'fighting', 'survival']);
-    const tr = recordFromSummary(summary({ mode: 'trainer', duration: 300, csAt: (t) => t / 10, winner: null, trainer: { kind: 'lastHit', time: 300, duration: 300, done: true, score: 72, grade: 'B', stats: [] } }), 2000);
+    const tr = recordFromSummary(summary({ mode: 'lastHit', duration: 300, csAt: (t) => t / 10, winner: null, trainer: { kind: 'lastHit', time: 300, duration: 300, done: true, score: 72, grade: 'B', stats: [] } }), 2000);
     expect(tr.calibration).toEqual({});
     expect(tr.trainer).toMatchObject({ kind: 'lastHit', score: 72 });
     expect(tr.win).toBeNull();

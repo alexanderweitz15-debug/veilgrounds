@@ -241,3 +241,31 @@ monster bars lifted up to 3 steps when they overlap).
    || dummy || e.id === hoverId }` for every bar, `const off = stackBars(rects)`, then draw with `y + (off.get(e.id) ?? 0)`
    (CC chip and marks use the same shifted y). Minion bars could also go 5 -> 4 px high if the stack still looks busy.
 
+## 2026-10-19 · D · training plan + history wiring (D5, FEATURE-GAP 7.1 / 7.2) · proposed
+
+Affects: C (src/ui/trainerMenu.ts, src/i18n), whoever owns src/main.ts (lead). D's side is on art/d-visuals:
+`src/stats/{rankCalibration,history,trainingPlan}.ts` (pure, tests/trainingPlan.test.ts), view
+`src/modes/trainingPlanView.ts` (`renderTrainingPlan(parent, history, onStart)`), dev render
+`docs/ist/d5-training-plan-dev.jpg`. `rankCalibration.ts` is a LOCAL ADAPTER until A3 defines the real API.
+
+1. Record every finished game / trainer run (src/main.ts `afterGame`, before the post-game screen):
+   ```diff
+    function afterGame(config: SimConfig | null, r?: SessionResult): void {
+      if (!config || !r) return mainMenu();
+   +  // D5: match history for the training plan (IndexedDB, no-op when unavailable)
+   +  if (!r.retry && r.summary.duration >= 60) void import('./stats/history').then((h) => h.saveRecord(h.recordFromSummary(r.summary, Date.now())));
+   ```
+2. Show the plan on the trainer hub (src/ui/trainerMenu.ts `renderTrainerMenu`, after the title):
+   ```diff
+   +  const planBox = el('div', '', panel);
+   +  void Promise.all([import('../stats/history'), import('../modes/trainingPlanView')]).then(async ([h, v]) => {
+   +    if (planBox.isConnected) v.renderTrainingPlan(planBox, await h.loadHistory(), (it) => onPickWith(it.mode, it.opts));
+   +  });
+   ```
+   `onPickWith(mode, opts)`: same as `onPick(mode)` but starts the trainer lobby with `opts` merged into
+   `defaultSetup(mode).opts` (main.ts `trainerSetups`).
+3. i18n: add the keys of `src/modes/planStrings.json` (de + en, 26 keys `plan.*`) to src/i18n/de.json / en.json; the
+   view falls back to that file while a key is missing.
+4. A3: when `stats/rankCalibration` exists, D maps `calibrateMatch` onto it (types `RankCalibration`,
+   `CategoryCalibration` in src/stats/rankCalibration.ts are the contract D consumes).
+

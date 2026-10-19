@@ -61,8 +61,12 @@ describe('bot fog of war', () => {
   it('the brain type takes a Snapshot + static data, never the Sim', () => {
     expectTypeOf<Parameters<Brain>[0]>().toEqualTypeOf<Snapshot>();
     expectTypeOf<Parameters<Brain>[1]>().toEqualTypeOf<BotStatic>();
-    // static guard: brain modules must not import sim state (sim.ts, ecs, vision, bitecs)
-    const sources = import.meta.glob<string>(['../src/ai/bot/*.ts', '../src/ai/bt/*.ts'], { query: '?raw', import: 'default', eager: true });
+    // static guard: brain modules must not import sim state (sim.ts, ecs, vision, bitecs); the BRAIN-REWORK
+    // directories (reflex, plan, utility, humanize) are guarded before they exist (supervisor, review-checklist §1 #6)
+    const sources = import.meta.glob<string>(
+      ['../src/ai/bot/*.ts', '../src/ai/bt/*.ts', '../src/ai/reflex/*.ts', '../src/ai/plan.ts', '../src/ai/utility/*.ts', '../src/ai/humanize/*.ts', '../src/ai/errors.ts'],
+      { query: '?raw', import: 'default', eager: true },
+    );
     expect(Object.keys(sources).length).toBeGreaterThan(5);
     for (const [f, src] of Object.entries(sources)) {
       expect(src, f).not.toMatch(/from '(\.\.\/)+sim\/(sim|ecs|vision)'|from 'bitecs'/);

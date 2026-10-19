@@ -2,8 +2,19 @@
 // face the camera; a second, colour-less instanced quad stands upright facing the sun and only casts the shadow.
 import * as THREE from 'three';
 import type { SnapEntity } from '../sim/snapshot';
-import { Kind } from '../sim/types';
+import { Kind, isMinion as isMinionKind } from '../sim/types';
 import type { ClientState } from '../game/state';
+import { FlashGate, READ, airborneLift, dashLift, flashAmp } from './readability';
+
+/**
+ * Optional motion flags (agent B5, not in SnapEntity yet): progress 0..1 of a knock-up / dash, dash length in world
+ * units. Rendered when present; without them the airborne CC bit drives the hop and dashes stay flat.
+ */
+interface MotionFlags {
+  airborne?: number;
+  dashing?: number;
+  dashLen?: number;
+}
 import { PITCH } from './camera';
 import { REL } from './palette';
 import { settings } from '../settings';
@@ -90,6 +101,10 @@ export class Units {
   readonly group = new THREE.Group();
   private readonly groups = new Map<string, Group>();
   private readonly flashAt = new Map<number, number>();
+  private readonly flashAmpOf = new Map<number, number>();
+  private readonly flashGate = new FlashGate();
+  /** Airborne (CC bit 16) start per unit serial: client time, sim tick and CC end tick. */
+  private readonly airAt = new Map<number, { t0: number; tick0: number; end: number }>();
   private readonly lungeAt = new Map<number, { t: number; dx: number; dy: number; armed: boolean }>();
   private readonly rings: THREE.InstancedMesh;
   private readonly qVis = new THREE.Quaternion().setFromEuler(new THREE.Euler(-PITCH, 0, 0));
@@ -183,9 +198,31 @@ export class Units {
     for (const b of this.monsters) b.onDeath(eid, now);
   }
 
-  /** Hit flash on damage. */
-  flash(serial: number, now: number): void {
+  /**
+   * Hit flash on damage. D2: at most one flash per unit per READ.hitFlash.minGapMs (DoT ticks and teamfight hits no
+   * longer flicker), weaker on minions.
+   */
+  flash(serial: number, now: number, kind?: number): void {
+    if (!this.flashGate.accept(serial, now)) return;
     this.flashAt.set(serial, now);
+    this.flashAmpOf.set(serial, flashAmp(kind === Kind.Champion ? 'champion' : kind !== undefined && isMinionKind(kind) ? 'minion' : 'other', settings.reduceMotion));
+  }
+
+  /** D2: sprite lift (world units) for knock-ups and dashes: optional B5 snapshot flags, else the airborne CC bit. */
+  private lift(state: ClientState, e: SnapEntity, now: number): number {
+    const f = e as SnapEntity & MotionFlags;
+    if (f.airborne !== undefined) return airborneLift(f.airborne);
+    if (f.dashing !== undefined) return dashLift(f.dashing, f.dashLen ?? 400);
+    const cc = e.cc ?? 0;
+    if (!(cc & 16)) {
+      this.airAt.delete(e.serial);
+      return 0;
+    }
+    let a = this.airAt.get(e.serial);
+    const tick = (state.snap?.tick ?? 0) - 1 + state.alpha;
+    if (!a) this.airAt.set(e.serial, (a = { t0: now, end: e.ccEnd ?? tick + 15, tick0: tick }));
+    const total = Math.max(READ.airborne.minMs, ((a.end - a.tick0) * 1000) / 30);
+    return airborneLift((now - a.t0) / total);
   }
 
   /**
@@ -212,7 +249,7 @@ export class Units {
     const champs = this.champs;
     const minions = this.minions;
     // hit flash brightness (reduce motion: a faint tint instead of a white flash)
-    const flashAmp = settings.reduceMotion ? 0.35 : 1.6;
+    const amp = flashAmp('other', settings.reduceMotion);
     champs?.begin();
     minions?.begin();
     for (const b of this.monsters) b.begin();
@@ -274,10 +311,10 @@ export class Units {
           if (f !== undefined) {
             const k = (now - f) / FLASH_MS;
             if (k >= 1) this.flashAt.delete(e.serial);
-            else c = 1 + (1 - k) * flashAmp;
+            else c = 1 + (1 - k) * (this.flashAmpOf.get(e.serial) ?? amp);
           }
           if (e.id === hoverId) c *= 1.25;
-          batch!.push(e, champId, x, y, c, now);
+          batch!.push(e, champId, x, y, c, now, this.lift(state, e, now));
           if ((e.kind === Kind.Champion || e.id === hoverId) && rings < 48) rings = this.ring(state, e, myEid, rings);
           continue;
         }
@@ -295,7 +332,7 @@ export class Units {
         if (f !== undefined) {
           const k = (now - f) / FLASH_MS;
           if (k >= 1) this.flashAt.delete(e.serial);
-          else c = 1 + (1 - k) * flashAmp;
+          else c = 1 + (1 - k) * (this.flashAmpOf.get(e.serial) ?? amp);
         }
         if (e.id === hoverId) c *= 1.25;
         this.col.setRGB(c, c, c);

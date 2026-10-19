@@ -149,6 +149,15 @@ export function inhibitorDown(sim: Sim, team: number, lane: LaneId): boolean {
   return !!r && !r.alive;
 }
 
+/** Destroyed inhibitors with their respawn time (seconds), public scoreboard info. Read-only. */
+export function inhibitorTimers(sim: Sim): { team: number; lane: LaneId; left: number }[] {
+  const s = sim.state.towers as TowerSt | undefined;
+  if (!s) return [];
+  return s.list
+    .filter((r) => r.kind === Kind.Inhibitor && !r.alive && r.respawnAt > sim.tick)
+    .map((r) => ({ team: r.team, lane: r.lane as LaneId, left: (r.respawnAt - sim.tick) / 30 }));
+}
+
 /** Protection: a structure is untargetable + invulnerable until the previous one in its chain fell. */
 function updateProtection(sim: Sim, s: TowerSt): void {
   const { Unit } = sim.c;

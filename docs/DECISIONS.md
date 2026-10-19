@@ -2,6 +2,82 @@
 
 Jede Abweichung vom Design-Prompt steht hier mit Grund. Neue Einträge oben.
 
+## Integration aller Agenten-Branches ohne Gate-Review (Lead auf Nutzeranweisung, 2026-10-19; Eintrag vom Aufsichts-Agenten S)
+
+Abweichung von BRAIN-REWORK §11/§12 („kein Merge vor grünem Gate, Gates misst der Aufsichts-Agent") und AGENTS-PLAN §2 („kein Merge mit roten Tests oder ohne DECISIONS-Eintrag"): Der Nutzer hat am 16.10. alle Agenten gestoppt und die Zusammenführung aller Branches auf main angeordnet, damit nichts verloren geht und die Agenten vom gleichen Stand weiterarbeiten. Merge e576592 (A3 → B → A1 → A2 → C → D → E), Folge-Commits 45d0622 (rote Tests übersprungen, `bot-sim --reflex=true`) und e0f40bb (Wren-Passiv-HUD, Reflex-Gate-Tests schalten die Reflex-Schicht jetzt wirklich ein). Kein Gate ist gemessen; die Gate-Messung je Phase bleibt offen (status.md).
+
+| Was liegt auf main | aktiv? | Grund / Bedingung |
+|---|---|---|
+| A1 Phase 0: bot-sim-Kennzahlen (csLossByCause, Auslastung, Idle, Harass, Platten, Konversion, Kosten), `--report`, `--variance=0`, `--scenario=laneAlone` | ja (Werkzeug) | Messbasis vorhanden; Gold/Diamant/Challenger-Baseline im Bericht a1.md noch Platzhalter (`SEE_BASELINE_TABLE`, `LA_*`, `GATE_TEXT`) |
+| A1 Phase 1: Reflex-Schicht (src/ai/reflex/**, plan.ts), laneLeaf nutzt den Scheduler | **nein** im Spiel: `src/sim/worker.ts` baut `new BotRunner(config)` ohne `reflex`; an nur in `runLaneAlone()` und `bot-sim --reflex=true` | Gate rot: Lane-allein Iron 69 (< 70), Gold out_of_range-Abbrüche; Lead-Messung Gold Seed 1, 12 min, `--variance=0`: Laner-CS/min Reflex aus 3,08, an **2,68** (schlechter) |
+| A2 Phase 3/4-Gerüst: Nutzenmodell (src/ai/utility/**, values.json), §6-Kampfänderungen | **nein**: `BOT_UTILITY=1` (Env, im Browser nie gesetzt); Flag aus = bit-identisch (Hash 8643ddf8, A2-Bericht) | Lead-Messung mit Flag: Laner-CS/min 3,33, aber Recalls 1,36/min, Roams 0 → Wertkalibrierung offen; Umschalten erst nach A1 Phase 2 (§12) |
+| A3 Phase 5-Vorbereitung: Aufmerksamkeitsmodell, Fehler-Episoden, Profil-/Achsen-/errors-Daten, F9-Spalten | **nein**: nichts ruft `observeAttention`/`startErrorEpisode` (Verdrahtung A3-4..A3-9 bei A1/A2) | vom Aufsichts-Agenten geprüft (unten) |
+| B1 Ward-Stealth-Regel, B2 movesWhileCasting (26×4 + Beschwörer), B3 Snapshot-Felder | ja (Sim) | B-Bericht: volle Suite nach B2 806/807 (telegraph-Timeout unter Last), nach B3 nicht erneut; Branch-bot-sim nicht beendet |
+| C1 FEATURE-GAP, C2 Scoreboard/Todestimer, C3 HUD, C4 Pings/Chat, C6 Post-Game | ja (UI) | Screenshots in docs/ist/c2-*, c3-*, c6-*; 5-Minuten-Browserprüfung durch S (AGENTS-PLAN §2) **offen** |
+| D: abilityMotifs.json + abilityTheme (WIP, „NOT tested") | ja (Render) | Lead-Fix „motif JSON cast"; D1-Audit nicht begonnen |
+| E: docs/champions/sev.md (Spec) | – | kein Sev-Code |
+
+Übersprungene/aufgeschobene Tests (Eigentümer, Bedingung zum Wiedereinschalten):
+- `tests/brainReflex.test.ts` `describe.skip` Tests 2 + 4 (Iron 2 Hz allein ≥ 70 CS; Gold Stehpunkt folgt, kein `out_of_range`) – A1; wieder an, sobald Iron ≥ 70 (a1.md Punkt 2: `margin()`-Kappe für breite Fenster) und Gold-Stehpunkt ohne out_of_range-Abbrüche. Tests 1, 3, 11, 12 laufen (3 von 5 grün laut Lead; Test 11 prüft nur eine Regressionsschranke, gemessen 0,10 ms statt 0,05).
+- `tests/attention.test.ts` Test 10 Klausel 3 `it.todo` („kein Minion dauerhaft ignoriert") – A3; wieder an, sobald A1 `LAPSE_SHARE`/`roll.skip` entfernt (A3-5).
+- D: Wren-Passiv-Badge-Test war übersprungen, in e0f40bb wieder grün.
+
+Prüfung des A3-Standes durch S (Worktree auf e08e396, vor dem Merge): volle Suite 55 Dateien, 784 bestanden, 1 todo; `npm run bot-sim -- --rank=gold --games=2 --minutes=15 --seed=1` auf main 68bc2f2 und auf e08e396 **CSV-identisch** (Laner-CS/min 2,89, Kills 17/13) → keine Verhaltensänderung, wie behauptet; Status-Hash-Vergleich (main: Seed 1 `90671ce2`, Seed 2 `24dc6d8`) auf dem Kandidaten nicht beendet (Lauf beim Stopp abgebrochen). Statische Prüfung: attention.ts importiert nur `sim/rng`, `sim/types`, Snapshot-Typ; keine Uhren; alle Raten in Profilen/attention.json/errors.json, Konstanten in Code nur Ticks/s und Rundung.
+
+Abweichungen aus den Agentenberichten, hiermit übernommen (ohne Gate-Messung):
+- A3: §9-Ablenkungsraten (Iron ~8 s … Challenger ~120 s) ergeben mit 0,5–3-s-Fenstern maximal 15 % (Gold) statt 20 %; da §9 „Kalibriere Rate × Dauer, dass der Anteil stimmt" sagt, gilt der Anteil (Tabelle B): Start-zu-Start ~5,7 s Iron, ~9,4 s Gold, ~18 s Diamant, ~34 s Challenger. Geplante Minimap-Blicke (`minimapGlancePlannedPct` Iron 0 … Challenger 100) kosten nichts. „Mein Fehler" als Team-Chat, bis ein Ping-Typ existiert (A3-8).
+- A1: Delay-Queue bleibt für Nicht-Lane-Knoten (§3 sagt „ersetzt"); Lane-Befehle nutzen kein `delay`/`'lh'` mehr. Reflex-Sicht ist nicht `buildSnapshot` (0,76 ms/Aufruf), sondern eine Team-Sicht mit derselben Fog-Regel über `onPerceive`. Kein Reaktionsanteil im Zeitfehler (kommt aus A3). csLossByCause mit 11. Ursache `ally_took`. Lane-allein-Szenario ohne Recall/Wards, Vision-Achse −5.
+- A2: §6-Kampfänderungen ebenfalls hinter dem Flag (Bit-Identität bei Flag aus); Interims-Haken in `tradeRun` statt Baumknoten (A2-1).
+- B: Siegelward-Enthüllungsradius 900 → 450; Lysa-E-Draht gestealtht; verbündeten-gezielte Buffs (Ferris E, Kiran E, Oda E) und Buffs (Grimald W, Hagen R, Nyx W/R, Ottilie R, Renn W) laufen weiter, Oleth Q/Isolde R zählen als Dash; Cast-Zeiten unverändert.
+- Vom Aufsichts-Agenten freigegeben: A3-1 (schema.ts), A3-2 (contract.ts Knob-Union), A3-3 (i18n/css, C-Gebiet, additiv), A1-Profilfelder.
+
+Regel ab jetzt: Agenten mergen `origin/main` zuerst; weitere Merges nur nach Messung durch S (review-checklist.md), es sei denn der Nutzer ordnet es an; jeder übersprungene Test hat hier Eigentümer und Bedingung.
+
+## Gehirn-Rework Phase 0: Messbasis vor dem Rework (A1, 2026-10-16)
+
+Stand vor dem Rework: Commit 456298f (Gehirn = cc3eecc, nur Messcode neu). `npm run bot-sim -- --rank=<r> --games=8
+--minutes=40 --variance=0 --seed=101 --report` (Seeds 101–108, gleiche Aufstellung je Seed für alle Ränge,
+Rang-Varianz aus). Laner = Top/Mid/ADC. Ziele aus docs/BRAIN-REWORK.md §1/§4.6/§6.4/§7.1.
+
+| Kennzahl | Iron | Gold | Diamant | Challenger | Ziel (I/G/D/C) |
+|---|---|---|---|---|---|
+| Laner-CS/min bei 15:00 | 2,68 | 3,42 | 3,61 | 4,14 | 4,8 / 6,5 / 7,4 / 8,2 |
+| Laner-CS/min Partieende | 3,92 | 4,14 | 4,15 | 4,33 | 5,0 / 6,8 / 7,7 / 8,6 |
+| Kills/Partie | 27,1 | 25,8 | 25,0 | 21,0 | 55 / 50 / 44 / 40 |
+| Erster Turm (min) | 17,0 | 21,1 | 22,1 | 22,9 | 16 / 14 / 13 / 12 |
+| Partiedauer (entschiedene, min) | 33,5 (7/8) | 33,2 (8/8) | 35,2 (8/8) | 36,8 (6/8) | 33 / 31 / 29 / 26 |
+| Angriffsauslastung Laner 2–14 min | 0,30 | 0,27 | 0,32 | 0,28 | 0,35 / 0,50 / 0,60 / 0,68 |
+| Idle-Anteil Laner | 0,11 | 0,10 | 0,08 | 0,09 | 0,25 / 0,10 / 0,04 / 0,02 |
+| Harass-Autos/min Laner | 0,22 | 0,07 | 0,04 | 0,04 | 2 / 6 / 10 / 12 |
+| Platten pro Team bis 14:00 | 4,4 | 3,3 | 2,4 | 1,0 | – / 4 / 6 / 8 |
+| Abwesenheitsverlust bis 15:00 (Anteil Lane-Minions) | 31,4 % | 26,9 % | 21,9 % | 20,8 % | Gold ≤ 12 % |
+| Tode ohne Gegner-Champion | 5,2 % | 9,9 % | 4,1 % | 10,2 % | 8 / 4 / 1 / < 1 % |
+| Objective-Konversion nach gewonnenem Fight | 23 % | 23 % | 22 % | 20 % | Iron 15 … Challenger 95 % |
+
+CS-Verlust nach Ursache bis 15:00 (Anteil aller Lane-Minionen; Summe = tatsächliche Verluste, vom Report geprüft):
+
+| Ursache | Iron | Gold | Diamant | Challenger |
+|---|---|---|---|---|
+| vom Laner gelasthittet | 23,8 % | 30,3 % | 32,2 % | 37,0 % |
+| absent_recall | 13,6 | 6,2 | 6,0 | 5,4 |
+| absent_heal | 10,2 | 11,8 | 9,9 | 10,2 |
+| absent_roam | 0,5 | 1,3 | 1,7 | 2,6 |
+| absent_dead | 7,1 | 7,6 | 4,4 | 2,7 |
+| in_range_no_attack | 13,3 | 14,0 | 20,4 | 19,8 |
+| timing_miss | 14,4 | 15,3 | 14,0 | 11,9 |
+| window_collision | 0,8 | 1,2 | 1,0 | 1,6 |
+| tower_took | 6,9 | 6,0 | 5,9 | 6,2 |
+| enemy_took (abgedrängt) | 0,8 | 1,1 | 1,8 | 1,4 |
+| ally_took | 0,3 | 0,5 | 0,5 | 0,5 |
+| distracted (alter Aussetzer pro Minion) | 8,3 | 4,7 | 2,2 | 0,7 |
+
+Last-Hit-Trainer (Lane allein, Mid, mira, nur Autos, kein Recall/Ward, 10 min, 107 Minions; `--scenario=laneAlone`):
+Iron 51/52, Gold 65, Challenger 92/94 (Seeds 1/2).
+
+Abweichungen der Messung vom Prompt (Begründung in docs/agents/a1.md): elfte Ursache `ally_took`; `enemy_took` =
+vom Gegner-Champion aus der Reichweite gehalten; Auslastung/Idle beziehen sich auf Ticks mit Ziel in Reichweite + 200;
+Idle zählt nur ohne laufenden Angriff und ohne Laufen.
+
 ## Seiten-Fairness, Lane-Länge, Minion-Leine, Kollision (Balance-Agent, 2026-10-16)
 
 **Seiten-Ungleichgewicht – Ursachen.** Zwei Bot-Fehler benachteiligten Rot strukturell, dazu mehrere Tick-Reihenfolge-Effekte der Sim (niedrige Entity-IDs = Blau, weil Blau zuerst spawnt, handelten zuerst):

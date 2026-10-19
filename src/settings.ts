@@ -37,6 +37,16 @@ export interface Settings {
   volume: number;
   /** Last picked rune preset id per champion id (lobby). */
   runePresets: Record<string, string>;
+  /** Minimap size in percent (80..150) on top of the HUD scale (C7). */
+  minimapScale: number;
+  /** Minimap at the bottom left instead of the bottom right (C7). */
+  minimapLeft: boolean;
+  /** Cast mode per ability key (C7, src/input/castMode.ts); missing keys follow castIndicator. */
+  castModes: Partial<Record<'q' | 'w' | 'e' | 'r', 'quick' | 'indicator' | 'normal'>>;
+  /** Champion HP bar ticks (C7, src/ui/overlay.ts): every 100 + 1000 HP (LoL), only 1000, or none. */
+  hpBarStyle: 'segmented' | 'thousands' | 'plain';
+  /** Outline enemy skillshots more strongly (C7 data; drawn by the render telegraphs, agent D). */
+  enemySkillshotOutline: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -58,7 +68,15 @@ const DEFAULTS: Settings = {
   volume: 0.6,
   botToxicity: true,
   runePresets: {},
+  minimapScale: 100,
+  minimapLeft: false,
+  castModes: {},
+  hpBarStyle: 'segmented',
+  enemySkillshotOutline: false,
 };
+
+/** Default values (settings import validates keys and types against them). */
+export const DEFAULT_SETTINGS: Readonly<Settings> = DEFAULTS;
 
 export const settings: Settings = { ...DEFAULTS };
 const listeners: (() => void)[] = [];

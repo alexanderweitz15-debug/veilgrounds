@@ -11,7 +11,7 @@
 //
 // Stealth (one rule for everything hidden from the enemy, AGENTS-PLAN B1): stealthed units (Schleierwards: the
 // 'invisible' stat buff with id STEALTH_BUFF), stealthed ground objects (GroundObject.stealth: Nyx seeds, Grimald
-// traps) and stealthed zones (ability flag 'stealth': Lysa E wire) are hidden from the enemy team unless
+// traps) and stealthed zones (ability flag 'stealth'; none today, the Lysa E wire is visible by user decision 19.10.) are hidden from the enemy team unless
 //   (a) an enemy Siegelward is within SEAL.revealR, (b) an enemy Suchfeuer covers them (trueSight), or
 //   (c) a Spaehfrucht pop / Nyx R revealed them within the last STEALTH_LINGER ticks (revealStealthArea).
 // Siegelwards are never stealthed (like LoL control wards).

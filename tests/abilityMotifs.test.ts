@@ -4,7 +4,7 @@ import '../src/sim/sim';
 import { describe, expect, it } from 'vitest';
 import { step } from '../src/sim/sim';
 import { buildSnapshot } from '../src/sim/snapshot';
-import { MOTIF_GLYPHS, abilityTheme } from '../src/render/abilityTheme';
+import { MOTIF_GLYPHS, PARTICLE_KIND_IDS, abilityParticles, abilityTheme, motifParticle, tagParticles } from '../src/render/abilityTheme';
 import motifData from '../src/render/abilityMotifs.json';
 import type { PlayerSetup } from '../src/sim/types';
 import { CX, CY, makeSim, place } from './combat-helpers';
@@ -19,6 +19,30 @@ describe('ability motifs', () => {
       expect([id, new Set(motifs).size]).toEqual([id, 4]);
       for (const m of motifs) expect([id, MOTIF_GLYPHS.includes(m!)]).toEqual([id, true]);
     }
+  });
+});
+
+describe('ability particles (D1b)', () => {
+  it('every drawable motif maps to a defined particle kind; each champion uses at least two kinds', () => {
+    for (const m of MOTIF_GLYPHS) expect([m, PARTICLE_KIND_IDS.includes(motifParticle(m))]).toEqual([m, true]);
+    for (const id of ROSTER) {
+      const kinds = new Set([0, 1, 2, 3].map((s) => abilityParticles(id, s)!.kind));
+      expect([id, kinds.size >= 2]).toEqual([id, true]);
+    }
+    expect(tagParticles('oleth_r_wall')).toEqual(abilityParticles('oleth', 3));
+    expect(tagParticles('renn_blade')?.kind).toBe('mote');
+  });
+
+  it('particles spawn, move and expire headless', async () => {
+    const { Particles } = await import('../src/render/particles');
+    const p = new Particles();
+    p.emit('ember', 100, 100, 50, 22, 10, 0);
+    p.emit('shard', 100, 100, 50, 35, 5, 0, { dx: 1, dy: 0 });
+    expect(p.live).toBe(15);
+    p.update(100, 0.1);
+    expect(p.live).toBe(15);
+    p.update(5000, 0.1);
+    expect(p.live).toBe(0);
   });
 });
 

@@ -66,6 +66,8 @@ export interface CampDef {
   until?: number;
   /** Stat scaling: 'level' = average champion level (default), 'baron' = minutes after 20:00. */
   scale?: 'level' | 'baron';
+  /** Epic objective (B6): kills are announced to both teams, monsters carry SnapEntity.epic (bot team AI). */
+  epic?: true;
 }
 
 const m = (type: MonsterType, hp: number, ad: number, as: number, armor: number, mr: number, radius: number, gold: number, xp: number, dx = 0, dy = 0): MonsterDef => ({
@@ -93,15 +95,16 @@ export const CAMPS: Record<CampId, CampDef> = {
     monsters: [m('schattenkrabbe', 1450, 18, 0.5, 15, 0, 90, 75, 130), m('krabbling', 540, 7, 0.6, 5, 0, 55, 25, 45, 170, -60), m('krabbling', 540, 7, 0.6, 5, 0, 55, 25, 45, -60, 170)],
   },
   nebelschleicher: { first: 195, respawn: 150, flees: true, monsters: [m('nebelschleicher', 1050, 0, 0, 20, 20, 70, 70, 200)] },
-  leviathan: { first: 300, respawn: 300, monsters: [m('leviathan', 3500, 70, 0.5, 30, 30, 130, 25, 150)] },
+  leviathan: { first: 300, respawn: 300, epic: true, monsters: [m('leviathan', 3500, 70, 0.5, 30, 30, 130, 25, 150)] },
   kesselbrut: {
+    epic: true,
     first: 360,
     respawn: 240,
     lastSpawn: 825,
     until: 1185,
     monsters: [m('kesselbrut', 1800, 30, 0.5, 20, 20, 70, 25, 110, -220, 60), m('kesselbrut', 1800, 30, 0.5, 20, 20, 70, 25, 110, 200, 140), m('kesselbrut', 1800, 30, 0.5, 20, 20, 70, 25, 110, 20, -200)],
   },
-  schleierwaechter: { first: 1200, respawn: 360, scale: 'baron', monsters: [m('schleierwaechter', 12000, 150, 0.6, 60, 50, 160, 0, 300)] },
+  schleierwaechter: { first: 1200, respawn: 360, scale: 'baron', epic: true, monsters: [m('schleierwaechter', 12000, 150, 0.6, 60, 50, 160, 0, 300)] },
 };
 
 export const MONSTER_MS = 330;
@@ -171,6 +174,14 @@ export function jungleState(sim: Sim): JungleState {
     sim.state.jungle = s;
   }
   return s;
+}
+
+/** Monster of an epic objective camp (Leviathan, Kesselbrut, Schleierwaechter)? Read-only. */
+export function isEpicMonster(sim: Sim, eid: number): boolean {
+  const s = sim.state.jungle as JungleState | undefined;
+  if (!s) return false;
+  const serial = sim.c.Unit.serial[eid];
+  return s.camps.some((c) => CAMPS[c.id].epic && c.members.some((m) => m.eid === eid && m.serial === serial));
 }
 
 export const leviathanStacks = (sim: Sim, team: number): number =>

@@ -42,8 +42,8 @@ export interface TeamObjectives {
   /** Leviathan stacks (0..LEVIATHAN_MAX_STACKS); `soul` once the maximum is reached. */
   leviathan: number;
   soul: boolean;
-  /** Kesselbrut stacks; null = unknown (enemy grubs die in the fog until the sim reports both teams). */
-  kesselbrut: number | null;
+  /** Kesselbrut stacks (public for both teams). */
+  kesselbrut: number;
   /** Seconds left of the Schleierwaechter buff (0 = none). */
   schleierLeft: number;
   /** Seconds until each destroyed inhibitor of this team respawns (ascending). */
@@ -78,8 +78,6 @@ export class ObjectiveTracker {
   /** Respawn tick per champion, keyed `team:champ` (ScoreRow has no eid). */
   private readonly respawnAt = new Map<string, number>();
   private readonly leviathan: [number, number] = [0, 0];
-  /** Grub kills this view saw (own kills always, enemy kills only in vision). */
-  private readonly grubsSeen: [number, number] = [0, 0];
   private readonly schleierUntil: [number, number] = [0, 0];
   /** Champions of the team that got the Schleierwaechter buff and have not died since (the buff ends on death). */
   private readonly schleierHolders: [Set<string>, Set<string>] = [new Set(), new Set()];
@@ -146,8 +144,7 @@ export class ObjectiveTracker {
         // the sim grants objective rewards only to champion kills (jungle.ts onMonsterDeath)
         if (!which || (team !== 0 && team !== 1) || ev.killerKind !== Kind.Champion) continue;
         if (which === 'leviathan') this.leviathan[team] = Math.min(LEVIATHAN_MAX_STACKS, this.leviathan[team] + 1);
-        else if (which === 'kesselbrut') this.grubsSeen[team]++;
-        else {
+        else if (which !== 'kesselbrut') {
           this.schleierUntil[team] = evTick + SCHLEIER_BUFF_TICKS;
           this.schleierHolders[team] = new Set(s.players.filter((p) => p.team === team && !p.dead).map((p) => `${p.team}:${p.champ}`));
         }
@@ -176,9 +173,8 @@ export class ObjectiveTracker {
   team(team: 0 | 1): TeamObjectives {
     const o = this.snap?.objectives;
     const lev = o?.leviathan?.[team] ?? this.leviathan[team];
-    const own = this.snap?.team === team;
-    // own team: snap.kesselbrut is exact (absent while 0); enemy: only a sim field is exact
-    const kessel = o?.kesselbrut?.[team] ?? (own ? (this.snap?.kesselbrut ?? 0) : this.grubsSeen[team] > 0 ? this.grubsSeen[team] : null);
+    // both teams are public (Snapshot.kesselbrutTeams, absent while both are 0)
+    const kessel = o?.kesselbrut?.[team] ?? this.snap?.kesselbrutTeams?.[team] ?? 0;
     const schleierDerived = this.schleierHolders[team].size > 0 ? Math.max(0, (this.schleierUntil[team] - this.tick) / TICK_HZ) : 0;
     const inhibRespawn = o?.inhibs
       ? o.inhibs.filter((x) => x.team === team).map((x) => x.left)

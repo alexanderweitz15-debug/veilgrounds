@@ -23,6 +23,7 @@ import type { NodeCtx, NodeResult } from '../bt/types';
 import { cancelOrbwalk, attackTicks } from './kite';
 import { chooseWave, laneOf, sealWard, sweep, visionShop, wardDue } from './macro';
 import { laningSafety, rankIdx, rollError } from '../bt/deps';
+import { utilityOn } from '../utility/flag';
 
 /** Decision interval in ticks for this bot (profile microHz). */
 export const decisionTicks = (ctx: BotStatic): number => Math.max(1, Math.round(30 / ctx.profile.behavior.microHz));
@@ -39,6 +40,8 @@ export const think: Brain = (snap, ctx, mem, rng) => {
   for (const a of out) {
     if (a.cmd.t !== 'cast') continue;
     const ab = ctx.champ.abilities[a.cmd.slot];
+    // B2: wind-ups of movesWhileCasting abilities do not stop the champion: the bot may keep moving/deciding
+    if (ab.movesWhileCasting && !ab.flags?.includes('channel')) continue;
     const rank = snap.me?.abilities[a.cmd.slot]?.rank ?? 1;
     const dur = ab.duration === undefined ? 0 : typeof ab.duration === 'number' ? ab.duration : ab.duration[Math.max(0, rank - 1)] ?? 0;
     const busy = ab.castTime + (ab.flags?.includes('channel') ? dur : 0);
@@ -230,7 +233,10 @@ export function retreat(n: NodeCtx): NodeResult {
   }
   // low HP (or after a retreat): walk / recall home. Gold-driven recalls are the macro recall score's job.
   const safe = near([...v.enemies, ...v.unnoticed], v.self, 1600).length === 0 && near(v.monsters, v.self, 800).length === 0;
-  const goHome = v.hpPct < lowHp || (mem.mode === 'retreat' && v.hpPct < 0.4) || mem.mode === 'home';
+  // brain rework §4.6 heal path: with the utility model the walk home is the recall candidate's decision (stay-death
+  // > 0.3 or an item, src/ai/utility/value.ts recallValue); retreat only flees
+  const util = utilityOn(ctx);
+  const goHome = !util && (v.hpPct < lowHp || (mem.mode === 'retreat' && v.hpPct < 0.4) || mem.mode === 'home');
   if (goHome) {
     // a recall broken by damage (DoT, unseen attacker) is retried only after 6 s of walking home: no recall spam
     if (safe && dst(v.self, home) > 2500 && near(v.enemyMinions, v.self, 650).length === 0 && v.tick - mem.ext.recallTryAt > 6 * 30) {
@@ -245,7 +251,7 @@ export function retreat(n: NodeCtx): NodeResult {
     push(n, moveTo(v, mem, home));
     return 'running';
   }
-  if (mem.mode === 'retreat' || mem.mode === 'home') mem.mode = 'lane';
+  if (mem.mode === 'retreat' || (mem.mode === 'home' && !util)) mem.mode = 'lane';
   return 'failure';
 }
 

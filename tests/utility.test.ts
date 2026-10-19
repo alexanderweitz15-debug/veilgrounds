@@ -14,7 +14,8 @@ import { buildWorld } from '../src/ai/utility/world';
 import { farmValue, pushValue, recallValue, stayDeathProb } from '../src/ai/utility/value';
 import { INTENT_NODE, scoreCandidates, utilitySelect, utilityState } from '../src/ai/utility/select';
 import { utilityOn } from '../src/ai/utility/flag';
-import { MAP, PLAYERS, ScriptedBot, champEnt, hud, minion, paramsFor, snapshot } from './botScenario';
+import { MAP, PLAYERS, ScriptedBot, champEnt, hud, minion, paramsFor, rows, snapshot } from './botScenario';
+import { profileOf } from '../src/ai/profiles';
 import type { SnapEntity } from '../src/sim/snapshot';
 
 const SKILL: Record<string, number> = { iron: 5, silver: 30, gold: 45, diamond: 80, challenger: 100 };
@@ -212,5 +213,46 @@ describe('test 8 (scenario): shove-and-recall', () => {
     const n = bot.node(snapshot({ tick: 7 * 1800, team: 0, entities: [{ ...ents[0]!, hp: maxHp * 0.15 }, ...ents.slice(1)], me: hud(2, { gold: 1300 }) }));
     const rec = recallValue(buildWorld(n))!;
     expect(rec.data?.shoveFirst).toBe(false);
+  });
+});
+
+describe('team AI under the utility flag (§7.1 / §7.4)', () => {
+  /** Mid bot whose team AI knows the five blue bots (members) at `rank`. */
+  function teamBot(rank: Rank, seed = 1): ScriptedBot {
+    const bot = midBot(rank, seed);
+    for (const p of PLAYERS.filter((q) => q.team === 0)) bot.ctx.teamAI.register({ slot: p.slot, role: p.role, champion: p.champion, profile: profileOf(rank), params: paramsFor(rank, {}, p.slot) });
+    return bot;
+  }
+  const blue = () => PLAYERS.filter((p) => p.team === 0).map((p, i) => champEnt(p.slot, 3000 + 400 * i, 3000));
+
+  it('siege from 11:00: a won lane (enemy laner 2+ deaths behind) pulls jungler + support + laner there (Gold)', () => {
+    const bot = teamBot('gold');
+    // objectives are believed down (they would take jungler + support first)
+    for (const o of ['leviathan', 'kesselbrut', 'schleierwaechter'] as const) bot.ctx.teamAI.aliveFrom[o] = 1e9;
+    const n = bot.node(snapshot({ tick: 11.5 * 1800, team: 0, entities: blue(), me: hud(2), players: rows({ 7: { deaths: 3 }, 0: { deaths: 3 } }) }));
+    bot.ctx.teamAI.update(n);
+    const d = bot.ctx.teamAI.desires.find((x) => x.kind === 'push_lane' && x.reason.includes('lane'));
+    expect(d?.lane).toBe('mid');
+    expect([...(d?.slots ?? [])].sort()).toEqual([1, 2, 4]);
+  });
+
+  it('no early siege for Silver (rank curve) and none before 11:00', () => {
+    const s = teamBot('silver');
+    const n1 = s.node(snapshot({ tick: 11.5 * 1800, team: 0, entities: blue(), me: hud(2), players: rows({ 7: { deaths: 3 }, 0: { deaths: 3 } }) }));
+    s.ctx.teamAI.update(n1);
+    expect(s.ctx.teamAI.desires.some((x) => x.reason.includes('lane'))).toBe(false);
+    const g = teamBot('gold');
+    const n2 = g.node(snapshot({ tick: 10 * 1800, team: 0, entities: blue(), me: hud(2), players: rows({ 7: { deaths: 3 }, 0: { deaths: 3 } }) }));
+    g.ctx.teamAI.update(n2);
+    expect(g.ctx.teamAI.desires.some((x) => x.reason.includes('lane'))).toBe(false);
+  });
+
+  it('a conversion after a won fight is logged as its own decision (convert: ...)', () => {
+    const bot = teamBot('gold');
+    const n = bot.node(snapshot({ tick: 16 * 1800, team: 0, entities: blue(), me: hud(2) }));
+    bot.ctx.teamAI.convert(n, n.snap.tick);
+    const e = bot.log.find((x) => x.node === 'convert');
+    expect(e).toBeTruthy();
+    expect(e!.chosen).toMatch(/^(tower|dragon|baron|kesselbrut|none\(.+\))$/);
   });
 });

@@ -137,6 +137,13 @@ export function gankActive(n: NodeCtx): boolean {
   return !!pv && !!(pv.mem.tactics.gank as GankState | undefined)?.active;
 }
 
+/** Lane and target slot of the running gank (utility: plate after a gank, §7.1), or null. */
+export function gankLane(n: NodeCtx): { lane: LaneName; slot: number } | null {
+  const pv = lv(n);
+  const a = pv ? (pv.mem.tactics.gank as GankState | undefined)?.active : null;
+  return a ? { lane: a.lane, slot: a.slot } : null;
+}
+
 /** Gank evaluations per lane (best first) for the utility model; null for non-junglers or before the next eval. */
 export function gankOptions(n: NodeCtx): GankEval[] | null {
   const pv = lv(n);

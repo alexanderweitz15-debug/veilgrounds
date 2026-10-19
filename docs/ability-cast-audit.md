@@ -34,7 +34,7 @@ Tempo-Buffs wie Oda R oder Seraphynes Passiv holen Zeit auf).
 | corvin | W | Pulverfass | summon | 0.25 |  | nein | Skillshot/Fläche (Wind-up) | 9 | 0 | +9 |
 | corvin | E | Abrollen | dash | 0.2 |  | ja | Stance | 7 | 68 | +20 |
 | corvin | R | Salve | cone | 0.3 |  | nein | Skillshot/Fläche (Wind-up) | 10 | 0 | +10 |
-| dagny | Q | Kesselschlag | self | 0.2 |  | ja | Nächster-Auto-Verstärkung | 7 | 68 | +0 |
+| dagny | Q | Kesselschlag | self | 0 |  | ja | Nächster-Auto-Verstärkung | 0 | 0 | +0 |
 | dagny | W | Dampfstoß | cone | 0.25 |  | nein | Skillshot/Fläche (Wind-up) | 9 | 0 | +9 |
 | dagny | E | Schildwall | self | 0.2 |  | ja | Stance | 7 | 68 | -4 |
 | dagny | R | Kesselbruch | dash | 0.25 |  | ja | Dash/Blink | 9 | 91 | +11 |

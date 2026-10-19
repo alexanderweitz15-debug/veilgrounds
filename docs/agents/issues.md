@@ -17,6 +17,9 @@ when `onRetry` is given.
 
 ## 2026-10-16 · C · src/sim (items) · no cast-fail message for item actives (FEATURE-GAP 1.15) · low · B
 
+Fixed by B on sim/b-mechanics (2026-10-19): `useItem` emits `{ e: 'castFail', src, slot, reason, item: true }`
+(reason cooldown / cc / target; slot = inventory slot).
+
 The sim emits `castFail` only for abilities; item actives that fail (cooldown, no target, out of range) are silent.
 The HUD already shows any `castFail` reason it receives (`hud.ts onEvent`), so an event with the same shape for item
 slots is enough.
@@ -34,3 +37,9 @@ E did not touch src/ai. Wishes for the brain team:
 5. Fear (`fear` CC, `isFeared`, ccLevel 3.5) is treated like a stun in the escape node.
 6. R needs a Nachbild target (`hasNachbild` in src/sim/champions/sev.ts), else the cast fails with 'target': cast R
    only on marked champions, best after W (+50 % damage with ember). Combos: W→Q→AA, E→Q(fake)→Q→W, W→R→Q→AA.
+## 2026-10-19 · B · bots never use the top laner's unlocked Teleport (B4) · medium · brain team (A2 macro)
+
+Sim side done (sim/b-mechanics): after 1500 lane-minion gold the lobby top laner gets Teleport as summoner slot 2
+(`PlayerHud.abilities[6]`, id 'teleport'; command `{ t: 'spell', slot: 2, x, y }` onto an own tower, or minion/ward
+after 10:00; event `tpUnlocked` to the own team). Bots only look at abilities[4] / [5] (brain.ts, laning.ts). Wanted
+(AGENTS-PLAN B4): lane return after a recall, and bot-lane fights once ahead in gold.

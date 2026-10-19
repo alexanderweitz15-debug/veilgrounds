@@ -56,6 +56,8 @@ export interface ReflexState {
    *  except orbwalk timing errors), orbwalk early cancels, plans executed, cancels by reason. */
   stats: { windupBreaks: number; orbEarly: number; executed: number; cancels: Record<string, number>; fillers: number; prepares: number };
   attention?: AttentionProbe;
+  /** Diagnostics: the window table and own attack timing of the latest tick (reference, no copy). */
+  last?: { tick: number; windows: readonly { m: { id: number }; a: number; b: number; lead: number; walk: number }[]; ready: number; period: number };
 }
 
 const STATES = new WeakMap<BotMemory, ReflexState>();

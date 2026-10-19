@@ -49,6 +49,8 @@ function uTrade(n: NodeCtx): NodeResult {
 
 /** Push / plates: crash the wave and hit the structure (laning leaf in crash state, §7.1). */
 function uPush(n: NodeCtx): NodeResult {
+  const d = dataOf(n);
+  if (d.lane) n.mem.ext.laneOverride = d.lane; // jungler plate after a gank: play that lane
   crashWave(n, 'utility: push');
   return laneLeaf(n);
 }
@@ -59,6 +61,11 @@ const uGank = (n: NodeCtx): NodeResult => startGank(n, dataOf(n).gank as GankEva
 /** Recall: Silver+ shove the wave first (§4.6 shove-and-recall), then recall (walk home when unsafe). */
 function uRecall(n: NodeCtx): NodeResult {
   const d = dataOf(n);
+  // home already (fountain area): nothing to recall for; the fountain leaf shops, then the next intent plays
+  if (dst(n.v.self, n.ctx.map.sides[n.ctx.team].fountain) < VALUES.recall.homeRange) {
+    if (n.mem.mode === 'recall' || n.mem.mode === 'home') n.mem.mode = 'lane';
+    return 'failure';
+  }
   if (d.shoveFirst) {
     crashWave(n, 'utility: shove before recall');
     let r = laneLeaf(n);

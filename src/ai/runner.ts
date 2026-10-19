@@ -141,6 +141,7 @@ export class BotRunner {
         log: this.log,
         teamAI: this.teams[p.team === 1 ? 1 : 0],
         mode: config.mode,
+        ...(config.botUtility !== undefined ? { utility: config.botUtility } : {}),
       };
       ctx.teamAI.register({ slot: p.slot, role: p.role, champion: p.champion, profile, params });
       const interval = decisionTicks(ctx);

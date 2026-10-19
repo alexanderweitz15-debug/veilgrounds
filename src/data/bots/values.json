@@ -38,7 +38,11 @@
     "campGoldPerS": 5.0,
     "clearS": 18,
     "catchLane": { "iron": 0, "silver": 0, "gold": 1, "challenger": 1 },
-    "catchLaneMinOwnTowerWave": 3
+    "catchLaneMinOwnTowerWave": 3,
+    "plateAfterGank": { "iron": 0, "silver": 0, "gold": 1, "challenger": 1 },
+    "plateAfterGankS": 15,
+    "plateCloudCheck": { "iron": 0, "grandmaster": 0, "challenger": 1 },
+    "plateCloudRange": 3000
   },
 
   "horizons": {
@@ -91,7 +95,8 @@
   "selection": {
     "noiseDistribution": "normal, sigma = profile utilityNoisePct / 100 x |score| (A3 field; fallback exchangeNoise(skill): Iron 0.40, Gold 0.20, Challenger 0.07 = spec §5)",
     "hysteresisSource": "BotParams.hysteresis (profile: Gold 0.25 .. Challenger 0.10)",
-    "logNode": "intent"
+    "logNode": "intent",
+    "idleErrorEnemyRange": 1200
   },
 
   "style": {
@@ -108,6 +113,17 @@
     "ward": { "knobs": ["utilVision"], "axis": "vision", "perStep": [0.08, 0.12], "clamp": [0.6, 1.6] },
     "group": { "knobs": ["utilGroup", "groupWeight"] },
     "catchLane": { "knobs": ["utilCatchLane"], "axis": "farmPriority", "perStep": [0.08, 0.12], "clamp": [0.6, 1.6] }
+  },
+
+  "macro": {
+    "kesselbrutRank": { "iron": 0, "silver": 0, "gold": 1, "challenger": 1 },
+    "kesselbrutKillWithinS": 75,
+    "siegeRank": { "iron": 0, "silver": 0, "gold": 1, "challenger": 1 },
+    "siegeFromS": 660,
+    "siegeS": 60,
+    "siegeScore": 0.7,
+    "laneWonDeaths": 2,
+    "laneWonGold": 1000
   },
 
   "combat": {

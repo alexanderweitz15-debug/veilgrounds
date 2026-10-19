@@ -49,6 +49,8 @@ function uTrade(n: NodeCtx): NodeResult {
 
 /** Push / plates: crash the wave and hit the structure (laning leaf in crash state, §7.1). */
 function uPush(n: NodeCtx): NodeResult {
+  const d = dataOf(n);
+  if (d.lane) n.mem.ext.laneOverride = d.lane; // jungler plate after a gank: play that lane
   crashWave(n, 'utility: push');
   return laneLeaf(n);
 }

@@ -15,8 +15,10 @@ import { roamActive } from '../roams/roam';
 import { gankActive } from '../ganks/jungle';
 import { VALUES, styleFactor } from './values';
 import { dst } from '../bot/geo';
-import { buildWorld } from './world';
-import { CANDIDATES } from './value';
+import { buildWorld, laneNow } from './world';
+import { lv } from '../ganks/common';
+import { errorActive, rollErrorEpisode } from '../errors';
+import { CANDIDATES, noteRunningGank } from './value';
 import { runIntent } from './intents';
 import type { IntentId, Scored, UtilityState } from './types';
 
@@ -33,7 +35,7 @@ const states = new WeakMap<object, UtilityState>();
 
 export function utilityState(mem: object): UtilityState {
   let s = states.get(mem);
-  if (!s) states.set(mem, (s = { intent: 'none', since: 0, until: 0, evalAt: -1e9, last: [], hist: {}, switches: 0, lastTick: -1 }));
+  if (!s) states.set(mem, (s = { intent: 'none', since: 0, until: 0, evalAt: -1e9, last: [], hist: {}, switches: 0, lastTick: -1, crashRolled: false }));
   return s;
 }
 
@@ -64,7 +66,10 @@ export function scoreCandidates(n: NodeCtx, st: UtilityState): Scored[] {
 function committed(n: NodeCtx, st: UtilityState): IntentId | null {
   if (n.mem.ext.trade) return 'trade';
   if (roamActive(n)) return 'roam';
-  if (gankActive(n)) return 'gank';
+  if (gankActive(n)) {
+    noteRunningGank(n);
+    return 'gank';
+  }
   // the walk home / channel of a recall holds until the bot is home (the fountain leaf takes over there)
   const home = n.ctx.map.sides[n.ctx.team].fountain;
   if (st.intent === 'recall' && (n.mem.mode === 'recall' || n.mem.mode === 'home') && dst(n.v.self, home) >= VALUES.recall.homeRange) return 'recall';
@@ -97,6 +102,21 @@ export function utilitySelect(n: NodeCtx): NodeResult {
       enter(n, st, hold, 0);
       return r;
     }
+  }
+  // §9 idle_after_shove (rate + duration by rank in errors.json): rolled once per crash of the own wave; while the
+  // episode runs and no enemy is near, the bot stands (logged as an injected error, not as a choice)
+  const lane = laneNow(n);
+  const wave = lane ? lv(n)?.waves[lane] : undefined;
+  if (wave?.crashed) {
+    if (!st.crashRolled) {
+      st.crashRolled = true;
+      rollErrorEpisode(n.mem, n.ctx, 'idle_after_shove', n.v.tick, n.rng, { lane: lane! });
+    }
+  } else st.crashRolled = false;
+  if (errorActive(n.mem, 'idle_after_shove', n.v.tick) && !n.v.enemies.some((e) => dst(e, n.v.self) < VALUES.selection.idleErrorEnemyRange)) {
+    n.log(INTENT_NODE, 'none', 'idle_after_shove', { lane: lane ?? '' }, {}, 'idle_after_shove');
+    enter(n, st, 'none', 0);
+    return 'running';
   }
   const scored = scoreCandidates(n, st);
   st.evalAt = n.v.tick;

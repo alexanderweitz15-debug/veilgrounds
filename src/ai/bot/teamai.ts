@@ -17,6 +17,11 @@ import type { BotParams, DecisionLog } from '../contract';
 import type { NodeCtx } from '../bt/types';
 import { dst } from './geo';
 import treeData from '../../data/bots/tree.json';
+import { utilityOn } from '../utility/flag';
+import { VALUES, rankCurve } from '../utility/values';
+
+/** Log names of the conversion targets (§7.4 convert: tower | dragon | baron | kesselbrut). */
+const CONVERT_NAME: Record<string, string> = { leviathan: 'dragon', schleierwaechter: 'baron', kesselbrut: 'kesselbrut' };
 
 export type DesireKind =
   | 'push_lane'
@@ -238,6 +243,11 @@ export class TeamAI {
     this.desires = this.desires.filter((x) => !x.slots.some((s) => d.slots.includes(s)) || x.kind === 'split_push');
     this.desires.push(d);
     this.teamLog(tick, d.kind, d.reason, { obj: d.obj ?? '', alive: alive.length }, { conversionPct: pct });
+    // §7.4: the conversion is its own logged decision (convert: tower | dragon | baron | kesselbrut | none(reason))
+    if (utilityOn(n.ctx)) {
+      const what = d.kind === 'push_lane' ? 'tower' : d.kind === 'take_objective' ? CONVERT_NAME[d.obj!] : `none(${d.kind})`;
+      this.log.push({ tick, bot: n.ctx.slot, node: 'convert', inputs: { obj: d.obj ?? '', alive: alive.length, team: this.team }, scores: { conversionPct: pct }, chosen: what, reason: d.reason });
+    }
     return d;
   }
 
@@ -362,12 +372,15 @@ export class TeamAI {
           continue;
         }
         if (left > 0 || (o === 'schleierwaechter' && time < 20 * 60) || (o === 'kesselbrut' && time >= HERALD_UNTIL_S)) continue;
+        // §7.4 (utility flag): Kesselbrut is an objective from Gold on (rank curve), taken by jungler + top
+        const grubs = o === 'kesselbrut' && utilityOn(n.ctx);
+        if (grubs && rankCurve(VALUES.macro.kesselbrutRank, skill) < 0.5) continue;
         const s = this.safety(n, o) + ping;
         const thr = (o === 'schleierwaechter' ? th.baron : th.dragon) + riskShift;
         const jg0 = free.find((m) => m.role === 'jungle');
         // who goes: baron = the team; dragon = jungler + support + the nearest laner; Kesselbrut = jungler + support
         // (laners keep farming: an objective is not a reason to empty the lanes)
-        const sup0 = free.find((m) => m.role === 'support');
+        const sup0 = free.find((m) => m.role === (grubs ? 'top' : 'support'));
         const core = [...(jg0 ? [jg0] : []), ...(sup0 ? [sup0] : [])];
         const extra = o === 'schleierwaechter' ? 5 : o === 'leviathan' ? 1 : 0;
         const laners = byDist(p).filter((m) => !core.includes(m)).slice(0, o === 'schleierwaechter' ? 5 : extra);
@@ -380,7 +393,9 @@ export class TeamAI {
         const baseHp = campOf(o)?.monsters.reduce((a, m) => a + m.hp, 0) ?? 5000;
         const hp = o === 'schleierwaechter' ? baseHp + BARON_HP_PER_MIN * Math.max(0, Math.floor(time / 60 - 20)) : baseHp * (1 + MONSTER_HP_PER_LEVEL * Math.max(0, avgLevel - 1));
         const killS = hp / Math.max(1, dps);
-        if (s >= thr && killS <= KILL_WITHIN_S[o] && tick >= this.retryAt[o]) {
+        // grubs die one at a time and each gives a stack: a longer take is still worth it (values.json macro)
+        const within = grubs ? VALUES.macro.kesselbrutKillWithinS : KILL_WITHIN_S[o];
+        if (s >= thr && killS <= within && tick >= this.retryAt[o]) {
           this.retryAt[o] = tick + OBJECTIVE_RETRY_S * 30;
           out.push({ kind: 'take_objective', obj: o, score: s, x: p.x, y: p.y, slots: team, reason: `safety ${s.toFixed(2)} >= ${thr.toFixed(2)}`, from: tick + Math.round(latency * 30 * 0.3), until: tick + 45 * 30 });
           team.forEach((x) => busy.add(x));
@@ -400,6 +415,28 @@ export class TeamAI {
       const def = byDist(t).filter((m) => !busy.has(m.slot)).slice(0, 2).map((m) => m.slot);
       if (def.length) out.push({ kind: 'defend_lane', ...(lane ? { lane } : {}), score: 0.7, x: t.x, y: t.y, slots: def, reason: `${foes} enemies at own tower`, from: tick, until: tick + 30 * 30 });
       def.forEach((x) => busy.add(x));
+    }
+    // §7.1 (utility flag): siege from 11:00 when a lane is won (its enemy laner >= 2 deaths behind or >= 1000 item
+    // gold behind, public scoreboard): jungler + support rotate there with the lane's laner
+    if (utilityOn(n.ctx) && time >= VALUES.macro.siegeFromS && time < 14 * 60 && rankCurve(VALUES.macro.siegeRank, skill) >= 0.5) {
+      const row = (role: string, team: number) => {
+        const q = this.players.find((x) => x.team === team && x.role === role);
+        return q ? n.snap.players.find((r) => r.slot === q.slot) : undefined;
+      };
+      const enemyTeam = this.team === 1 ? 0 : 1;
+      for (const [lane, role] of [['top', 'top'], ['mid', 'mid'], ['bot', 'adc']] as [LaneName, string][]) {
+        const mine = row(role, this.team);
+        const theirs = row(role, enemyTeam);
+        if (!mine || !theirs) continue;
+        const won = theirs.deaths - mine.deaths >= VALUES.macro.laneWonDeaths || mine.itemValue - theirs.itemValue >= VALUES.macro.laneWonGold;
+        if (!won) continue;
+        const g = free.filter((m) => !busy.has(m.slot) && (m.role === 'jungle' || m.role === 'support' || m.role === role)).map((m) => m.slot);
+        if (g.length < 2) continue;
+        const p = this.siegeTarget(n, lane);
+        out.push({ kind: 'push_lane', lane, score: VALUES.macro.siegeScore, x: p.x, y: p.y, slots: g, reason: `lane ${lane} won: siege`, from: tick, until: tick + VALUES.macro.siegeS * 30 });
+        g.forEach((x) => busy.add(x));
+        break;
+      }
     }
     // punish absence (Gold+): an enemy laner is dead -> its lane opponent shoves; the human ally died -> cover lane
     if (skill >= 45) {

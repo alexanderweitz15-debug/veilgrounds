@@ -35,6 +35,11 @@ fast-forward from main `e0f40bb`):
 tests/goldEfficiency.test.ts, tests/runePages.test.ts, tests/settingsIO.test.ts (round trip, validation, cast modes),
 tests/i18n.test.ts (tip keys), tests/objectives.test.ts (kesselbrutTeams). Each green; `tsc --noEmit` clean.
 
+Full suite on `9134f0b` (19 Oct, machine shared with other agents): 68 files, 871 passed, 2 skipped, 1 todo,
+**1 failed: tests/brainReflex.test.ts "reflex logic < 0.05 ms per bot and tick" measured 0.152 ms** - a wall-clock
+performance gate in A1's area (src/ai/reflex), not touched by C; it depends on CPU load (five agents running).
+`tsc --noEmit` exit 0, `vite build` exit 0.
+
 ### Screenshots (block 2, 1280x720, built game, no console errors)
 
 c7-shop-before/after (gold efficiency line), c7-loading-before/after (tip), c5-runes-before/after (own page + editor),

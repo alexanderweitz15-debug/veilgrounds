@@ -120,6 +120,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.cameraLocked'), check('cameraLocked'));
     row(t('set.fullscreenLock'), check('fullscreenLock'));
     row(t('set.botToxicity'), check('botToxicity'));
+    row(t('set.newBrain'), check('newBrain'));
     row(t('set.volume'), slider('volume', 0, 1, 0.05, (v) => `${Math.round(v * 100)} %`));
     section(t('set.graphicsTitle'));
     row(t('set.graphics'), select<Settings['graphics']>(settings.graphics, [['low', t('set.gfx.low')], ['medium', t('set.gfx.medium')], ['high', t('set.gfx.high')]], (v) => updateSettings({ graphics: v })));

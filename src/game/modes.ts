@@ -21,12 +21,15 @@ export type ModeId = 'lane' | 'sandbox' | 'mock';
  * Client settings that every mode's config carries (not only the classic lobby): bot toxicity applies to the bots of
  * trainers and duels too. A value the config already has (classic lobby, replays) wins.
  */
-export function withClientSettings(config: SimConfig, s: { botToxicity: boolean; lang: 'de' | 'en'; autoAttack?: boolean }): SimConfig {
+export function withClientSettings(config: SimConfig, s: { botToxicity: boolean; lang: 'de' | 'en'; autoAttack?: boolean; newBrain?: boolean }): SimConfig {
   return {
     ...config,
     // LoL "auto attack" option for the human player(s): idle champions hit enemies in range (sim default: off)
     players: config.players.map((p) => (p.isHuman && p.autoAttack === undefined ? { ...p, autoAttack: s.autoAttack ?? true } : p)),
     ...(config.botToxicity === undefined ? { botToxicity: s.botToxicity } : {}),
+    // beta switch: new bot brain (reflex layer + utility model)
+    ...(config.botUtility === undefined ? { botUtility: !!s.newBrain } : {}),
+    ...(config.botReflex === undefined ? { botReflex: !!s.newBrain } : {}),
     // bot chat follows the UI language (output only, not part of the sim state)
     botLang: s.lang,
   };

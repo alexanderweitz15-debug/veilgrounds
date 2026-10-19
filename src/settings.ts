@@ -33,6 +33,8 @@ export interface Settings {
   fullscreenLock: boolean;
   /** Bots may flame in chat and spam '?' pings (spec-bots §9 Toxizität). */
   botToxicity: boolean;
+  /** Beta: new bot brain (reflex layer + utility model). */
+  newBrain: boolean;
   /** Master volume 0..1 (procedural sound). */
   volume: number;
   /** Last picked rune preset id per champion id (lobby). */
@@ -67,6 +69,7 @@ const DEFAULTS: Settings = {
   fullscreenLock: true,
   volume: 0.6,
   botToxicity: true,
+  newBrain: false,
   runePresets: {},
   minimapScale: 100,
   minimapLeft: false,

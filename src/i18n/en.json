@@ -316,6 +316,7 @@
   "act.pingMissing": "Ping: missing",
   "act.pingQuestion": "Ping: ?",
   "ping.question": "?",
+  "set.newBrain": "New bot brain (beta: reflex layer + utility model)",
   "set.botToxicity": "Toxic bots (flame chat, \"?\" pings)",
   "chat.placeholder": "Message your team (Enter to send, Esc to cancel)",
   "chat.you": "You",

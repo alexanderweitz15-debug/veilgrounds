@@ -72,6 +72,7 @@
 .loading-card .bot-rank { font-family: var(--font-label, sans-serif); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold, #c8aa6e); }
 .loading-vs { font-family: var(--font-display, Georgia); color: var(--gold, #c8aa6e); font-size: 22px; }
 .loading-hint { font-size: 12px; color: var(--text-dim, #a09b8c); }
+.loading-tip { max-width: 760px; margin: 6px auto 0; font-size: 14px; line-height: 1.4; color: #d8cfb6; text-align: center; min-height: 2.8em; }
 
 /* ---------------------------------------------------------------- HUD item slots + buffs */
 .hud .gold { pointer-events: auto; cursor: pointer; }

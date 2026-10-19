@@ -302,6 +302,10 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
  * Loading screen: both teams with champion, bot name and rank. Bakes the match's sprite atlases meanwhile (the game
  * picks them up from the cache) and calls onDone once they are ready and a short delay or a click has passed.
  */
+/** Loading-screen tips `tip.1` .. `tip.N` in de/en.json, rotated every TIP_MS. */
+const TIP_COUNT = 12;
+const TIP_MS = 7000;
+
 export function renderLoading(root: HTMLElement, cfg: SimConfig, onDone: () => void): void {
   root.textContent = '';
   root.classList.add('menu-screen', 'loading-screen');
@@ -318,6 +322,15 @@ export function renderLoading(root: HTMLElement, cfg: SimConfig, onDone: () => v
     if (team === 0) el('div', 'loading-vs', root, 'VS');
   }
   const hint = el('div', 'loading-hint', root, t('classic.clickToStart'));
+  // training tips while the sprites are painted (FEATURE-GAP 4.6): a random one, then the next every TIP_MS
+  const tip = el('div', 'loading-tip', root);
+  let ti = Math.floor(Math.random() * TIP_COUNT);
+  const showTip = (): void => {
+    if (!tip.isConnected) return clearInterval(tipTimer); // loading screen left
+    tip.textContent = `${t('tip.label')} ${t(`tip.${(ti++ % TIP_COUNT) + 1}`)}`;
+  };
+  const tipTimer = window.setInterval(showTip, TIP_MS);
+  showTip();
   const bar = el('div', 'loading-bake', root);
   bar.style.cssText = 'font-size:13px;letter-spacing:0.06em;color:#a09b8c;min-height:1.2em';
   const paint = (k: number): void => {

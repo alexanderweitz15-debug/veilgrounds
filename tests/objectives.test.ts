@@ -220,7 +220,7 @@ describe('objectives', () => {
     expect(tr.team(1).kesselbrut).toBeNull();
     tr.ingest(snap(11, [monsterKill(OBJ.kesselbrut, 1)], ROWS(), { kesselbrut: 3 }), () => ({ radius: 70, variant: 'kesselbrut' }));
     expect(tr.team(1).kesselbrut).toBe(1);
-    const withSim = { ...snap(12, [], ROWS(), { kesselbrut: 3 }), objectives: { kesselbrut: [3, 2] as [number, number], leviathan: [1, 2] as [number, number] } };
+    const withSim = { ...snap(12, [], ROWS(), { kesselbrut: 3 }), objectives: { kesselbrut: [3, 2] as [number, number], leviathan: [1, 2] as [number, number], schleierLeft: [0, 0] as [number, number], inhibs: [] } };
     tr.ingest(withSim);
     expect(tr.team(1)).toMatchObject({ kesselbrut: 2, leviathan: 2 });
   });

@@ -6,8 +6,9 @@ import { query } from 'bitecs';
 import { step, type Sim } from '../../src/sim/sim';
 import { Kind, sec, type Command, type PlayerSetup } from '../../src/sim/types';
 import { buildSnapshot } from '../../src/sim/snapshot';
-import { reveal } from '../../src/sim/buffs';
-import { dealDamage } from '../../src/sim/damage';
+import { addBuff, reveal } from '../../src/sim/buffs';
+import { dealDamage, kill } from '../../src/sim/damage';
+import { structureAt } from '../../src/sim/systems/towers';
 import { inventory } from '../../src/sim/items/inventory';
 import { jungleState } from '../../src/sim/systems/jungle';
 import { SEAL, SWEEP, trinket, wardsOf } from '../../src/sim/wards';
@@ -40,13 +41,30 @@ describe('B3 snapshot additions', () => {
     expect(snap(sim, 1).entities.find((e) => e.id === red.id)!.plates).toBe(4);
   });
 
-  it('Kesselbrut stacks of both teams are public', () => {
-    const { sim } = duel();
-    expect(snap(sim, 0).kesselbrutTeams).toBeUndefined();
+  it('public objectives of both teams: Kesselbrut, Leviathan, Schleier buff, inhibitor timers; respawn + summoner CDs', () => {
+    const { sim, a, b } = duel();
+    expect(snap(sim, 0).objectives).toEqual({ leviathan: [0, 0], kesselbrut: [0, 0], schleierLeft: [0, 0], inhibs: [] });
     jungleState(sim).kesselbrut[1] = 3;
-    expect(snap(sim, 0).kesselbrutTeams).toEqual([0, 3]);
-    expect(snap(sim, 1).kesselbrutTeams).toEqual([0, 3]);
+    jungleState(sim).leviathan[0] = 2;
+    addBuff(sim, b, { kind: 'mark', id: 'schleierwaechter', src: b, ticks: sec(100) });
+    const o = snap(sim, 0).objectives!;
+    expect(o.kesselbrut).toEqual([0, 3]);
+    expect(o.leviathan).toEqual([2, 0]);
+    expect(o.schleierLeft[1]).toBeCloseTo(100, 0);
+    expect(snap(sim, 1).objectives!.kesselbrut).toEqual([0, 3]);
     expect(snap(sim, 1).kesselbrut).toBe(3); // the old own-team field stays
+    const inhib = structureAt(sim, 1, Kind.Inhibitor, 0)!;
+    kill(sim, inhib.eid, a);
+    step(sim);
+    expect(snap(sim, 0).objectives!.inhibs).toEqual([expect.objectContaining({ team: 1, lane: 0 })]);
+    expect(snap(sim, 0).objectives!.inhibs[0]!.left).toBeGreaterThan(290);
+    // respawn timer of a dead enemy champion, summoner CDs only for the own team
+    kill(sim, b, a);
+    step(sim);
+    const row = snap(sim, 0).players.find((r) => r.slot === 5)!;
+    expect(row.respawnIn).toBeGreaterThan(0);
+    expect(row.summonerCds).toBeUndefined();
+    expect(snap(sim, 0).players.find((r) => r.slot === 0)!.summonerCds).toEqual([{ left: 0, total: 300 }, { left: 0, total: 240 }]);
   });
 
   it('active reveals: own Siegelward and Suchfeuer circles; revealed enemies; own units exposed', () => {

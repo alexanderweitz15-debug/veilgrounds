@@ -96,7 +96,7 @@ Status: proposed (sim/b-mechanics). Affects: brain team (reads them), C (scorebo
 - `SnapEntity.plates?: number` on outer towers (both teams; 5 -> 0, all fall at 14:00).
 - `SnapEntity.revealed?: true` on enemy units under a reveal of the viewing team; `SnapEntity.exposed?: true` on own
   units currently revealed to the enemy (Nyx seed, Mira W, own ward under enemy Siegelward/Suchfeuer).
-- `Snapshot.kesselbrutTeams?: [blue, red]` (absent while both 0); the old own-team `kesselbrut` stays.
+- (superseded 2026-10-19: `kesselbrutTeams` replaced by C's `Snapshot.objectives`, see the C2 entry: merged.)
 - `Snapshot.reveals?: SnapReveal[]` own true-sight areas `{ kind: 'seal' | 'sweep', x, y, r, until? }`.
 - Behaviour change: `SnapEntity.atkTarget` is now masked to -1 when the target is not in the same view (no eid
   leak, e.g. an enemy champion hitting a camp in the fog). atkPhase/atkStart/atkEnd/atkTarget were already there for
@@ -147,7 +147,7 @@ All A2 hooks keep flag-off behaviour bit-identical: every changed line is behind
 | A2-3 | 2026-10-16 | src/ai/bot/brain.ts `retreat` | `const goHome = !utilityOn(ctx) && (v.hpPct < lowHp \|\| (mem.mode === 'retreat' && v.hpPct < 0.4) \|\| mem.mode === 'home');` and `if (mem.mode === 'retreat' \|\| (mem.mode === 'home' && !utilityOn(ctx))) mem.mode = 'lane';` | §4.6 "retreat führt nicht mehr automatisch heim": with the flag the flee part stays (survive), the walk home becomes the recall candidate (`recallValue`: stay-death > 0.3 or an item). Measured (Diamond, 8 min, flag on, seed 1): 29 of 34 laner recalls came from this branch ("recall / low hp"), so test 8 cannot hold until it is gated. | proposed |
 | A2-4 | 2026-10-16 | docs/agents/plan-api.md / src/ai/plan.ts (A1) | Second intent kind for reflex filling during a trade disengage (§6.1): `{ kind: 'disengage'; lane: LaneName; from: number /* enemy eid */; back: Pt /* own stand point side */; until: number; harass: boolean }`. Reflex: orbwalk toward `back`, fill free attack periods with autos on minions in reach (or the champion when `harass`), last-hit plans as in laneFarm. A2's trade intent sets it when a trade ends (`endTrade`) for `disengageUntil`. | §6.1 "nach dem Abbruch Disengage per Orbwalk zum Stehpunkt; währenddessen läuft der Angriffs-Scheduler weiter". | proposed (A1 accepted the idea in review-2026-10-16) |
 | A2-5 | 2026-10-16 | A3: profiles + playstyleAxes.json | A2 reads `RankBehavior.utilityNoisePct` (A3-1) and the knobs `utilFarm`, `utilHarass`, `utilTrade`, `utilPush`, `utilRoam`, `utilRecall`, `utilObjective`, `utilVision`, `utilGroup`, `utilCatchLane` (A3-2) when present; fallbacks until merged: `exchangeNoise(skill)` (same numbers) and the axis mappings in values.json `style`. Logged under node `intent` (A3-10, `VALUES.selection.logNode`). | No new shared change; listed so the merge order is clear. | info |
-## 2026-10-16 · C · src/sim/snapshot.ts · public objective + respawn fields (C2) · proposed
+## 2026-10-16 · C · src/sim/snapshot.ts · public objective + respawn fields (C2) · merged by B on sim/b-mechanics 2026-10-19 (objectives {leviathan, kesselbrut, schleierLeft, inhibs}, ScoreRow.respawnIn, ScoreRow.summonerCds; visionScore/champDamage NOT done: no sim source yet; tests/objectives.test.ts fixture got the two new required fields)
 
 Affected: B (owner, B3/B6 add the same kind of data — please use these names or tell C yours), A1–A3 (bots may read
 the same public fields; nothing hidden is added). **Nothing blocks:** C2 already works without these fields through a

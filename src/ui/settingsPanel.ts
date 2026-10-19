@@ -1,8 +1,9 @@
 // Settings form (used in the main menu and the in-game Escape menu): language, camera, UI scale, toggles and
 // key rebinding. Rebuilds itself on language change.
 import { t } from '../i18n';
-import { settings, updateSettings, type Settings } from '../settings';
-import { ACTIONS, binds, keyLabel, resetBinds, setBind, type Action } from '../input/keybinds';
+import { DEFAULT_SETTINGS, settings, updateSettings, type Settings } from '../settings';
+import { ACTIONS, applyBinds, binds, keyLabel, resetBinds, setBind, type Action } from '../input/keybinds';
+import { exportSettings, parseSettingsFile } from '../game/settingsIO';
 
 export function buildSettingsPanel(onLang: () => void): HTMLElement {
   const root = document.createElement('div');
@@ -46,7 +47,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     i.addEventListener('change', () => updateSettings({ [key]: i.checked } as Partial<Settings>));
     return i;
   };
-  const slider = (key: 'cameraSpeed' | 'uiScale' | 'volume', min: number, max: number, step: number, fmt: (v: number) => string): HTMLElement => {
+  const slider = (key: 'cameraSpeed' | 'uiScale' | 'volume' | 'minimapScale', min: number, max: number, step: number, fmt: (v: number) => string): HTMLElement => {
     const wrap = document.createElement('span');
     wrap.className = 'slider';
     const i = document.createElement('input');
@@ -97,6 +98,8 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     autoBox = check('uiScaleAuto');
     row(t('set.uiScaleAuto'), autoBox);
     row(t('set.uiScale'), slider('uiScale', 80, 150, 5, (v) => `${v}%`));
+    row(t('set.minimapScale'), slider('minimapScale', 80, 150, 5, (v) => `${v}%`));
+    row(t('set.minimapLeft'), check('minimapLeft'));
     row(t('set.damageNumbers'), check('damageNumbers'));
     row(t('set.attackMoveOnCursor'), check('attackMoveOnCursor'));
     row(t('set.castIndicator'), check('castIndicator'));
@@ -144,7 +147,53 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
       render();
     });
     root.appendChild(reset);
+    // export / import (C7): settings + keybinds as one JSON file
+    section(t('set.ioTitle'));
+    const io = document.createElement('div');
+    io.className = 'settings-io';
+    const exp = document.createElement('button');
+    exp.className = 'btn small';
+    exp.textContent = t('set.export');
+    exp.addEventListener('click', () => {
+      const url = URL.createObjectURL(new Blob([exportSettings(settings, binds)], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'veilgrounds-settings.json';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    const file = document.createElement('input');
+    file.type = 'file';
+    file.accept = 'application/json,.json';
+    file.hidden = true;
+    const imp = document.createElement('button');
+    imp.className = 'btn small';
+    imp.textContent = t('set.import');
+    imp.addEventListener('click', () => file.click());
+    const msg = document.createElement('span');
+    msg.className = 'settings-io-msg';
+    file.addEventListener('change', () => {
+      const f = file.files?.[0];
+      if (!f) return;
+      void f.text().then((text) => {
+        try {
+          const r = parseSettingsFile(text, DEFAULT_SETTINGS, ACTIONS);
+          updateSettings(r.settings);
+          applyBinds(r.keybinds);
+          render();
+          onLang();
+          ioMsg = r.skipped.length ? t('set.importPartial', { n: r.skipped.length }) : t('set.importOk');
+        } catch {
+          ioMsg = t('set.importBad');
+        }
+        render();
+      });
+    });
+    msg.textContent = ioMsg;
+    io.append(exp, imp, file, msg);
+    root.appendChild(io);
   }
+  let ioMsg = '';
   render();
   return root;
 }

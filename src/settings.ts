@@ -37,6 +37,10 @@ export interface Settings {
   volume: number;
   /** Last picked rune preset id per champion id (lobby). */
   runePresets: Record<string, string>;
+  /** Minimap size in percent (80..150) on top of the HUD scale (C7). */
+  minimapScale: number;
+  /** Minimap at the bottom left instead of the bottom right (C7). */
+  minimapLeft: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -58,7 +62,12 @@ const DEFAULTS: Settings = {
   volume: 0.6,
   botToxicity: true,
   runePresets: {},
+  minimapScale: 100,
+  minimapLeft: false,
 };
+
+/** Default values (settings import validates keys and types against them). */
+export const DEFAULT_SETTINGS: Readonly<Settings> = DEFAULTS;
 
 export const settings: Settings = { ...DEFAULTS };
 const listeners: (() => void)[] = [];

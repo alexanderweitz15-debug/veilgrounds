@@ -3,7 +3,7 @@
 import type { Sim } from '../sim';
 import type { System } from './index';
 import { findPath, nearestWalkable } from '../map';
-import { canTarget, onMoveCommand, setHoldFire } from './attack';
+import { canTarget, onMoveCommand, setHoldFire, setAttackMoveCursor } from './attack';
 import { cancelCastIntents, commandCast, levelAbility, refreshCooldowns, updateCastIntents } from './abilities';
 import { cancelRecall, grantGold, grantXp, startRecall, xpToNext } from './economy';
 import { spawnDummy } from './champions';
@@ -106,6 +106,7 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
       cancelRecall(sim, eid);
       Atk.target[eid] = -1;
       Atk.attackMove[eid] = 1;
+      setAttackMoveCursor(sim, eid, !!cmd.cursor);
       Atk.amx[eid] = cmd.x;
       Atk.amy[eid] = cmd.y;
       moveTo(sim, eid, cmd.x, cmd.y);

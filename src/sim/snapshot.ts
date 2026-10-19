@@ -3,14 +3,14 @@
 import { query } from 'bitecs';
 import type { Sim } from './sim';
 import { pointVisible, sees } from './vision';
-import { Kind, VARIANTS, enemyOf, isStructure, type SimEvent, type Variant } from './types';
-import { abilityHud, armedSlot, type AbilityHud } from './systems/abilities';
+import { Kind, VARIANTS, enemyOf, isStructure, type LaneId, type SimEvent, type Variant } from './types';
+import { abilityHud, armedSlot, displaceProgress, type AbilityHud } from './systems/abilities';
 import { CHAMPION_DATA, championHooks, champIdOf } from './champions';
 import type { ChampionVisuals, HintMarker, VisualShape } from './champions/hooks';
 import { inFountain, inventory, itemValue } from './items/inventory';
 import { itemCooldownHud } from './items/itemHooks';
 import { champions, kda } from './systems/economy';
-import { buffs, isRevealed } from './buffs';
+import { airborneProgress, buffs, isRevealed } from './buffs';
 import { groundObjects } from './summons';
 import { isStealthUnit, stealthPointSeen, trinketHud, trueSight, trueSightAreas, wardTypeOf, type TrinketId, type WardType } from './wards';
 import { ccLevel, ccState } from './buffs';
@@ -19,8 +19,10 @@ import { projectileSource } from './systems/projectiles';
 import { walkedLastTick } from './systems/movement';
 import { teleportLeft } from './summoners';
 import { trainerHud, type TrainerHud } from './trainer';
+import { seenItems } from './seenItems';
 import { sandboxFlags } from './trainer/sandbox';
-import { kesselbrutStacks } from './systems/jungle';
+import { isEpicMonster, kesselbrutStacks, leviathanStacks } from './systems/jungle';
+import { inhibitorTimers } from './systems/towers';
 
 export interface SnapEntity {
   id: number;
@@ -80,6 +82,12 @@ export interface SnapEntity {
   sight?: number;
   /** Outer towers: plates left (5 -> 0; all fall at 14:00). Public, both teams. */
   plates?: number;
+  /** Dash / knockback / pull in progress: 0..1 along the path (render: flight arc, animation ends with it). */
+  dash?: number;
+  /** Knocked up (airborne CC): 0..1 of the arc. */
+  air?: number;
+  /** Monster of an epic objective (Leviathan, Kesselbrut, Schleierwaechter), B6. */
+  epic?: true;
   /** Enemy unit under a reveal of this team (Mira W, Nyx seed / R, Tobin E, Spaehfrucht, Siegelward / Suchfeuer). */
   revealed?: true;
   /** Own unit currently revealed to the enemy team (LoL "revealed" indicator; own wards under enemy true sight). */
@@ -207,10 +215,22 @@ export interface Snapshot {
   trainer?: TrainerHud;
   /** Kesselbrut stacks of the viewing team (0-6, HUD indicator); absent while 0 and for spectators. */
   kesselbrut?: number;
-  /** Kesselbrut stacks of both teams [blue, red] (public like LoL void grubs); absent while both are 0. */
+  /** Public objective state of both teams (index = team), C2 proposal; absent for spectators. */
+  objectives?: SnapObjectives;
+  /** Kesselbrut stacks of both teams [blue, red] (same as objectives.kesselbrut; C reads it); absent while both 0. */
   kesselbrutTeams?: [number, number];
   /** Active true-sight areas of the viewing team (own Siegelward circles, running Suchfeuer sweeps); absent if none. */
   reveals?: SnapReveal[];
+}
+
+/** Public objectives (LoL scoreboard top bar): index = team. */
+export interface SnapObjectives {
+  leviathan: [number, number];
+  kesselbrut: [number, number];
+  /** Seconds left of the Schleierwaechter buff (max over the team's alive holders; 0 = none). */
+  schleierLeft: [number, number];
+  /** Destroyed inhibitors: seconds until respawn. */
+  inhibs: { team: number; lane: LaneId; left: number }[];
 }
 
 /** One own true-sight area (stealth rules, wards.ts). */
@@ -248,9 +268,16 @@ export interface ScoreRow {
   dead: boolean;
   /** Own team only. */
   gold?: number;
+  /** Own team: live inventory. Enemies: the inventory as last seen while visible (absent if never seen; no fog updates). */
   items?: (string | null)[];
+  /** Enemies: tick of that last sighting (items are as of then). */
+  itemsSeen?: number;
   /** Sum of item costs (both teams). */
   itemValue: number;
+  /** Dead champions (both teams, public): seconds until respawn. */
+  respawnIn?: number;
+  /** Own team only: summoner spell cooldowns (seconds), same order as PlayerSetup.summoners. */
+  summonerCds?: { left: number; total: number }[];
 }
 
 function scoreRows(sim: Sim, team: number): ScoreRow[] {
@@ -268,7 +295,8 @@ function scoreRows(sim: Sim, team: number): ScoreRow[] {
       assists,
       cs: Champ.cs[e]!,
       dead: Unit.alive[e] !== 1,
-      ...(own ? { gold: Math.floor(Champ.gold[e]!), items: [...inventory(sim, e)] } : {}),
+      ...(Unit.alive[e] !== 1 && Champ.respawnAt[e]! > 0 ? { respawnIn: Math.max(0, (Champ.respawnAt[e]! - sim.tick) / 30) } : {}),
+      ...(own ? { gold: Math.floor(Champ.gold[e]!), items: [...inventory(sim, e)], summonerCds: abilityHud(sim, e).slice(4).map((h) => ({ left: h.cdLeft, total: h.cdTotal })) } : seenRow(sim, team, Unit.slot[e]!)),
       itemValue: itemValue(sim, e),
     };
   });
@@ -279,6 +307,36 @@ function wardFields(sim: Sim, e: number, team: number): { ward?: WardType; visio
   // jungle vision points (river vision, Spähfrucht): own team gets the radius for the fog overlay
   if (!w) return sim.c.Unit.team[e] === team ? { sight: sim.c.Vision.r[e]! } : {};
   return sim.c.Unit.team[e] === team ? { ward: w, vision: sim.c.Vision.r[e]! } : { ward: w };
+}
+
+/** Enemy items as last seen by `team` (seenItems.ts). */
+function seenRow(sim: Sim, team: number, slot: number): { items?: (string | null)[]; itemsSeen?: number } {
+  const s = seenItems(sim, team, slot);
+  return s ? { items: [...s.items], itemsSeen: s.tick } : {};
+}
+
+/** Public objective state (both teams). Read-only. */
+function objectiveState(sim: Sim): SnapObjectives {
+  const left: [number, number] = [0, 0];
+  for (const e of champions(sim)) {
+    const t = sim.c.Unit.team[e]!;
+    if (sim.c.Unit.alive[e] !== 1 || (t !== 0 && t !== 1)) continue;
+    for (const b of buffs(sim, e)) if (b.kind === 'mark' && b.id === 'schleierwaechter' && b.until > sim.tick) left[t] = Math.max(left[t], (b.until - sim.tick) / 30);
+  }
+  return {
+    leviathan: [leviathanStacks(sim, 0), leviathanStacks(sim, 1)],
+    kesselbrut: [kesselbrutStacks(sim, 0), kesselbrutStacks(sim, 1)],
+    schleierLeft: left,
+    inhibs: inhibitorTimers(sim),
+  };
+}
+
+/** Dash / knock-up progress (2 decimals) of a visible unit. */
+function motionFields(sim: Sim, e: number, alive: boolean): { dash?: number; air?: number } {
+  if (!alive) return {};
+  const d = displaceProgress(sim, e);
+  const a = airborneProgress(sim, e);
+  return { ...(d >= 0 ? { dash: Math.round(d * 100) / 100 } : {}), ...(a >= 0 ? { air: Math.round(a * 100) / 100 } : {}) };
 }
 
 /** Reveal state of a visible unit: enemy under this team's reveal, or own unit revealed to the enemy. */
@@ -297,8 +355,13 @@ function ccFields(sim: Sim, e: number, alive: boolean): { cc?: number; slow?: nu
   return { cc: s.mask, ccEnd: s.until, ...(s.slow > 0 ? { slow: s.slow } : {}) };
 }
 
-export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
-  const { Unit, Pos, Face, Hp, Mana, Champ, Atk, Proj } = sim.c;
+/**
+ * The fog-filtered unit list of one team (own units, structures, visible alive units), without hook visuals / marks /
+ * auras. buildSnapshot adds those; the bot runner can call this once per team and tick (A1 request: one source of
+ * truth for the entity fields).
+ */
+export function snapshotEntities(sim: Sim, team: number): SnapEntity[] {
+  const { Unit, Pos, Face, Hp, Mana, Champ, Atk } = sim.c;
   const entities: SnapEntity[] = [];
   for (const e of query(sim.world, [Unit])) {
     const k = Unit.kind[e]!;
@@ -336,6 +399,8 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
       ...(k === Kind.Ward && isStealthUnit(sim, e) ? { stealth: true as const } : {}),
       ...(k === Kind.Tower && sim.c.Tower.tier[e] === 0 ? { plates: sim.c.Tower.plates[e]! } : {}),
       ...revealFields(sim, e, team, alive),
+      ...motionFields(sim, e, alive),
+      ...(k === Kind.Monster && isEpicMonster(sim, e) ? { epic: true as const } : {}),
       ...(Unit.variant[e] ? { variant: VARIANTS[Unit.variant[e]!] } : {}),
     });
   }
@@ -343,6 +408,12 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
   const inView = new Set<number>();
   for (const s of entities) inView.add(s.id);
   for (const s of entities) if (s.atkTarget >= 0 && !inView.has(s.atkTarget)) s.atkTarget = -1;
+  return entities;
+}
+
+export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
+  const { Unit, Pos, Champ, Proj } = sim.c;
+  const entities = snapshotEntities(sim, team);
   addVisuals(sim, team, me0(sim, slot), entities);
   const projectiles: SnapProjectile[] = [];
   for (const e of query(sim.world, [Proj])) {
@@ -410,11 +481,12 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
   vis.clear();
   const trainer = trainerHud(sim);
   const kessel = kesselbrutStacks(sim, team);
-  const kt: [number, number] = [kesselbrutStacks(sim, 0), kesselbrutStacks(sim, 1)];
+  const objectives = team === 0 || team === 1 ? objectiveState(sim) : null;
   const reveals = trueSightAreas(sim, team);
   return {
     tick: sim.tick, time: sim.tick / 30, team, entities, projectiles, objects, me: hud, events, audio, players: scoreRows(sim, team),
-    ...(trainer ? { trainer } : {}), ...(kessel ? { kesselbrut: kessel } : {}), ...(kt[0] || kt[1] ? { kesselbrutTeams: kt } : {}),
+    ...(trainer ? { trainer } : {}), ...(kessel ? { kesselbrut: kessel } : {}), ...(objectives ? { objectives } : {}),
+    ...(objectives && (objectives.kesselbrut[0] || objectives.kesselbrut[1]) ? { kesselbrutTeams: objectives.kesselbrut } : {}),
     ...(reveals.length ? { reveals } : {}),
   };
 }
@@ -530,16 +602,19 @@ export function teamEvents(sim: Sim, team: number): { events: SimEvent[]; audio:
       case 'castFail':
         return Unit.team[ev.src] === team; // team-private (buildSnapshot narrows it to the own champion)
       case 'zone':
-        // stealthed zones (Lysa E wire): enemies only under true sight at the moment it is placed
+        // stealthed zones (ability flag 'stealth'): enemies only under true sight at the moment it is placed
         if (ev.team === team) return true;
         return ev.stealth && (team === 0 || team === 1) ? trueSight(sim, team, ev.x, ev.y, ev.r) : pointVisible(sim, team, ev.x, ev.y);
+      case 'tpUnlocked':
+        return ev.team === team;
       case 'gold':
       case 'level':
       case 'lastHitMiss':
         return Unit.team[ev.eid] === team;
       case 'death':
-        // camp kills stay in the fog (no free jungle timers); epic objectives (r >= 130) are announced like LoL
-        if ((ev.kind !== Kind.Monster && ev.kind !== Kind.Plant) || Unit.radius[ev.eid]! >= 130) return true;
+        // camp kills stay in the fog (no free jungle timers); epic objectives (B6 flag: Leviathan, Kesselbrut,
+        // Schleierwaechter) are announced like LoL
+        if ((ev.kind !== Kind.Monster && ev.kind !== Kind.Plant) || ev.epic) return true;
         return (ev.killer >= 0 && Unit.team[ev.killer] === team) || pointVisible(sim, team, ev.x, ev.y);
       default:
         return true;

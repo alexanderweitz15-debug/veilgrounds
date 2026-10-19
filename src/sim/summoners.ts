@@ -22,6 +22,8 @@ export interface SummonerDef {
   cooldown: number;
   /** Cooldown from 10:00 on (Teleport). */
   cooldownLate?: number;
+  /** Teleport: lane-minion gold at which the top laner gets it as a third summoner (B4). */
+  topUnlockGold?: number;
   range: number;
   /** Wind-up in seconds (all summoners are instant; Teleport is a channel, TELEPORT_CHANNEL_TICKS). */
   castTime: number;

@@ -91,6 +91,8 @@ export interface UtilityState {
   hist: Partial<Record<IntentId | 'none', number>>;
   switches: number;
   lastTick: number;
+  /** idle_after_shove rolled for the current crash of the own wave. */
+  crashRolled: boolean;
 }
 
 /**

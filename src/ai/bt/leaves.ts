@@ -23,6 +23,8 @@ import { gankRiskReaction } from '../ganks/risk';
 import { counterGank, jungleGank } from '../ganks/jungle';
 import { roam } from '../roams/roam';
 import { enemyRoamReaction } from '../roams/enemyRoam';
+import { utilityOn } from '../utility/flag';
+import { utilitySelect } from '../utility/select';
 
 /** Leaf registry (a function: brain.ts and this module import each other, so build it on first use). */
 export const registry = (): Registry => ({
@@ -38,6 +40,8 @@ export const registry = (): Registry => ({
     utilitySpells: brain.utilitySpells,
     dead: brain.dead,
     arena: brain.arena,
+    // brain rework §5: utility selector (flag off -> failure at once, no rng / memory / log)
+    utilitySelect: (n) => (utilityOn(n.ctx) ? utilitySelect(n) : 'failure'),
     recallChannel: brain.recallChannel,
     fountain: brain.fountain,
     escape,

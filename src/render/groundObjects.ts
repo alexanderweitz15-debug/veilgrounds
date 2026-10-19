@@ -6,7 +6,8 @@ import * as THREE from 'three';
 import type { ClientState } from '../game/state';
 import type { SnapObject } from '../sim/snapshot';
 import { REL } from './palette';
-import { abilityHue } from './abilityTheme';
+import { abilityHue, tagParticles } from './abilityTheme';
+import type { Particles } from './particles';
 
 type Shape = NonNullable<SnapObject['shape']>;
 
@@ -90,11 +91,19 @@ export class GroundObjects {
   readonly group = new THREE.Group();
   private readonly views = new Map<string, View>();
   private frame = 0;
+  private lastNow = 0;
+  /** D1b: ambient particles of hook objects in their ability's particle language (set by World). */
+  particles: Particles | null = null;
 
   update(state: ClientState, now: number): void {
     const snap = state.snap;
     this.frame++;
-    for (const o of snap?.objects ?? []) this.draw(state, o, now);
+    const dt = Math.min(0.1, Math.max(0, (now - this.lastNow) / 1000));
+    this.lastNow = now;
+    for (const o of snap?.objects ?? []) {
+      this.draw(state, o, now);
+      this.ambient(state, o, now, dt);
+    }
     // own ability hints: rings where the ability can go (dim when not usable / out of reach)
     const me = state.me();
     (snap?.me?.hints ?? []).forEach((h, i) => {
@@ -154,6 +163,32 @@ export class GroundObjects {
       v.dispose();
       this.views.delete(k);
     }
+  }
+
+  /** Ambient particles: on the rim of rings/domes, inside discs, along lines/walls, at pins/blades/traps. */
+  private ambient(state: ClientState, o: SnapObject, now: number, dt: number): void {
+    const pk = this.particles ? tagParticles(o.tag) : null;
+    if (!pk || !this.particles) return;
+    const k = this.particles.kind(pk.kind);
+    const hue = o.hue ?? pk.hue;
+    const shape: Shape = o.shape ?? STYLE[o.tag]?.shape ?? 'ring';
+    if (shape === 'line' || shape === 'wall') {
+      const fol = o.follow !== undefined ? state.byId.get(o.follow) : undefined;
+      const bx = fol ? state.x(fol) : o.x2 ?? o.x;
+      const by = fol ? state.y(fol) : o.y2 ?? o.y;
+      const len = Math.hypot(bx - o.x, by - o.y);
+      const n = (k.ambient * Math.max(1, len / 100) * dt) / 2;
+      for (let i = 0; i < 2; i++) {
+        const t = Math.random();
+        this.particles.emit(pk.kind, o.x + (bx - o.x) * t, o.y + (by - o.y) * t, shape === 'wall' ? 30 : 40, hue, n, now, undefined, 0.4);
+      }
+      return;
+    }
+    const area = shape === 'ring' || shape === 'dome' || shape === 'disc';
+    const n = k.ambient * (area ? Math.max(1, o.r / 100) : 1) * dt;
+    const a = Math.random() * Math.PI * 2;
+    const rr = shape === 'disc' ? o.r * Math.sqrt(Math.random()) : area ? o.r : o.r * 0.4;
+    this.particles.emit(pk.kind, o.x + Math.cos(a) * rr, o.y + Math.sin(a) * rr, 12, hue, n, now, undefined, 0.4);
   }
 
   private view(key: string): View {

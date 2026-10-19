@@ -72,7 +72,8 @@ export class World {
     this.fog = new FogOfWar(map);
     this.terrain = buildTerrain(map, this.renderer.capabilities.getMaxAnisotropy(), this.quality);
     this.units = new Units(buildAtlas(), SUN_DIR);
-    this.scene.add(this.terrain.group, this.structures.group, this.units.group, this.fx.group, this.ground.group, this.pings.group, this.wards.group);
+    this.scene.add(this.terrain.group, this.structures.group, this.units.group, this.fx.group, this.ground.group, this.pings.group, this.wards.group, this.fx.particles.group);
+    this.ground.particles = this.fx.particles;
   }
 
   /** Live part of the graphics quality setting: shadows on/off, shadow map size, render scale. */
@@ -123,7 +124,7 @@ export class World {
     } else if (ev.e === 'death') this.units.onDeath(ev.eid, now);
     if (ev.e === 'damage') {
       const d = state.byId.get(ev.dst);
-      if (d) this.units.flash(d.serial, now);
+      if (d) this.units.flash(d.serial, now, d.kind);
       const s = state.byId.get(ev.src);
       if (d && s && ev.amount > 0) this.units.hit(ev.dst, now, s.x, s.y);
     } else if (ev.e === 'attack') {

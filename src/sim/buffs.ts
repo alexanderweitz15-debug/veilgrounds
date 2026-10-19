@@ -205,6 +205,16 @@ export function hasStat(sim: Sim, eid: number, stat: StatKey): boolean {
   return false;
 }
 
+/** Progress 0..1 of the longest running airborne (knock-up arc), -1 if not airborne. */
+export function airborneProgress(sim: Sim, eid: number): number {
+  const e = entry(sim, eid, false);
+  if (!e) return -1;
+  let best: Buff | null = null;
+  for (const b of e.list) if (b.kind === 'airborne' && b.until > sim.tick && (!best || b.until > best.until)) best = b;
+  if (!best) return -1;
+  return Math.min(1, Math.max(0, (sim.tick - best.start) / Math.max(1, best.until - best.start)));
+}
+
 /** 0 none, 1 slow, 2 blind, 3 root, 4 stun/airborne, 5 suppression (for HUD/bots). Silence counts as 2. */
 export function ccLevel(sim: Sim, eid: number): number {
   const order: Partial<Record<BuffKind, number>> = { slow: 1, blind: 2, silence: 2, root: 3, stun: 4, airborne: 4, suppress: 5, stasis: 5 };
@@ -330,7 +340,7 @@ export function tickBuffs(sim: Sim): void {
       if (age > 0 && age % b.period === 0 && Unit.alive[eid]) {
         // the source keeps the credit after its own death (Ignite kill), but not once its eid is a different unit
         const src = b.src >= 0 && Unit.serial[b.src] === b.srcSerial ? b.src : -1;
-        dealDamage(sim, src, eid, b.amount, b.dmgType ?? 'true');
+        dealDamage(sim, src, eid, b.amount, b.dmgType ?? 'true', { dot: true });
       }
     }
     // expire

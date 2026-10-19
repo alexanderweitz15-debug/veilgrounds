@@ -141,6 +141,7 @@ export class BotRunner {
         log: this.log,
         teamAI: this.teams[p.team === 1 ? 1 : 0],
         mode: config.mode,
+        ...(config.botUtility !== undefined ? { utility: config.botUtility } : {}),
       };
       ctx.teamAI.register({ slot: p.slot, role: p.role, champion: p.champion, profile, params });
       const interval = decisionTicks(ctx);
@@ -214,7 +215,7 @@ export class BotRunner {
       const visible = Unit.team[e] === team || isStructure(k) || (alive && sees(sim, team, e));
       if (!visible) continue;
       const ci = Unit.champ[e]!;
-      out.push({
+      const ent: SnapEntity = {
         id: e,
         serial: Unit.serial[e]!,
         kind: k,
@@ -236,11 +237,20 @@ export class BotRunner {
         slot: Unit.slot[e]!,
         atkPhase: Atk.phase[e]!,
         atkTarget: Atk.target[e]!,
-        ...(Atk.phase[e] ? { atkStart: attackStartTick(sim, e), atkEnd: Atk.phaseEnd[e]! } : {}),
         moving: alive && walkedLastTick(sim, e),
         alive,
-      });
+      };
+      if (Atk.phase[e]) {
+        ent.atkStart = attackStartTick(sim, e);
+        ent.atkEnd = Atk.phaseEnd[e]!;
+      }
+      if (k === Kind.Tower && sim.c.Tower.tier[e] === 0) ent.plates = sim.c.Tower.plates[e]!;
+      out.push(ent);
     }
+    // same eid-leak rule as buildSnapshot (B3): an attack / chase target outside this view is masked
+    const inView = new Set<number>();
+    for (const s of out) inView.add(s.id);
+    for (const s of out) if (s.atkTarget >= 0 && !inView.has(s.atkTarget)) s.atkTarget = -1;
     return out;
   }
 

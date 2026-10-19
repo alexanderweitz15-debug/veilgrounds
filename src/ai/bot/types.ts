@@ -37,6 +37,8 @@ export interface BotStatic {
   teamAI: TeamAI;
   /** Game mode (SimConfig.mode); 'arena' = teamfight trainer: no lanes, fight on sight. Absent = classic. */
   mode?: string;
+  /** Utility selector on (SimConfig.botUtility; src/ai/utility/flag.ts also reads BOT_UTILITY=1). */
+  utility?: boolean;
 }
 
 /** A command plus how many ticks from now it should be issued (reaction delay, last-hit timing). */

@@ -17,7 +17,7 @@ import { nextItemPrice, spendable } from '../bot/shop';
 import { estimateExchange, tacticsFocus } from '../bt/deps';
 import { abilityDamage, fighterFromSnapshot } from '../exchange';
 import { roamActive, roamOptions } from '../roams/roam';
-import { gankActive, gankOptions } from '../ganks/jungle';
+import { gankActive, gankLane, gankOptions } from '../ganks/jungle';
 import { frontTower } from '../perception/waves';
 import { laneEnemies, LANE_ROLES } from '../ganks/common';
 import { VALUES, rankCurve } from './values';
@@ -42,9 +42,9 @@ function farmWithin(w: World, s: number): number {
 }
 
 /** The lane opponent(s) of the bot: not visible / dead / low = absent or pushed back (§5 push precondition). */
-function laneOpponentAway(w: World): boolean {
-  if (!w.pv || !w.lane) return false;
-  const opps = laneEnemies(w.pv, w.lane).filter((t) => LANE_ROLES[w.lane!].includes(t.role));
+function laneOpponentAway(w: World, lane: LaneName | null = w.lane): boolean {
+  if (!w.pv || !lane) return false;
+  const opps = laneEnemies(w.pv, lane).filter((t) => LANE_ROLES[lane].includes(t.role));
   if (!opps.length) return true;
   return opps.every((t) => t.dead || !t.visibleNow || t.hpFrac < 0.35);
 }
@@ -178,15 +178,45 @@ export function fightValue(w: World): CandidateValue | null {
 
 // ------------------------------------------------------------------ push / plates (§5, §7.1)
 
+/** Per bot: the latest running gank (lane, target slot, last tick seen running) for the plate after a gank. */
+const lastGank = new WeakMap<object, { lane: LaneName; slot: number; tick: number }>();
+
+/** Remember the running gank's lane and target (called every decision while a gank runs). */
+export function noteRunningGank(n: NodeCtx): void {
+  const g = gankLane(n);
+  if (g) lastGank.set(n.mem, { ...g, tick: n.v.tick });
+}
+
+/**
+ * §7.1 jungler plate after a successful gank (target dead or its Flash used), from Gold (rank curve): the lane of a
+ * gank that ended within plateAfterGankS, own wave at the tower; Challenger also checks the enemy jungler's cloud.
+ */
+function postGankLane(w: World): LaneName | null {
+  const n = w.n;
+  const g = lastGank.get(n.mem);
+  const J = VALUES.jungle;
+  if (!g || !w.pv || w.tick - g.tick > J.plateAfterGankS * 30 || rankCurve(J.plateAfterGank, n.ctx.params.skill) < 0.5) return null;
+  const t = w.pv.enemies.get(g.slot);
+  const success = !!t && (t.dead || (t.cds.flashReadyAt ?? -1) > w.tick);
+  if (!success) return null;
+  const jg = w.pv.junglerEstimate;
+  const tower = frontTower(n.ctx.map, n.snap, 1 - n.ctx.team, g.lane);
+  if (jg && tower && rankCurve(J.plateCloudCheck, n.ctx.params.skill) >= 0.5 && jg.weight > 0.3 && dst(jg, tower) < J.plateCloudRange) return null;
+  return g.lane;
+}
+
 export function pushValue(w: World): CandidateValue | null {
   const n = w.n;
   const v = n.v;
-  if (!w.lane || n.ctx.role === 'jungle' || !w.pv) return null;
-  const wave = w.pv.waves[w.lane];
+  const jungler = n.ctx.role === 'jungle';
+  const lane = jungler ? postGankLane(w) : w.lane;
+  if (!lane || !w.pv) return null;
+  const wave = w.pv.waves[lane];
   if (!wave.visible || wave.ownCount < 2) return null;
-  if (!laneOpponentAway(w) && !wave.crashed) return null;
+  if (!laneOpponentAway(w, lane) && !wave.crashed) return null;
   const h = H.push;
-  const tower = frontTower(n.ctx.map, n.snap, 1 - n.ctx.team, w.lane);
+  const tower = frontTower(n.ctx.map, n.snap, 1 - n.ctx.team, lane);
+  if (jungler && (!tower || v.ownMinions.filter((m) => dst(m, tower) < 800).length < 2)) return null;
   let structure = 0;
   let plates = 0;
   if (tower) {
@@ -196,7 +226,7 @@ export function pushValue(w: World): CandidateValue | null {
       const grubs = 1 + 0.04 * (n.snap.kesselbrut ?? 0);
       const dps = v.me.stats.ad * Math.max(0.1, v.me.stats.as) * VALUES.push.towerMitigation * grubs;
       const dmg = dps * Math.max(0, h - reachS);
-      const outer = n.ctx.map.sides[1 - n.ctx.team]!.towers[w.lane][0]!;
+      const outer = n.ctx.map.sides[1 - n.ctx.team]!.towers[lane][0]!;
       if (v.tick < PLATES_FALL_TICK && dst(tower, outer) < 200) {
         let left = 0;
         for (let i = 1; i <= PLATE_COUNT; i++) if (tower.hp > tower.maxHp - i * PLATE_HP) left++;
@@ -208,8 +238,8 @@ export function pushValue(w: World): CandidateValue | null {
   const wavePush = farmWithin(w, h);
   const benefit = plates + structure + wavePush;
   const risk = w.gankRisk * w.deathCost * W.pushGankRisk;
-  const ret = laneOpponentAway(w) ? 0 : w.deathCost * W.pushEnemyReturn * 0.1;
-  return { benefit, cost: risk + ret, horizonS: h, terms: { plates, structure, wave: wavePush, risk, enemyReturn: ret } };
+  const ret = laneOpponentAway(w, lane) ? 0 : w.deathCost * W.pushEnemyReturn * 0.1;
+  return { benefit, cost: risk + ret, horizonS: h, terms: { plates, structure, wave: wavePush, risk, enemyReturn: ret, afterGank: jungler ? 1 : 0 }, ...(jungler ? { data: { lane } } : {}) };
 }
 
 // ------------------------------------------------------------------ roam (§5, §7.3)
@@ -259,6 +289,7 @@ export function gankValue(w: World): CandidateValue | null {
   const n = w.n;
   if (n.ctx.role !== 'jungle') return null;
   const active = gankActive(n);
+  noteRunningGank(n);
   let c = gankCache.get(n.mem);
   if (!active && (!c || w.tick - c.at >= Math.round(n.p.knobs.gankEvalIntervalS * 30))) gankCache.set(n.mem, (c = { at: w.tick, opts: gankOptions(n) }));
   const ev = c?.opts?.[0];

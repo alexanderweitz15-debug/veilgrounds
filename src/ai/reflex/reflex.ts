@@ -335,6 +335,22 @@ function feasible(w: MinionWindow, bias: number, startMin: number, own: OwnAttac
   return s + w.lead < b - safety;
 }
 
+/** How many of the windows one auto per period serves from startMin on, earliest deadline first (with slack). */
+function serveCount(wins: MinionWindow[], bias: (w: MinionWindow) => number, startMin: number, period: number): number {
+  const order = [...wins].sort((p, q) => p.b + bias(p) - (q.b + bias(q)) || p.m.id - q.m.id);
+  let t = startMin;
+  let n = 0;
+  for (const w of order) {
+    const a = w.a + bias(w);
+    const b = w.b + bias(w);
+    const s = Math.max(t, Math.ceil(a + margin(a, b) - w.lead));
+    if (s + w.lead >= b - PROTECT_SAFETY) continue;
+    n++;
+    t = s + Math.floor(period);
+  }
+  return n;
+}
+
 /** Start tick of the earliest auto serving w no earlier than startMin (Infinity: not servable). */
 function serveAt(a: number, b: number, lead: number, startMin: number): number {
   const s = Math.max(startMin, Math.ceil(a + margin(a, b) - lead));
@@ -483,6 +499,9 @@ function chooseFiller(
   }
   // every protected window must stay servable with the timer taken until `next`
   for (const w of protectedWins) if (!feasible(w, bias(w), next, own, PROTECT_SAFETY)) return null;
+  // jointly: the protected windows served one auto per period (earliest deadline first) must not lose one that the
+  // free timer would have served (two wide windows each servable alone can still collide after a filler)
+  if (protectedWins.length >= 2 && serveCount(protectedWins, bias, next, own.period) < serveCount(protectedWins, bias, T + 1, own.period)) return null;
   // pre-hit: a minion whose next incoming hit jumps over the own damage (no kill window) gets an auto now, so the
   // next auto lands inside the window that opens (tower shots, stacked minion hits); chance by skill per minion
   if (intent.farm) {

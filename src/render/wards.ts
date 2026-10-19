@@ -49,8 +49,11 @@ export class WardMarkers {
       m.gemMat.color.set(e.ward === 'seal' ? (own ? '#f2d36b' : '#ff8a5a') : col);
       m.ringMat.color.set(col);
       const disabled = own && e.vision === 0;
-      m.gemMat.opacity = disabled ? 0.35 : 0.95;
-      m.ringMat.opacity = disabled ? 0.2 : 0.55;
+      // B1 stealth (LoL look): own stealthed wards translucent, revealed enemy ones with a bright reveal ring
+      const ghost = own && e.stealth === true;
+      const revealedEnemy = !own && e.stealth === true;
+      m.gemMat.opacity = disabled ? 0.35 : ghost ? 0.6 : 0.95;
+      m.ringMat.opacity = disabled ? 0.2 : revealedEnemy ? 0.9 : 0.55;
       m.root.position.set(e.x, 0, -e.y);
       m.gem.position.y = 135 + Math.sin(now / 400 + e.id) * 6;
       m.gem.rotation.y = now / 900 + e.id;

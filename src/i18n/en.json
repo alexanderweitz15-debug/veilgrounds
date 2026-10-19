@@ -19,7 +19,7 @@
   "set.hpBar.segmented": "Every 100 and 1000 HP (LoL)",
   "set.hpBar.thousands": "Every 1000 HP only",
   "set.hpBar.plain": "None",
-  "set.enemySkillshotOutline": "Stronger outline for enemy skillshots (drawing follows with agent D)",
+  "set.enemySkillshotOutline": "Stronger outline for enemy skillshots",
   "set.minimapScale": "Minimap size",
   "set.minimapLeft": "Minimap on the left",
   "set.ioTitle": "Back up settings",

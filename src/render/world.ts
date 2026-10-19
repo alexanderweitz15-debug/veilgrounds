@@ -124,7 +124,8 @@ export class World {
     } else if (ev.e === 'death') this.units.onDeath(ev.eid, now);
     if (ev.e === 'damage') {
       const d = state.byId.get(ev.dst);
-      if (d) this.units.flash(d.serial, now, d.kind);
+      // B5: the sim marks which hits flash (champion hits always, the rest max 4/s per target)
+      if (d && ev.flash) this.units.flash(d.serial, now, d.kind);
       const s = state.byId.get(ev.src);
       if (d && s && ev.amount > 0) this.units.hit(ev.dst, now, s.x, s.y);
     } else if (ev.e === 'attack') {

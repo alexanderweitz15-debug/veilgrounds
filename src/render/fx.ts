@@ -16,8 +16,9 @@ import { settings } from '../settings';
 import { castDir, castTelegraph, hitboxAbility, lineZone, windupTicks, zoneProgress, type CastTelegraph, type CircleShape, type LineShape, type Shape } from './telegraph';
 
 const MAX_PROJ = 160;
-/** Border thickness (world units), drawn inside the hitbox. */
-const EDGE = 10;
+/** Border thickness (world units), drawn inside the hitbox; enemy skillshots with the outline setting use the strong one. */
+const BASE_EDGE = 10;
+const STRONG_EDGE = 22;
 /** Ticks the resolve flash lasts. */
 const FLASH = 6;
 
@@ -162,11 +163,13 @@ class ShapeView {
    * Draw `s` with fill progress k (0..1): circles/cones fill outward, lines along their length (from A, or from the
    * middle when `centre`). Border always at the full hitbox.
    */
-  show(s: Shape, color: string, k: number, fillOpacity: number, rimOpacity: number, centre = false): void {
+  show(s: Shape, color: string, k: number, fillOpacity: number, rimOpacity: number, centre = false, strong = false): void {
+    // C7 setting "enemy skillshot outline": double border in the enemy colour, at least 0.9 alpha (fill unchanged)
+    const EDGE = strong ? STRONG_EDGE : BASE_EDGE;
     this.fillMat.color.set(color);
-    this.rimMat.color.set(color);
+    this.rimMat.color.set(strong ? REL.enemy : color);
     this.fillMat.opacity = fillOpacity;
-    this.rimMat.opacity = rimOpacity;
+    this.rimMat.opacity = strong && rimOpacity > 0.3 ? Math.max(0.9, rimOpacity) : rimOpacity;
     this.hide();
     this.fill.visible = k > 0 && fillOpacity > 0;
     if (s.k === 'line') {
@@ -491,6 +494,7 @@ export class Fx {
     // fractional sim tick of the displayed state (snapshot tick = sim tick + 1)
     const tick = snap ? snap.tick - 1 + state.alpha : 0;
     const ownCol = (team: number): string => (team === state.myTeam ? REL.ownShot : REL.enemyShot);
+    const strongFor = (team: number): boolean => settings.enemySkillshotOutline && team !== state.myTeam;
     // resolve flash strength (reduce motion: softer, no bright fill burst)
     const flashFill = settings.reduceMotion ? 0.3 : 0.55;
     const zoneBurst = settings.reduceMotion ? 0.36 : 0.6;
@@ -518,7 +522,7 @@ export class Fx {
           st.bx = pr.x + pr.dx * pr.left;
           st.by = pr.y + pr.dy * pr.left;
           st.width = pr.width;
-          if ((st.bx - x) * pr.dx + (st.by - y) * pr.dy > 0) this.strips[ns++]!.show(st, ownCol(pr.team), 1, 0.16, 0.75);
+          if ((st.bx - x) * pr.dx + (st.by - y) * pr.dy > 0) this.strips[ns++]!.show(st, ownCol(pr.team), 1, 0.16, 0.75, false, strongFor(pr.team));
         }
         // missile look by source (LoL: every unit has its own): visual only, the strip is the hitbox
         const st = missileStyle(pr, own, homing);
@@ -588,8 +592,8 @@ export class Fx {
           (s as CircleShape).x = state.x(caster);
           (s as CircleShape).y = state.y(caster);
         }
-        if (flash >= 0) pv.views[i]!.show(s, col, 1, flashFill * flash, 0.9 * flash);
-        else pv.views[i]!.show(s, col, k, 0.14 + 0.2 * k, tel.approx ? 0.6 : 0.9);
+        if (flash >= 0) pv.views[i]!.show(s, col, 1, flashFill * flash, 0.9 * flash, false, strongFor(pv.team));
+        else pv.views[i]!.show(s, col, k, 0.14 + 0.2 * k, tel.approx ? 0.6 : 0.9, false, strongFor(pv.team));
       }
     }
 
@@ -618,7 +622,7 @@ export class Fx {
       else if (tick <= end) fillA = tick - ev.at < FLASH ? zoneBurst - ((zoneBurst - 0.32) * (tick - ev.at)) / FLASH : 0.32;
       else fillA = (ev.until !== undefined ? 0.32 : zoneBurst) * (1 - (tick - end) / FLASH);
       const rimA = tick <= end ? 0.95 : 0.95 * (1 - (tick - end) / FLASH);
-      z.view.show(shape, col, k, fillA, rimA, z.centre);
+      z.view.show(shape, col, k, fillA, rimA, z.centre, strongFor(ev.team));
       // ability particles over the active area (burst when it resolves, ambient while a persistent zone lasts)
       if (z.pk && tick <= end) {
         const kd = this.particles.kind(z.pk.kind);

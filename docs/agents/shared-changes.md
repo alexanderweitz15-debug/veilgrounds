@@ -257,6 +257,63 @@ All additive; no existing behaviour changes for champions other than the new CC 
 | tests/championData, abilityMotifs, botParams, items, telegraph | all | roster count 26 -> 27 / roster list | 068d755 |
 | tests/combos.test.ts | B | harness: a repeated token on a recast-flag skillshot with wind-up = fake (press during wind-up) | 068d755 |
 | tools/botSim.ts | A1 | `--champion=<id>` puts that champion into blue mid; registers `BUILDS.sev` at runtime until builds.ts has the line | bfa425b |
+## 2026-10-19 · D · src/ui/overlay.ts (C) · CC symbols + HP-bar stacking (D2, FEATURE-GAP 7.6 / 7.8) · proposed
+
+Affects: C only (render-free UI file). Helpers are on art/d-visuals, pure and tested (tests/readability.test.ts):
+`src/render/ccGlyphs.ts` (`drawCcGlyph(ctx, key, x, y, size, color, tMs)`, one shape per CC type) and
+`src/render/barLayout.ts` (`stackBars(rects)` -> y offset per id; champions/structures/hovered fixed, minion and
+monster bars lifted up to 3 steps when they overlap).
+
+1. CC chip with symbol (in `drawCc`, after the chip background):
+   ```diff
+   +import { drawCcGlyph } from '../render/ccGlyphs';
+   ...
+   -    const w = ctx.measureText(text).width + 10;
+   +    const icon = champ ? 14 : 10;
+   +    const w = ctx.measureText(text).width + 10 + icon + 2;
+        const cy = champ ? y - 32 : y - 14;
+        ctx.fillStyle = 'rgba(12,10,8,0.85)';
+        ctx.fillRect(x + bw / 2 - w / 2, cy - 8, w, 16);
+        ctx.fillStyle = color;
+        ctx.fillRect(x + bw / 2 - w / 2, cy + 6, w, 2);
+   +    drawCcGlyph(ctx, key, x + bw / 2 - w / 2 + 5 + icon / 2, cy - 1, icon, color, performance.now());
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+   -    ctx.fillText(text, x + bw / 2, cy);
+   +    ctx.fillText(text, x + bw / 2 + (icon + 2) / 2, cy);
+   ```
+2. HP-bar stacking (in `draw`, two passes): first collect `{ id: e.id, x, y, w: bw, h: bh, fixed: champ || structure
+   || dummy || e.id === hoverId }` for every bar, `const off = stackBars(rects)`, then draw with `y + (off.get(e.id) ?? 0)`
+   (CC chip and marks use the same shifted y). Minion bars could also go 5 -> 4 px high if the stack still looks busy.
+
+## 2026-10-19 · D · training plan + history wiring (D5, FEATURE-GAP 7.1 / 7.2) · proposed
+
+Affects: C (src/ui/trainerMenu.ts, src/i18n), whoever owns src/main.ts (lead). D's side is on art/d-visuals:
+`src/stats/{rankCalibration,history,trainingPlan}.ts` (pure, tests/trainingPlan.test.ts), view
+`src/modes/trainingPlanView.ts` (`renderTrainingPlan(parent, history, onStart)`), dev render
+`docs/ist/d5-training-plan-dev.jpg`. `rankCalibration.ts` is a LOCAL ADAPTER until A3 defines the real API.
+
+1. Record every finished game / trainer run (src/main.ts `afterGame`, before the post-game screen):
+   ```diff
+    function afterGame(config: SimConfig | null, r?: SessionResult): void {
+      if (!config || !r) return mainMenu();
+   +  // D5: match history for the training plan (IndexedDB, no-op when unavailable)
+   +  if (!r.retry && r.summary.duration >= 60) void import('./stats/history').then((h) => h.saveRecord(h.recordFromSummary(r.summary, Date.now())));
+   ```
+2. Show the plan on the trainer hub (src/ui/trainerMenu.ts `renderTrainerMenu`, after the title):
+   ```diff
+   +  const planBox = el('div', '', panel);
+   +  void Promise.all([import('../stats/history'), import('../modes/trainingPlanView')]).then(async ([h, v]) => {
+   +    if (planBox.isConnected) v.renderTrainingPlan(planBox, await h.loadHistory(), (it) => onPickWith(it.mode, it.opts));
+   +  });
+   ```
+   `onPickWith(mode, opts)`: same as `onPick(mode)` but starts the trainer lobby with `opts` merged into
+   `defaultSetup(mode).opts` (main.ts `trainerSetups`).
+3. i18n: add the keys of `src/modes/planStrings.json` (de + en, 26 keys `plan.*`) to src/i18n/de.json / en.json; the
+   view falls back to that file while a key is missing.
+4. A3: when `stats/rankCalibration` exists, D maps `calibrateMatch` onto it (types `RankCalibration`,
+   `CategoryCalibration` in src/stats/rankCalibration.ts are the contract D consumes).
+
 
 ## 2026-10-19 · Agent B · user decisions 19.10. (snapshot, additive) -> C please read
 

@@ -15,6 +15,7 @@ const ENUMS: Partial<Record<keyof Settings, readonly string[]>> = {
   lang: ['de', 'en'],
   colorMode: ['normal', 'deuteranopia', 'protanopia', 'tritanopia'],
   graphics: ['low', 'medium', 'high'],
+  hpBarStyle: ['segmented', 'thousands', 'plain'],
 };
 
 /** Slider ranges (settingsPanel.ts): imported numbers are clamped to them. */

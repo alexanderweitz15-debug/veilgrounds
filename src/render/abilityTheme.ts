@@ -48,3 +48,43 @@ export function abilityTheme(champ: string, slot: number): { motif: string; hue:
 
 /** Element hue (0..360) of an ability, null if no rule matches. */
 export const abilityHue = (champ: string, slot: number): number | null => abilityTheme(champ, slot)?.hue ?? null;
+
+/** Particle language of one motif family (src/render/abilityMotifs.json `particleKinds`). */
+export interface ParticleKind {
+  life: number;
+  speed: number;
+  rise: number;
+  gravity: number;
+  back: number;
+  size: number;
+  light: number;
+  trail: number;
+  burst: number;
+  ambient: number;
+  flicker: boolean;
+  /** Additive glow (sparks) instead of alpha blending (keeps the colour on bright ground). */
+  additive: boolean;
+}
+export type ParticleKindId = 'ember' | 'spark' | 'drip' | 'mote' | 'shard';
+const PD = motifData as unknown as { particleKinds: Record<ParticleKindId, ParticleKind>; motifParticles: Record<string, ParticleKindId> };
+export const PARTICLE_KINDS: Readonly<Record<ParticleKindId, ParticleKind>> = PD.particleKinds;
+export const PARTICLE_KIND_IDS = Object.keys(PD.particleKinds) as ParticleKindId[];
+
+/** Particle kind of a motif (fallback: mote). */
+export const motifParticle = (motif: string | undefined): ParticleKindId => (motif && PD.motifParticles[motif]) || 'mote';
+
+/** Particle kind + hue of ability `slot` of `champ` (null: no champion data). */
+export function abilityParticles(champ: string, slot: number): { kind: ParticleKindId; hue: number } | null {
+  const t = abilityTheme(champ, slot);
+  return t ? { kind: motifParticle(t.motif), hue: t.hue } : championData(champ) ? { kind: 'mote', hue: 48 } : null;
+}
+
+const SLOT_OF: Record<string, number> = { q: 0, w: 1, e: 2, r: 3 };
+/** Particles of a hook ground-object tag `<champ>_<q|w|e|r|p>...` (passive objects: golden motes). */
+export function tagParticles(tag: string): { kind: ParticleKindId; hue: number } | null {
+  const [champ, key] = tag.split('_');
+  if (!champ || !key) return null;
+  const slot = SLOT_OF[key[0]!];
+  if (slot === undefined) return championData(champ) ? { kind: 'mote', hue: 48 } : null;
+  return abilityParticles(champ, slot);
+}

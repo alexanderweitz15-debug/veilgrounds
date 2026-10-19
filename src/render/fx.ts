@@ -10,7 +10,8 @@ import { Kind, type SimEvent } from '../sim/types';
 import type { AbilityData } from '../sim/champions/schema';
 import { champions } from '../data/champions';
 import { REL } from './palette';
-import { abilityHue } from './abilityTheme';
+import { abilityHue, abilityParticles, type ParticleKindId } from './abilityTheme';
+import { Particles } from './particles';
 import { settings } from '../settings';
 import { castDir, castTelegraph, hitboxAbility, lineZone, windupTicks, zoneProgress, type CastTelegraph, type CircleShape, type LineShape, type Shape } from './telegraph';
 
@@ -260,6 +261,8 @@ interface Zone {
   follow: boolean;
   /** Line fill grows from the middle (perpendicular walls/wires) instead of from the caster (forward strips). */
   centre: boolean;
+  /** D1b: particle language of the ability that made the zone (null: unknown source). */
+  pk: { kind: ParticleKindId; hue: number } | null;
 }
 
 export class Fx {
@@ -272,7 +275,7 @@ export class Fx {
   private readonly strips: ShapeView[] = [];
   private readonly stripShape: LineShape = { k: 'line', ax: 0, ay: 0, bx: 0, by: 0, width: 0 };
   /** Latest cast per caster: ability, origin and direction (hook-defined line zones are rebuilt from it). */
-  private readonly lastCast = new Map<number, { ab: AbilityData; ox: number; oy: number; dx: number; dy: number }>();
+  private readonly lastCast = new Map<number, { ab: AbilityData; ox: number; oy: number; dx: number; dy: number; champ: string; slot: number }>();
   private readonly range: THREE.Mesh;
   private readonly towerRings: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>[] = [];
   private readonly aimRange = new THREE.Mesh(new THREE.RingGeometry(0.988, 1, 96).rotateX(-Math.PI / 2), groundMat('#8fd0ff', 0.6));
@@ -292,6 +295,12 @@ export class Fx {
   private readonly chanArc = new THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>(flatRing, groundMat('#c49bff', 1));
   /** Created on first use (no DOM canvas needed by headless tests that build an Fx). */
   private chanCol: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial> | null = null;
+  /** D1b ability particles (trails, impacts, cast flourishes; ground objects emit through it too). */
+  readonly particles = new Particles();
+  /** Ability missiles seen last frame: impact burst where one disappears. */
+  private readonly trails = new Map<number, { x: number; y: number; h: number; kind: ParticleKindId; hue: number; frame: number }>();
+  private frameNo = 0;
+  private lastNow = 0;
 
   constructor() {
     const g = new THREE.IcosahedronGeometry(1, 1);
@@ -322,7 +331,7 @@ export class Fx {
     }
     this.chanRing.renderOrder = this.chanArc.renderOrder = 3;
     this.chanRing.visible = this.chanArc.visible = false;
-    this.group.add(this.chanRing, this.chanArc);
+    this.group.add(this.chanRing, this.chanArc); // particles.group is added to the scene by World
   }
 
   /**
@@ -403,6 +412,9 @@ export class Fx {
         const src = state.byId.get(ev.src);
         if (!src) break;
         if (!settings.reduceMotion) this.pulse(src.x, src.y, src.team === state.myTeam ? REL.ownShot : REL.enemyShot, 40, 160, 300, now);
+        // cast flourish in the ability's particle language (embers rise, sparks crackle, drops splash ...)
+        const pk = src.champ ? abilityParticles(src.champ, ev.slot) : null;
+        if (pk) this.particles.emit(pk.kind, src.x, src.y, 50, pk.hue, this.particles.kind(pk.kind).burst * 0.6, now, undefined, 0.7);
         if (!ev.recast) this.addPreview(ev, state);
         break;
       }
@@ -432,7 +444,7 @@ export class Fx {
     const ab = src?.champ ? champions[src.champ]?.abilities[ev.slot] : undefined;
     if (!src || !ab || !state.snap) return;
     const [dx, dy] = castDir(src.x, src.y, ev.x, ev.y, src.fx, src.fy);
-    this.lastCast.set(ev.src, { ab, ox: src.x, oy: src.y, dx, dy });
+    this.lastCast.set(ev.src, { ab, ox: src.x, oy: src.y, dx, dy, champ: src.champ!, slot: ev.slot });
     // caster stands still during the wind-up: its tick-end position is the cast origin
     const tel = castTelegraph(ab, ev.rank ?? 1, src.x, src.y, ev.x, ev.y, src.fx, src.fy);
     if (!tel) return;
@@ -463,9 +475,10 @@ export class Fx {
     if (!shape) return; // radius-less summons (pets) have no ground area
     let z = this.zones.find((q) => !q.ev);
     if (!z) {
-      z = { view: new ShapeView(this.group), ev: null, shape: null, follow: false, centre: false };
+      z = { view: new ShapeView(this.group), ev: null, shape: null, follow: false, centre: false, pk: null };
       this.zones.push(z);
     }
+    z.pk = last ? abilityParticles(last.champ, last.slot) : null;
     z.ev = ev;
     z.shape = shape;
     z.follow = ev.follow === true;
@@ -480,6 +493,10 @@ export class Fx {
     // resolve flash strength (reduce motion: softer, no bright fill burst)
     const flashFill = settings.reduceMotion ? 0.3 : 0.55;
     const zoneBurst = settings.reduceMotion ? 0.36 : 0.6;
+    const dt = Math.min(0.1, Math.max(0, (now - this.lastNow) / 1000));
+    this.lastNow = now;
+    this.frameNo++;
+    this.particles.scale = settings.reduceMotion ? 0.35 : 1;
 
     // projectiles + in-flight strips of line skillshots (exact width, to the end of range)
     let n = 0;
@@ -502,9 +519,15 @@ export class Fx {
           st.width = pr.width;
           if ((st.bx - x) * pr.dx + (st.by - y) * pr.dy > 0) this.strips[ns++]!.show(st, ownCol(pr.team), 1, 0.16, 0.75);
         }
-        if (n >= MAX_PROJ) continue;
         // missile look by source (LoL: every unit has its own): visual only, the strip is the hitbox
         const st = missileStyle(pr, own, homing);
+        // ability missiles leave a trail in their particle language and burst where they end
+        const pk = pr.champ && pr.slot !== undefined && pr.slot >= 0 ? abilityParticles(pr.champ, pr.slot) : null;
+        if (pk) {
+          this.particles.emit(pk.kind, x, y, st.height, pk.hue, this.particles.kind(pk.kind).trail * dt, now, { dx: pr.dx, dy: pr.dy }, 0.5);
+          this.trails.set(pr.id, { x, y, h: st.height, kind: pk.kind, hue: pk.hue, frame: this.frameNo });
+        }
+        if (n >= MAX_PROJ) continue;
         const w = Math.max(14, Math.min(pr.width, 140) * (homing ? 0.6 : 0.55)) * st.size;
         this.p.set(x, st.height, -y);
         this.dir.set(pr.dx || 1, 0, -(pr.dy || 0)).normalize();
@@ -522,6 +545,12 @@ export class Fx {
       }
     }
     for (let i = ns; i < this.strips.length; i++) this.strips[i]!.hide();
+    for (const [id, t] of this.trails) {
+      if (t.frame === this.frameNo) continue;
+      this.trails.delete(id);
+      this.particles.emit(t.kind, t.x, t.y, t.h, t.hue, this.particles.kind(t.kind).burst, now);
+    }
+    this.particles.update(now, dt);
     for (const m of [this.proj, this.halo]) {
       m.count = n;
       m.instanceMatrix.needsUpdate = true;
@@ -582,6 +611,28 @@ export class Fx {
       else fillA = (ev.until !== undefined ? 0.32 : zoneBurst) * (1 - (tick - end) / FLASH);
       const rimA = tick <= end ? 0.95 : 0.95 * (1 - (tick - end) / FLASH);
       z.view.show(shape, col, k, fillA, rimA, z.centre);
+      // ability particles over the active area (burst when it resolves, ambient while a persistent zone lasts)
+      if (z.pk && tick <= end) {
+        const kd = this.particles.kind(z.pk.kind);
+        const resolve = tick >= ev.at && tick - ev.at < 1;
+        const size = shape.k === 'circle' ? shape.r : shape.k === 'line' ? Math.hypot(shape.bx - shape.ax, shape.by - shape.ay) / 2 : 0;
+        const rate = kd.ambient * 2 * Math.max(1, size / 100) * dt + (resolve ? kd.burst / 6 : 0);
+        for (let i = 0; i < 3; i++) {
+          let px: number;
+          let py: number;
+          if (shape.k === 'circle') {
+            const a = Math.random() * Math.PI * 2;
+            const rr = shape.r * Math.sqrt(Math.random());
+            px = shape.x + Math.cos(a) * rr;
+            py = shape.y + Math.sin(a) * rr;
+          } else if (shape.k === 'line') {
+            const t = Math.random();
+            px = shape.ax + (shape.bx - shape.ax) * t;
+            py = shape.ay + (shape.by - shape.ay) * t;
+          } else break;
+          this.particles.emit(z.pk.kind, px, py, 10, z.pk.hue, rate / 3, now, undefined, 0.5);
+        }
+      }
     }
 
     // pulses

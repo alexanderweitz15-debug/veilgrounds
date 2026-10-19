@@ -72,7 +72,8 @@ export class World {
     this.fog = new FogOfWar(map);
     this.terrain = buildTerrain(map, this.renderer.capabilities.getMaxAnisotropy(), this.quality);
     this.units = new Units(buildAtlas(), SUN_DIR);
-    this.scene.add(this.terrain.group, this.structures.group, this.units.group, this.fx.group, this.ground.group, this.pings.group, this.wards.group);
+    this.scene.add(this.terrain.group, this.structures.group, this.units.group, this.fx.group, this.ground.group, this.pings.group, this.wards.group, this.fx.particles.group);
+    this.ground.particles = this.fx.particles;
   }
 
   /** Live part of the graphics quality setting: shadows on/off, shadow map size, render scale. */

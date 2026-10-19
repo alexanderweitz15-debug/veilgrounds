@@ -42,6 +42,9 @@ export interface ReflexState {
   standMove: Pt | null;
   lastCmdTick: number;
   harass: { autos: number[] };
+  /** ignore_minion_aggro episode (harass inside the enemy wave) until this tick; last roll tick. */
+  aggroErrUntil: number;
+  aggroRollAt: number;
   /** Orbwalk bookkeeping: wind-up start (recorded tick) already handled for the backswing move. */
   orbHandled: number;
   /** Latest attack command of the reflex layer (the wind-up shows one tick later: no second attack meanwhile). */
@@ -79,6 +82,8 @@ export function reflexState(mem: BotMemory): ReflexState {
       standMove: null,
       lastCmdTick: -1,
       harass: { autos: [] },
+      aggroErrUntil: -1,
+      aggroRollAt: -1e9,
       orbHandled: -1,
       attackCmd: null,
       inflight: null,

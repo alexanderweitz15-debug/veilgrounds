@@ -10,7 +10,7 @@ export type Action =
   | 'recall' | 'centerCamera' | 'toggleCameraLock' | 'pause' | 'showRange'
   | 'item1' | 'item2' | 'item3' | 'item4' | 'item5' | 'item6' | 'trinket'
   | 'scoreboard' | 'debug' | 'shop'
-  | 'pingWheel' | 'pingMissing';
+  | 'pingWheel' | 'pingMissing' | 'pingQuestion';
 
 export const DEFAULT_BINDS: Record<Action, string> = {
   stop: 'KeyS',
@@ -38,6 +38,8 @@ export const DEFAULT_BINDS: Record<Action, string> = {
   shop: 'KeyP',
   pingWheel: 'KeyG',
   pingMissing: 'KeyV',
+  /** LoL '?' ping (no LoL default key; H is free here). */
+  pingQuestion: 'KeyH',
 };
 
 export const ACTIONS = Object.keys(DEFAULT_BINDS) as Action[];

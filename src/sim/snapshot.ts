@@ -329,8 +329,13 @@ function ccFields(sim: Sim, e: number, alive: boolean): { cc?: number; slow?: nu
   return { cc: s.mask, ccEnd: s.until, ...(s.slow > 0 ? { slow: s.slow } : {}) };
 }
 
-export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
-  const { Unit, Pos, Face, Hp, Mana, Champ, Atk, Proj } = sim.c;
+/**
+ * The fog-filtered unit list of one team (own units, structures, visible alive units), without hook visuals / marks /
+ * auras. buildSnapshot adds those; the bot runner can call this once per team and tick (A1 request: one source of
+ * truth for the entity fields).
+ */
+export function snapshotEntities(sim: Sim, team: number): SnapEntity[] {
+  const { Unit, Pos, Face, Hp, Mana, Champ, Atk } = sim.c;
   const entities: SnapEntity[] = [];
   for (const e of query(sim.world, [Unit])) {
     const k = Unit.kind[e]!;
@@ -375,6 +380,12 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
   const inView = new Set<number>();
   for (const s of entities) inView.add(s.id);
   for (const s of entities) if (s.atkTarget >= 0 && !inView.has(s.atkTarget)) s.atkTarget = -1;
+  return entities;
+}
+
+export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
+  const { Unit, Pos, Champ, Proj } = sim.c;
+  const entities = snapshotEntities(sim, team);
   addVisuals(sim, team, me0(sim, slot), entities);
   const projectiles: SnapProjectile[] = [];
   for (const e of query(sim.world, [Proj])) {

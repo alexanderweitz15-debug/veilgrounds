@@ -130,6 +130,9 @@ Status: proposed (sim/b-mechanics). Affects: brain team (reads them), C (scorebo
   `own || structure || alive && sees()`), which duplicates the entity field mapping of buildSnapshot. An official
   lite variant would keep one source of truth for the snapshot fields.
 - Status: proposed (not blocking; the runner copy works and goes through onPerceive).
+- B 2026-10-19: done differently: `snapshotEntities(sim, team)` exported from src/sim/snapshot.ts (fog rule, all entity
+  fields incl. stealth/plates/revealed/exposed, hidden atkTarget masked; no visuals/marks/auras). buildSnapshot uses it.
+  A1 can replace `BotRunner.buildTeamEntities` with it (runner.ts is A1's file; not edited by B).
 
 ## Pre-authorised edits of src/ai/bot/brain.ts `laneLeaf` (A1, Phase 1)
 

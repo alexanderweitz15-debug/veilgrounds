@@ -149,14 +149,14 @@ describe('slows', () => {
 });
 
 describe('spawn', () => {
-  it('champion spawns at own fountain with level 1, one skill point, hitbox 55', () => {
+  it('champion spawns at own fountain with level 1, one skill point, hitbox 65 (ranged, user 19.10.: LoL)', () => {
     const sim = makeSim();
     const m = mira(sim);
     const f = sim.map.sides[0].fountain;
     expect(Math.hypot(sim.c.Pos.x[m]! - f.x, sim.c.Pos.y[m]! - f.y)).toBeLessThan(f.r);
     expect(sim.c.Champ.level[m]).toBe(1);
     expect(sim.c.Champ.skillPoints[m]).toBe(1);
-    expect(sim.c.Unit.radius[m]).toBe(55);
+    expect(sim.c.Unit.radius[m]).toBe(65);
     expect(sim.c.Hp.cur[m]).toBe(630);
     expect(sim.championIds[sim.c.Unit.champ[m]!]).toBe('mira');
   });

@@ -61,8 +61,10 @@ function lastHitter(sim: Sim, me: number): TickInput[] {
     const dx = Pos.x[me]! - Pos.x[front]!;
     const dy = Pos.y[me]! - Pos.y[front]!;
     const d = Math.hypot(dx, dy) || 1;
-    let tx = Pos.x[front]! + (dx / d) * 450;
-    let ty = Pos.y[front]! + (dy / d) * 450;
+    // stand-off from the front minion measured from the champion's edge (450 centre distance at the old ranged
+    // hitbox 55; the greedy script is chaotic: with a fixed 450 the 55 -> 65 hitbox change alone moved CS 73 -> 49)
+    let tx = Pos.x[front]! + (dx / d) * (395 + Unit.radius[me]!);
+    let ty = Pos.y[front]! + (dy / d) * (395 + Unit.radius[me]!);
     // never stand inside the enemy outer tower's reach (the wave reaches it sooner since the towers moved toward the river)
     const et = sim.map.sides[1].towers.mid[0]!;
     const ed = Math.hypot(tx - et.x, ty - et.y);

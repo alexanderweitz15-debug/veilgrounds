@@ -29,7 +29,7 @@
     "ms": 340,
     "windup": 0.19,
     "projectileSpeed": 2400,
-    "radius": 55
+    "radius": 65
   },
   "passive": {
     "name": { "de": "Trommel", "en": "Drum" },

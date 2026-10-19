@@ -65,8 +65,8 @@ export function castSummonerSpell(sim: Sim, eid: number, id: string, x: number, 
   if (teleporting(sim, eid)) return false; // a Teleport channel blocks the other summoner
   if (id === 'reinigen') {
     // usable while stunned/rooted/silenced; not while airborne, suppressed or in stasis
-    if (hasBuff(sim, eid, 'airborne') || hasBuff(sim, eid, 'suppress') || hasBuff(sim, eid, 'stasis')) return false;
-    removeBuffs(sim, eid, (b) => CLEANSED.has(b.kind) || (SUMMONER_DEBUFFS.has(b.id) && b.kind !== 'mark'));
+    if (hasBuff(sim, eid, 'airborne') || hasBuff(sim, eid, 'suppress') || hasBuff(sim, eid, 'stasis') || hasBuff(sim, eid, 'fear')) return false;
+    removeBuffs(sim, eid, (b) => !b.uncleansable && (CLEANSED.has(b.kind) || (SUMMONER_DEBUFFS.has(b.id) && b.kind !== 'mark')));
     addBuff(sim, eid, { kind: 'stat', stat: 'tenacity', id: 'reinigen', src: eid, pct: CLEANSE_TENACITY_PCT, ticks: CLEANSE_TICKS });
     return true;
   }
@@ -277,9 +277,9 @@ function arrival(sim: Sim, eid: number, tp: Tp): { x: number; y: number } {
   return walkable(sim.map.nav, x, y) ? { x, y } : nearestWalkable(sim.map.nav, x, y);
 }
 
-/** Hard CC interrupts Teleport (stun, airborne, suppression, stasis); damage, roots and silence do not. */
+/** Hard CC interrupts Teleport (stun, fear, airborne, suppression, stasis); damage, roots and silence do not. */
 const tpBroken = (sim: Sim, eid: number): boolean =>
-  hasBuff(sim, eid, 'stun') || hasBuff(sim, eid, 'airborne') || hasBuff(sim, eid, 'suppress') || hasBuff(sim, eid, 'stasis');
+  hasBuff(sim, eid, 'stun') || hasBuff(sim, eid, 'fear') || hasBuff(sim, eid, 'airborne') || hasBuff(sim, eid, 'suppress') || hasBuff(sim, eid, 'stasis');
 
 export const summonersSystem: System = {
   name: 'summoners',

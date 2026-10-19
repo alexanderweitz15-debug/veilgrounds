@@ -1,7 +1,8 @@
 // Generic buffs and crowd control. All state lives in sim.state (several sims may run side by side).
 // Convention: pct values are percent points (40 = 40 %); durations are ticks here, seconds in data.
-// CC strength: slow < blind < root < stun = airborne < suppression. Tenacity shortens every CC except
-// airborne and suppression. Unstoppable / stasis ignore new CC (suppression still lands on unstoppable).
+// CC strength: slow < blind < root < fear < stun = airborne < suppression. Tenacity shortens every CC except
+// airborne and suppression. Fear (Sev R): no attacks/casts/summoners, the unit walks away from the source
+// (movement system); the source's slow is a separate buff. Unstoppable / stasis ignore new CC (suppression still lands on unstoppable).
 
 import type { Sim } from './sim';
 import { dealDamage, heal } from './damage';
@@ -9,7 +10,7 @@ import { cancelRecall } from './systems/economy';
 import { MAX_ENT } from './ecs';
 import { isStructure } from './types';
 
-export type CcKind = 'slow' | 'blind' | 'root' | 'silence' | 'stun' | 'airborne' | 'suppress' | 'stasis';
+export type CcKind = 'slow' | 'blind' | 'root' | 'silence' | 'fear' | 'stun' | 'airborne' | 'suppress' | 'stasis';
 export type StatKey =
   | 'as'
   | 'ms'
@@ -45,6 +46,8 @@ export interface Buff {
   /** Dot: ticks between damage instances. */
   period: number;
   dmgType?: 'phys' | 'magic' | 'true';
+  /** Not removed by cleanses (Reinigen, slow cleanses); only death or expiry end it (Sev W Schwarzglut). */
+  uncleansable?: boolean;
 }
 
 export type BuffInit = Partial<Buff> & { kind: BuffKind; id: string; ticks: number };
@@ -95,8 +98,8 @@ export function buffs(sim: Sim, eid: number): readonly Buff[] {
   return entry(sim, eid, false)?.list ?? [];
 }
 
-const HARD_CC: ReadonlySet<BuffKind> = new Set(['root', 'stun', 'airborne', 'suppress', 'stasis']);
-const CC: ReadonlySet<BuffKind> = new Set(['slow', 'blind', 'root', 'silence', 'stun', 'airborne', 'suppress']);
+const HARD_CC: ReadonlySet<BuffKind> = new Set(['root', 'fear', 'stun', 'airborne', 'suppress', 'stasis']);
+const CC: ReadonlySet<BuffKind> = new Set(['slow', 'blind', 'root', 'silence', 'fear', 'stun', 'airborne', 'suppress']);
 const NO_TENACITY: ReadonlySet<BuffKind> = new Set(['airborne', 'suppress']);
 
 /** Adds or refreshes a buff. Returns false if the target is immune. */
@@ -127,6 +130,7 @@ export function addBuff(sim: Sim, eid: number, init: BuffInit): boolean {
     until: sim.tick + ticks,
     period: init.period ?? 0,
     dmgType: init.dmgType,
+    ...(init.uncleansable ? { uncleansable: true } : {}),
   };
   const i = e.list.findIndex((o) => o.id === b.id && o.kind === b.kind && o.stat === b.stat && o.src === b.src);
   if (i >= 0) {
@@ -191,11 +195,22 @@ const active = (sim: Sim, eid: number, kinds: BuffKind[]): boolean => {
 };
 
 export const canMove = (sim: Sim, eid: number): boolean => !active(sim, eid, ['root', 'stun', 'airborne', 'suppress', 'stasis']);
-export const canAttack = (sim: Sim, eid: number): boolean => !active(sim, eid, ['stun', 'airborne', 'suppress', 'stasis']);
-export const canCast = (sim: Sim, eid: number): boolean => !active(sim, eid, ['silence', 'stun', 'airborne', 'suppress', 'stasis']);
+export const canAttack = (sim: Sim, eid: number): boolean => !active(sim, eid, ['fear', 'stun', 'airborne', 'suppress', 'stasis']);
+export const canCast = (sim: Sim, eid: number): boolean => !active(sim, eid, ['silence', 'fear', 'stun', 'airborne', 'suppress', 'stasis']);
 export const isBlind = (sim: Sim, eid: number): boolean => active(sim, eid, ['blind']);
 /** Hard CC (root/stun/airborne/suppression/stasis) or silence: interrupts channels. */
-export const channelBroken = (sim: Sim, eid: number): boolean => active(sim, eid, ['root', 'stun', 'airborne', 'suppress', 'stasis', 'silence']);
+export const channelBroken = (sim: Sim, eid: number): boolean => active(sim, eid, ['root', 'fear', 'stun', 'airborne', 'suppress', 'stasis', 'silence']);
+/** Feared (Furcht): summoner spells are locked too (also Reinigen). */
+export const isFeared = (sim: Sim, eid: number): boolean => active(sim, eid, ['fear']);
+
+/** Source of the active fear the unit runs from (longest-lasting; ties: oldest), -1 = not feared / unstoppable. */
+export function fearSource(sim: Sim, eid: number): number {
+  const e = entry(sim, eid, false);
+  if (!e || e.list.some((b) => b.kind === 'unstoppable' && b.until > sim.tick)) return -1;
+  let best: Buff | null = null;
+  for (const b of e.list) if (b.kind === 'fear' && b.until > sim.tick && (!best || b.until > best.until)) best = b;
+  return best && best.src >= 0 && sim.c.Unit.serial[best.src] === best.srcSerial ? best.src : -1;
+}
 
 /** Any active stat buff of this stat (flag-like stats: invisible, projImmune, untargetable). */
 export function hasStat(sim: Sim, eid: number, stat: StatKey): boolean {
@@ -205,9 +220,9 @@ export function hasStat(sim: Sim, eid: number, stat: StatKey): boolean {
   return false;
 }
 
-/** 0 none, 1 slow, 2 blind, 3 root, 4 stun/airborne, 5 suppression (for HUD/bots). Silence counts as 2. */
+/** 0 none, 1 slow, 2 blind, 3 root, 3.5 fear, 4 stun/airborne, 5 suppression (for HUD/bots). Silence counts as 2. */
 export function ccLevel(sim: Sim, eid: number): number {
-  const order: Partial<Record<BuffKind, number>> = { slow: 1, blind: 2, silence: 2, root: 3, stun: 4, airborne: 4, suppress: 5, stasis: 5 };
+  const order: Partial<Record<BuffKind, number>> = { slow: 1, blind: 2, silence: 2, root: 3, fear: 3.5, stun: 4, airborne: 4, suppress: 5, stasis: 5 };
   let lvl = 0;
   const e = entry(sim, eid, false);
   if (!e) return 0;
@@ -216,7 +231,7 @@ export function ccLevel(sim: Sim, eid: number): number {
 }
 
 /** SnapEntity.cc bits (render: CC indicators). Mirrors canMove/canCast: an unstoppable unit reports no CC but suppress/stasis. */
-export const CC_BIT = { stun: 1, root: 2, slow: 4, silence: 8, airborne: 16, blind: 32, suppress: 64, stasis: 128 } as const;
+export const CC_BIT = { stun: 1, root: 2, slow: 4, silence: 8, airborne: 16, blind: 32, suppress: 64, stasis: 128, fear: 256 } as const;
 
 /** Active CC as CC_BIT mask, strongest slow (pct points) and the last tick any of it lasts (0 = none). */
 export function ccState(sim: Sim, eid: number): { mask: number; slow: number; until: number } {

@@ -27,6 +27,7 @@
     "thessaly": [["staff", 48], ["gem", 185], ["eye", 55], ["sun", 45]],
     "tobin": [["hook", 30], ["wave", 200], ["web", 300], ["bolt", 52]],
     "vessa": [["claw", 14], ["fang", 350], ["eye", 80], ["wing", 20]],
-    "wren": [["arrow", 22], ["flame", 22], ["moon", 270], ["spiral", 15]]
+    "wren": [["arrow", 22], ["flame", 22], ["moon", 270], ["spiral", 15]],
+    "sev": [["eye", 20], ["flame", 8], ["cloak", 210], ["spiral", 355]]
   }
 }

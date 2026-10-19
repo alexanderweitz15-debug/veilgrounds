@@ -482,6 +482,7 @@
   "cc.suppress": "Suppressed",
   "cc.airborne": "Airborne",
   "cc.stun": "Stunned",
+  "cc.fear": "Feared",
   "cc.root": "Rooted",
   "cc.silence": "Silenced",
   "cc.blind": "Blinded",

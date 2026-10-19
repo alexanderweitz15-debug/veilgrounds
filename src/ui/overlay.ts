@@ -28,6 +28,7 @@ const CC_ORDER: [number, string, string][] = [
   [64, 'suppress', '#f0d24a'],
   [16, 'airborne', '#f0d24a'],
   [1, 'stun', '#f0d24a'],
+  [256, 'fear', '#c8582e'],
   [2, 'root', '#e09a4a'],
   [8, 'silence', '#b98cff'],
   [32, 'blind', '#a8a8a8'],

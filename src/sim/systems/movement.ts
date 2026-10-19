@@ -8,7 +8,7 @@ import { DT, Kind, isMinion, isStructure } from '../types';
 import { findPath, lineWalkable, nearestWalkable, walkable } from '../map';
 import { isRef } from '../sim';
 import { MAX_ENT } from '../ecs';
-import { hasBuff } from '../buffs';
+import { fearSource, hasBuff } from '../buffs';
 import { isDisplacing } from './abilities';
 
 /** Chase path is recomputed once the target moved this far from the path's end (no eid-phased timer: mirror-symmetric). */
@@ -37,6 +37,13 @@ export const movementSystem: System = {
     const ty0 = ((sim.state.chaseY as Float64Array | undefined) ??= new Float64Array(MAX_ENT));
     tx0.set(Pos.x);
     ty0.set(Pos.y);
+    // Furcht (fear): feared units walk straight away from the source, overriding orders given this tick
+    for (let i = 0; i < ents.length; i++) {
+      const eid = ents[i]!;
+      if (!Unit.alive[eid]) continue;
+      const src = fearSource(sim, eid);
+      if (src >= 0) flee(sim, eid, src);
+    }
     for (let i = 0; i < ents.length; i++) {
       const eid = ents[i]!;
       if (!Unit.alive[eid] || Move.mode[eid] === 0 || Atk.phase[eid] === 1) continue;
@@ -111,6 +118,24 @@ export const movementSystem: System = {
     collideStructures(sim, ents);
   },
 };
+
+/** Distance of the flee waypoint (re-set every tick while feared). */
+const FLEE_AHEAD = 300;
+
+function flee(sim: Sim, eid: number, src: number): void {
+  const { Pos, Move, Atk, Face } = sim.c;
+  let dx = Pos.x[eid]! - Pos.x[src]!;
+  let dy = Pos.y[eid]! - Pos.y[src]!;
+  const d = Math.sqrt(dx * dx + dy * dy);
+  if (d > 0) (dx /= d), (dy /= d);
+  else (dx = -Face.x[eid]!), (dy = -Face.y[eid]!);
+  const p = nearestWalkable(sim.map.nav, Pos.x[eid]! + dx * FLEE_AHEAD, Pos.y[eid]! + dy * FLEE_AHEAD);
+  Atk.target[eid] = -1;
+  Move.mode[eid] = 1;
+  Move.tx[eid] = p.x;
+  Move.ty[eid] = p.y;
+  sim.paths.set(eid, [p]);
+}
 
 function chaseStale(path: { x: number; y: number }[] | undefined, x: number, y: number): boolean {
   const end = path?.[path.length - 1];

@@ -28,6 +28,7 @@ const CC_ORDER: [number, string, string][] = [
   [64, 'suppress', '#f0d24a'],
   [16, 'airborne', '#f0d24a'],
   [1, 'stun', '#f0d24a'],
+  [256, 'fear', '#c8582e'],
   [2, 'root', '#e09a4a'],
   [8, 'silence', '#b98cff'],
   [32, 'blind', '#a8a8a8'],
@@ -142,6 +143,37 @@ export class Overlay {
         mx += 4;
         continue;
       }
+      if (m.id === 'sev_w' || m.id === 'sev_nachbild') {
+        // Sev: black ember (black flame, copper core) / Nachbild (copper ring with a dark centre)
+        ctx.save();
+        ctx.translate(mx + 7, cy);
+        ctx.fillStyle = 'rgba(12,10,8,0.9)';
+        ctx.beginPath();
+        ctx.arc(0, 0, 8, 0, Math.PI * 2);
+        ctx.fill();
+        if (m.id === 'sev_w') {
+          ctx.fillStyle = '#17121a';
+          ctx.beginPath();
+          ctx.moveTo(0, -9);
+          ctx.quadraticCurveTo(6, -2, 5, 3);
+          ctx.quadraticCurveTo(0, 8, -5, 3);
+          ctx.quadraticCurveTo(-6, -3, 0, -9);
+          ctx.fill();
+          ctx.fillStyle = '#ff7a3c';
+          ctx.beginPath();
+          ctx.arc(0, 2, 2.6, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.strokeStyle = '#c8582e';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(0, 0, 5, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+        mx += 18;
+        continue;
+      }
       ctx.save();
       ctx.translate(mx + 7, cy);
       ctx.rotate(Math.PI / 4);
@@ -201,7 +233,7 @@ export class Overlay {
       const hc = settings.highContrast;
       for (const e of snap.entities) {
         if (!e.alive || e.maxHp <= 0) continue;
-        const champ = e.kind === Kind.Champion;
+        const champ = e.kind === Kind.Champion || !!e.look; // decoys (Sev E) get the fake champion bar
         const structure = e.kind >= Kind.Tower && e.kind <= Kind.Nexus;
         const dummy = e.kind === Kind.Dummy;
         const a = world.barAnchor(e, state.x(e), state.y(e));
@@ -267,7 +299,7 @@ export class Overlay {
           ctx.textBaseline = 'middle';
           ctx.fillText(String(e.level), x - 13, y + bh / 2 + 2);
           // name label (Agent H)
-          const name = champName(e.champ);
+          const name = champName(e.look ?? e.champ);
           ctx.font = '600 12px system-ui, sans-serif';
           ctx.textBaseline = 'bottom';
           ctx.lineWidth = 3;

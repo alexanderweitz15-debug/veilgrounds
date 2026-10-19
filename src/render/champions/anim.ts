@@ -160,6 +160,9 @@ function hold(kit: Kit, swing: number, running: boolean): Hands {
     case 'jug':
       // big water jug on the left shoulder, steadied by the left hand; right hand free
       return { handL: [S * 0.55, A * 0.42, A * 0.12], handR: free(-1, -sw), poleL: [1, -0.2, -0.4] };
+    case 'palm':
+      // right hand out in front, palm up, drifting in a small circle with the idle sway; left hand in the coat
+      return { handR: [-(S + 9) + sw * 4, -A * 0.34 + Math.abs(sw) * 3, A * 0.7], handL: [S * 0.4, -A * 0.66, A * 0.22], aim: norm([0, 1, 0.15]), poleR: [-1, -0.3, -0.2], poleL: [1, -0.6, -0.3] };
     case 'guard':
       return {
         handR: [-S * 0.8, -A * 0.5, A * 0.5 - sw * 6],

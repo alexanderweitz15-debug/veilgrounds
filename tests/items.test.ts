@@ -66,7 +66,7 @@ const builds = import.meta.glob('../src/data/builds/*.json', { eager: true, impo
 describe('builds (data/builds)', () => {
   it('26 champions, every id resolves, core legendaries unique, boots are boots, 1 keystone + 3 minors', () => {
     const list = Object.values(builds);
-    expect(list.length).toBe(26);
+    expect(list.length).toBe(27);
     const runeIds = new Map(runes.map((r) => [r.id, r]));
     for (const b of list) {
       for (const id of b.starter) expect(byId.has(id), `${b.champion} starter ${id}`).toBe(true);

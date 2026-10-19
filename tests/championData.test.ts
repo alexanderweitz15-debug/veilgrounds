@@ -8,7 +8,7 @@ const entries = Object.entries(files).map(([path, mod]) => ({ file: path.split('
 
 const ROSTER = [
   'ilvane', 'thessaly', 'kaelen', 'brom', 'oleth', 'mira', 'ferris', 'gorvam', 'vessa', 'nyx', 'harrow', 'seraphyne', 'renn',
-  'isolde', 'dagny', 'grimald', 'lio', 'ottilie', 'aurel', 'corvin', 'lysa', 'tobin', 'wren', 'hagen', 'kiran', 'oda',
+  'isolde', 'dagny', 'grimald', 'lio', 'ottilie', 'aurel', 'corvin', 'lysa', 'tobin', 'wren', 'hagen', 'kiran', 'oda', 'sev',
 ];
 const hasMira = entries.some((e) => e.file === 'mira.json');
 
@@ -59,7 +59,7 @@ describe('champion data', () => {
     expect([...ids].sort()).toEqual([...expected].sort());
   });
 
-  it.skipIf(!hasMira)('all 26 roster ids are present (needs mira.json from Agent B)', () => {
+  it.skipIf(!hasMira)('all 27 roster ids are present (needs mira.json from Agent B)', () => {
     const ids = new Set(entries.map((e) => (e.data as ChampionData).id));
     for (const id of ROSTER) expect(ids.has(id), `missing ${id}.json`).toBe(true);
   });

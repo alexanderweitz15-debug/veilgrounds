@@ -130,6 +130,8 @@ export interface PassiveHook {
   modifyDamage?(sim: Sim, eid: number, target: number, amount: number, type: DamageType, isAuto: boolean): number;
   /** Outgoing ability heal/shield amount on `target`. Return the new amount. */
   modifyHeal?(sim: Sim, eid: number, target: number, amount: number): number;
+  /** One of this champion's pets (summons.spawnPet) took damage from `src` (-1 possible), after mitigation. */
+  onPetDamaged?(sim: Sim, eid: number, pet: number, src: number, info: DamageInfo): void;
   /** This champion took damage (after shields), before a possible death. src may be -1. */
   onDamageTaken?(sim: Sim, eid: number, src: number, info: DamageInfo): void;
   /** This champion killed `victim` (any kind: minion, monster, champion, ...). Victim Pos is still valid. */
@@ -234,4 +236,9 @@ export interface ChampionHooks {
   onTick?(sim: Sim, eid: number): void;
   /** Ability ids whose 'hit' generic effects the hooks apply themselves (hit producers, line geometry, falloff). */
   ownsHits?: string[];
+  /**
+   * Targeted abilities: is `t` a valid target of `ab` (pure, no state changes)? `base` = the engine rule (enemy fighting
+   * unit in vision, not untargetable; ally_target: allied champion). Alive and range are always checked by the engine.
+   */
+  targetOk?(sim: Sim, caster: number, ab: AbilityData, t: number, base: boolean): boolean;
 }

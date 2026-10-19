@@ -11,7 +11,7 @@ import { inFountain, inventory, itemValue } from './items/inventory';
 import { itemCooldownHud } from './items/itemHooks';
 import { champions, kda } from './systems/economy';
 import { airborneProgress, buffs, isRevealed } from './buffs';
-import { groundObjects } from './summons';
+import { groundObjects, petOwner, petTag } from './summons';
 import { isStealthUnit, stealthPointSeen, trinketHud, trueSight, trueSightAreas, visionScore, wardTypeOf, type TrinketId, type WardType } from './wards';
 import { champDamage } from './damage';
 import { ccLevel, ccState } from './buffs';
@@ -46,6 +46,8 @@ export interface SnapEntity {
   level: number;
   /** Champion id or null. */
   champ: string | null;
+  /** Decoy pet (tag `*_decoy`, e.g. Sev E): champion id it looks like; render/HUD treat it like that champion. */
+  look?: string;
   slot: number;
   /** 0 idle, 1 windup, 2 backswing. */
   atkPhase: number;
@@ -361,6 +363,13 @@ function ccFields(sim: Sim, e: number, alive: boolean): { cc?: number; slow?: nu
   return { cc: s.mask, ccEnd: s.until, ...(s.slow > 0 ? { slow: s.slow } : {}) };
 }
 
+/** Decoy pets mimic their owner: champion look + level for the fake champion bar. */
+function decoyFields(sim: Sim, e: number): { look?: string; level?: number } {
+  if (!petTag(sim, e).endsWith('_decoy')) return {};
+  const o = petOwner(sim, e);
+  return o >= 0 ? { look: champIdOf(sim, o), level: sim.c.Champ.level[o]! } : {};
+}
+
 /**
  * The fog-filtered unit list of one team (own units, structures, visible alive units), without hook visuals / marks /
  * auras. buildSnapshot adds those; the bot runner can call this once per team and tick (A1 request: one source of
@@ -402,6 +411,7 @@ export function snapshotEntities(sim: Sim, team: number): SnapEntity[] {
       ...ccFields(sim, e, alive),
       alive,
       ...(k === Kind.Ward ? wardFields(sim, e, team) : {}),
+      ...(k === Kind.Pet ? decoyFields(sim, e) : {}),
       ...(k === Kind.Ward && isStealthUnit(sim, e) ? { stealth: true as const } : {}),
       ...(k === Kind.Tower && sim.c.Tower.tier[e] === 0 ? { plates: sim.c.Tower.plates[e]! } : {}),
       ...revealFields(sim, e, team, alive),

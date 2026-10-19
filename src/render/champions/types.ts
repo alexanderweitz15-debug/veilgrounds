@@ -50,7 +50,9 @@ export type Hold =
   | 'spindle'
   | 'blade'
   | 'fists'
-  | 'jug';
+  | 'jug'
+  /** one hand held out in front at chest height, palm up (Sev's ember eye); the other tucked into the coat */
+  | 'palm';
 export type AttackStyle = 'bow' | 'pistols' | 'rifle' | 'chop' | 'slash' | 'thrust' | 'swipe' | 'bash' | 'throw' | 'staff' | 'ring';
 export type CastStyle = 'raise' | 'forward' | 'slam' | 'ring' | 'spin';
 

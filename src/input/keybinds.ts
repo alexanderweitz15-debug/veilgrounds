@@ -68,6 +68,18 @@ export function setBind(a: Action, code: string): void {
   void kvSet('keybinds', { ...binds });
 }
 
+/** Replace several binds at once (settings import); unlisted actions keep their key, conflicts unbind the older one. */
+export function applyBinds(map: Partial<Record<Action, string>>): void {
+  for (const a of ACTIONS) {
+    const code = map[a];
+    if (code === undefined) continue;
+    for (const other of ACTIONS) if (other !== a && binds[other] === code && code) binds[other] = '';
+    binds[a] = code;
+  }
+  version++;
+  void kvSet('keybinds', { ...binds });
+}
+
 export function resetBinds(): void {
   Object.assign(binds, DEFAULT_BINDS);
   version++;

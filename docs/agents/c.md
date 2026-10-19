@@ -4,16 +4,61 @@ Branch `ui/c-features` (base `0bbc3d0`). Spec: docs/AGENTS-PLAN.md §5 (C1-C7). 
 
 ## Ready for merge
 
+Block 1 (C1-C4, C6 part 1) is on main (`e0f40bb`). Block 2 commits since then, all merge-ready (branch is
+fast-forward from main `e0f40bb`):
+
 | Package | Commits | Merge note |
 |---|---|---|
-| C1 feature-gap audit | `7914764` | docs only |
-| C2 scoreboard objectives + death timers | `feb41a2` (+ screenshots in `17f1a41`) | works without sim changes; shared-change proposal below makes enemy Kesselbrut / ally summoner CDs exact |
-| C3 HUD additions | `4bdc78b` | – |
-| C4 pings + chat | `28c5ab5` | – |
-| C6 post-game (without A3 parts) | `17f1a41` | – |
+| C2 follow-up | `9fd59b1` | enemy Kesselbrut from B's `Snapshot.kesselbrutTeams`, "?" removed |
+| C7 gold efficiency + loading tips | `d8bddf9`, `f127470` | new data file src/ui/goldValues.json |
+| C5 own rune page | `e627710` | – |
+| C7 minimap size/side, settings export/import | `003c3a8` | touches src/settings.ts (additive, lead-approved, logged in shared-changes.md) |
+| C7 per-key cast modes | `fce34a6` | touches src/settings.ts (additive), src/input/controller.ts |
+| screenshots/docs | `2c92dd9`, next docs commit | – |
 
-Also merge-ready: `f31d89f` (minimap symbol for revealed enemy wards, B1's request - inert until B1's `stealth`
-field is on main; screenshots; docs). Wind-down on lead's request: C5 and C7 not started (next steps below).
+## Block 2 (2026-10-19): merge of main, C2 follow-up, C5 rune page, C7 settings
+
+### Done
+
+| Pkg | Files | What |
+|---|---|---|
+| C2 | src/game/objectives.ts, src/ui/scoreboard.ts | Kesselbrut of both teams from `Snapshot.kesselbrutTeams` (B3, absent = 0 for both); the "?" fallback and its i18n key are gone. Enemy items (user decision 19 Oct): scoreboard and target frame already render any row's `items`, nothing to change until B sends them |
+| C7 5.3 | src/ui/goldEfficiency.ts (new), src/ui/goldValues.json (new), src/ui/shop.ts, shop.css | Shop detail: "Gold-Effizienz der Werte: 97 % (Wert 2421 Gold)", gold per stat from the single-stat basic items (AD 35, AP 21.75, HP 2.67, armor 20, MR 16, AS% 25, mana 1.4, msFlat from boots), reference values for the rest in JSON |
+| C7 4.6 | src/ui/classicLobby.ts, gamePanels.css, i18n | 12 training tips on the loading screen, rotating every 7 s |
+| C5 4.2 | src/game/runePages.ts (new, storage + rules), src/ui/runePages.ts (new, editor), src/ui/classicLobby.ts, css, i18n | "Eigene Seite" next to the presets: keystone row + pick three minors, save = select; IndexedDB `runePages`; invalid/missing page falls back to the preset |
+| C7 3.7 | src/settings.ts (+`minimapScale`, `minimapLeft`), src/ui/display.ts (`--mm`, `html.minimap-left`), style.css, settingsPanel.ts | minimap 80-150 % and left side (frame mirrored, death bar follows, chat lifted above it) |
+| C7 3.13 | src/game/settingsIO.ts (new), src/input/keybinds.ts (`applyBinds`), settingsPanel.ts, settings.ts (`DEFAULT_SETTINGS`) | export settings + keybinds as JSON file, import validates keys, types, enum values, clamps slider ranges, reports skipped entries |
+| C7 3.2 | src/input/castMode.ts (new), controller.ts, settings.ts (`castModes`), settingsPanel.ts | per Q/W/E/R: quick / with indicator (hold-release) / normal (indicator, left click casts, right click or Esc cancels). Verified in the built game: Q cooldown 0 after key release in normal mode, 5 s after the click |
+
+### Tests (new in block 2)
+
+tests/goldEfficiency.test.ts, tests/runePages.test.ts, tests/settingsIO.test.ts (round trip, validation, cast modes),
+tests/i18n.test.ts (tip keys), tests/objectives.test.ts (kesselbrutTeams). Each green; `tsc --noEmit` clean.
+
+### Screenshots (block 2, 1280x720, built game, no console errors)
+
+c7-shop-before/after (gold efficiency line), c7-loading-before/after (tip), c5-runes-before/after (own page + editor),
+c7-settings-before/after and c7-settings-io-before/after (minimap rows, cast modes, export/import),
+c7-minimap-left-before/after (left, 120 %), c7-castmode-settings-after, c7-castmode-indicator-after (indicator stays
+after releasing Q in normal mode).
+
+### Open after block 2 (exact next steps)
+
+- 4.3 optional ban phase, 4.4 role swap with a bot slot (classicLobby.ts post-processing; low training value 2).
+- 4.1: open "Erweitert" in the lobby, screenshot, set FEATURE-GAP 4.1 to `da` (code exists).
+- 2.1 '?' ping in the wheel, 2.3 item ping from the shop ("missing parts").
+- 3.7 caveat: on the left at > ~115 % the minimap touches the bottom HUD panel; either cap the left-side scale or
+  shift `.hud-bottom` when `html.minimap-left` (needs a screenshot check).
+- 3.10 HP-bar style / 3.11 enemy skillshot outline: settings keys can be added (src/settings.ts open for C), the
+  drawing is D's (render).
+- A3-dependent: playstyle mini-scales + rank calibration in the scoreboard, post-game error list.
+- B-dependent: enemy items (decided, B), ally summoner CDs, vision score / damage, Teleport slot (B4), item cast-fail
+  events.
+- src/main.ts "Nochmal" after classic (issues.md).
+
+---
+
+Block 1 history below (C5/C7 "not started" there is superseded by block 2).
 
 ## Block 1 (2026-10-16): C1-C4, C6 part 1
 

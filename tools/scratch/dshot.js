@@ -71,4 +71,26 @@ window.__dshot = async (name, cx, cy, seq) => {
   focus = null;
   return (await fetch('http://localhost:4399/' + name, { method: 'POST', body: url })).text();
 };
+/** Tower shot: god mode, stand 500 in front of the nearest enemy tower, save a frame while a tower missile flies. */
+window.__dtower = async (name) => {
+  const v = window.__vg;
+  const s = (c) => v.link.send(c);
+  const me0 = v.state.me();
+  const towers = v.state.snap.entities.filter((e) => e.kind === 6 && e.team !== me0.team && e.alive);
+  const t = towers.sort((a, b) => Math.hypot(a.x - me0.x, a.y - me0.y) - Math.hypot(b.x - me0.x, b.y - me0.y))[0];
+  s({ t: 'cheat', op: 'godMode' });
+  s({ t: 'cheat', op: 'toggleMinions' });
+  s({ t: 'cheat', op: 'teleport', x: t.x - 450, y: t.y - 250 });
+  focus = [t.x - 250, t.y - 150];
+  for (let i = 0; i < 400; i++) {
+    await w(20);
+    const p = v.state.snap.projectiles.find((q) => q.srcKind === 6 && Math.hypot(q.x - t.x, q.y - t.y) < 700);
+    if (p && Math.hypot(p.x - t.x, p.y - t.y) > 220) break;
+  }
+  v.world.rig.focus(focus[0], focus[1]);
+  v.frame(performance.now());
+  const url = v.world.canvas.toDataURL('image/jpeg', 0.9);
+  focus = null;
+  return (await fetch('http://localhost:4399/' + name, { method: 'POST', body: url })).text();
+};
 export {};

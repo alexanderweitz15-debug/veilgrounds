@@ -84,7 +84,8 @@ function missileStyle(pr: { srcKind?: number; champ?: string | null; slot?: numb
   switch (pr.srcKind) {
     case Kind.Tower:
     case Kind.Nexus: // big energy orb
-      return { color: own ? '#9fd4ff' : '#ff8a6a', size: 2.2, length: 1.2, thick: 1.1, height: 260, halo: 2.4 };
+      // D2: elongated energy lance (LoL tower shot) + spark trail (below), not a round blob
+      return { color: own ? '#c8ecff' : '#ffb08a', size: 2.3, length: 3.4, thick: 0.9, height: 260, halo: 2.2 };
     case Kind.MinionSiege: // dark cannonball
       return { color: '#3a3430', size: 1.5, length: 1, thick: 1, height: 120, halo: 1.3 };
     case Kind.MinionCaster: // small bolt
@@ -522,7 +523,14 @@ export class Fx {
         // missile look by source (LoL: every unit has its own): visual only, the strip is the hitbox
         const st = missileStyle(pr, own, homing);
         // ability missiles leave a trail in their particle language and burst where they end
-        const pk = pr.champ && pr.slot !== undefined && pr.slot >= 0 ? abilityParticles(pr.champ, pr.slot) : null;
+        // D2: tower shots crackle (team hue), champion basic attacks leave a faint shard streak
+        const pk =
+          pr.champ && pr.slot !== undefined && pr.slot >= 0
+            ? abilityParticles(pr.champ, pr.slot)
+            : pr.srcKind === Kind.Tower || pr.srcKind === Kind.Nexus
+              ? { kind: 'spark' as const, hue: own ? 200 : 18 }
+              : null;
+        if (!pk && pr.srcKind === Kind.Champion) this.particles.emit('shard', x, y, st.height, own ? 45 : 25, this.particles.kind('shard').trail * 0.35 * dt, now, { dx: pr.dx, dy: pr.dy }, 0.3);
         if (pk) {
           this.particles.emit(pk.kind, x, y, st.height, pk.hue, this.particles.kind(pk.kind).trail * dt, now, { dx: pr.dx, dy: pr.dy }, 0.5);
           this.trails.set(pr.id, { x, y, h: st.height, kind: pk.kind, hue: pk.hue, frame: this.frameNo });

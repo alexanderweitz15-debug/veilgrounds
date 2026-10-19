@@ -469,9 +469,13 @@ function chooseFiller(
           const land = T + 1 + x.lead;
           const nx = windowAfterHit(x, land, T);
           if (nx.b <= land) continue; // the hit kills it: that is a last hit, not a preparation
+          const per = Math.floor(own.period);
+          // order A: the prepared minion first, then the other; order B: the other at the next auto, then the prepared
           const sx = serveAt(nx.a, nx.b, x.lead, next);
-          if (sx === Infinity) continue;
-          if (serveAt(y.a, y.b, y.lead, sx + Math.floor(own.period)) === Infinity) continue;
+          const okA = sx !== Infinity && serveAt(y.a, y.b, y.lead, sx + per) !== Infinity;
+          const sy = serveAt(y.a, y.b, y.lead, next);
+          const okB = sy !== Infinity && serveAt(nx.a, nx.b, x.lead, sy + per) !== Infinity;
+          if (!okA && !okB) continue;
           return { target: x.m.id, kind: 'prepare' };
         }
       }

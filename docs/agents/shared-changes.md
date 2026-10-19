@@ -266,3 +266,11 @@ file to `src/ui/settings.ts`. Until decided, C7 waits.
   Radius stays 70 (no gameplay change). Stacks of both teams: `Snapshot.objectives.kesselbrut` (C2 entry).
 - **For C:** `src/ui/announce.ts` assumed grub deaths stay in the fog; enemy grub kills now arrive as events.
 - **For A2:** objective logic can key on `e.epic` / `ev.epic` instead of radius.
+
+## 2026-10-19 · Agent B · B5 attack-move "target at cursor" (additive) -> C: setting + input
+
+- Command `{ t: 'attackMove', x, y, cursor?: true }`: the first target of that attack-move is the valid enemy in
+  range nearest to the click instead of nearest to the champion (LoL "Player Attack Move Click"). Later
+  re-acquisitions (target died) use the champion again.
+- **For C:** settings toggle ("Angriffsbewegung: Ziel am Cursor" / "Attack move: target nearest to cursor"),
+  `src/input` sends `cursor: true` when it is on. Bots are unaffected (they never set it).

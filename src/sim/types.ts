@@ -68,7 +68,8 @@ export type PingKind = (typeof PING_KINDS)[number];
 export type Command =
   | { t: 'move'; x: number; y: number }
   | { t: 'attack'; target: number }
-  | { t: 'attackMove'; x: number; y: number }
+  /** cursor: LoL 'Player Attack Move Click' (target nearest to the click instead of to the champion). */
+  | { t: 'attackMove'; x: number; y: number; cursor?: boolean }
   | { t: 'stop' }
   | { t: 'cast'; slot: 0 | 1 | 2 | 3; x: number; y: number; target?: number }
   /** Summoner spell: 0 D, 1 F, 2 Teleport of the top laner once unlocked (B4). */

@@ -62,6 +62,24 @@ describe('B5 mechanic feel (sim)', () => {
     expect(air).toBeLessThan(0.5);
   });
 
+  it('attack-move: nearest to the champion by default, nearest to the click with cursor: true', () => {
+    const pick = (cursor: boolean): number => {
+      const sim = makeSim({ players: [player('mira')] });
+      const m = sim.slots[0]!;
+      place(sim, m, CX, CY);
+      const near = spawnDummy(sim, CX + 250, CY, 1);
+      const far = spawnDummy(sim, CX + 480, CY + 200, 1);
+      step(sim);
+      step(sim, [{ slot: 0, cmd: { t: 'attackMove', x: CX + 500, y: CY + 220, ...(cursor ? { cursor: true } : {}) } }]);
+      step(sim);
+      const t = sim.c.Atk.target[m]!;
+      expect([near, far]).toContain(t);
+      return t === far ? 1 : 0;
+    };
+    expect(pick(false)).toBe(0);
+    expect(pick(true)).toBe(1);
+  });
+
   it('hit flash: champion hits always; DoT ticks and other sources at most every 8 ticks per target', () => {
     const sim = makeSim({ players: [player('mira')] });
     const m = sim.slots[0]!;

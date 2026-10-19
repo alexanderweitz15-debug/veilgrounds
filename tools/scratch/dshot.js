@@ -71,6 +71,19 @@ window.__dshot = async (name, cx, cy, seq) => {
   focus = null;
   return (await fetch('http://localhost:4399/' + name, { method: 'POST', body: url })).text();
 };
+/** Own Schleierward 300 to the right of the champion, captured after 1.5 s. */
+window.__dward = async (name) => {
+  const v = window.__vg;
+  const me = v.state.me();
+  v.link.send({ t: 'ward', x: me.x + 300, y: me.y });
+  focus = [me.x + 150, me.y];
+  await w(1500);
+  v.frame(performance.now());
+  const url = v.world.canvas.toDataURL('image/jpeg', 0.9);
+  focus = null;
+  const wards = v.state.snap.entities.filter((e) => e.kind === 12).map((e) => [e.ward, e.stealth ?? null]);
+  return [await (await fetch('http://localhost:4399/' + name, { method: 'POST', body: url })).text(), JSON.stringify(wards)];
+};
 /** Tower shot: god mode, stand 500 in front of the nearest enemy tower, save a frame while a tower missile flies. */
 window.__dtower = async (name) => {
   const v = window.__vg;

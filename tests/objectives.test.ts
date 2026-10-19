@@ -213,13 +213,12 @@ describe('objectives', () => {
     expect(tr.team(1).inhibRespawn).toEqual([]);
   });
 
-  it('Kesselbrut: own count from the snapshot, enemy unknown unless seen or sent by the sim', () => {
+  it('Kesselbrut: both teams from Snapshot.kesselbrutTeams (absent = 0 for both)', () => {
     const tr = new ObjectiveTracker();
-    tr.ingest(snap(10, [], ROWS(), { kesselbrut: 3 }));
-    expect(tr.team(0).kesselbrut).toBe(3);
-    expect(tr.team(1).kesselbrut).toBeNull();
-    tr.ingest(snap(11, [monsterKill(OBJ.kesselbrut, 1)], ROWS(), { kesselbrut: 3 }), () => ({ radius: 70, variant: 'kesselbrut' }));
-    expect(tr.team(1).kesselbrut).toBe(1);
+    tr.ingest(snap(10, [], ROWS()));
+    expect([tr.team(0).kesselbrut, tr.team(1).kesselbrut]).toEqual([0, 0]);
+    tr.ingest(snap(11, [], ROWS(), { kesselbrut: 3, kesselbrutTeams: [3, 1] }));
+    expect([tr.team(0).kesselbrut, tr.team(1).kesselbrut]).toEqual([3, 1]);
     const withSim = { ...snap(12, [], ROWS(), { kesselbrut: 3 }), objectives: { kesselbrut: [3, 2] as [number, number], leviathan: [1, 2] as [number, number] } };
     tr.ingest(withSim);
     expect(tr.team(1)).toMatchObject({ kesselbrut: 2, leviathan: 2 });

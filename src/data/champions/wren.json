@@ -29,7 +29,7 @@
     "ms": 335,
     "windup": 0.18,
     "projectileSpeed": 1900,
-    "radius": 55
+    "radius": 65
   },
   "passive": {
     "name": { "de": "Glut", "en": "Embers" },

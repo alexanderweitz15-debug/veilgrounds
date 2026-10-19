@@ -29,7 +29,7 @@
     "ms": 335,
     "windup": 0.17,
     "projectileSpeed": 2200,
-    "radius": 55
+    "radius": 65
   },
   "passive": {
     "name": { "de": "Fadenlauf", "en": "Thread Run" },

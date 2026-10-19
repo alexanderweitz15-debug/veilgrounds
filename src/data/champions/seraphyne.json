@@ -29,7 +29,7 @@
     "ms": 340,
     "windup": 0.2,
     "projectileSpeed": 1700,
-    "radius": 55
+    "radius": 65
   },
   "passive": {
     "name": { "de": "Elektrisiert", "en": "Electrified" },

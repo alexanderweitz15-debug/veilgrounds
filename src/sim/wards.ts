@@ -174,6 +174,19 @@ export function wardStats(sim: Sim, slot: number): WardStats {
   return w;
 }
 
+/**
+ * Vision score of a player slot (read-only), LoL-like approximation: 1 per ward-minute of own wards (incl. alive
+ * ones) + 1 per enemy ward killed + 0.5 per enemy ward revealed, floored.
+ */
+export function visionScore(sim: Sim, slot: number): number {
+  const s = sim.state.wards as WardState | undefined;
+  if (!s) return 0;
+  const st = s.stats.get(slot);
+  let ticks = st?.wardTicks ?? 0;
+  for (const w of s.list) if (w.slot === slot && isRef(sim, w.eid, w.serial)) ticks += sim.tick - w.placed;
+  return Math.floor(ticks / 1800 + (st?.wardsKilled ?? 0) + 0.5 * (st?.wardsRevealed ?? 0));
+}
+
 /** Trinket of a champion (created on first use: Schleierward with one charge, recharging the second). */
 export function trinket(sim: Sim, eid: number): TrinketState {
   const s = wardState(sim);

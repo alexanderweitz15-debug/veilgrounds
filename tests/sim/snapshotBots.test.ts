@@ -116,6 +116,16 @@ describe('B3 snapshot additions', () => {
     void a;
   });
 
+  it('ScoreRow: vision score for both teams, champion damage for the own team only', () => {
+    const { sim, a, b } = duel();
+    as(sim, 0, { t: 'ward', x: CX + 200, y: CY });
+    steps(sim, sec(61));
+    expect(snap(sim, 1).players.find((r) => r.slot === 0)!.visionScore).toBe(1);
+    dealDamage(sim, a, b, 100, 'true');
+    expect(snap(sim, 0).players.find((r) => r.slot === 0)!.champDamage).toBe(100);
+    expect(snap(sim, 1).players.find((r) => r.slot === 0)!.champDamage).toBeUndefined();
+  });
+
   it('atkTarget: tower and minion target choice is in the view; hidden targets are masked to -1', () => {
     const { sim, a, b } = duel();
     // red champion visible to blue, "attacking" a unit blue cannot see

@@ -8,6 +8,7 @@ import { PITCH } from './camera';
 import { CAST_FLEX, CAST_RELEASE, dirFromAngle, type Anim, type ChampionAtlas, type Dir } from './champions';
 import { champions } from '../data/champions';
 import { AFTER_MS, afterFrame } from './spriteTiming';
+import { turnToward } from './readability';
 
 /** How a cast plays: directed spells release forward, self buffs flex, dashes lunge. */
 export type CastKind = 'directed' | 'self' | 'dash';
@@ -76,6 +77,9 @@ interface AnimState {
   hitT: number;
   hx: number;
   hy: number;
+  /** D2: displayed facing angle (radians, smoothed toward the sim facing) and its last update time; NaN = unset. */
+  ang: number;
+  angT: number;
 }
 interface CastState {
   t0: number;
@@ -218,18 +222,24 @@ export class ChampionSprites {
   }
 
   /** Draws one living entity; `id` from idFor, (x, y) = interpolated feet incl. lunge, c = brightness. */
-  push(e: SnapEntity, id: string, x: number, y: number, c: number, now: number): void {
+  push(e: SnapEntity, id: string, x: number, y: number, c: number, now: number, lift = 0): void {
     if (this.n >= this.opts.cap) return;
     let a = this.st.get(e.serial);
     if (!a) {
-      a = { scale: this.opts.scaleFor?.(e) ?? 1, serial: e.serial, seen: now, id, anim: 'idle', t0: now, dir: 'S', phase: 0, x, y, atk0: 0, atkHit: 0, wind: 0, hitT: -1e9, hx: 0, hy: 0 };
+      a = { scale: this.opts.scaleFor?.(e) ?? 1, serial: e.serial, seen: now, id, anim: 'idle', t0: now, dir: 'S', phase: 0, x, y, atk0: 0, atkHit: 0, wind: 0, hitT: -1e9, hx: 0, hy: 0, ang: NaN, angT: now };
       this.st.set(e.serial, a);
     }
     a.seen = now;
     this.byEid.set(e.id, a);
     a.x = x;
     a.y = y;
-    if (e.fx || e.fy) a.dir = dirFromAngle(Math.atan2(e.fy, e.fx));
+    if (e.fx || e.fy) {
+      // D2: turn through the in-between directions (180 deg in ~80 ms) instead of flipping in one tick
+      const target = Math.atan2(e.fy, e.fx);
+      a.ang = Number.isNaN(a.ang) ? target : turnToward(a.ang, target, now - a.angT);
+      a.dir = dirFromAngle(a.ang);
+    }
+    a.angT = now;
     const fr = this.atlas.frames[id]!;
     // attack state machine: the strike frame lands exactly on the sim's hit point (phase 1 -> 2)
     if (e.atkPhase === 1 && a.phase !== 1) {
@@ -270,10 +280,11 @@ export class ChampionSprites {
       x += a.hx * d;
       y += a.hy * d;
     }
-    this.draw(id, anim, a.dir, frame, x, y, c, a.scale);
+    this.draw(id, anim, a.dir, frame, x, y, c, a.scale, lift);
   }
 
-  private draw(id: string, anim: Anim, dir: Dir, k: number, x: number, y: number, c: number, scale = 1): void {
+  /** `lift` = height above the ground (knock-up hop, dash arc); the shadow quad stays on the ground. */
+  private draw(id: string, anim: Anim, dir: Dir, k: number, x: number, y: number, c: number, scale = 1, lift = 0): void {
     const list = this.atlas.frames[id]?.[anim]?.[dir];
     if (!list?.length) return;
     // frame index from timers can be negative (clock offsets) or NaN (missing rate): clamp, never index out of range
@@ -285,7 +296,7 @@ export class ChampionSprites {
     this.uv.setXYZW(i, r.u0, r.v0, r.u1, r.v1);
     const size = this.atlas.worldSize[id]! * scale;
     const below = (1 - this.atlas.foot[id]!) * size; // cell bottom below the feet
-    this.p.set(x, 0, -y).addScaledVector(this.up, -below);
+    this.p.set(x, lift, -y).addScaledVector(this.up, -below);
     this.s.set(size, size, 1);
     this.m.compose(this.p, this.qVis, this.s);
     this.vis.setMatrixAt(i, this.m);

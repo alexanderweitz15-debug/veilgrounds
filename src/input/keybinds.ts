@@ -6,7 +6,7 @@ import { kvGet, kvSet } from '../store/kv';
 export type Action =
   | 'stop' | 'attackMove'
   | 'q' | 'w' | 'e' | 'r'
-  | 'd' | 'f'
+  | 'd' | 'f' | 'tp'
   | 'recall' | 'centerCamera' | 'toggleCameraLock' | 'pause' | 'showRange'
   | 'item1' | 'item2' | 'item3' | 'item4' | 'item5' | 'item6' | 'trinket'
   | 'scoreboard' | 'debug' | 'shop'
@@ -21,6 +21,8 @@ export const DEFAULT_BINDS: Record<Action, string> = {
   r: 'KeyR',
   d: 'KeyD',
   f: 'KeyF',
+  /** Third summoner slot: Teleport unlocked for the top laner after 1500 minion gold (B4). */
+  tp: 'KeyT',
   recall: 'KeyB',
   centerCamera: 'Space',
   toggleCameraLock: 'KeyY',

@@ -175,10 +175,10 @@ export class Hud {
     this.passiveN = el('div', 'pn', this.passive);
     const center = el('div', 'hud-center', bottom);
     const abil = el('div', 'abilities', center);
-    const keys: Action[] = ['q', 'w', 'e', 'r', 'd', 'f'];
+    const keys: Action[] = ['q', 'w', 'e', 'r', 'd', 'f', 'tp'];
     keys.forEach((k, i) => {
       if (i === 4) el('div', 'abil-gap', abil);
-      const root = el('div', `slot ${i >= 4 ? 'summ' : 'abil'}`, abil);
+      const root = el('div', `slot ${i >= 4 ? 'summ' : 'abil'}${i === 6 ? ' tp-slot' : ''}`, abil);
       const icon = el('div', 'icon', root);
       const cd = el('div', 'cd', root);
       const cdNum = el('div', 'cdnum', root);
@@ -516,7 +516,7 @@ ${t(`trinket.${tr.id}.desc`)}${tr.cdLeft > 0 ? ` (${Math.ceil(tr.cdLeft)} s)` : 
   }
 
   private drawAbilities(list: AbilityHud[]): void {
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 7; i++) {
       const s = this.slots[i]!;
       const a = list[i];
       toggle(s.root, 'empty', !a);

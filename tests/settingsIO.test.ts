@@ -36,6 +36,13 @@ describe('settings export / import', () => {
     expect(castModeFor({ castIndicator: false }, 2)).toBe('quick');
   });
 
+  it('default keybinds: Teleport slot on T, ? ping on H, no key used twice', () => {
+    expect(DEFAULT_BINDS.tp).toBe('KeyT');
+    expect(DEFAULT_BINDS.pingQuestion).toBe('KeyH');
+    const keys = ACTIONS.map((a) => DEFAULT_BINDS[a]).filter(Boolean);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
   it('throws on invalid JSON', () => {
     expect(() => parseSettingsFile('{nope', DEFAULT_SETTINGS, ACTIONS)).toThrow();
   });

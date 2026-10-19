@@ -1,42 +1,20 @@
-// Public objective state of both teams for the scoreboard and the death-timer bar (C2), derived on the client from
-// fog-filtered snapshot events. Everything here is information a LoL player sees on screen: champion respawn timers,
-// Leviathan stacks / soul, Schleierwaechter buff, inhibitor respawns. Fields the sim may later put into the snapshot
-// (docs/agents/shared-changes.md: ScoreRow.respawnIn, Snapshot.objectives) win over the derived values.
+// Public objective state of both teams for the scoreboard, the death-timer bar and the top-bar timers (C2/C3).
+// The sim sends the public values in the snapshot (B, 19 Oct: ScoreRow.respawnIn, Snapshot.objectives); this module
+// only adds what the snapshot does not carry: the (re)spawn countdowns of the epic monsters, derived from the public
+// epic death events (`ev.epic`, B6) and the camp schedule.
 //
-// Timing: the events of a snapshot happened in the tick before `snap.tick` (sim.step increments the tick last), so
-// a champion that died in that tick respawns at (snap.tick - 1) + deathTimerTicks(level, snap.tick - 1), exactly
-// Champ.respawnAt (src/sim/systems/economy.ts championDeath).
+// Timing: the events of a snapshot happened in the tick before `snap.tick` (sim.step increments the tick last).
 import type { ScoreRow, Snapshot } from '../sim/snapshot';
 import { Kind, type SimEvent } from '../sim/types';
-import { deathTimerTicks } from '../sim/systems/economy';
-import { CAMPS, LEVIATHAN_MAX_STACKS, SCHLEIER_BUFF_TICKS } from '../sim/systems/jungle';
-import { INHIB_RESPAWN } from '../sim/systems/towers';
+import { CAMPS, LEVIATHAN_MAX_STACKS } from '../sim/systems/jungle';
 import raw from '../data/map.json';
 
 const OBJ = raw.neutral.objectives;
 const TICK_HZ = 30;
-/** Radius of epic monsters (always announced to both teams, src/sim/snapshot.ts teamEvents). */
-const EPIC_R = 130;
 const SCHLEIER_R = 150;
-/** An inhibitor that respawned stands within this distance of its death point. */
-const SAME_SPOT2 = 200 * 200;
 
 type DeathEvent = Extract<SimEvent, { e: 'death' }>;
 export type Epic = 'leviathan' | 'schleier' | 'kesselbrut';
-
-/** Optional sim-side objective block (proposal in docs/agents/shared-changes.md); index = team. */
-export interface SnapObjectives {
-  leviathan?: [number, number];
-  kesselbrut?: [number, number];
-  /** Seconds left of the Schleierwaechter buff per team (0 = none). */
-  schleierLeft?: [number, number];
-  /** Destroyed inhibitors with seconds until they respawn. */
-  inhibs?: { team: number; left: number }[];
-}
-
-/** ScoreRow / Snapshot with the optional fields of the proposal (absent until the sim sends them). */
-type RowExt = ScoreRow & { respawnIn?: number };
-type SnapExt = Snapshot & { objectives?: SnapObjectives };
 
 export interface TeamObjectives {
   /** Leviathan stacks (0..LEVIATHAN_MAX_STACKS); `soul` once the maximum is reached. */
@@ -51,22 +29,19 @@ export interface TeamObjectives {
 }
 
 /**
- * Which epic monster a death event belongs to: by the last seen radius, else by the death position. Grubs (radius 70)
- * only arrive when the team killed them or saw it.
+ * Which epic monster a death event belongs to (epic deaths carry `epic: true` and reach both teams, B6): by the last
+ * seen type / radius, else by the death position and time (the pit holds the Kesselbrut until the Schleierwaechter's
+ * first spawn). Non-epic monsters -> null.
  */
 export function epicOf(ev: DeathEvent, radius: number | undefined, variant?: string, time?: number): Epic | null {
-  if (ev.kind !== Kind.Monster) return null;
+  if (ev.kind !== Kind.Monster || !ev.epic) return null;
   if (variant === 'kesselbrut') return 'kesselbrut';
-  const near = (p: { x: number; y: number }, r: number): boolean => (ev.x - p.x) ** 2 + (ev.y - p.y) ** 2 < r * r;
-  if (radius !== undefined) {
-    if (radius >= SCHLEIER_R) return 'schleier';
-    if (radius >= EPIC_R) return 'leviathan';
-    return near(OBJ.kesselbrut, 700) ? 'kesselbrut' : null;
-  }
-  if (near(OBJ.leviathan, 1200)) return 'leviathan';
-  // the pit holds the Kesselbrut until the Schleierwaechter's first spawn
-  if (near(OBJ.schleierwaechter, 1200)) return time !== undefined && time < CAMPS.schleierwaechter.first ? 'kesselbrut' : 'schleier';
-  return null;
+  if (variant === 'leviathan') return 'leviathan';
+  if (variant === 'schleierwaechter') return 'schleier';
+  const near = (p: { x: number; y: number }): boolean => (ev.x - p.x) ** 2 + (ev.y - p.y) ** 2 < 1200 * 1200;
+  if (near(OBJ.leviathan)) return 'leviathan';
+  if (radius !== undefined) return radius >= SCHLEIER_R ? 'schleier' : 'kesselbrut';
+  return time !== undefined && time < CAMPS.schleierwaechter.first ? 'kesselbrut' : 'schleier';
 }
 
 interface Unit {
@@ -75,18 +50,11 @@ interface Unit {
 }
 
 export class ObjectiveTracker {
-  /** Respawn tick per champion, keyed `team:champ` (ScoreRow has no eid). */
-  private readonly respawnAt = new Map<string, number>();
-  private readonly leviathan: [number, number] = [0, 0];
-  private readonly schleierUntil: [number, number] = [0, 0];
-  /** Champions of the team that got the Schleierwaechter buff and have not died since (the buff ends on death). */
-  private readonly schleierHolders: [Set<string>, Set<string>] = [new Set(), new Set()];
-  private readonly inhibs: { team: number; x: number; y: number; at: number }[] = [];
   private tick = 0;
-  private snap: SnapExt | null = null;
+  private snap: Snapshot | null = null;
   /** Last death tick of Leviathan / Schleierwaechter (any killer: the camp timer starts either way); -1 = never. */
   private readonly epicKill = { leviathan: -1, schleier: -1 };
-  /** Grub deaths seen in the current Kesselbrut wave and the tick the next wave spawns (-1 = none pending). */
+  /** Grub deaths in the current Kesselbrut wave and the tick the next wave spawns (-1 = none pending). */
   private grubDeaths = 0;
   private grubRespawnAt = -1;
 
@@ -106,7 +74,7 @@ export class ObjectiveTracker {
 
   /**
    * Epic monster timers for the top bar (classic schedule, public like LoL): seconds until (re)spawn, or null while
-   * it is up. Kesselbrut drops out once it left the pit; its respawn is only known when this team saw all grubs die.
+   * it is up. Kesselbrut drops out once it left the pit or its last wave closed.
    */
   epicTimers(): { kind: Epic; left: number | null }[] {
     const out: { kind: Epic; left: number | null }[] = [];
@@ -124,67 +92,32 @@ export class ObjectiveTracker {
 
   /** Feed every snapshot (several per frame are possible; events must not be skipped). */
   ingest(s: Snapshot, unit: (eid: number) => Unit | undefined = () => undefined): void {
-    this.snap = s as SnapExt;
+    this.snap = s;
     this.tick = s.tick;
     const evTick = s.tick - 1;
     for (const ev of s.events) {
-      if (ev.e !== 'death') continue;
-      if (ev.kind === Kind.Champion && ev.team <= 1 && ev.champ) {
-        const key = `${ev.team}:${ev.champ}`;
-        const row = s.players.find((p) => p.team === ev.team && p.champ === ev.champ);
-        if (row) this.respawnAt.set(key, evTick + deathTimerTicks(row.level, evTick));
-        this.schleierHolders[ev.team as 0 | 1]?.delete(key);
-      } else if (ev.kind === Kind.Inhibitor && ev.team <= 1) {
-        this.inhibs.push({ team: ev.team, x: ev.x, y: ev.y, at: evTick + INHIB_RESPAWN });
-      } else if (ev.kind === Kind.Monster) {
-        const u = unit(ev.eid);
-        const which = epicOf(ev, u?.radius, u?.variant, evTick / TICK_HZ);
-        if (which) this.noteEpicDeath(which, evTick);
-        const team = ev.killerTeam;
-        // the sim grants objective rewards only to champion kills (jungle.ts onMonsterDeath)
-        if (!which || (team !== 0 && team !== 1) || ev.killerKind !== Kind.Champion) continue;
-        if (which === 'leviathan') this.leviathan[team] = Math.min(LEVIATHAN_MAX_STACKS, this.leviathan[team] + 1);
-        else if (which !== 'kesselbrut') {
-          this.schleierUntil[team] = evTick + SCHLEIER_BUFF_TICKS;
-          this.schleierHolders[team] = new Set(s.players.filter((p) => p.team === team && !p.dead).map((p) => `${p.team}:${p.champ}`));
-        }
-      }
-    }
-    // respawned: the row says alive (also covers sandbox revives and missed events)
-    for (const p of s.players) if (!p.dead) this.respawnAt.delete(`${p.team}:${p.champ}`);
-    // an inhibitor stands again (structures are always in the snapshot) or its timer ran out
-    for (let i = this.inhibs.length - 1; i >= 0; i--) {
-      const d = this.inhibs[i]!;
-      const back = s.entities.some((e) => e.kind === Kind.Inhibitor && e.alive && (e.x - d.x) ** 2 + (e.y - d.y) ** 2 < SAME_SPOT2);
-      if (back || s.tick >= d.at) this.inhibs.splice(i, 1);
+      if (ev.e !== 'death' || ev.kind !== Kind.Monster) continue;
+      const u = unit(ev.eid);
+      const which = epicOf(ev, u?.radius, u?.variant, evTick / TICK_HZ);
+      if (which) this.noteEpicDeath(which, evTick);
     }
   }
 
-  /** Seconds until a dead champion respawns (sim field first); null = alive or unknown. */
+  /** Seconds until a dead champion respawns (ScoreRow.respawnIn, public); null = alive or unknown. */
   respawnIn(row: ScoreRow): number | null {
-    if (!row.dead) return null;
-    const sim = (row as RowExt).respawnIn;
-    if (sim !== undefined) return sim;
-    const at = this.respawnAt.get(`${row.team}:${row.champ}`);
-    return at === undefined ? null : Math.max(0, (at - this.tick) / TICK_HZ);
+    return row.dead ? (row.respawnIn ?? null) : null;
   }
 
-  /** Objective state of one team (sim fields first). */
+  /** Objective state of one team (Snapshot.objectives; zeros before the first snapshot / for spectators). */
   team(team: 0 | 1): TeamObjectives {
     const o = this.snap?.objectives;
-    const lev = o?.leviathan?.[team] ?? this.leviathan[team];
-    // both teams are public (Snapshot.kesselbrutTeams, absent while both are 0)
-    const kessel = o?.kesselbrut?.[team] ?? this.snap?.kesselbrutTeams?.[team] ?? 0;
-    const schleierDerived = this.schleierHolders[team].size > 0 ? Math.max(0, (this.schleierUntil[team] - this.tick) / TICK_HZ) : 0;
-    const inhibRespawn = o?.inhibs
-      ? o.inhibs.filter((x) => x.team === team).map((x) => x.left)
-      : this.inhibs.filter((x) => x.team === team).map((x) => Math.max(0, (x.at - this.tick) / TICK_HZ));
+    const lev = o?.leviathan[team] ?? 0;
     return {
       leviathan: lev,
       soul: lev >= LEVIATHAN_MAX_STACKS,
-      kesselbrut: kessel,
-      schleierLeft: o?.schleierLeft?.[team] ?? schleierDerived,
-      inhibRespawn: inhibRespawn.sort((a, b) => a - b),
+      kesselbrut: o?.kesselbrut[team] ?? 0,
+      schleierLeft: o?.schleierLeft[team] ?? 0,
+      inhibRespawn: (o?.inhibs ?? []).filter((x) => x.team === team).map((x) => x.left).sort((a, b) => a - b),
     };
   }
 

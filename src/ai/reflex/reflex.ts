@@ -132,7 +132,9 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
       const start = Math.max(own.ready, T + 1, Math.ceil(a + margin(a, b) - w.lead));
       p.window = { a: Math.round(a), b: b === Infinity ? -1 : Math.round(b) };
       if (start + w.lead >= b) {
-        cancel(p, w.walk > 0 ? 'out_of_range' : 'prediction_drift');
+        // out_of_range only when the walk is what makes the window unreachable (standing in reach it would fit)
+        const noWalk = Math.max(own.ready, T + 1, Math.ceil(a + margin(a, b) - (w.lead - w.walk))) + w.lead - w.walk < b;
+        cancel(p, w.walk > 0 && noWalk ? 'out_of_range' : 'prediction_drift');
         continue;
       }
       p.executeAtTick = start - 1;

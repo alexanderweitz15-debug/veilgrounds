@@ -224,12 +224,14 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
   }
 
   // ---- stand point (every tick)
-  const stand = standPoint(v, ctx, intent, farmPlan, byId);
-  st.stand = stand;
+  // stand point: computed on first use in this tick (most wind-up ticks need none)
+  let standAt: { x: number; y: number } | null = null;
+  const standNow = (): { x: number; y: number } => (standAt ??= st.stand = standPoint(v, ctx, intent, farmPlan, byId));
 
   // ---- 5a. orbwalk: a move after the hit point when the stand point is away (kiting chance + rank timing jitter)
   if (v.self.atkPhase === 1 && v.self.atkStart !== undefined && v.self.atkEnd !== undefined && st.orbHandled !== v.self.atkStart) {
     st.orbHandled = v.self.atkStart;
+    const stand = standNow();
     if (dst(v.self, stand) > P.hyst && rng.chance(P.orbwalk)) {
       const off = ORBWALK.marginMs + rng.normal() * P.jitterMs;
       // the hit fires in the step after atkEnd's snapshot: a move issued at atkEnd + 1 or later keeps the auto
@@ -271,6 +273,7 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
     // hold the timer for the next last hit (or nothing to hit): no auto-repeat on the old target
     st.filler = -1;
     if (v.self.atkTarget >= 0 && v.self.atkTarget !== farmPlan?.targetId) {
+      const stand = standNow();
       const far = dst(v.self, stand) > P.hyst;
       const p = clearOfStructures(v, stand);
       out.push(far ? { cmd: { t: 'move', x: p.x, y: p.y } } : { cmd: { t: 'stop' } });
@@ -282,8 +285,12 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
 
   // ---- 5b. stand point move (spatial hysteresis only)
   if (st.filler >= 0 && v.self.atkTarget === st.filler) return out;
+  const stand = standNow();
   const d = dst(v.self, stand);
-  if (d > P.hyst && !(v.self.moving && st.standMove && dst(st.standMove, stand) < P.hyst / 2)) {
+  // hard rule §4.4: the next planned last hit must be reachable without a walk, hysteresis or not
+  const pw = farmPlan ? byId.get(farmPlan.targetId) : undefined;
+  const mustMove = !!pw && pw.walk > 0 && d > 30;
+  if ((d > P.hyst || mustMove) && !(v.self.moving && st.standMove && dst(st.standMove, stand) < Math.min(P.hyst / 2, mustMove ? 40 : Infinity))) {
     const p = clearOfStructures(v, stand);
     out.push({ cmd: { t: 'move', x: p.x, y: p.y } });
     st.standMove = p;
@@ -377,6 +384,7 @@ function untankedMinions(v: View): View['enemyMinions'] {
 function markCast(ctx: BotStatic, mem: BotMemory, a: BotAction, T: number): void {
   if (a.cmd.t !== 'cast') return;
   const ab = ctx.champ.abilities[a.cmd.slot];
+  if (ab.movesWhileCasting && !ab.flags?.includes('channel')) return; // B2: the champion keeps moving
   mem.busyFrom = T;
   mem.busySlot = a.cmd.slot;
   mem.busyUntil = T + Math.ceil(ab.castTime * 30) + 1;

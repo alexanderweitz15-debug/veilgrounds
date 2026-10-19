@@ -153,7 +153,7 @@ All A2 hooks keep flag-off behaviour bit-identical: every changed line is behind
 | A2-3 | 2026-10-16 | src/ai/bot/brain.ts `retreat` | `const goHome = !utilityOn(ctx) && (v.hpPct < lowHp \|\| (mem.mode === 'retreat' && v.hpPct < 0.4) \|\| mem.mode === 'home');` and `if (mem.mode === 'retreat' \|\| (mem.mode === 'home' && !utilityOn(ctx))) mem.mode = 'lane';` | §4.6 "retreat führt nicht mehr automatisch heim": with the flag the flee part stays (survive), the walk home becomes the recall candidate (`recallValue`: stay-death > 0.3 or an item). Measured (Diamond, 8 min, flag on, seed 1): 29 of 34 laner recalls came from this branch ("recall / low hp"), so test 8 cannot hold until it is gated. | approved by the lead 19 Oct, applied on brain/a2-utility (flag-off hash seed 1 / 4 min a5913c9c = main 7afff90) |
 | A2-4 | 2026-10-16 | docs/agents/plan-api.md / src/ai/plan.ts (A1) | Second intent kind for reflex filling during a trade disengage (§6.1): `{ kind: 'disengage'; lane: LaneName; from: number /* enemy eid */; back: Pt /* own stand point side */; until: number; harass: boolean }`. Reflex: orbwalk toward `back`, fill free attack periods with autos on minions in reach (or the champion when `harass`), last-hit plans as in laneFarm. A2's trade intent sets it when a trade ends (`endTrade`) for `disengageUntil`. | §6.1 "nach dem Abbruch Disengage per Orbwalk zum Stehpunkt; währenddessen läuft der Angriffs-Scheduler weiter". | proposed (A1 accepted the idea in review-2026-10-16) |
 | A2-5 | 2026-10-16 | A3: profiles + playstyleAxes.json | A2 reads `RankBehavior.utilityNoisePct` (A3-1) and the knobs `utilFarm`, `utilHarass`, `utilTrade`, `utilPush`, `utilRoam`, `utilRecall`, `utilObjective`, `utilVision`, `utilGroup`, `utilCatchLane` (A3-2) when present; fallbacks until merged: `exchangeNoise(skill)` (same numbers) and the axis mappings in values.json `style`. Logged under node `intent` (A3-10, `VALUES.selection.logNode`). | No new shared change; listed so the merge order is clear. | info |
-## 2026-10-16 · C · src/sim/snapshot.ts · public objective + respawn fields (C2) · merged by B on sim/b-mechanics 2026-10-19 (objectives {leviathan, kesselbrut, schleierLeft, inhibs}, ScoreRow.respawnIn, ScoreRow.summonerCds; visionScore/champDamage NOT done: no sim source yet; tests/objectives.test.ts fixture got the two new required fields)
+## 2026-10-16 · C · src/sim/snapshot.ts · public objective + respawn fields (C2) · merged by B on sim/b-mechanics 2026-10-19 (objectives {leviathan, kesselbrut, schleierLeft, inhibs}, ScoreRow.respawnIn, ScoreRow.summonerCds; visionScore (both teams, approximation: ward-minutes + kills + 0.5 x reveals) and champDamage (own team) added 2026-10-19; tests/objectives.test.ts fixture got the two new required fields)
 
 Affected: B (owner, B3/B6 add the same kind of data — please use these names or tell C yours), A1–A3 (bots may read
 the same public fields; nothing hidden is added). **Nothing blocks:** C2 already works without these fields through a
@@ -343,3 +343,19 @@ Affects: C (src/ui/trainerMenu.ts, src/i18n), whoever owns src/main.ts (lead). D
   re-acquisitions (target died) use the champion again.
 - **For C:** settings toggle ("Angriffsbewegung: Ziel am Cursor" / "Attack move: target nearest to cursor"),
   `src/input` sends `cursor: true` when it is on. Bots are unaffected (they never set it).
+
+## 2026-10-19 · Agent B · B7 load time: proposal for D (src/render) + lead (build), not implemented by B
+
+AGENTS-PLAN B7 is listed under B, but every file it touches is D's (src/render/sheets.ts, champions/atlas.ts,
+spriteWorker.ts) or the lead's (build scripts / package.json). B did not edit them. Proposal (meets "< 5 s with a
+warm cache" without a Node canvas dependency):
+1. Persistent cell cache in the browser: after a cell is baked (spriteWorker result `bmp`), store it as PNG blob in
+   Cache Storage (`caches.open('vg-atlas-v<ATLAS_VERSION>')`, key `/<id>/<master>/<frame>/<cell>`), done in the worker
+   via `OffscreenCanvas.convertToBlob`. `buildChampionAtlasAsync` first asks the cache per champion; hits are decoded
+   with `createImageBitmap(blob)` (worker, parallel) and blitted, misses are baked as today. Cache per champion,
+   not per match id set (sheets.ts caches only the last id set in memory today).
+2. `ATLAS_VERSION` = hash of src/render/champions/** at build time (Vite `define`), so art changes invalidate.
+3. Optional later: a `tools/bakeSprites.ts` Playwright step that loads the dev build, bakes all 26 + minions +
+   monsters and writes PNGs to `public/atlas/` (true pre-baked atlases, cold cache fast too). Needs the lead (CI).
+4. Main menu first frame: a static CSS gradient background on the menu root until menuScene's first render.
+Measure: console lines `champion atlas: ... in N ms` (sheets.ts) cold vs warm, 10 runs, under the usual load.

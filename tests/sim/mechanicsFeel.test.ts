@@ -9,6 +9,7 @@ import { levelAbility } from '../../src/sim/systems/abilities';
 import { championData } from '../../src/sim/champions';
 import { spawnDummy } from '../../src/sim/systems/champions';
 import { buildSnapshot } from '../../src/sim/snapshot';
+import { inventory } from '../../src/sim/items/inventory';
 import { CX, CY, makeSim, place } from '../combat-helpers';
 
 const player = (champion: string): PlayerSetup => ({ slot: 0, team: 0, champion, role: 'top', summoners: ['sprung', 'heilen'], isHuman: true });
@@ -78,6 +79,19 @@ describe('B5 mechanic feel (sim)', () => {
     };
     expect(pick(false)).toBe(0);
     expect(pick(true)).toBe(1);
+  });
+
+  it('failed item actives emit castFail with item: true (cooldown / target)', () => {
+    const sim = makeSim({ players: [player('mira')] });
+    const m = sim.slots[0]!;
+    place(sim, m, CX, CY);
+    step(sim);
+    inventory(sim, m)[0] = 'siegelward';
+    inventory(sim, m)[1] = 'siegelward';
+    addBuff(sim, m, { kind: 'stun', id: 'test', src: -1, ticks: 30 });
+    step(sim, [{ slot: 0, cmd: { t: 'item', slot: 1, x: CX + 200, y: CY } }]);
+    expect(sim.events.filter((e) => e.e === 'castFail')).toEqual([{ e: 'castFail', src: m, slot: 1, reason: 'cc', item: true }]);
+    expect(inventory(sim, m)[1]).toBe('siegelward'); // not consumed
   });
 
   it('hit flash: champion hits always; DoT ticks and other sources at most every 8 ticks per target', () => {

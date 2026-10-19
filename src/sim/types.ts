@@ -145,7 +145,8 @@ export type SimEvent =
    * A cast/summoner command that could not be executed (render: message + error sound). Only delivered to the
    * caster's own view. summoner: slot is the summoner slot 0/1 (D/F) instead of the ability slot.
    */
-  | { e: 'castFail'; src: number; slot: number; reason: CastFailReason; summoner?: true }
+  /** item: slot is an inventory slot (item active / consumable that could not be used). */
+  | { e: 'castFail'; src: number; slot: number; reason: CastFailReason; summoner?: true; item?: true }
   | { e: 'plate'; tower: number; team: number }
   | { e: 'wave'; lane: number; team: number; index: number }
   | { e: 'respawn'; eid: number }

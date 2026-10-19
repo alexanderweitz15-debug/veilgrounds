@@ -17,6 +17,9 @@ when `onRetry` is given.
 
 ## 2026-10-16 · C · src/sim (items) · no cast-fail message for item actives (FEATURE-GAP 1.15) · low · B
 
+Fixed by B on sim/b-mechanics (2026-10-19): `useItem` emits `{ e: 'castFail', src, slot, reason, item: true }`
+(reason cooldown / cc / target; slot = inventory slot).
+
 The sim emits `castFail` only for abilities; item actives that fail (cooldown, no target, out of range) are silent.
 The HUD already shows any `castFail` reason it receives (`hud.ts onEvent`), so an event with the same shape for item
 slots is enough.

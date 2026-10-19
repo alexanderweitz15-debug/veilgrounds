@@ -16,6 +16,7 @@ import { drawWolf, HARK } from './wolf';
 import { MINION_DRAWERS, MINION_KITS } from './minions';
 import { MONSTER_DRAWERS } from './monsters';
 import { ANIMS, DIRS, type Anim, type Dir, type Kit } from './types';
+import { STRIP_COLS, stripKey, stripPos } from '../atlasStrip';
 
 /** Canvas in the page or (in a Worker) an OffscreenCanvas. */
 export type AnyCanvas = HTMLCanvasElement | OffscreenCanvas;
@@ -107,7 +108,19 @@ export interface AtlasOptions {
   worker?: () => Worker;
   /** max pool size (default 6, capped at cores - 1) */
   workers?: number;
+  /** B7: persistent per-id cell cache (src/render/sheets.ts, Cache Storage); hits skip baking that id. */
+  cache?: AtlasCellCache;
 }
+
+/**
+ * Persistent cache of baked cells per sprite id. A strip holds the id's atlas cells (incl. 1 px gutter) in job order,
+ * STRIP_COLS per row; `top` = head-height fraction (AtlasJob isTopJob). Keys come from `stripKey`.
+ */
+export interface AtlasCellCache {
+  get(key: string): Promise<{ bmp: ImageBitmap; top: number } | null>;
+  put(key: string, strip: AnyCanvas, top: number): void;
+}
+export { STRIP_COLS, stripKey, stripPos } from '../atlasStrip';
 
 export const DIR_YAW: Record<Dir, number> = {
   S: 0,
@@ -714,17 +727,20 @@ async function bakeInWorkers(
   ctx: CanvasRenderingContext2D,
   frames: ChampionAtlas['frames'],
   top: Record<string, number>,
+  jobs: readonly AtlasJob[],
+  done0: number,
 ): Promise<boolean> {
   const make = opts.worker;
   if (!make || typeof OffscreenCanvas === 'undefined' || typeof Worker === 'undefined') return false;
-  const n = Math.max(1, Math.min(opts.workers ?? 6, (navigator.hardwareConcurrency || 4) - 1, Math.ceil(p.jobs.length / 30)));
+  const n = Math.max(1, Math.min(opts.workers ?? 6, (navigator.hardwareConcurrency || 4) - 1, Math.ceil(jobs.length / 30)));
   const total = p.jobs.length;
-  let done = 0;
+  let done = done0;
   const pool: Worker[] = [];
   try {
     await Promise.all(
       Array.from({ length: n }, (_, wi) => {
-        const slice = p.jobs.filter((_, j) => j % n === wi);
+        const slice = jobs.filter((_, j) => j % n === wi);
+        if (!slice.length) return Promise.resolve();
         return new Promise<void>((resolve, reject) => {
           const w = make();
           pool.push(w);
@@ -764,15 +780,69 @@ export async function buildChampionAtlasAsync(ids: string[], opts: AtlasOptions 
   const frames = emptyFrames(p.list);
   const top: Record<string, number> = {};
   const master = opts.master ?? 256;
-  if (await bakeInWorkers(p, opts, master, ctx, frames, top)) return result(p, canvas, frames, top);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (let i = 0; i < p.jobs.length; i++) {
-    place(ctx, p, p.jobs[i]!, master, frames, top);
-    if (i % 40 === 39) {
-      opts.onProgress?.(i + 1, p.jobs.length);
-      await yieldToLoop();
+  const mirror = opts.mirror ?? true;
+  // B7: ids found in the persistent cache are blitted from their strip, only the rest is baked
+  const cached = new Set<string>();
+  // the key uses the requested cell size: a crowded atlas (smaller p.frame) scales the cached cells down
+  const want = opts.frame ?? 128;
+  if (opts.cache) {
+    const hits = await Promise.all(p.list.map((id) => opts.cache!.get(stripKey(id, master, want, mirror)).catch(() => null)));
+    p.list.forEach((id, i) => {
+      const h = hits[i];
+      if (!h) return;
+      const jobs = p.jobs.filter((j) => j.id === id);
+      const src = Math.round(h.bmp.width / Math.min(jobs.length, STRIP_COLS));
+      const need = stripPos(jobs.length - 1, src);
+      if (src < p.frame || h.bmp.height < need.y + src) return h.bmp.close(); // stale layout
+      jobs.forEach((job, k) => {
+        const s = stripPos(k, src);
+        const { x, y } = record(p, job, frames);
+        // content only (1 px gutter on both sides stays transparent)
+        ctx.drawImage(h.bmp, s.x + 1, s.y + 1, src - 2, src - 2, x + 1, y + 1, p.frame - 2, p.frame - 2);
+      });
+      h.bmp.close();
+      top[id] = h.top;
+      cached.add(id);
+    });
+  }
+  const todo = p.jobs.filter((j) => !cached.has(j.id));
+  const done0 = p.jobs.length - todo.length;
+  opts.onProgress?.(done0, p.jobs.length);
+  if (todo.length && !(await bakeInWorkers(p, opts, master, ctx, frames, top, todo, done0))) {
+    for (const job of todo) ctx.clearRect(...cellRect(p, job));
+    for (let i = 0; i < todo.length; i++) {
+      place(ctx, p, todo[i]!, master, frames, top);
+      if (i % 40 === 39) {
+        opts.onProgress?.(done0 + i + 1, p.jobs.length);
+        await yieldToLoop();
+      }
     }
   }
   opts.onProgress?.(p.jobs.length, p.jobs.length);
+  if (opts.cache && todo.length) storeStrips(p, canvas, top, todo, opts.cache, master, want, mirror);
   return result(p, canvas, frames, top);
+}
+
+/** Atlas rectangle of a job's cell. */
+function cellRect(p: Plan, job: AtlasJob): [number, number, number, number] {
+  return [(job.cell % p.perRow) * p.frame, Math.floor(job.cell / p.perRow) * p.frame, p.frame, p.frame];
+}
+
+/** Copies every freshly baked id's cells into a strip and hands it to the cache (after the atlas is returned). */
+function storeStrips(p: Plan, canvas: AnyCanvas, top: Record<string, number>, baked: readonly AtlasJob[], cache: AtlasCellCache, master: number, want: number, mirror: boolean): void {
+  const ids = [...new Set(baked.map((j) => j.id))];
+  setTimeout(() => {
+    for (const id of ids) {
+      const jobs = p.jobs.filter((j) => j.id === id);
+      const rows = Math.ceil(jobs.length / STRIP_COLS);
+      const strip = newCanvas(Math.min(jobs.length, STRIP_COLS) * p.frame, rows * p.frame);
+      const sctx = ctx2d(strip);
+      jobs.forEach((job, k) => {
+        const s = stripPos(k, p.frame);
+        const [x, y, w, h] = cellRect(p, job);
+        sctx.drawImage(canvas, x, y, w, h, s.x, s.y, w, h);
+      });
+      cache.put(stripKey(id, master, want, mirror), strip, top[id] ?? 0.2);
+    }
+  }, 0);
 }

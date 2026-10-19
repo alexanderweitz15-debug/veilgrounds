@@ -63,6 +63,16 @@ describe('CC glyphs', () => {
   });
 });
 
+describe('B7 atlas strip cache layout', () => {
+  it('strip keys separate resolution / mirror, cells run STRIP_COLS per row', async () => {
+    const { STRIP_COLS, stripKey, stripPos } = await import('../src/render/atlasStrip');
+    expect(stripKey('mira', 192, 128, true)).not.toBe(stripKey('mira', 192, 112, true));
+    expect(stripKey('mira', 192, 128, true)).not.toBe(stripKey('mira', 192, 128, false));
+    expect(stripPos(0, 128)).toEqual({ x: 0, y: 0 });
+    expect(stripPos(STRIP_COLS + 2, 100)).toEqual({ x: 200, y: 100 });
+  });
+});
+
 describe('lift', () => {
   it('knock-up and dash arcs are 0 at both ends and peak in the middle', () => {
     expect(airborneLift(0)).toBe(0);

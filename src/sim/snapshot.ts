@@ -12,7 +12,8 @@ import { itemCooldownHud } from './items/itemHooks';
 import { champions, kda } from './systems/economy';
 import { airborneProgress, buffs, isRevealed } from './buffs';
 import { groundObjects, petOwner, petTag } from './summons';
-import { isStealthUnit, stealthPointSeen, trinketHud, trueSight, trueSightAreas, wardTypeOf, type TrinketId, type WardType } from './wards';
+import { isStealthUnit, stealthPointSeen, trinketHud, trueSight, trueSightAreas, visionScore, wardTypeOf, type TrinketId, type WardType } from './wards';
+import { champDamage } from './damage';
 import { ccLevel, ccState } from './buffs';
 import { attackStartTick } from './systems/attack';
 import { projectileSource } from './systems/projectiles';
@@ -280,6 +281,10 @@ export interface ScoreRow {
   respawnIn?: number;
   /** Own team only: summoner spell cooldowns (seconds), same order as PlayerSetup.summoners. */
   summonerCds?: { left: number; total: number }[];
+  /** Vision score (both teams, public like the LoL scoreboard). */
+  visionScore?: number;
+  /** Own team only: damage dealt to enemy champions. */
+  champDamage?: number;
 }
 
 function scoreRows(sim: Sim, team: number): ScoreRow[] {
@@ -298,7 +303,8 @@ function scoreRows(sim: Sim, team: number): ScoreRow[] {
       cs: Champ.cs[e]!,
       dead: Unit.alive[e] !== 1,
       ...(Unit.alive[e] !== 1 && Champ.respawnAt[e]! > 0 ? { respawnIn: Math.max(0, (Champ.respawnAt[e]! - sim.tick) / 30) } : {}),
-      ...(own ? { gold: Math.floor(Champ.gold[e]!), items: [...inventory(sim, e)], summonerCds: abilityHud(sim, e).slice(4).map((h) => ({ left: h.cdLeft, total: h.cdTotal })) } : seenRow(sim, team, Unit.slot[e]!)),
+      ...(own ? { gold: Math.floor(Champ.gold[e]!), items: [...inventory(sim, e)], summonerCds: abilityHud(sim, e).slice(4).map((h) => ({ left: h.cdLeft, total: h.cdTotal })), champDamage: Math.round(champDamage(sim, e)) } : seenRow(sim, team, Unit.slot[e]!)),
+      visionScore: visionScore(sim, Unit.slot[e]!),
       itemValue: itemValue(sim, e),
     };
   });

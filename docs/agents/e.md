@@ -40,6 +40,9 @@ names or branches remain.
   `tests/botStyle.test.ts` spec test 9 throws `TypeError ... reading 'utility'` in `src/ai/utility/flag.ts:26`
   (TeamAI.evaluate called without a ctx; brom-only test, no Sev involved; src/ai and that test are identical to main
   -> brain team). brainReflex passed this time.
+- Second merge of origin/main 04a1eb5 (contains the utilityOn fix 941993f; snapshot import conflict resolved): tsc clean;
+  sev, snapshot, championData, replay, abilityMotifs, items, botParams, sideMirror, combos, botStyle, castMovement,
+  telegraph, summonersWards all green (397 tests).
 - `npx tsc --noEmit`: clean.
 
 ### Screenshots (1280x720, `npx vite build` + `vite preview --port 5392`, headless Edge, no console errors)

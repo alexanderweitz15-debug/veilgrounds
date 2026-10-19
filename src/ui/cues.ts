@@ -47,7 +47,8 @@ export class VisualCues {
         this.caption(t(ev.team === state.myTeam ? 'cue.plateLost' : 'cue.plateWon'), now);
         return;
       case 'death':
-        if (ev.kind === Kind.Champion) {
+        // own death: the respawn overlay + death recap already show it (no caption over the recap)
+        if (ev.kind === Kind.Champion && ev.eid !== state.snap?.me?.eid) {
           this.caption(t(ev.team === state.myTeam ? 'cue.allyDied' : 'cue.enemyDied', { name: champName(deathVictimChamp(ev, state)) }), now);
         }
         return;
@@ -64,6 +65,8 @@ export class VisualCues {
   draw(ctx: CanvasRenderingContext2D, state: ClientState, world: World, w: number, h: number, now: number): void {
     if (!settings.visualCues) return;
     const ui = uiScaleFactor();
+    const dead = !!state.snap?.me?.dead;
+    if (dead) this.towerUntil = 0; // a dead champion is not under tower fire (the warning sat on the death title)
     // tower fire: red vignette + label
     if (now < this.towerUntil) {
       const a = Math.min(1, (this.towerUntil - now) / 400) * (settings.reduceMotion ? 0.7 : 0.55 + 0.25 * Math.sin(now / 90));
@@ -91,7 +94,9 @@ export class VisualCues {
     }
     // captions, bottom centre above the ability bar
     this.captions = this.captions.filter((c) => now - c.at < CAPTION_MS);
-    let y = h - 175 * ui;
+    // while dead the death recap sits there: stack the captions above it
+    const recap = dead ? document.querySelector('.death-recap')?.getBoundingClientRect() : undefined;
+    let y = recap && recap.height > 0 ? recap.top - 14 * ui : h - 175 * ui;
     for (let i = this.captions.length - 1; i >= 0; i--) {
       const c = this.captions[i]!;
       const k = (now - c.at) / CAPTION_MS;

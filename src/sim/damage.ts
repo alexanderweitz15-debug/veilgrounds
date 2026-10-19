@@ -36,12 +36,19 @@ interface CombatLog {
   depth: number;
   /** Last hit-flash tick per target eid. */
   flash: Int32Array;
+  /** Damage dealt to enemy champions per champion eid (scoreboard). */
+  champDmg: Map<number, number>;
 }
 
 function combatLog(sim: Sim): CombatLog {
   let s = sim.state.damage as CombatLog | undefined;
-  if (!s) sim.state.damage = s = { dealt: new Map(), taken: new Map(), pair: new Map(), depth: 0, flash: new Int32Array(MAX_ENT).fill(-1000) };
+  if (!s) sim.state.damage = s = { dealt: new Map(), taken: new Map(), pair: new Map(), depth: 0, flash: new Int32Array(MAX_ENT).fill(-1000), champDmg: new Map() };
   return s;
+}
+
+/** Damage a champion dealt to enemy champions so far (after mitigation). Read-only. */
+export function champDamage(sim: Sim, eid: number): number {
+  return (sim.state.damage as CombatLog | undefined)?.champDmg.get(eid) ?? 0;
 }
 
 /** Tick `src` last damaged `dst` (both champions), or -1e9. */
@@ -122,6 +129,7 @@ export function dealDamage(sim: Sim, src: number, dst: number, amount: number, t
         let m = log.pair.get(dst);
         if (!m) log.pair.set(dst, (m = new Map()));
         m.set(src, sim.tick);
+        log.champDmg.set(src, (log.champDmg.get(src) ?? 0) + dmg);
       }
     }
     const flash = (srcChamp && !opts.dot) || sim.tick - log.flash[dst]! >= FLASH_MIN_TICKS;

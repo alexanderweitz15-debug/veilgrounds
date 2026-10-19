@@ -37,6 +37,8 @@ export class InputController {
   mouseX = -1;
   mouseY = -1;
   hover: SnapEntity | null = null;
+  /** Own champion was dead last frame (respawn camera snap). */
+  private wasDead = false;
   showRange = false;
   /** Ability key held with "cast with indicator": aim preview until the key is released. */
   aiming: { slot: 0 | 1 | 2 | 3; code: string; /** Normal cast: stays until a left click casts (right click cancels). */ click?: boolean } | null = null;
@@ -373,6 +375,10 @@ export class InputController {
     if (this.rightHeld && !state.paused && now - this.lastHoldMove > HOLD_MOVE_MS) this.rightClick(now, false);
 
     const me = state.me();
+    // LoL: on respawn the camera jumps to the champion in the fountain (it stayed at the death spot)
+    const dead = !!state.snap?.me?.dead;
+    if (this.wasDead && !dead && me) rig.focus(me.x, me.y);
+    this.wasDead = dead;
     if (this.centerHeld) this.cameraPeekUntil = 0;
     // minimap click/hold peeks at a spot even with the camera locked (like LoL); the lock resumes afterwards
     if (me && (settings.cameraLocked || this.centerHeld) && now >= this.cameraPeekUntil) {

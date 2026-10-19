@@ -11,7 +11,19 @@ Branch `ui/c-features` (base `0bbc3d0`). Spec: docs/AGENTS-PLAN.md §5 (C1-C7). 
 | C7 HP-bar tick style + skillshot outline setting | `da0ec05` | src/settings.ts additive (logged); request to D in shared-changes.md |
 | post-game axis labels, screenshots, docs | next commits | – |
 
+## Block 4 (2026-10-20): supervisor browser-check fixes (`6348bef`)
+
+| Finding (docs/ist/s-check-03-death.jpg) | Fix | Proof |
+|---|---|---|
+| "Unter Turmbeschuss!" drawn while dead, over the death title | cues.ts: no tower warning while the own champion is dead | docs/ist/c3-dead-fix-after.jpg |
+| caption "[X ist gefallen]" across the recap's last row | no caption for the own death (overlay + recap show it); while dead other captions stack above the recap | c3-dead-fix-after.jpg |
+| camera stays at the death spot after respawn | controller.ts: on dead -> alive the camera focuses the champion (LoL) | headless check: camera moved to (7500, 7500) while dead, after respawn the footprint centre is back at the fountain (900, 1155 for the champion at 900, 900, same offset as a locked camera); c3-respawn-camera-after.jpg |
+
 ## Block 3 (2026-10-20): open items from the lead's list
+
+Test status (full suite on `12b96ce`): 69 files, 874 passed, 2 skipped, 1 todo, 1 failed - again only A1's
+wall-clock gate tests/brainReflex.test.ts "reflex logic < 0.05 ms per bot and tick" (CPU shared by several agents;
+src/ai not touched by C). `tsc --noEmit` exit 0, `vite build` exit 0, no console errors in any capture.
 
 | Item | What | Proof |
 |---|---|---|

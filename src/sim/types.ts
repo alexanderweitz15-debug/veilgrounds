@@ -131,6 +131,8 @@ export type SimEvent =
       killerTeam?: number;
       /** Killer champion id (champion kills only). */
       killerChamp?: string;
+      /** Epic objective monster (B6): the kill is announced to both teams. */
+      epic?: true;
     }
   | { e: 'gold'; eid: number; amount: number; x: number; y: number }
   | { e: 'lastHitMiss'; eid: number; target: number; earlyHp?: number; lateMs?: number }

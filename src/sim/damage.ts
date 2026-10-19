@@ -8,7 +8,7 @@ import { Kind, isStructure, sec, type DamageType } from './types';
 import { onDeath } from './systems/economy';
 import { damageDealtMult, damageTakenMult, healMult, statMods } from './buffs';
 import { passiveHooksOf } from './champions';
-import { KESSELBRUT_STRUCT_PCT, kesselbrutStacks } from './systems/jungle';
+import { KESSELBRUT_STRUCT_PCT, isEpicMonster, kesselbrutStacks } from './systems/jungle';
 
 export interface DamageOpts {
   isAuto?: boolean;
@@ -163,6 +163,7 @@ export function kill(sim: Sim, victim: number, killer: number): void {
     ...(vChamp !== undefined ? { champ: vChamp } : {}),
     ...(killer >= 0 ? { killerKind: Unit.kind[killer]!, killerTeam: Unit.team[killer]! } : {}),
     ...(kChamp !== undefined ? { killerChamp: kChamp } : {}),
+    ...(Unit.kind[victim] === Kind.Monster && isEpicMonster(sim, victim) ? { epic: true as const } : {}),
   });
   onDeath(sim, victim, killer); // rewards, respawn timers, structure state (economy.ts)
   // hook events while the victim's position is still valid

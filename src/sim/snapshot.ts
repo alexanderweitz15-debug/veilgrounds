@@ -21,7 +21,7 @@ import { teleportLeft } from './summoners';
 import { trainerHud, type TrainerHud } from './trainer';
 import { seenItems } from './seenItems';
 import { sandboxFlags } from './trainer/sandbox';
-import { kesselbrutStacks, leviathanStacks } from './systems/jungle';
+import { isEpicMonster, kesselbrutStacks, leviathanStacks } from './systems/jungle';
 import { inhibitorTimers } from './systems/towers';
 
 export interface SnapEntity {
@@ -86,6 +86,8 @@ export interface SnapEntity {
   dash?: number;
   /** Knocked up (airborne CC): 0..1 of the arc. */
   air?: number;
+  /** Monster of an epic objective (Leviathan, Kesselbrut, Schleierwaechter), B6. */
+  epic?: true;
   /** Enemy unit under a reveal of this team (Mira W, Nyx seed / R, Tobin E, Spaehfrucht, Siegelward / Suchfeuer). */
   revealed?: true;
   /** Own unit currently revealed to the enemy team (LoL "revealed" indicator; own wards under enemy true sight). */
@@ -396,6 +398,7 @@ export function snapshotEntities(sim: Sim, team: number): SnapEntity[] {
       ...(k === Kind.Tower && sim.c.Tower.tier[e] === 0 ? { plates: sim.c.Tower.plates[e]! } : {}),
       ...revealFields(sim, e, team, alive),
       ...motionFields(sim, e, alive),
+      ...(k === Kind.Monster && isEpicMonster(sim, e) ? { epic: true as const } : {}),
       ...(Unit.variant[e] ? { variant: VARIANTS[Unit.variant[e]!] } : {}),
     });
   }
@@ -606,8 +609,9 @@ export function teamEvents(sim: Sim, team: number): { events: SimEvent[]; audio:
       case 'lastHitMiss':
         return Unit.team[ev.eid] === team;
       case 'death':
-        // camp kills stay in the fog (no free jungle timers); epic objectives (r >= 130) are announced like LoL
-        if ((ev.kind !== Kind.Monster && ev.kind !== Kind.Plant) || Unit.radius[ev.eid]! >= 130) return true;
+        // camp kills stay in the fog (no free jungle timers); epic objectives (B6 flag: Leviathan, Kesselbrut,
+        // Schleierwaechter) are announced like LoL
+        if ((ev.kind !== Kind.Monster && ev.kind !== Kind.Plant) || ev.epic) return true;
         return (ev.killer >= 0 && Unit.team[ev.killer] === team) || pointVisible(sim, team, ev.x, ev.y);
       default:
         return true;

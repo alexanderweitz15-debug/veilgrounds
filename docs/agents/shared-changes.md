@@ -250,3 +250,12 @@ file to `src/ui/settings.ts`. Until decided, C7 waits.
   turn smoothing (~80 ms) belongs to the render (D2 "Blickrichtung geglättet").
 - Dagny Q: castTime 0.2 -> 0; auto resets (flag `auto_reset`) now also end a running backswing, so the next auto starts
   the same tick.
+
+## 2026-10-19 · Agent B · B6 Kesselbrut as epic objective (additive) -> C: announce.ts, A2: team AI
+
+- `CampDef.epic` for Leviathan, Kesselbrut, Schleierwaechter (jungle.ts); `isEpicMonster(sim, eid)`.
+- Death events of epic monsters carry `epic: true` and reach both teams (teamEvents rule was `radius >= 130`, so
+  Kesselbrut kills now become public; Leviathan/Schleierwaechter unchanged). `SnapEntity.epic?: true` on those monsters.
+  Radius stays 70 (no gameplay change). Stacks of both teams: `Snapshot.objectives.kesselbrut` (C2 entry).
+- **For C:** `src/ui/announce.ts` assumed grub deaths stay in the fog; enemy grub kills now arrive as events.
+- **For A2:** objective logic can key on `e.epic` / `ev.epic` instead of radius.

@@ -36,6 +36,8 @@ export interface IntentData {
   /** Group: desire kind and whether the bot crashes the wave. */
   desire?: string;
   crash?: boolean;
+  /** Fight join by Teleport: spell slot and the own unit to land on. */
+  tp?: { slot: 0 | 1 | 2; id: number; x: number; y: number };
 }
 
 /** A scored candidate after style, hysteresis and noise. */

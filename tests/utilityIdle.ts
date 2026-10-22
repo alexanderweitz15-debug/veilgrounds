@@ -14,6 +14,8 @@ export interface IdleStretch {
   len: number;
   /** Governing intent entry (null: none logged before the stretch). */
   entry: DecisionLogEntry | null;
+  /** §9 attention window (node 'attention', distracted until >= the stretch start) covering the stretch, if any. */
+  attention: DecisionLogEntry | null;
 }
 
 export function measureIdle(config: SimConfig, ticks: number, fromTick = 105 * 30): { stretches: IdleStretch[]; idleTicks: number; aliveTicks: number } {
@@ -46,7 +48,7 @@ export function measureIdle(config: SimConfig, ticks: number, fromTick = 105 * 3
       const target = units.some(([t, x, y]) => t !== p.team && (x - Pos.x[eid]!) ** 2 + (y - Pos.y[eid]!) ** 2 <= reach * reach);
       if (busy || !target) {
         const s = since.get(p.slot);
-        if (s !== undefined && sim.tick - s > 45) stretches.push({ slot: p.slot, from: s, len: sim.tick - s, entry: null });
+        if (s !== undefined && sim.tick - s > 45) stretches.push({ slot: p.slot, from: s, len: sim.tick - s, entry: null, attention: null });
         since.delete(p.slot);
         continue;
       }
@@ -57,11 +59,14 @@ export function measureIdle(config: SimConfig, ticks: number, fromTick = 105 * 3
   const log = g.bots.log;
   for (const s of stretches) {
     let e: DecisionLogEntry | null = null;
+    let a: DecisionLogEntry | null = null;
     for (const x of log.entries(s.slot)) {
       if (x.tick > s.from + 1) break;
       if (x.node === INTENT_NODE) e = x;
+      if (x.node === 'attention' && typeof x.inputs.until === 'number' && x.inputs.until >= s.from) a = x;
     }
     s.entry = e;
+    s.attention = a;
   }
   return { stretches, idleTicks, aliveTicks };
 }

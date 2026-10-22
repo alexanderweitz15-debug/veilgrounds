@@ -96,7 +96,9 @@
     "manaLowFrac": 0.15,
     "monsterClearRange": 900,
     "homeRange": 3000,
-    "minionClearMargin": 40
+    "minionClearMargin": 40,
+    "shoveMaxS": 20,
+    "shoveGapTicks": 90
   },
 
   "selection": {

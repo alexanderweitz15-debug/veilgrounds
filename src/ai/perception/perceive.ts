@@ -14,7 +14,7 @@ import { Kind } from '../../sim/types';
 import type { SnapEntity, Snapshot } from '../../sim/snapshot';
 import type { AbilityData, ChampionData } from '../../sim/champions/schema';
 import { CHAMPION_DATA } from '../../sim/champions';
-import type { BotStatic } from '../bot/types';
+import type { BotMemory, BotStatic } from '../bot/types';
 import { sampleReactionMs } from '../profiles';
 import { dst } from '../bot/geo';
 import { atLeast, bySkill, cdTracking, junglerInputs } from './rankModel';
@@ -23,7 +23,8 @@ import { gankRisk, junglerPrior, riskSource, type JunglerEstimate } from './gank
 import { threatFn } from './threat';
 import { lanePos, waveStates } from './waves';
 import { newStyleObs, noteDamage } from './enemyStyle';
-import { maybeInject } from '../errors';
+import { maybeInject, rollErrorUntil } from '../errors';
+import { reactionPenaltyMs } from '../humanize/attention';
 import type { AudioCue, BotPerception, IncomingCast, PerceptionState, PingMem, TrackMem } from './types';
 
 export const NEAR_RANGE = 1400;
@@ -93,7 +94,7 @@ function newTrack(slot: number, champ: string, role: string, abilities: number):
 
 const LANE_ROLE: Record<LaneName, string[]> = { top: ['top'], mid: ['mid'], bot: ['adc', 'support'] };
 
-export function perceive(st: PerceptionState, snap: Snapshot, bot: BotStatic, params: BotParams, rng: Rng): BotPerception {
+export function perceive(st: PerceptionState, snap: Snapshot, bot: BotStatic, params: BotParams, rng: Rng, mem?: BotMemory): BotPerception {
   const tick = snap.tick;
   const map = bot.map;
   const team = bot.team as 0 | 1;
@@ -189,7 +190,8 @@ export function perceive(st: PerceptionState, snap: Snapshot, bot: BotStatic, pa
     const near = !!self && dst(self, e) <= NEAR_RANGE;
     let perceived: boolean;
     if (near) {
-      if (t.noticedFrom < 0) t.noticedFrom = tick + Math.round((sampleReactionMs(b, rng) * 30) / 1000);
+      // §9: +150 ms while distracted (mem only with the runner's new brain hooks; 0 without the attention model)
+      if (t.noticedFrom < 0) t.noticedFrom = tick + Math.round(((sampleReactionMs(b, rng) + (mem ? reactionPenaltyMs(mem, tick) : 0)) * 30) / 1000);
       perceived = tick >= t.noticedFrom;
     } else {
       t.noticedFrom = -1;
@@ -202,7 +204,7 @@ export function perceive(st: PerceptionState, snap: Snapshot, bot: BotStatic, pa
     // a new sighting episode (Silver's 8-15 s delay restarts) only after a gap longer than one glance interval
     // (min 5 s): re-glances at a far enemy or weaving in and out of near range continue the same episode
     const newEpisode = t.lastTick < 0 || tick - t.lastTick > Math.max(150, b.minimapIntervalS * 30 + 30);
-    updateTrack(t, e, tick, st, params, rng, hasFlash(e.slot), castSlotsSince.get(e.slot), allies, self);
+    updateTrack(t, e, tick, st, params, rng, hasFlash(e.slot), castSlotsSince.get(e.slot), allies, self, mem ? { mem, bot } : undefined);
     if (newEpisode) {
       const [lo, hi] = inputs.sightDelayS;
       t.usableFrom = hi > 0 ? tick + Math.round((lo + (hi - lo) * rng.next()) * 30) : tick;
@@ -444,7 +446,7 @@ function missingTarget(st: PerceptionState, ev: { x: number; y: number; target: 
   return best;
 }
 
-function updateTrack(t: TrackMem, e: SnapEntity, tick: number, st: PerceptionState, params: BotParams, rng: Rng, flash: boolean, castSlots: Set<number> | undefined, allies: SnapEntity[], self: SnapEntity | null): void {
+function updateTrack(t: TrackMem, e: SnapEntity, tick: number, st: PerceptionState, params: BotParams, rng: Rng, flash: boolean, castSlots: Set<number> | undefined, allies: SnapEntity[], self: SnapEntity | null, hk?: { mem: BotMemory; bot: BotStatic }): void {
   const c = champOf(t.champ);
   const ms = (c?.base.ms ?? 340) * MS_FACTOR;
   // blink detection: a jump longer than walking allows, without a cast of a dash/blink ability in between
@@ -465,7 +467,11 @@ function updateTrack(t: TrackMem, e: SnapEntity, tick: number, st: PerceptionSta
       if (target && dst(target, e) < dst(target, from)) o.flashOffensive++;
     }
     // no_flash_tracking: up to Emerald half of the seen Flashes are forgotten (K's error table)
-    if (cdTracking(params).flash && !maybeInject(params, 'no_flash_tracking', rng)) t.cds.flashReadyAt = tick + FLASH_CD_S * 30;
+    // (§9 new brain: the forgotten Flash is an error episode, errors.json durS; one draw either way)
+    if (cdTracking(params).flash) {
+      const forgot = hk ? rollErrorUntil(hk.mem, hk.bot, params, 'no_flash_tracking', tick, rng) >= 0 : !!maybeInject(params, 'no_flash_tracking', rng);
+      if (!forgot) t.cds.flashReadyAt = tick + FLASH_CD_S * 30;
+    }
   }
   if (t.prev && t.visibleNow) {
     const mx = e.x - t.prev.x;

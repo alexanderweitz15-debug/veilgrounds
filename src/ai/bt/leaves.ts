@@ -180,7 +180,8 @@ export function runTree(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng
   }
   const v = perceive(snap, ctx, mem, rng);
   if (!v) return [];
-  const pv = perceiveL(mem.ext.perception, snap, ctx, ctx.params, rng);
+  // mem only with the §9 attention model (new brain): reaction penalty + no_flash_tracking episode in perception
+  const pv = perceiveL(mem.ext.perception, snap, ctx, ctx.params, rng, attentionOn(mem) ? mem : undefined);
   attachTracks(v, pv.enemies);
   const n: NodeCtx = {
     snap,

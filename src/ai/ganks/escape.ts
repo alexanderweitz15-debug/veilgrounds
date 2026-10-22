@@ -21,7 +21,7 @@ import { Kind, type Command } from '../../sim/types';
 import type { SnapEntity } from '../../sim/snapshot';
 import type { ErrorId } from '../contract';
 import { dst } from '../bot/geo';
-import { maybeInject } from '../errors';
+import { rollErrorUntil } from '../errors';
 import { estimateExchange } from '../bt/deps';
 import { sampleReactionMs } from '../profiles';
 import { attentionAt, reactionPenaltyMs } from '../humanize/attention';
@@ -218,7 +218,7 @@ export function escape(n: NodeCtx): NodeResult {
     } else if (st.ccHit && (me.cc ?? 0) < 3 && !st.lateFlashRolled) {
       // Iron/Bronze: no wind-up reading; after eating the CC a late (often wrong) Flash
       st.lateFlashRolled = true;
-      err = maybeInject(n.p, 'flash_wrong_direction', n.rng);
+      err = rollErrorUntil(n.mem, n.ctx, n.p, 'flash_wrong_direction', tick, n.rng) >= 0 ? 'flash_wrong_direction' : undefined; // §9 episode with the new brain
       if (err) flashWhy = 'late flash after the CC';
     } else if (hp < 0.15) flashWhy = 'panic flash';
   }
@@ -246,7 +246,7 @@ export function escape(n: NodeCtx): NodeResult {
       dir = norm({ x: -cc.dy * side + dir.x * 0.5, y: cc.dx * side + dir.y * 0.5 });
     }
     if (atLeast(n.p, 'diamond')) dir = wallFlash(n, self, goal, routeLen) ?? dir;
-    if (!err && !atLeast(n.p, 'silver')) err = maybeInject(n.p, 'flash_into_wall', n.rng);
+    if (!err && !atLeast(n.p, 'silver')) err = rollErrorUntil(n.mem, n.ctx, n.p, 'flash_into_wall', tick, n.rng) >= 0 ? 'flash_into_wall' : undefined;
     if (err === 'flash_wrong_direction') dir = rotate(dir, Math.PI * (0.5 + n.rng.next()));
     else if (err === 'flash_into_wall') dir = towardWall(n, self) ?? dir;
     // reaction: the decision is now, the key press after the reaction time unless a prediction was made

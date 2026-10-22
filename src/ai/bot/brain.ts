@@ -116,7 +116,7 @@ const inFountain = (n: NodeCtx): boolean => dst(n.v.self, fountainOf(n)) < fount
 /** Summoners/items that do not replace the rest of the decision (Agent J: spells.ts) + potions. */
 export function utilitySpells(n: NodeCtx): NodeResult {
   if (n.v.me.dead || n.v.me.recallLeft > 0) return 'success';
-  push(n, cleanseStep(n.v, n.ctx, n.rng));
+  push(n, cleanseStep(n.v, n.ctx, n.rng, reactionPenaltyMs(n.mem, n.v.tick))); // §9 +150 ms while distracted
   push(n, exhaustStep(n.v));
   if (!inFountain(n)) {
     push(n, drinkPotion(n.v, n.v.me, n.mem));

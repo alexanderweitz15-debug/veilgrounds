@@ -220,10 +220,11 @@ describe('test 10 (BRAIN-REWORK §10): Iron bot game, 5 min, new brain on (real 
     expect(mean, info.join(' | ')).toBeLessThanOrEqual(0.4);
   }, 300_000);
 
-  // Measured 22 Oct (seed 7, real wiring): 7 of 45 minions with >= 2 separate windows in reach were never attacked
-  // (~16 %, about what 35 % distracted time predicts when both windows fall into distractions or are not servable).
-  // TODO(A3): count a window only if the bot was focused (and the window servable) for >= 1 tick of it, then re-enable.
-  it.skip('no minion ignored forever: every minion with >= 2 kill windows in reach was attacked at least once', () => {
+  // A "window" counts when the bot had a chance at it: kill window open, in reach, servable by an auto from the own
+  // attack timer, and the bot focused for >= 1 tick of it. With the raw definition (any open window in reach) seed 7
+  // gave 7 of 45 minions never attacked: both windows inside distractions or not servable - that is the attention
+  // model working (a missed minion), not a minion ignored forever.
+  it('no minion ignored forever: every minion with >= 2 kill windows the bot had a chance at was attacked at least once', () => {
     const { windows, attacked, distractedCancels } = iron();
     const missed: string[] = [];
     let n2 = 0;
@@ -251,7 +252,8 @@ function playIron(): { bots: BotRunner; end: number; windows: Map<string, number
   const bots = new BotRunner(config, undefined, { reflex: true });
   const end = 5 * 1800;
   const windows = new Map<string, number>();
-  const open = new Set<string>();
+  /** open window per key -> already counted (had a focused, servable tick) */
+  const open = new Map<string, boolean>();
   const attacked = new Set<string>();
   const { Atk, Unit } = sim.c;
   while (sim.tick < end) {
@@ -261,15 +263,21 @@ function playIron(): { bots: BotRunner; end: number; windows: Map<string, number
       const last = reflexState(b.mem).last;
       const now = new Set<string>();
       if (last && last.tick === sim.tick) {
+        const T = sim.tick;
+        const focused = !isDistracted(b.mem, T);
         for (const w of last.windows) {
           if (w.a === Infinity || w.a >= w.b || w.walk > 0) continue;
           const key = `${b.ctx.slot}:${(w.m as { serial?: number }).serial ?? w.m.id}`;
           now.add(key);
-          if (!open.has(key)) windows.set(key, (windows.get(key) ?? 0) + 1);
+          if (!open.has(key)) open.set(key, false);
+          const start = Math.max(last.ready, T + 1, Math.ceil(w.a - w.lead));
+          if (focused && start + w.lead < w.b && !open.get(key)) {
+            open.set(key, true);
+            windows.set(key, (windows.get(key) ?? 0) + 1);
+          }
         }
       }
-      for (const k of open) if (k.startsWith(`${b.ctx.slot}:`) && !now.has(k)) open.delete(k);
-      for (const k of now) open.add(k);
+      for (const k of [...open.keys()]) if (k.startsWith(`${b.ctx.slot}:`) && !now.has(k)) open.delete(k);
       if (me >= 0 && Atk.phase[me] === 1 && Atk.target[me]! >= 0) attacked.add(`${b.ctx.slot}:${Unit.serial[Atk.target[me]!]}`);
     }
     step(sim, inputs);

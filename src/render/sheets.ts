@@ -4,18 +4,12 @@
 // in the bundle invalidates them); the dev server bakes every time. Not Cache Storage: the PWA service worker deletes
 // every cache but its own on activate.
 import { buildChampionAtlasAsync, BIG_MONSTER_IDS, CAMP_MONSTER_IDS, CHAMPION_IDS, MINION_IDS, STRIP_COLS, stripKey, type AnyCanvas, type AtlasCellCache, type ChampionAtlas } from './champions';
-import { atlasStoreAvailable, loadStrip, saveStrip } from './atlasStore';
+import { atlasStoreAvailable, buildVersion, loadStrip, saveStrip } from './atlasStore';
 
 const cache = new Map<string, Promise<ChampionAtlas>>();
 const makeWorker = (): Worker => new Worker(new URL('./spriteWorker.ts', import.meta.url), { type: 'module' });
 
-/** Short hash of the built chunk URL (contains Vite's content hash). */
-function versionOf(s: string): string {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-  return (h >>> 0).toString(36);
-}
-const ATLAS_VER = versionOf(import.meta.url);
+const ATLAS_VER = buildVersion(import.meta.url);
 
 let cellCache: AtlasCellCache | undefined | null = null;
 /** IndexedDB backed strip cache; undefined in dev or without IndexedDB / createImageBitmap. */

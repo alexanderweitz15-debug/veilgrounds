@@ -54,5 +54,12 @@ export async function saveStrip(key: string, ver: string, blob: Blob, top: numbe
   }
 }
 
+/** Short hash of a built chunk URL (contains Vite's content hash): records of an older build count as misses. */
+export function buildVersion(url: string): string {
+  let h = 2166136261;
+  for (let i = 0; i < url.length; i++) h = Math.imul(h ^ url.charCodeAt(i), 16777619);
+  return (h >>> 0).toString(36);
+}
+
 /** True when IndexedDB is usable in this context. */
 export const atlasStoreAvailable = (): boolean => typeof indexedDB !== 'undefined';

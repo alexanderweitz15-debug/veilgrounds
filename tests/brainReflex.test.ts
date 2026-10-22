@@ -20,7 +20,6 @@ const laneAloneConfig = (rank: Rank, seed: number): SimConfig => {
 };
 
 // The reflex layer is opt-in (RunnerOptions.reflex, off in the game); these tests enable it explicitly.
-// TODO(A1): tests 2 and 4 skipped (user request, 16 Oct): Iron lane-alone 69 < 70, Gold 2 out_of_range cancels > 0 (docs/agents/a1.md open items 1-2).
 describe('reflex layer: scheduler fills the attack timer (test 1)', () => {
   it('Gold alone in lane, 60 s from 1:40: attack utilisation > 60 %, no move/stop inside an own wind-up except logged orbwalk timing errors', () => {
     const config = laneAloneConfig('gold', 3);
@@ -65,8 +64,7 @@ describe('reflex layer: last hits independent of the decision rate (tests 2, 4)'
     expect(s.cs).toBeGreaterThanOrEqual(70);
   }, 300_000);
 
-  // TODO(A1): 1 out_of_range cancel since the ranged hitbox 55 -> 65 (b358b80, user decision 19 Oct); re-enable after re-tuning the stand point.
-  it.skip('Gold alone in lane, 10 min: the stand point follows the wave, no last hit dropped as out of range', () => {
+  it('Gold alone in lane, 10 min: the stand point follows the wave, no last hit dropped as out of range', () => {
     const g = runLaneAlone('gold', { seed: 2 });
     const st = reflexState(g.bots.bots[0]!.mem);
     console.log(`gold lane alone: CS ${g.stats[0]!.cs}, cancels ${JSON.stringify(st.stats.cancels)}, executed ${st.stats.executed}`);

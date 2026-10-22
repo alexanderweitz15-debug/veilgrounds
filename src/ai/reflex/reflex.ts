@@ -205,7 +205,10 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
       return out;
     } else if (best) {
       // §4.2: the timing error is rolled when the plan is made and kept while validating
-      const bias = (rng.normal() * P.jitterMs * 30) / 1000;
+      let bias = (rng.normal() * P.jitterMs * 30) / 1000;
+      // a believed window that closes before the bot can land at all (early error + timer/walk) is not given up at
+      // once: the error is clipped so the plan lands on its last believed tick (the human hurries, he does not skip)
+      if (best.w.b !== Infinity) bias = Math.max(bias, best.start + best.w.lead + 1 - best.w.b);
       const a = best.w.a + bias;
       const b = best.w.b + bias;
       const start = Math.max(own.ready, T + 1, Math.ceil(a + margin(a, b) - best.w.lead));

@@ -10,7 +10,9 @@ import { championData } from '../../sim/champions';
 import type { SnapEntity } from './types';
 import { dst } from './geo';
 import { offensiveCast } from './combat';
-import { estimateExchange, rankIdx, rollError } from '../bt/deps';
+import { estimateExchange, rankIdx } from '../bt/deps';
+import { errorActive, rollErrorUntil } from '../errors';
+import { attentionOn } from '../humanize/attention';
 import { exchangeNoise } from '../exchange';
 import { carrySpot, fightRole, focusScore, moveCmd, orbwalkAttack, peelSpot } from './kite';
 import { decisionInterval, executes } from './trade';
@@ -88,9 +90,11 @@ export function teamfight(n: NodeCtx): NodeResult {
     case 'carry': {
       let tooFar = 0;
       if (st.on === undefined) {
-        st.on = rollError('carry_too_far', n.p, n.rng);
+        st.on = rollErrorUntil(n.mem, n.ctx, n.p, 'carry_too_far', n.v.tick, n.rng) >= 0;
         if (st.on) n.log('teamfight', 'position', 'stands 150 too far forward', {}, {}, 'carry_too_far');
       }
+      // §9 new brain: the bot notices after the episode (errors.json durS) and steps back for the rest of the fight
+      if (st.on && attentionOn(n.mem) && !errorActive(n.mem, 'carry_too_far', n.v.tick)) st.on = false;
       if (st.on) tooFar = 150;
       if (dst(n.v.self, t) <= n.v.reach + t.radius + 30) return attack(t);
       return go(carrySpot(n, enemies, t, tooFar));

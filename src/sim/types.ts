@@ -62,7 +62,7 @@ export type DamageType = 'phys' | 'magic' | 'true';
 
 /** Player-equivalent inputs. Bots and humans produce exactly these; sim never trusts anything else. */
 /** Player/bot pings (spec §9, docs/spec-bots.md §9). Team-only, rate-limited by the sim. */
-export const PING_KINDS = ['alert', 'danger', 'onMyWay', 'back', 'missing', 'vision', 'help', 'group', 'focus', 'objective', 'ok', 'question'] as const;
+export const PING_KINDS = ['alert', 'danger', 'onMyWay', 'back', 'missing', 'vision', 'help', 'group', 'focus', 'objective', 'ok', 'question', 'myBad'] as const;
 export type PingKind = (typeof PING_KINDS)[number];
 
 export type Command =

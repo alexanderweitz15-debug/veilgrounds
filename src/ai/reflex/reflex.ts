@@ -18,7 +18,7 @@ import { towerCovering } from '../bot/perception';
 import { dst } from '../bot/geo';
 import { laneSpot, structureToHit } from '../bot/laning';
 import { clearOfStructures } from '../bot/brain';
-import { rollError } from '../bt/deps';
+import { rollErrorUntil } from '../errors';
 import { championData } from '../../sim/champions';
 import { ORBWALK } from '../bot/kite';
 import { type LastHitMem, entityIndex, observeAttacks, ownAttack, predictWindows, prehitFits, prehitRoll, spellLastHitFor, windowAfterHit, type MinionWindow, type OwnAttack } from '../bot/lasthit';
@@ -262,7 +262,7 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
 
   // ---- 4. attack scheduler: fill the free attack period
   if (own.ready <= T + 1) {
-    const choice = chooseFiller(v, ctx, st, intent, windows, protectedWins, farmPlan, own, P, rng, T, lh);
+    const choice = chooseFiller(v, ctx, st, intent, windows, protectedWins, farmPlan, own, P, rng, T, lh, mem);
     if (choice) {
       st.filler = choice.target;
       if (v.self.atkTarget !== choice.target) {
@@ -414,7 +414,7 @@ const AGGRO_R = 350;
  * wave" unless the bot is ranged and the enemy melee; Iron-Bronze sometimes ignore it (named error
  * ignore_minion_aggro, rolled at most every 10 s). Diamond+ prefer the enemy's CS window (its wind-up on a minion).
  */
-function harassTarget(v: View, ctx: BotStatic, st: ReflexState, rng: Rng, T: number): number {
+function harassTarget(v: View, ctx: BotStatic, st: ReflexState, rng: Rng, T: number, mem: BotMemory): number {
   const b = ctx.params.behavior;
   const autos = st.harass.autos;
   while (autos.length && autos[0]! < T - 60 * 30) autos.shift();
@@ -440,8 +440,10 @@ function harassTarget(v: View, ctx: BotStatic, st: ReflexState, rng: Rng, T: num
   if (waveNear > 1 && !ranged) {
     if (T >= st.aggroErrUntil && T - st.aggroRollAt >= 10 * 30) {
       st.aggroRollAt = T;
-      if (rollError('ignore_minion_aggro', ctx.params, rng)) {
-        st.aggroErrUntil = T + 3 * 30;
+      // §9 episode (errors.json durS) with the attention model running, else the old 3 s (one draw either way)
+      const until = rollErrorUntil(mem, ctx, ctx.params, 'ignore_minion_aggro', T, rng, 3 * 30, { target: best.slot, minions: waveNear });
+      if (until >= 0) {
+        st.aggroErrUntil = until;
         ctx.log.push({ tick: T, bot: ctx.slot, node: 'reflex', inputs: { target: best.slot, minions: waveNear }, chosen: 'harass', reason: 'attacks the champion inside the enemy wave', injectedError: 'ignore_minion_aggro' });
       }
     }
@@ -523,6 +525,7 @@ function chooseFiller(
   rng: Rng,
   T: number,
   lh: LastHitMem,
+  mem: BotMemory,
 ): { target: number; kind: 'minion' | 'structure' | 'prepare' | 'prehit' | 'harass' } | null {
   const next = T + 1 + Math.floor(own.period);
   const bias = (w: MinionWindow): number => (plan && plan.targetId === w.m.id ? plan.biasTicks : 0);
@@ -575,8 +578,9 @@ function chooseFiller(
   }
   // (1) harass (§4.3): the enemy laner in reach (or one step), no last-hit window lost (checked above), within the
   // rank's harass budget, not inside the enemy wave (minion aggro; Iron-Bronze ignore it via ignore_minion_aggro)
-  if (intent.harass) {
-    const h = harassTarget(v, ctx, st, rng, T);
+  // §9: the harass filler pauses while the bot is distracted (A3 attention probe)
+  if (intent.harass && !(st.attention?.(T)?.distracted ?? false)) {
+    const h = harassTarget(v, ctx, st, rng, T, mem);
     if (h >= 0) return { target: h, kind: 'harass' };
   }
   if (intent.pushMinions) {

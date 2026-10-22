@@ -19,6 +19,7 @@ export const PING_COLOR: Record<PingKind, string> = {
   objective: '#f0d24a',
   ok: '#9ad8a0',
   question: '#f0d24a',
+  myBad: '#b8a8d8',
 };
 
 export class PingWheel {

@@ -4,6 +4,7 @@
 
 import type { Snapshot } from '../sim/snapshot';
 import { Kind } from '../sim/types';
+import values from '../data/bots/values.json';
 import type { DecisionLog, DecisionLogEntry, ErrorId } from './contract';
 
 const MAX_INPUT_KEYS = 32;
@@ -168,8 +169,9 @@ export interface BotDebugInfo {
   attention?: AttentionDebugRow;
 }
 
-/** Log node of A2's intent choice (BRAIN-REWORK §3/§5, src/ai/utility/select.ts): chosen = intent ('none' / 'wait' = idle), scores = all candidates. */
-export const INTENT_NODE = 'utility';
+/** Log node of A2's intent choice (BRAIN-REWORK §3/§5, src/ai/utility/select.ts INTENT_NODE = values.json
+ *  selection.logNode, today 'intent'): chosen = intent ('none' / 'wait' = idle), scores = all candidates. */
+export const INTENT_NODE: string = values.selection.logNode;
 
 export interface BotDebugRow extends BotDebugInfo {
   /** Latest intent decision (log node INTENT_NODE): intent and its top-3 candidates; absent before the utility model. */

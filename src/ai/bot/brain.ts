@@ -22,8 +22,10 @@ import { ARENA_CENTRE } from '../../sim/trainer/arena';
 import type { NodeCtx, NodeResult } from '../bt/types';
 import { cancelOrbwalk, attackTicks } from './kite';
 import { chooseWave, laneOf, sealWard, sweep, visionShop, wardDue } from './macro';
-import { laningSafety, rankIdx, rollError } from '../bt/deps';
+import { laningSafety, rankIdx } from '../bt/deps';
 import { utilityOn } from '../utility/flag';
+import { attentionOn, isDistracted, reactionPenaltyMs } from '../humanize/attention';
+import { rollErrorUntil } from '../errors';
 import { recallMinionClear } from '../utility/world';
 
 /** Decision interval in ticks for this bot (profile microHz). */
@@ -114,7 +116,7 @@ const inFountain = (n: NodeCtx): boolean => dst(n.v.self, fountainOf(n)) < fount
 /** Summoners/items that do not replace the rest of the decision (Agent J: spells.ts) + potions. */
 export function utilitySpells(n: NodeCtx): NodeResult {
   if (n.v.me.dead || n.v.me.recallLeft > 0) return 'success';
-  push(n, cleanseStep(n.v, n.ctx, n.rng));
+  push(n, cleanseStep(n.v, n.ctx, n.rng, reactionPenaltyMs(n.mem, n.v.tick))); // §9 +150 ms while distracted
   push(n, exhaustStep(n.v));
   if (!inFountain(n)) {
     push(n, drinkPotion(n.v, n.v.me, n.mem));
@@ -282,7 +284,7 @@ export function dodge(n: NodeCtx): NodeResult {
     const vx = (p.x - p.px) * 30;
     const vy = (p.y - p.py) * 30;
     const speed = Math.sqrt(vx * vx + vy * vy) || 1500;
-    const react = ticksOfMs(sampleReactionMs(ctx.profile.behavior, rng));
+    const react = ticksOfMs(sampleReactionMs(ctx.profile.behavior, rng) + reactionPenaltyMs(mem, v.tick)); // §9: +150 ms while distracted (0 without the attention model)
     const impact = (along / speed) * 30;
     if (react >= impact - 2) continue; // too late to react
     let delay = react;
@@ -418,7 +420,7 @@ export function laneLeaf(n: NodeCtx): NodeResult {
     const champ = v.enemies.find((e) => dst(e, v.self) <= v.reach + e.radius);
     if (champ && near(v.enemyMinions, v.self, 500).length >= 2) {
       mem.ext.aggroRollAt = v.tick;
-      if (rollError('ignore_minion_aggro', n.p, rng)) {
+      if (rollErrorUntil(mem, ctx, n.p, 'ignore_minion_aggro', v.tick, rng) >= 0) { // §9 episode with the new brain
         n.log('lane', 'harass', 'attacks the champion inside the enemy wave', { target: champ.slot }, { minions: near(v.enemyMinions, v.self, 500).length }, 'ignore_minion_aggro');
         mem.lastMove = null;
         n.out.push({ cmd: { t: 'attack', target: champ.id } });
@@ -509,7 +511,7 @@ function laneLeafLegacy(n: NodeCtx): NodeResult {
     const champ = v.enemies.find((e) => dst(e, v.self) <= v.reach + e.radius);
     if (champ && near(v.enemyMinions, v.self, 500).length >= 2) {
       mem.ext.aggroRollAt = v.tick;
-      if (rollError('ignore_minion_aggro', n.p, rng)) {
+      if (rollErrorUntil(mem, ctx, n.p, 'ignore_minion_aggro', v.tick, rng) >= 0) { // §9 episode with the new brain
         n.log('lane', 'harass', 'attacks the champion inside the enemy wave', { target: champ.slot }, { minions: near(v.enemyMinions, v.self, 500).length }, 'ignore_minion_aggro');
         mem.lastMove = null;
         n.out.push({ cmd: { t: 'attack', target: champ.id } });
@@ -521,7 +523,8 @@ function laneLeafLegacy(n: NodeCtx): NodeResult {
   if (farm && !(mem.wardTrip >= 0 && v.tick - mem.wardTrip < 8 * 30)) {
     // re-plan every decision: drop a last hit queued by the previous decision (the plan below replaces it)
     mem.cancelTags.add('lh');
-    const plan = planLastHit(v, ctx, mem.ext.lh, rng, decisionTicks(ctx), n.p.behavior); // tilt-adjusted
+    // §9 new brain: no per-minion lapse, no last hit while distracted (attention windows)
+    const plan = planLastHit(v, ctx, mem.ext.lh, rng, decisionTicks(ctx), n.p.behavior, attentionOn(mem) ? { distracted: isDistracted(mem, v.tick) } : undefined); // tilt-adjusted
     // keep the attack timer free for an upcoming kill window (no push auto that would still be cooling down)
     holdTimer = plan.nextWindow < v.tick + plan.period + plan.windup + 4;
     const lh = plan.action;

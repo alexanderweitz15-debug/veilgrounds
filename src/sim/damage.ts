@@ -9,6 +9,7 @@ import { onDeath } from './systems/economy';
 import { damageDealtMult, damageTakenMult, healMult, statMods } from './buffs';
 import { passiveHooksOf } from './champions';
 import { KESSELBRUT_STRUCT_PCT, isEpicMonster, kesselbrutStacks } from './systems/jungle';
+import { petOwner } from './summons';
 
 export interface DamageOpts {
   isAuto?: boolean;
@@ -135,6 +136,10 @@ export function dealDamage(sim: Sim, src: number, dst: number, amount: number, t
     if (flash) log.flash[dst] = sim.tick;
     sim.events.push({ e: 'damage', src, dst, amount: dmg, type, crit: opts.crit, ...(opts.isAuto ? { auto: true as const } : {}), ...(flash ? { flash: true as const } : {}) });
     if (top && dmg > 0) for (const h of passiveHooksOf(sim, dst)) h.onDamageTaken?.(sim, dst, src, { amount: dmg, absorbed, type, isAuto: !!opts.isAuto });
+    if (top && dmg > 0 && Unit.kind[dst] === Kind.Pet) {
+      const owner = petOwner(sim, dst); // Sev E decoy: enemy ability hits mark the attacker
+      if (owner >= 0) for (const h of passiveHooksOf(sim, owner)) h.onPetDamaged?.(sim, owner, dst, src, { amount: dmg, absorbed, type, isAuto: !!opts.isAuto });
+    }
     if (Hp.cur[dst]! <= 0 && Unit.alive[dst]) {
       if (Unit.kind[dst] === Kind.Dummy) {
         Hp.cur[dst] = Hp.max[dst]!; // practice dummy never dies

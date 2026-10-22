@@ -58,6 +58,20 @@ function settle(r: Run): void {
   for (let i = 0; i < 360 && isBusy(r.sim, r.me); i++) step(r.sim);
 }
 
+/**
+ * Fake cast (Sev Q "Q (Fake) -> Q"): a token repeated on an ability with flag 'recast' and a wind-up is pressed again
+ * during the wind-up (cancel); the repeated token then has to cast for real.
+ */
+function fakeStep(r: Run, slot: 0 | 1 | 2 | 3): string | null {
+  const { sim, me, dummy } = r;
+  const { Pos } = sim.c;
+  const c: Command = { t: 'cast', slot, x: Pos.x[dummy]!, y: Pos.y[dummy]!, target: dummy };
+  if (!tick(sim, c).some((e) => e.e === 'cast' && e.src === me && e.slot === slot)) return 'fake: no cast';
+  tick(sim);
+  if (!tick(sim, c).some((e) => e.e === 'cast' && e.src === me && e.slot === slot && e.recast)) return 'fake: no recast';
+  return champAbil(sim, me).cast ? 'fake: wind-up not cancelled' : null;
+}
+
 function abilityStep(r: Run, slot: 0 | 1 | 2 | 3): string | null {
   const { sim, me, ally, dummy } = r;
   const ab = CHAMPION_DATA[sim.championIds[sim.c.Unit.champ[me]!]!]!.abilities[slot];
@@ -107,7 +121,9 @@ export function runCombo(champion: string, seq: string[]): string | null {
   const r = setup(champion);
   for (let i = 0; i < seq.length; i++) {
     const tok = seq[i]!;
-    const err = tok === 'AA' ? autoStep(r) : tok === 'FLASH' ? flashStep(r) : SLOT[tok] !== undefined ? abilityStep(r, SLOT[tok]!) : `unknown token ${tok}`;
+    const ab = SLOT[tok] !== undefined ? CHAMPION_DATA[champion]!.abilities[SLOT[tok]!] : undefined;
+    const fake = !!ab && seq[i + 1] === tok && ab.castTime > 0 && !!ab.flags?.includes('recast') && ab.type === 'skillshot_line';
+    const err = tok === 'AA' ? autoStep(r) : tok === 'FLASH' ? flashStep(r) : fake ? fakeStep(r, SLOT[tok]!) : SLOT[tok] !== undefined ? abilityStep(r, SLOT[tok]!) : `unknown token ${tok}`;
     if (err) return `step ${i + 1} (${tok}): ${err}`;
   }
   return null;

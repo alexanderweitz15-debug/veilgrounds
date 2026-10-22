@@ -210,6 +210,15 @@ Answers to the supervisor review (docs/agents/review-2026-10-16.md) and implemen
    window that the other order serves (or a bigger-gold minion in a true collision).
 8. **Validation re-aims instead of dropping**: a plan's `executeAtTick` follows the per-tick prediction (with the
    kept bias); `prediction_drift` / `out_of_range` only when no landing inside the (believed) window is possible.
+10. **Joint window protection** (19 Oct): besides each protected window alone, the protected set served one auto per
+    period in earliest-deadline order (`serveCount`) must not lose a window the free timer would serve. Two wide
+    windows each servable alone collided after a filler (Challenger lane alone 98 -> 102 on seed 1).
+11. **Minion aggro** (19 Oct): enemy minions without an own minion within 700 ("untanked") push the stand point out
+    of their reach + 100; fillers only on tanked minions. **Pre-hit filler**: a minion whose next incoming hit jumps
+    over the own damage (empty window) gets an auto now if the next auto then lands in the new window (chance per
+    minion by skill, the old tower pre-hit rule; also outside the tower).
+12. **Reflex is opt-in**: `RunnerOptions.reflex` / `SimConfig` none; bot-sim `--reflex=true`; `reflexState(mem).enabled`
+    switches `laneLeaf` between the intent path and `laneLeafLegacy`.
 9. **`ReflexDebug`** type lives in `src/ai/plan.ts`; `BotRunner.debugRows()` returns rows with a `reflex` field
    (lead decision b). Profile fields `planHorizonS, windowPrepPct, standHysteresis, orbwalkPct, harassPerMin,
    harassCsWindowPct` are in all ten profile JSONs and `schema.ts` (lead decision a); `reflexParams(ctx)` reads them

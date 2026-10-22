@@ -264,5 +264,17 @@ recast / channel helpers) is documented at the top of `src/sim/champions/hooks.t
 | `oda_q_ally_collision` | Q | The projectile also collides with allied champions (not Oda). If the first unit hit is an enemy, only the damage and slow apply; if it is an ally, only the `ally` heal applies. |
 | `oda_e_cleanse_slows` | E | Removes all active slows from the targeted ally. |
 
+## Sev Aschenblick (`sev`)
+
+Spec: `docs/champions/sev.md`. Module hooks: `onTick` (ember upkeep + jump, ward end damage, eye contact, decoy autos), `targetOk` (W also accepts his own decoy; R only enemy champions/dummies with his Nachbild), `ownsHits: ['sev_w', 'sev_r']`.
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `sev_nachbild` | Passive | Every Sev ability hit marks the enemy with Nachbild (`mark` buff, 3 s). His basic attacks on a marked enemy deal +10→30 by level (+0.15 AP) magic damage and extend his running Schwarzglut on it by 0.5 s (max 8 s in total). `onPetDamaged`: an enemy ability (not an auto) hitting his decoy marks the attacker. |
+| `sev_q_fake_cancel` | Q | Recast during the 0.4 s wind-up cancels the beam (fake): mana refunded, 2 s cooldown (Gorvam Q pattern). |
+| `sev_w_ember` | W | Owned hits. Enemy target: `dot` (listed damage per second, ×1.4 vs champions like ability damage) and `grievous` 40 % for 4 s, both `uncleansable`; Nachbild. If the target dies (any killer) while burning, the ember jumps once with the remaining duration to the nearest enemy unit within 300 of the death point. Own decoy as target: the decoy lives as long as the ember (4 s) and deals 50 % of the per-second damage to enemies within 250 every second. |
+| `sev_e_decoy` | E | After the 450 blink a decoy pet (`sev_decoy`) stays at the start position for 2.5 s: Sev's current HP / max HP / mana (fake bar; snapshot `look: 'sev'` + level, rendered with Sev's sprite and a champion bar), 0 AD, mirrors Sev's attack target (harmless autos). Only one decoy per Sev. |
+| `sev_r_bann` | R | Owned hits. The 0.5 s wind-up is the eye contact: losing sight of the target cancels it (refund, 2 s cooldown). Then `fear` (new CC, 1.5 s, tenacity applies) + 50 % slow (uncleansable) + reveal for Sev's team; while feared the target walks away from Sev and cannot attack, cast or use summoners (Reinigen included). At the end of the fear: listed magic damage (×1.4 vs champions), ×1.5 if the target had Schwarzglut at any time during the ward; Nachbild. Visuals: ring on the target and three Sev phantoms around it. |
+
 ---
-Total: 102 hook ids across 25 champions.
+Total: 107 hook ids across 26 champions.

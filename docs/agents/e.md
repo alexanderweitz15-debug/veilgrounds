@@ -1,82 +1,94 @@
-# Agent E - new champion (status)
+# Agent E - new champion Sev Aschenblick (status)
 
-Branch: `champ/e-sev` (from main 68bc2f2). Stopped early on lead/user order.
+Branch: `champ/e-sev` (on main e0f40bb). Spec (user, verbatim): `docs/champions/sev.md`.
+History: started as "Itachi"; the user replaced it with Sev (Fassung 2) before any code existed. No Itachi files,
+names or branches remain.
 
-## History
-- Started as "Itachi" (id `itachi`). Spec changed by the user before any code was written: Itachi dropped completely.
-  No Itachi files, names or branch remain (local `champ/e-itachi` deleted, never pushed).
-- New target: "Sev Aschenblick (Fassung 2)", spec verbatim in `docs/champions/sev.md`.
+## Done (commits on champ/e-sev)
+| Commit | What |
+|---|---|
+| c310e23 | spec `docs/champions/sev.md` |
+| 068d755 | `src/data/champions/sev.json`, `src/sim/champions/sev.ts`, registry lines, build `src/data/builds/sev.json`, rune presets, motif row, `tests/sev.test.ts`; sim extensions: CC `fear`, `Buff.uncleansable`, `ChampionHooks.targetOk`, `PassiveHook.onPetDamaged`, pet helpers; i18n `cc.fear`; roster counts 26 -> 27; combo harness fake step |
+| bfa425b | sprite kit (`src/render/champions/sev.ts` props + kit entry + Hold `palm`); `tools/botSim.ts --champion=<id>`; `tools/scratch/sevCasts.ts` |
+| 4f29a96 | decoy looks like Sev: snapshot `look`/level, champion sprite + fake champion bar |
+| cc48f6c | docs: `docs/champion-hooks.md` (Sev section, 107 hooks / 26 champions), `docs/spec-champions.md` roster #27 + roles, shared-changes, bot wishes in issues.md |
+| 46f0929 | `tests/sim/castMovement.test.ts`: dummy gets a Nachbild so Sev R can be cast |
+| c4476d4 | overlay: black-ember / Nachbild glyphs next to the HP bar; e.md + handoff |
+| 8279a7f | merge origin/main c15e402 (conflicts in buffs/damage/snapshot + docs resolved keeping both sides); champ/e-sev now contains main and fast-forwards |
+| 14c2252 | visuals: no duplicate Nachbild mark (the snapshot already lists champion-prefixed mark buffs); screenshots |
 
-## Done
-- `docs/champions/sev.md` committed (commit "e: sev spec (Fassung 2, user verbatim)").
-- Orientation of the champion wiring (see "Where a champion is wired" below).
+### Kit as implemented (numbers in sev.json; hook constants at the top of sev.ts)
+- Passive Nachbild: every ability hit marks 3 s (`mark` buff `sev_nachbild`); autos on marked enemies +10-30 (+15 % AP)
+  magic and extend his ember by 0.5 s (cap 8 s total). Enemy ability hits on his decoy mark the attacker.
+- Q Glutblick: line 950, width 60, wind-up 0.4 s; recast during the wind-up = fake (refund, 2 s CD).
+- W Schwarzglut: targeted 650: dot 4 s + grievous 40 %, both `uncleansable`; jumps once (300) when the target dies
+  (any killer); on his own decoy: decoy lives 4 s and burns enemies within 250 for 50 %.
+- E Trugbild: blink 450, decoy pet at the start for 2.5 s with Sev's HP/mana (fake bar), 0 AD autos at Sev's target.
+- R Augenbann: needs a Nachbild target (otherwise the cast fails 'target'); 0.5 s wind-up = eye contact (lost sight
+  cancels, refund, 2 s CD); 1.5 s fear (tenacity applies) + 50 % slow + reveal; end damage, x1.5 with ember.
+- Fear CC (bot consumers of `me.cc` in src/ai/ganks/escape.ts and src/ai/bot/spells.ts only compare `>= 3` / `< 3` / `>= 5`, so 3.5 reads as hard CC; spells.ts may then try Reinigen, which fails with 'cc' under fear): no attacks/casts/summoners (Reinigen too), breaks channels/recall/Teleport, unit walks away from the source
+  (movement pre-pass), ccLevel 3.5 (between root 3 and stun 4), CC_BIT 256, HUD label "Verängstigt"/"Feared".
 
-## Not done (nothing of Sev is in code yet, registries untouched, main stays green)
-Everything below is open. Recommended order (keep each commit green: `npx tsc --noEmit` + touched tests):
+### Tests
+- `tests/sev.test.ts` (16): hooks exported, Q hit + Nachbild, Q fake, W dot/grievous/uncleansable vs Reinigen, W jump
+  once, W on decoy, E blink + decoy + lifetime, decoy snapshot look, decoy ability vs auto mark, passive bonus +
+  ember extension, R needs Nachbild, R fear/flee/locks/ccLevel/+50 % ember, tenacity, lost sight cancels, determinism.
+- Full `npx vitest run` (under heavy CPU load): 886 passed, 2 failed -> castMovement/sev fixed in 46f0929 (re-run
+  green); `tests/brainReflex.test.ts` "reflex logic < 0.05 ms per bot and tick" failed on time budget (test took 239 s
+  while 4+ agents shared the CPU; timing test, not related to Sev) - re-run it alone on a quiet machine.
+- Post-merge full `npx vitest run` (tree 14c2252 = main c15e402 + Sev): 919 passed, 1 failed:
+  `tests/botStyle.test.ts` spec test 9 throws `TypeError ... reading 'utility'` in `src/ai/utility/flag.ts:26`
+  (TeamAI.evaluate called without a ctx; brom-only test, no Sev involved; src/ai and that test are identical to main
+  -> brain team). brainReflex passed this time.
+- Second merge of origin/main 04a1eb5 (contains the utilityOn fix 941993f; snapshot import conflict resolved): tsc clean;
+  sev, snapshot, championData, replay, abilityMotifs, items, botParams, sideMirror, combos, botStyle, castMovement,
+  telegraph, summonersWards all green (397 tests).
+- `npx tsc --noEmit`: clean.
 
-1. **Data** `src/data/champions/sev.json` (copy mira.json shape; schema `src/sim/champions/schema.ts`).
-   Roles `["mid","jungle"]`, ranged, range 525, mana, radius 55. Abilities per spec:
-   Q `sev_q` skillshot_line 950 width 60, dmg magic 70/110/150/190/230 +0.6 AP, CD 7, flag `recast` + hook for fake;
-   W `sev_w` targeted 650 (champion or minion), hook `sev_w_ember`; E `sev_e` blink 450 + hook `sev_e_decoy`;
-   R `sev_r` targeted 700, flag `channel` 0.5 s, hook `sev_r_bann`. Passive hooks `["nachbild"]`.
-   Combos: W Q AA / E Q Q W / W R Q AA. Spike [6]. Add build `src/data/builds/sev.json` and rune preset in
-   `src/data/runePresets.json` (check how mira is listed there).
-2. **Registry**: `src/data/champions/index.ts` (import + `raw` entry), `src/sim/champions/index.ts` (hooks line).
-   Then run `tests/championData.test.ts` (validate + missingHooks) and `tests/replay.test.ts`.
-3. **Hooks** `src/sim/champions/sev.ts`:
-   - Nachbild: mark on every ability hit, 3 s (use `{kind:'mark'}` effect or hookState map keyed by target eid +
-     serial). `modifyDamage` / `onAutoHit`: autos on marked enemy +10-30 byLevel (+15 % AP) magic, extend Sev's
-     ember dot by 0.5 s (`extendBuff` in buffs.ts).
-   - Q fake: model on `src/sim/champions/gorvam.ts:36` -> `cancelCast(sim, eid, { refund: true, cooldownTicks: sec(2) })`
-     when recast within 0.4 s of the wind-up (needs castTime >= 0.4 or a recast window via `openRecast`).
-   - W ember: `addBuff(kind 'dot', period 1 s, amount per rank +0.22 AP, 4 s)` + `addBuff(kind 'grievous', pct 40)`.
-     Jump on death: `onKill`/tick check -> nearest enemy within 300, once (flag in hook state).
-     On own decoy: decoy burns 4 s, 50 % ember dps to enemies within 250 (onTick).
-   - E decoy: `spawnPet` (src/sim/summons.ts:94) at the start position, hp 1, `ad 0`, lifetime 2.5 s
-     (`trackLifetime`), render needs a "looks like Sev + fake HP bar" flag. Enemy ability hitting it -> Nachbild on
-     the caster (needs an onDamageTaken-like hook on pets, check summons.ts).
-   - R: channel 0.5 s (break on lost vision: `sees(sim, team, target)` in onTick), then 1.5 s fear, reveal,
-     silence (abilities) + summoner lock, 50 % slow, end damage 180/300/420 +0.7 AP, x1.5 if target had ember.
-4. **Sim extensions (agent B area, additive, log in shared-changes.md)**:
-   - CC `fear` in `src/sim/buffs.ts` (`CcKind`, `HARD_CC`, `CC`, `canCast`=false, `canAttack`=false, `canMove` stays
-     true but movement is forced away from `src`; hierarchy between root and stun; tenacity applies, so NOT in
-     `NO_TENACITY`). Forced movement belongs in the movement/input system (look where 'stun' blocks orders).
-   - Buff flag `uncleansable` on `Buff` (optional boolean); `src/sim/summoners.ts:65` cleanse and the ferris/oda
-     slow-cleanses must skip it.
-   - Summoner lock during fear: `src/sim/summoners.ts` cast check.
-   - Decoy entity with fake HP bar (pet flag + snapshot field + render in units.ts).
-5. **Tests** `tests/sev.test.ts`: each ability, Q fake refund/2 s CD, ember not cleansed + jumps once, decoy 2.5 s,
-   R requires Nachbild, fear moves away + tenacity, ember bonus x1.5. Plus `tests/replay.test.ts` determinism and
-   `sideMirror.test.ts`, `abilityVisuals*.test.ts`.
-6. **Render/UI**: sprite (style variant A, docs/style-variants.md): charcoal floor-length high-collar coat with copper
-   hem and grey ash swirls, collar to the nose, one hand out palm-up with a floating ember eye (primary silhouette
-   feature), left eye copper-red with a three-armed crack. Must differ from Corvin. Files: src/render/champions/kits.ts
-   + atlas.ts, src/render/sprites.ts, src/render/units.ts, src/stylelab/{champions,figures,scene}.ts,
-   src/ui/classicLobby.ts, practiceLobby.ts, src/game/game.ts, modes.ts, src/sim/trainer/scenarios.ts, icons
-   (src/ui/icons.ts / src/render/abilityTheme.ts), i18n de/en. Ember visual: black flame with copper core.
-7. **Docs**: `docs/champion-hooks.md` entry, `docs/spec-champions.md` roster (27th), bot rules -> issues.md.
-8. Balance: decide after the first bot-sim run whether to drop the ember jump (spec "Einwand").
+### Screenshots (1280x720, `npx vite build` + `vite preview --port 5392`, headless Edge, no console errors)
+`docs/ist/e-sev-lobby.jpg` (classic lobby, Sev card + ability icons), `e-sev-ingame-idle.jpg`, `e-sev-q.jpg` (Q wind-up
+telegraph), `e-sev-w.jpg` (ember + Nachbild glyphs on the dummy), `e-sev-e-decoy.jpg` (Sev + decoy with fake champion
+bar), `e-sev-r.jpg` (fear: ring, three phantoms, "Verängstigt"). All six from the preview build.
+Sprite close-ups were checked in the stylelab (`window.__champSheet`).
 
-## Where a champion is wired (files referencing `mira` outside src/ai)
-src/data/builds/mira.json, src/data/champions/index.ts, src/data/runePresets.json, src/game/game.ts, src/game/modes.ts,
-src/render/champions/atlas.ts, src/render/champions/kits.ts, src/render/sprites.ts, src/render/units.ts,
-src/sim/champions/index.ts, src/sim/items/runes.ts, src/sim/trainer/scenarios.ts, src/stylelab/champions.ts,
-src/stylelab/figures.ts, src/stylelab/scene.ts, src/ui/classicLobby.ts, src/ui/practiceLobby.ts, plus many tests
-(tests/championData.test.ts is the validation one).
+### Bot games (gold, 15 min, Sev in blue mid; tools/scratch/sevCasts.ts)
+| seed | Sev casts Q/W/E/R | fear s | Sev cs / k-d / dmg to champs | enemy mid |
+|---|---|---|---|---|
+| 1 | 14/6/2/0 | 0 | 42 / 1-1 / 1570 | Ilvane 56 / 1-1 / 1460 |
+| 2 | 16/9/7/3 | 4.4 | 35 / 4-1 / 4735 | Kaelen 35 / 1-3 / 2763 |
+Bots play him without crashes and cast every ability (R only when a Nachbild is up). Bots never fake Q (no brain logic).
+Official run `npm run bot-sim -- --rank=gold --games=2 --minutes=15 --champion=sev`: exit 0, same numbers (deterministic).
+Build: `npx vite build` green (one earlier run under heavy load printed "error during build" without details; the
+re-run on the same tree passed in 3m42s).
 
-## Bot rules for the brain team (from the spec, not implemented, src/ai/** untouched)
-- Q fakes from Platin against recognised dodge patterns.
-- From Gold bots do not hit decoys with abilities (below Gold: 40 % of the time they do).
-- Bots with Schwarzglut do not panic-recall; include the burn in `ExchangeEstimate`.
-- Fear is treated like stun in the escape node.
-(docs/agents/issues.md did not exist on this base; add these there when it does.)
+## Open items (exact next steps)
+1. **Balance decision on the ember jump** (spec "Einwand"): 2 games are too few. Run
+   `npx tsx tools/scratch/sevCasts.ts 10 20 gold` (and platinum) and compare Sev's damage to champions with the other
+   mids; if Sev is clearly ahead, drop the jump (set `JUMP_RANGE` use off: remove the jump block in `tickEmbers`) or
+   lower W to 16/26/36/46/56. Current proposal: keep the jump until the brain team's Sev logic exists (bots do not yet
+   play around the ember either).
+2. **Black-ember visual on burning units**: today the ember shows as a mark (pips/diamond over the HP bar) and the
+   burning decoy as an orange disc (`sev_w_decoy`, hue 14). Wanted: black flame tongues with a copper core on the
+   unit (render, agent D area: a per-mark effect in `src/render/groundObjects.ts` or `fx.ts` keyed on mark id `sev_w`).
+3. **Augenbann phantoms**: drawn as three generic pins + a ring (`sev_r_phantom`, `sev_r_bann`). Better: three
+   translucent Sev sprites around the target, only on the feared player's client, plus a dark vignette for him.
+4. **Ability sounds**: none per champion yet (check `src/audio` for per-champion cues).
+5. **Fear icon**: overlay CC chip uses the generic label; a fear glyph for `src/ui/icons.ts` would help.
+6. **Bot rules / build line**: see docs/agents/issues.md (2026-10-19 E entry): `BUILDS` line in src/ai/bot/builds.ts
+   (stopgap in tools/botSim.ts), Q fakes, decoy rules, ember in ExchangeEstimate, fear in escape node, R only on
+   marked targets.
+7. `docs/ability-cast-audit.md` rows for sev_q..sev_r (B2 audit, optional; `B2_AUDIT=1` prints them).
+8. Trainer scenarios: add `'sev'` to the MID / JG pools in `src/sim/trainer/scenarios.ts` once bots handle him.
+9. Encyclopedia/showcase pick Sev up automatically from CHAMPION_DATA (not checked visually).
 
 ## Shared-file edits
-None.
-
-## Tests / build
-No code changed, so tsc/vitest/build/bot-sim were not run. No screenshots.
+All listed with commits in `docs/agents/shared-changes.md` (2026-10-19 · E entry).
 
 ## DECISIONS proposals
-- Fear = new CcKind `fear` between root and stun, tenacity applies, blocks attack/cast, forces movement away.
-- `uncleansable` as an optional Buff flag, checked by every cleanse.
+- Fear = CcKind `fear` between root and stun (ccLevel 3.5), tenacity applies, locks every summoner incl. Reinigen,
+  forced walk away from the source in the movement system.
+- `Buff.uncleansable`: every cleanse must skip it (Reinigen does; Ferris/Oda only cleanse slows - Sev's R slow is
+  marked uncleansable too).
+- Decoy pets: tag suffix `_decoy` makes the snapshot report `look` = owner's champion; render/HUD treat it as that
+  champion (sprite + champion bar + name).
+- `ChampionHooks.targetOk` for champion-specific target rules (narrow or widen), `PassiveHook.onPetDamaged`.

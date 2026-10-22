@@ -105,6 +105,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.hpBarStyle'), select<Settings['hpBarStyle']>(settings.hpBarStyle, [['segmented', t('set.hpBar.segmented')], ['thousands', t('set.hpBar.thousands')], ['plain', t('set.hpBar.plain')]], (v) => updateSettings({ hpBarStyle: v })));
     row(t('set.enemySkillshotOutline'), check('enemySkillshotOutline'));
     row(t('set.attackMoveOnCursor'), check('attackMoveOnCursor'));
+    row(t('set.attackMoveTargetCursor'), check('attackMoveTargetCursor'));
     row(t('set.castIndicator'), check('castIndicator'));
     // cast mode per ability key (LoL: quick / quick with indicator / normal)
     for (const k of CAST_KEYS) {
@@ -120,6 +121,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.cameraLocked'), check('cameraLocked'));
     row(t('set.fullscreenLock'), check('fullscreenLock'));
     row(t('set.botToxicity'), check('botToxicity'));
+    row(t('set.newBrain'), check('newBrain'));
     row(t('set.volume'), slider('volume', 0, 1, 0.05, (v) => `${Math.round(v * 100)} %`));
     section(t('set.graphicsTitle'));
     row(t('set.graphics'), select<Settings['graphics']>(settings.graphics, [['low', t('set.gfx.low')], ['medium', t('set.gfx.medium')], ['high', t('set.gfx.high')]], (v) => updateSettings({ graphics: v })));

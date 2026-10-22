@@ -139,6 +139,7 @@ Status: proposed (sim/b-mechanics). Affects: brain team (reads them), C (scorebo
 | date | commit | change |
 |---|---|---|
 | 2026-10-16 | 227ab5b (lead's WIP commit of A1's tree) | `laneLeaf`: with `reflexState(mem).enabled` it only computes wave state / stand distance / support side point and sets the lane intent (no last-hit timing, no holdTimer, no move/stop to free the timer, no 6-s stand hysteresis); otherwise `laneLeafLegacy` = the unchanged pre-rework code. Imports `reflexState/setIntent`. |
+| 2026-10-19 | 796bcb0 | `laneLeaf` (reflex path): `intent.harass` = no ward walk and gank risk < 0.6 (§4.3); constant HARASS_MAX_GANK_RISK. |
 | 2026-10-19 | 43b455d | `think()`: casts of `movesWhileCasting` abilities (not channels) no longer set `busyUntil` (agent B's B2 request; lead decision 2). Affects both reflex on and off. |
 
 ## A2 (brain/a2-utility)
@@ -221,6 +222,7 @@ Log of C's additive changes to `src/settings.ts`:
   = follow `castIndicator`).
 - 2026-10-20 (`c7: hp bar style, enemy skillshot outline setting`): `Settings.hpBarStyle` ('segmented' | 'thousands' |
   'plain', default 'segmented'; used by src/ui/overlay.ts), `Settings.enemySkillshotOutline` (boolean, default false).
+- 2026-10-20 (`c: B requests`): `Settings.attackMoveTargetCursor` (boolean, default false; input sends B5's `cursor: true`).
 
 ## 2026-10-20 · C → D · src/render/telegraph.ts · read `settings.enemySkillshotOutline` · proposed
 
@@ -234,6 +236,29 @@ settings (minimap scale/side, HP-bar style, enemy skillshot outline, quick-cast 
 Proposal: allow C to add fields to `Settings`/`DEFAULTS` in `src/settings.ts` (additive only, no renames), or move the
 file to `src/ui/settings.ts`. Until decided, C7 waits.
 
+## 2026-10-19 · E · Sev Aschenblick: shared-file edits (one-time pass from the lead for the sim extensions) · merged on champ/e-sev
+
+All additive; no existing behaviour changes for champions other than the new CC type and the cleanse guard.
+
+| File | Owner | Change | Commit |
+|---|---|---|---|
+| src/sim/buffs.ts | B | CC kind `fear` (in CC + HARD_CC, tenacity applies, blocks attack/cast/channel, ccLevel 3.5, CC_BIT 256); `isFeared`, `fearSource`; optional `Buff.uncleansable` flag | 068d755 |
+| src/sim/systems/movement.ts | B | pre-pass: feared units walk 300 ahead straight away from the fear source (overrides orders of that tick) | 068d755 |
+| src/sim/summoners.ts | B | Reinigen skips `uncleansable` buffs and fails while feared; fear interrupts Teleport | 068d755 |
+| src/sim/systems/abilities.ts | B | `castSummoner`: feared -> 'cc' for every summoner; `pickTarget` consults new `ChampionHooks.targetOk` | 068d755 |
+| src/sim/champions/hooks.ts | B | new optional `ChampionHooks.targetOk`, `PassiveHook.onPetDamaged` | 068d755 |
+| src/sim/damage.ts | B | pet damaged -> owner's `onPetDamaged` passives | 068d755 |
+| src/sim/summons.ts | B | `petOwner`, `petTag`, `extendPet` helpers | 068d755 |
+| src/sim/snapshot.ts | B | `SnapEntity.look` (+ level) for decoy pets (tag `*_decoy`) | 4f29a96 |
+| src/data/champions/index.ts, src/sim/champions/index.ts | B | one registry line each | 068d755 |
+| src/data/runePresets.json, src/render/abilityMotifs.json | B / D | `sev` presets (copy of thessaly), motif row eye/flame/cloak/spiral | 068d755 |
+| src/i18n/de.json, en.json | C | `cc.fear` | 068d755 |
+| src/ui/overlay.ts | C | CC_ORDER fear entry; decoys (`look`) get the champion bar + owner's name | 068d755, 4f29a96 |
+| src/render/championSprites.ts | D | decoy pet with `look` uses that champion's sprite | 4f29a96 |
+| src/render/champions/types.ts, anim.ts, kits.ts | D | Hold `palm` (+ its pose), Sev kit entry | bfa425b |
+| tests/championData, abilityMotifs, botParams, items, telegraph | all | roster count 26 -> 27 / roster list | 068d755 |
+| tests/combos.test.ts | B | harness: a repeated token on a recast-flag skillshot with wind-up = fake (press during wind-up) | 068d755 |
+| tools/botSim.ts | A1 | `--champion=<id>` puts that champion into blue mid; registers `BUILDS.sev` at runtime until builds.ts has the line | bfa425b |
 ## 2026-10-19 · D · src/ui/overlay.ts (C) · CC symbols + HP-bar stacking (D2, FEATURE-GAP 7.6 / 7.8) · proposed
 
 Affects: C only (render-free UI file). Helpers are on art/d-visuals, pure and tested (tests/readability.test.ts):

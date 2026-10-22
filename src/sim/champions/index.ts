@@ -35,6 +35,7 @@ import { hooks as wrenHooks } from './wren';
 import { hooks as hagenHooks } from './hagen';
 import { hooks as kiranHooks } from './kiran';
 import { hooks as odaHooks } from './oda';
+import { hooks as sevHooks } from './sev';
 import { extraHooksOf } from '../items/itemHooks';
 
 export const CHAMPION_DATA: Record<string, ChampionData> = {
@@ -70,6 +71,7 @@ export const CHAMPION_HOOKS: Record<string, ChampionHooks> = {
   hagen: hagenHooks,
   kiran: kiranHooks,
   oda: odaHooks,
+  sev: sevHooks,
 };
 
 export const FALLBACK_CHAMPION = 'mira';

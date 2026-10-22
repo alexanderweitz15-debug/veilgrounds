@@ -55,6 +55,7 @@ class View {
     }
     const m = this.parts[i]!;
     m.visible = true;
+    m.rotation.order = 'XYZ';
     m.rotation.set(0, 0, 0);
     m.scale.set(1, 1, 1);
     return m;
@@ -234,7 +235,7 @@ export class GroundObjects {
     if (o.tag.startsWith('sev_')) {
       const fol = o.follow !== undefined ? state.byId.get(o.follow) : undefined;
       const end = { x: fol ? state.x(fol) : o.x2 ?? o.x, y: fol ? state.y(fol) : o.y2 ?? o.y };
-      if (drawSevObject(o, now, { part: p, disc: GEO.disc, ring: GEO.ring, thin: GEO.thin, strip, end })) return void v.hideFrom(n);
+      if (drawSevObject(o, now, { part: p, disc: GEO.disc, ring: GEO.ring, thin: GEO.thin, plane: GEO.plane, strip, end })) return void v.hideFrom(n);
     }
     switch (shape) {
       case 'blade': {

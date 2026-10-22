@@ -11,6 +11,8 @@ export interface SevFxApi {
   disc: THREE.BufferGeometry;
   ring: THREE.BufferGeometry;
   thin: THREE.BufferGeometry;
+  /** Unit plane lying flat (XZ). */
+  plane: THREE.BufferGeometry;
   /** Flat strip a -> b of width w at height h. */
   strip(m: Mesh, ax: number, ay: number, bx: number, by: number, w: number, h: number): void;
   /** End point of a line object (follows its unit). */
@@ -54,13 +56,17 @@ export function drawSevObject(o: SnapObject, now: number, g: SevFxApi): boolean 
     case 'sev_w_crows': {
       // crow burst: dark shock ring expanding + crows flying outward
       const t = 1 - life;
-      circle(g.thin, o.r * (0.4 + 0.8 * t), '#1a1420', 0.85 * life, 5);
-      circle(g.disc, o.r * (0.3 + 0.5 * t), '#3a1a3a', 0.35 * life, 3);
+      circle(g.disc, o.r * (0.35 + 0.65 * t), '#2a0f38', 0.5 * life, 3);
+      circle(g.ring, o.r * (0.4 + 0.65 * t), '#c89aff', 0.85 * life, 5);
+      circle(g.thin, o.r * (0.25 + 0.5 * t), '#e8d8ff', 0.6 * life, 6);
       // crow storm: crows spiral outward to the edge and beyond
       for (let i = 0; i < 18; i++) {
         const a = (i / 18) * Math.PI * 2 + t * 2.2 + (i % 3) * 0.2;
         const rr = o.r * (0.15 + (0.75 + (i % 4) * 0.12) * t);
-        circle(g.disc, 12 + (i % 3) * 4, '#0e0a12', 0.95 * Math.min(1, life * 2), 30 + (i % 5) * 6, o.x + Math.cos(a) * rr, o.y + Math.sin(a) * rr);
+        const cx = o.x + Math.cos(a) * rr;
+        const cy = o.y + Math.sin(a) * rr;
+        circle(g.disc, 22 + (i % 3) * 6, '#9a78c8', 0.55 * Math.min(1, life * 2), 29 + (i % 5) * 6, cx, cy);
+        circle(g.disc, 16 + (i % 3) * 5, '#0e0a12', 0.95 * Math.min(1, life * 2), 30 + (i % 5) * 6, cx, cy);
       }
       circle(g.ring, o.r, '#6a2a7a', 0.6 * life, 4);
       return true;
@@ -104,6 +110,34 @@ export function drawSevObject(o: SnapObject, now: number, g: SevFxApi): boolean 
       g.strip(spine, o.x, o.y - o.r * 0.9, o.x, o.y + o.r * 0.9, 18, 7);
       spine.material.color.set('#ff8a40');
       spine.material.opacity = 0.65;
+      // standing spectral ribs around Sev (vertical translucent planes) + a halo where the guardian's head is
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2;
+        const m = g.part();
+        m.geometry = g.plane;
+        m.rotation.order = 'YXZ';
+        m.rotation.set(Math.PI / 2, -a + Math.PI / 2, 0);
+        const h = 230 + 70 * Math.sin(a * 2 + 1);
+        m.position.set(o.x + Math.cos(a) * o.r * 0.8, h / 2, -(o.y + Math.sin(a) * o.r * 0.8));
+        m.scale.set(40, 1, h);
+        m.material.side = 2; // THREE.DoubleSide (seen from both sides)
+        m.material.needsUpdate = true;
+        m.material.color.set(i % 2 ? '#ff6a2a' : '#ff9a4a');
+        m.material.opacity = 0.45 * p;
+      }
+      // translucent body of the guardian (upright, double-sided) + its head halo
+      for (const [w, h, col, a] of [[o.r * 1.7, 380, '#ff5a1e', 0.16], [o.r * 1.0, 300, '#ffa050', 0.14]] as [number, number, string, number][]) {
+        const b = g.part();
+        b.geometry = g.plane;
+        b.rotation.set(Math.PI / 2, 0, 0);
+        b.position.set(o.x, h / 2, -o.y);
+        b.scale.set(w, 1, h);
+        b.material.side = 2;
+        b.material.needsUpdate = true;
+        b.material.color.set(col);
+        b.material.opacity = a * p;
+      }
+      circle(g.ring, 70, '#ffb070', 0.5 * p, 330);
       for (let i = 0; i < 4; i++) {
         const y = o.y + o.r * (0.55 - i * 0.32);
         for (const s of [1, -1]) {

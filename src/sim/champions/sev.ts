@@ -29,7 +29,7 @@ const GENJUTSU_CD = sec(12);
 const FIRE_TICK = sec(0.5);
 const GRIEVOUS_PCT = 40;
 const SWEEP_RADIUS = 300;
-const BURST_SHOW = sec(0.6);
+const BURST_SHOW = sec(0.9);
 
 // ------------------------------------------------------------------ state
 

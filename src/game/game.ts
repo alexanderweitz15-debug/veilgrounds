@@ -318,9 +318,10 @@ export class Game {
       }
     }
     if (!this.minimap.dragging) this.input.update(dt, now);
-    const hoverId = this.input.hover?.id ?? -1;
+    // C8: the highlighted unit is the one a click hits (hover, or the predicted attack-move target while A is armed)
+    const hoverId = this.input.highlight?.id ?? -1;
     const t1 = performance.now();
-    this.world.frame(st, now, hoverId, this.input.showRange);
+    this.world.frame(st, now, hoverId, this.input.showRange || this.input.attackMoveArmed);
     const t2 = performance.now();
     this.overlay.draw(st, this.world, now, hoverId);
     const t3 = performance.now();

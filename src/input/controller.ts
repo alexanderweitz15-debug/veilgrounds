@@ -10,6 +10,7 @@ import { castModeFor } from './castMode';
 import { PingWheel } from '../ui/pingWheel';
 import { Kind, type PingKind } from '../sim/types';
 import { ATTACK_CURSOR } from '../ui/cursors';
+import { attackMoveTarget } from './attackMove';
 
 const anyUnit = (): boolean => true;
 /** Champions and their decoys (Sev E clones look like champions, LoL lets champion-only targeting hit them). */
@@ -42,6 +43,18 @@ export class InputController {
   mouseX = -1;
   mouseY = -1;
   hover: SnapEntity | null = null;
+  /** Predicted attack-move target while attack-move is armed (C8). */
+  private amTarget: SnapEntity | null = null;
+
+  /** Unit the HUD highlights: the predicted attack-move target while armed, else the hovered unit. */
+  get highlight(): SnapEntity | null {
+    return this.armed === 'attackMove' ? this.amTarget : this.hover;
+  }
+
+  /** Attack-move armed (A pressed, waiting for the left click): the range circle is shown like LoL. */
+  get attackMoveArmed(): boolean {
+    return this.armed === 'attackMove';
+  }
   /** Own champion was dead last frame (respawn camera snap). */
   private wasDead = false;
   showRange = false;
@@ -162,10 +175,8 @@ export class InputController {
       }
       // LoL: a plain left click selects the unit under the cursor for the target frame, ground clears it
       if (!this.armed) this.host.select?.(this.hover ? this.hover.id : null);
-      if (this.armed === 'attackMove') {
-        this.send(settings.attackMoveNearCursor ? { t: 'attackMove', x: g.x, y: g.y, cursor: true } : { t: 'attackMove', x: g.x, y: g.y });
-        this.host.world.fx.clickMarker(g.x, g.y, true, now);
-      } else if (this.armed === 'teleport') this.send({ t: 'cheat', op: 'teleport', x: g.x, y: g.y });
+      if (this.armed === 'attackMove') this.attackMoveAt(g, now);
+      else if (this.armed === 'teleport') this.send({ t: 'cheat', op: 'teleport', x: g.x, y: g.y });
       else if (this.armed === 'spawnDummy') this.send({ t: 'cheat', op: 'spawnDummy', x: g.x, y: g.y });
       if (this.armed) this.setArmed(null);
     }
@@ -260,10 +271,7 @@ export class InputController {
       case 'attackMove':
         if (settings.attackMoveOnCursor) {
           const g = this.cursorGround();
-          if (g) {
-            this.send(settings.attackMoveNearCursor ? { t: 'attackMove', x: g.x, y: g.y, cursor: true } : { t: 'attackMove', x: g.x, y: g.y });
-            this.host.world.fx.clickMarker(g.x, g.y, true, performance.now());
-          }
+          if (g) this.attackMoveAt(g, performance.now());
         } else this.setArmed('attackMove');
         return;
       case 'recall':
@@ -330,6 +338,33 @@ export class InputController {
     }
   }
 
+  /** Predicted first target of an attack-move at ground point g (src/input/attackMove.ts), or null. */
+  private predictAttackMove(g: { x: number; y: number } | null): SnapEntity | null {
+    const st = this.host.state;
+    const me = st.me();
+    const range = st.snap?.me?.stats?.range;
+    if (!g || !me || !st.snap || range === undefined) return null;
+    return attackMoveTarget({
+      entities: st.snap.entities, myTeam: st.myTeam, me, range, gx: g.x, gy: g.y,
+      nearCursor: settings.attackMoveNearCursor, hover: this.hoveredEnemy(),
+    });
+  }
+
+  /**
+   * A + left click (or A with "attack move on cursor"): a hostile unit under the cursor is attacked directly (LoL),
+   * otherwise attack-move; the sim picks the in-range enemy nearest to the click, as predicted and highlighted.
+   */
+  private attackMoveAt(g: { x: number; y: number }, now: number): void {
+    const enemy = this.hoveredEnemy();
+    if (enemy) {
+      this.send({ t: 'attack', target: enemy.id });
+      this.host.world.fx.clickMarker(enemy.x, enemy.y, true, now);
+      return;
+    }
+    this.send(settings.attackMoveNearCursor ? { t: 'attackMove', x: g.x, y: g.y, cursor: true } : { t: 'attackMove', x: g.x, y: g.y });
+    this.host.world.fx.clickMarker(g.x, g.y, true, now);
+  }
+
   /** Quick cast at the cursor; enemy under cursor becomes the target; Alt = self-cast. */
   private cast(t: 'cast' | 'spell', slot: number, self: boolean): void {
     const st = this.host.state;
@@ -393,8 +428,10 @@ export class InputController {
     this.refreshHover();
     if (this.aiming && this.host.menuOpen()) this.aiming = null;
     world.fx.showAim(state, this.aiming ? this.aiming.slot : null, this.aiming ? this.cursorGround() : null);
-    // attack cursor over whatever a right click would attack (the hovered hostile unit, highlighted by the overlay)
-    const cursor = this.armed ? 'crosshair' : this.hoveredEnemy() ? ATTACK_CURSOR : '';
+    // attack-move armed: highlight the unit the click would attack (same outline as hover)
+    this.amTarget = this.armed === 'attackMove' ? this.predictAttackMove(this.cursorGround()) : null;
+    // attack cursor over whatever a click would attack (hovered hostile unit / predicted attack-move target)
+    const cursor = this.armed === 'attackMove' ? (this.amTarget ? ATTACK_CURSOR : 'crosshair') : this.armed ? 'crosshair' : this.hoveredEnemy() ? ATTACK_CURSOR : '';
     if (cursor !== this.cursor) this.el.style.cursor = this.cursor = cursor;
 
     if (this.rightHeld && !state.paused && now - this.lastHoldMove > HOLD_MOVE_MS) this.rightClick(now, false);

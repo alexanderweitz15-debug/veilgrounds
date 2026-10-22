@@ -70,19 +70,28 @@ const r1 = (n: number): string => n.toFixed(1);
 const r2 = (n: number): string => n.toFixed(2);
 const r3 = (n: number): string => n.toFixed(3);
 const all: { s: ChampStats; min: number }[] = [];
-const results: { res: GameResult; seed: number }[] = [];
+/** What the summary needs of one game (serialisable: --jobs children send it back as JSON). */
+type GameLite = Omit<GameResult, 'sim' | 'bots' | 'hash'> & { wallS: number };
+interface GameRec {
+  g: number;
+  seed: number;
+  rankTeam: number;
+  aTeam: number;
+  res: GameLite;
+}
+const results: { res: GameLite; seed: number }[] = [];
 const lengths: number[] = [];
 const pacing: { ft: number | undefined; k15: number; k25: number; towers: number; winner: number | undefined; min: number }[] = [];
 const isLaner = (s: ChampStats): boolean => s.role === 'top' || s.role === 'mid' || s.role === 'adc';
-for (let g = 0; g < games; g++) {
+
+function playGame(g: number): GameRec {
   const swap = !!vs && mirror && g % 2 === 1;
   const sideSwap = sides && g % 2 === 1;
   const seed = seed0 + (mirror || sides ? Math.floor(g / 2) : g);
   const t0 = Date.now();
   let res: GameResult;
-  const rankTeam = swap ? 1 : 0;
   if (scenario === 'laneAlone') {
-    res = runLaneAlone(rank, { minutes, seed, clock: () => performance.now(), noVariance: true, ...(args.has('champion') ? { champion: args.get('champion')! } : {}) });
+    res = runLaneAlone(rank, { minutes, seed, clock: () => performance.now(), noVariance: true, ...(args.has('champion') ? { champion: args.get('champion')! } : {}), ...(args.get('reflex') === '0' ? { reflex: false } : {}) });
   } else {
     const config = botGameConfig(seed, rank);
     if (archetype) for (const p of config.players) p.bot!.archetype = archetype;
@@ -98,6 +107,53 @@ for (let g = 0; g < games; g++) {
     }
     res = runBotGame(config, Math.round(minutes * 60 * 30), undefined, { noVariance, reflex: args.get('reflex') === 'true', clock: () => performance.now() });
   }
+  const { sim: _sim, bots: _bots, hash: _hash, ...lite } = res;
+  void _sim;
+  void _bots;
+  void _hash;
+  return { g, seed, rankTeam: swap ? 1 : 0, aTeam: sideSwap ? 1 : 0, res: { ...lite, wallS: (Date.now() - t0) / 1000 } };
+}
+
+// --jobs=N (default: CPU cores - 2): games run in parallel child processes, each plays its share and sends the
+// summaries back as JSON; --jobs=1 runs everything in this process. Children are this script with --child-games.
+const fsMod = (await import('node:' + 'fs')) as { writeFileSync(path: string, data: string): void; readFileSync(path: string, enc: string): string; unlinkSync(path: string): void };
+const childGames = args.get('child-games');
+const recs: GameRec[] = [];
+if (childGames !== undefined) {
+  const out: GameRec[] = childGames ? childGames.split(',').map((x) => playGame(Number(x))) : [];
+  fsMod.writeFileSync(args.get('child-out')!, JSON.stringify(out));
+  (process as unknown as { exit(code: number): never }).exit(0);
+} else {
+  const os = (await import('node:' + 'os')) as { cpus(): unknown[]; tmpdir(): string };
+  const jobs = Math.max(1, Math.min(games, Number(args.get('jobs') ?? Math.max(1, os.cpus().length - 2))));
+  if (jobs <= 1) {
+    for (let g = 0; g < games; g++) recs.push(playGame(g));
+  } else {
+    const cp = (await import('node:' + 'child_process')) as { spawn(cmd: string, argv: string[], o: { stdio: unknown[] }): { on(ev: string, cb: (code: number) => void): void } };
+    const nodeProc = process as unknown as { execPath: string; execArgv: string[]; pid: number };
+    const fwd = process.argv.slice(2).filter((a) => !/^--(out|game-out|report|jobs|child-games|child-out)(=|$)/.test(a));
+    const parts: number[][] = Array.from({ length: jobs }, () => []);
+    for (let g = 0; g < games; g++) parts[g % jobs]!.push(g);
+    const files = parts.map((_, i) => `${os.tmpdir()}/botsim-${nodeProc.pid}-${i}.json`);
+    process.stderr.write(`running ${games} games in ${jobs} processes\n`);
+    await Promise.all(
+      parts.map(
+        (list, i) =>
+          new Promise<void>((resolve, reject) => {
+            const child = cp.spawn(nodeProc.execPath, [...nodeProc.execArgv, process.argv[1]!, ...fwd, `--child-games=${list.join(',')}`, `--child-out=${files[i]}`], { stdio: ['ignore', 'ignore', 'inherit'] });
+            child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`bot-sim child ${i} exited with ${code}`))));
+          }),
+      ),
+    );
+    for (const file of files) {
+      recs.push(...(JSON.parse(fsMod.readFileSync(file, 'utf8')) as GameRec[]));
+      fsMod.unlinkSync(file);
+    }
+    recs.sort((a, b) => a.g - b.g);
+  }
+}
+for (const rec of recs) {
+  const { g, seed, rankTeam, aTeam, res } = rec;
   results.push({ res, seed });
   lengths.push(res.minutes);
   pacing.push({ ft: res.firstTowerMin, k15: res.killsAt15, k25: res.killsAt25, towers: res.towersTaken[0] + res.towersTaken[1], winner: res.winner, min: res.minutes });
@@ -106,7 +162,6 @@ for (let g = 0; g < games; g++) {
   if (res.winner === 0 || (res.winner === undefined && teamGold(0) > teamGold(1))) blueWins++;
   if (res.winner === rankTeam || (res.winner === undefined && teamGold(rankTeam) > teamGold(1 - rankTeam))) rankWins++;
   if (res.winner === rankTeam) rankNexusWins++;
-  const aTeam = sideSwap ? 1 : 0; // line-up A = blue's line-up of the unswapped game
   if (res.winner === aTeam || (res.winner === undefined && teamGold(aTeam) > teamGold(1 - aTeam))) lineupAWins++;
   for (const s of res.stats) {
     all.push({ s, min: res.minutes });
@@ -133,7 +188,7 @@ for (let g = 0; g < games; g++) {
   const ln = laners.reduce((a, s) => a + s.laneMinions15, 0);
   const lc = laners.reduce((a, s) => a + s.laneCs15, 0);
   process.stderr.write(
-    `game ${g + 1}/${games} seed ${seed}: ${r1(res.minutes)} min in ${((Date.now() - t0) / 1000).toFixed(1)} s, winner ${res.winner ?? '-'}, ` +
+    `game ${g + 1}/${games} seed ${seed}: ${r1(res.minutes)} min in ${r1(res.wallS)} s, winner ${res.winner ?? '-'}, ` +
       `first tower ${res.firstTowerMin === undefined ? '-' : r1(res.firstTowerMin)}, towers ${res.towersTaken[0]}:${res.towersTaken[1]}, kills ${res.killsAt15}@15 ${res.killsAt25}@25 ${tk} total, ` +
       `laner lane CS@15 ${lc}/${ln}${scenario === 'laneAlone' ? `, CS ${laners[0]?.cs ?? 0}` : ''}\n`,
   );
@@ -166,7 +221,7 @@ process.stderr.write(
     (sides ? `, sides swapped: blue wins ${blueWins}/${games}, line-up A wins ${lineupAWins}/${games}` : `, blue wins ${blueWins}/${games}`) +
     '\n',
 );
-const fs = (await import('node:' + 'fs')) as { writeFileSync(path: string, data: string): void };
+const fs = fsMod;
 const csv = lines.join('\n') + '\n';
 if (outFile) fs.writeFileSync(outFile, csv);
 else if (!report || report !== 'true') process.stdout.write(csv);

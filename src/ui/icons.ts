@@ -4,6 +4,7 @@
 import { itemById } from '../sim/items/inventory';
 import type { ItemData } from '../sim/items/schema';
 import { championData } from '../sim/champions';
+import { abilityForSlot } from '../data/champions';
 import { championKit } from '../render/champions/atlas';
 import { MOTIF_RULES, abilityTheme } from '../render/abilityTheme';
 
@@ -627,7 +628,7 @@ function abilityMotif(champ: string, slot: number): [Glyph, number] | null {
 
 /** Ability icon for champion `champ`, slot 0..3 (R gets a gold frame): thematic motif + element colour on the champion palette. */
 export function abilityIcon(champ: string, slot: number): string | null {
-  const ab = championData(champ)?.abilities[slot];
+  const ab = abilityForSlot(champ, slot); // 4..6 = R choices (Sev)
   if (!ab) return null;
   return cached(`ab:${champ}:${slot}`, (g) => {
     const { base, accent } = champColors(champ);
@@ -653,7 +654,7 @@ export function abilityIcon(champ: string, slot: number): string | null {
       const [ah, as] = hexToHsl(accent);
       (ABILITY_GLYPH[ab.type] ?? ABILITY_GLYPH.self!)(g, hsl(ah, Math.max(55, as), 66));
     }
-    frame(g, slot === 3 ? GOLD : 'rgba(12,9,6,0.9)', slot === 3 ? 4 : 2);
+    frame(g, slot >= 3 ? GOLD : 'rgba(12,9,6,0.9)', slot >= 3 ? 4 : 2);
   });
 }
 

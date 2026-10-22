@@ -3,7 +3,7 @@
 // Hooks: src/sim/champions/<id>.ts exporting `hooks: ChampionHooks` (template: mira.ts), registered below.
 // Static imports on purpose: import.meta.glob is unavailable under tsx (tools/botSim).
 
-import type { ChampionData } from './schema';
+import type { AbilityData, ChampionData } from './schema';
 import type { ChampionHooks, PassiveHook } from './hooks';
 import type { Sim } from '../sim';
 import { champions as roster } from '../../data/champions';
@@ -78,6 +78,12 @@ export const FALLBACK_CHAMPION = 'mira';
 
 export function championData(id: string): ChampionData {
   return CHAMPION_DATA[id] ?? CHAMPION_DATA[FALLBACK_CHAMPION]!;
+}
+
+/** Ability of a slot; slot 3 with a chosen ultimate (ult >= 0, ChampionData.ultChoices) returns that choice. Pure data. */
+export function slotAbility(id: string, slot: number, ult = -1): AbilityData {
+  const d = championData(id);
+  return slot === 3 && ult >= 0 && d.ultChoices?.[ult] ? d.ultChoices[ult] : d.abilities[slot]!;
 }
 
 export function championHooks(id: string): ChampionHooks {

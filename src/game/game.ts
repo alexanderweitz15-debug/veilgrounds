@@ -132,6 +132,7 @@ export class Game {
         sell: (slot) => this.link.send({ t: 'sell', slot }),
         swapTrinket: (id) => this.link.send({ t: 'trinket', id }),
         say: (text) => this.chat.say(text),
+        ultChoice: (choice) => this.link.send({ t: 'ultChoice', choice }),
       },
       config?.mode === 'kite' || !config, // sandbox: one merged panel (src/ui/sandboxPanel.ts)
       config?.players ?? [],

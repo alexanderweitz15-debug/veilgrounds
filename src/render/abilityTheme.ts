@@ -2,6 +2,7 @@
 // English name/description. Shared by the ability icons (src/ui/icons.ts) and the missile colours (src/render/fx.ts).
 // Pure data, no DOM/canvas.
 import { championData } from '../sim/champions';
+import { abilityForSlot } from '../data/champions';
 import motifData from './abilityMotifs.json';
 
 /** Keyword rules on the ability's English name + description: [pattern, motif, element hue]. First match wins. */
@@ -35,7 +36,8 @@ export const MOTIF_GLYPHS: readonly string[] = (motifData as { glyphs: string[] 
 
 /** Motif key + element hue of ability `slot` of `champ`: the per-champion table first, then the name, then the description. */
 export function abilityTheme(champ: string, slot: number): { motif: string; hue: number } | null {
-  const ab = championData(champ)?.abilities[slot];
+  // slots 4..6: the R choices (Sev), table columns 4..6
+  const ab = abilityForSlot(champ, slot);
   if (!ab) return null;
   const o = MOTIF_OVERRIDES[champ]?.[slot];
   if (o) return { motif: o[0], hue: o[1] };

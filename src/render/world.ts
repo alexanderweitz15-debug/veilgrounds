@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import type { MapData } from '../sim/map';
 import type { SnapEntity } from '../sim/snapshot';
 import { Kind, TICK_HZ, type SimEvent } from '../sim/types';
-import { champions } from '../data/champions';
+import { abilityForSlot } from '../data/champions';
 import { castKindOf } from './championSprites';
 import type { ClientState } from '../game/state';
 import { CameraRig, PITCH } from './camera';
@@ -118,7 +118,7 @@ export class World {
     if (ev.e === 'cast') {
       // wind-up until the release: the sim's wind-up end tick (snapshot tick = event tick + 1)
       const src = state.byId.get(ev.src);
-      const ab = src?.champ ? champions[src.champ]?.abilities[ev.slot] : undefined;
+      const ab = src?.champ ? abilityForSlot(src.champ, ev.slot, src.ult ?? -1) : undefined;
       const dur = ev.at !== undefined && state.snap ? Math.max(0, ev.at - (state.snap.tick - 1)) * (1000 / TICK_HZ) : (ab?.castTime ?? 0) * 1000;
       this.units.champs?.onCast(ev.src, now, dur, castKindOf(ab?.type));
     } else if (ev.e === 'death') this.units.onDeath(ev.eid, now);

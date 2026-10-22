@@ -6,11 +6,10 @@
 import { describe, expect, it } from 'vitest';
 import { step } from '../../src/sim/sim';
 import { sec, type Command, type PlayerSetup } from '../../src/sim/types';
-import { CHAMPION_DATA, championData } from '../../src/sim/champions';
-import { champAbil, isDisplacing, levelAbility } from '../../src/sim/systems/abilities';
+import { CHAMPION_DATA, slotAbility } from '../../src/sim/champions';
+import { champAbil, chooseUlt, isDisplacing, levelAbility } from '../../src/sim/systems/abilities';
 import { spawnDummy } from '../../src/sim/systems/champions';
 import { SUMMONERS } from '../../src/sim/summoners';
-import { addBuff } from '../../src/sim/buffs';
 import { rv } from '../../src/sim/systems/abilities';
 import { CX, CY, makeSim, place } from '../combat-helpers';
 
@@ -44,8 +43,8 @@ function run(champ: string, slot: number | null): Run {
   if (slot !== null) levelAbility(sim, m, slot);
   place(sim, m, START.x, START.y);
   place(sim, ally, ALLY.x, ALLY.y);
-  const foe = spawnDummy(sim, FOE.x, FOE.y, 1);
-  if (champ === 'sev') addBuff(sim, foe, { kind: 'mark', id: 'sev_nachbild', src: m, ticks: sec(30) }); // Sev R needs a Nachbild target
+  spawnDummy(sim, FOE.x, FOE.y, 1);
+  if (slot === 3) chooseUlt(sim, m, 0); // champions with an R choice (Sev): the first ultimate
   step(sim);
   sim.c.Mana.cur[m] = sim.c.Mana.max[m]!;
   const go = (c?: Command): void => step(sim, c ? [{ slot: 0, cmd: c }] : []);
@@ -54,7 +53,7 @@ function run(champ: string, slot: number | null): Run {
   const ms = sim.c.Stats.ms[m]!;
   const out: Run = { arrival: -1, windup: 0, walked: 0, ms, cast: false, relocated: false, msAfter: 0 };
   if (slot !== null) {
-    const ab = championData(champ).abilities[slot]!;
+    const ab = slotAbility(champ, slot, 0);
     const ally_ = ab.flags?.includes('ally_target');
     const tgt = ab.type === 'targeted' ? (ally_ ? ally : -1) : -1;
     const p = ally_ ? ALLY : FOE;
@@ -106,7 +105,7 @@ describe('B2 walk 600, cast at 300: arrival time per ability', () => {
       expect(b.arrival).toBeGreaterThan(0);
       const rows: string[] = [];
       for (const slot of [0, 1, 2, 3]) {
-        const ab = championData(champ).abilities[slot]!;
+        const ab = slotAbility(champ, slot, 0);
         const r = run(champ, slot);
         const tag = `${ab.id} moves=${ab.movesWhileCasting} windup=${r.windup} walked=${r.walked.toFixed(0)} arrival=${r.arrival - b.arrival}`;
         rows.push(tag);

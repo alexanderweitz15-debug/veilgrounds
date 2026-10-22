@@ -117,7 +117,15 @@ const trainerSetups = new Map<TrainerMode, TrainerSetup>();
 function trainerMenu(): void {
   const s = screen();
   void loadTrainerMenu().then(({ renderTrainerMenu }) => {
-    if (s.isConnected) renderTrainerMenu(s, mainMenu, (m) => void trainerLobby(m));
+    if (s.isConnected)
+      renderTrainerMenu(s, mainMenu, (m) => void trainerLobby(m), (m, opts) => {
+        // training plan "Starten": the plan's suggested options on top of the mode's current setup
+        void loadTrainerMenu().then(({ defaultSetup }) => {
+          const d = trainerSetups.get(m) ?? defaultSetup(m);
+          trainerSetups.set(m, { ...d, opts: { ...d.opts, ...opts } });
+          void trainerLobby(m);
+        });
+      });
   });
 }
 
@@ -133,6 +141,8 @@ async function trainerLobby(mode: TrainerMode): Promise<void> {
 function afterGame(config: SimConfig | null, r?: SessionResult): void {
   if (!config || !r) return mainMenu();
   if (r.retry) return start({ ...structuredClone(config), seed: (Math.random() * 2 ** 31) | 0 });
+  // match history for the training plan (IndexedDB; no-op when unavailable)
+  if (r.summary.duration >= 60) void import('./stats/history').then((h) => h.saveRecord(h.recordFromSummary(r.summary, Date.now()))).catch(() => undefined);
   const auto = (config.mode === 'classic' || config.mode === 'laneOnly') && r.summary.duration >= 60;
   if (!r.analysis && !auto) return mainMenu();
   const s = screen();

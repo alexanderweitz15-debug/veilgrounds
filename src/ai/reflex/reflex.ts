@@ -53,7 +53,9 @@ export interface ReflexIO {
 }
 
 /** Aim this many ticks into a kill window (never its last tick: same-tick hits are a coin flip). */
-const margin = (a: number, b: number): number => (b === Infinity ? 1 : Math.max(0, Math.min(2, Math.floor((b - a - 1) / 2))));
+const margin = (a: number, b: number): number => (b === Infinity ? 1 : Math.max(0, Math.min(AIM_MAX, Math.floor((b - a - 1) / 2))));
+/** Aim at most this many ticks into a kill window (the middle of narrow windows): more slack for the timing error. */
+const AIM_MAX = 4;
 
 const isWindup = (v: View): boolean => v.self.atkPhase === 1;
 /** A filler minion may need at most this walk (ticks): melee stand points sit a step behind the wave contact. */
@@ -657,7 +659,8 @@ function chooseFiller(
     }
     if (best) return { target: best.m.id, kind: 'minion' };
   }
-  if (intent.hitStructures && intent.wave === 'push' && !windows.some((w) => w.walk === 0)) {
+  // structures: not while freezing or holding the wave (they move it / advance the bot); plates after a crash
+  if (intent.hitStructures && intent.wave !== 'freeze' && intent.wave !== 'hold' && !windows.some((w) => w.walk === 0)) {
     const s = structureToHit(v, ctx);
     if (s >= 0) return { target: s, kind: 'structure' };
   }

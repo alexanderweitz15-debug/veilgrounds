@@ -70,6 +70,14 @@ Bot use: issue in issues.md. Test tests/sim/topTeleport.test.ts.
   farm dip, within the seed spread; no mechanism found in B's code (bot reach already uses the snapshot radius).
   Brain team: please watch CS@15 for ranged laners in your next runs.
 
+- Review of the lead's test fix f343d7b (22.10.): correct, not a sim bug. Both tests checked a fixed-duration CC a
+  fixed number of ticks after the order. With radius 65 the hit lands earlier: Corvin (ranged) reaches the keg one
+  attack-range step sooner (reach = range + own radius + target radius), and Vessa R stops at the larger Ilvane
+  hitbox (dash stops at radius sum), so the 0.75 s slow / airborne had expired at the old check tick. Checking at
+  the hit moment tests what the spec says (CC applied on hit). Full suite before the fix: 893 passed, exactly these
+  2 failed; after merging f343d7b hooksE/hooksF 63/63 green. The skipped reflex test 4 (1 out_of_range cancel of the
+  stand point) is A1's re-tuning, nothing in the sim's range rule changed except the radius itself.
+
 ## B6 Kesselbrut objective - done
 `CampDef.epic` (Leviathan, Kesselbrut, Schleierwaechter), death events `epic` reach both teams, `SnapEntity.epic`.
 Radius unchanged. Test tests/sim/epicObjectives.test.ts. Note for C (announce.ts) and A2 in shared-changes.

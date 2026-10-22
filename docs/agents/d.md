@@ -5,7 +5,8 @@ Branch `art/d-visuals` (main merged in at f7f7eb4 = origin/main 04a1eb5 incl. B)
 ## Ready for merge
 
 All commits on art/d-visuals up to the last one: D1a, D1b, D2 (incl. B5/B1 render requests and C's skillshot
-outline), D5 logic + panel, B7 load time. tsc green, touched tests green, full suite: see "Tests run".
+outline), D5 logic + panel, B7 load time (IndexedDB atlas + ground cache), Sev visuals (3beb128). Agent stopped
+on the lead's request (max 3 agents); next steps in d-handoff.md. tsc green, touched tests green, full suite: see "Tests run".
 
 ## Done
 
@@ -79,6 +80,20 @@ outline), D5 logic + panel, B7 load time. tsc green, touched tests green, full s
   scaled from the cached 128 px strip): no visible difference. `docs/ist/b7-cached-sprites-check.jpg`.
 - Not done: first menu frame on a cold start is still dark (CSS placeholder belongs to C's menu files); pre-baked
   PNGs at build time (cold < 5 s) would need a browser bake step in the build (lead / package.json).
+
+### Sev visuals left open by E (3beb128)
+
+- Black flame: unit mark `sev_w` (Schwarzglut) and the burning decoy (`sev_w_decoy`) emit a new particle kind
+  `blackflame` (dark, flickering, rising) plus copper ember sparks (`markParticles` / `tagParticles` in
+  abilityMotifs.json, emitted in groundObjects.ts). On bright ground it reads, on dark cliffs it is subtle - next step:
+  raise `light` / size of `blackflame` or add a copper rim if the user wants it stronger.
+- Augenbann phantoms: three dark, flickering Sev sprites around the target, drawn only on the feared player's client
+  (units.ts `phantoms`, from snapshot `sev_r_phantom` / `sev_r_bann`); the generic pins are gone for everyone, the
+  ring stays. Dark screen vignette for the feared player (fx.ts, CC bit 256 or the bann ring on me).
+- Fear glyph in `src/render/ccGlyphs.ts` (wide eye + sweat drop) for C's overlay wiring (overlay already maps 256).
+- Screenshots: `docs/ist/d-sev-burn-{before,after}.jpg`, `docs/ist/d-sev-bann-victim-{before,after}.jpg` (victim view =
+  frame rendered with snap.me.eid patched to the dummy; before = pre-change build, dummy at the cliff edge - the after
+  shots use a second dummy on the lane, so framing differs).
 
 ## Tests run
 

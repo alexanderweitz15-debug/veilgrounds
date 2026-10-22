@@ -7,7 +7,16 @@
     "spark": { "life": 260, "speed": 300, "rise": 0, "gravity": 0, "back": 0, "size": 100, "light": 78, "trail": 50, "burst": 40, "ambient": 10, "flicker": true, "additive": true },
     "drip": { "life": 520, "speed": 80, "rise": 70, "gravity": 520, "back": 0, "size": 110, "light": 66, "trail": 36, "burst": 34, "ambient": 10, "flicker": false, "additive": false },
     "mote": { "life": 1200, "speed": 22, "rise": 28, "gravity": 0, "back": 0, "size": 120, "light": 72, "trail": 20, "burst": 24, "ambient": 8, "flicker": false, "additive": false },
-    "shard": { "life": 320, "speed": 140, "rise": 0, "gravity": 260, "back": 160, "size": 90, "light": 74, "trail": 34, "burst": 26, "ambient": 5, "flicker": false, "additive": false }
+    "shard": { "life": 320, "speed": 140, "rise": 0, "gravity": 260, "back": 160, "size": 90, "light": 74, "trail": 34, "burst": 26, "ambient": 5, "flicker": false, "additive": false },
+    "blackflame": { "life": 700, "speed": 30, "rise": 160, "gravity": 0, "back": 0, "size": 150, "light": 12, "trail": 20, "burst": 18, "ambient": 10, "flicker": true, "additive": false }
+  },
+  "specialDoc": "Champion-specific particle rules: tagParticles = ground-object tag -> kind (+hue), markParticles = unit mark id -> emitters on the marked unit (rate per second, height). Sev (agent E spec): black flame tongues with a copper core on units burning with Schwarzglut (mark sev_w) and on the burning decoy.",
+  "tagParticles": { "sev_w_decoy": { "kind": "blackflame", "hue": 20 } },
+  "markParticles": {
+    "sev_w": [
+      { "kind": "blackflame", "rate": 16, "hue": 20, "h": 50 },
+      { "kind": "ember", "rate": 9, "hue": 24, "h": 40 }
+    ]
   },
   "motifParticles": {
     "flame": "ember", "sun": "ember", "bomb": "ember", "lamp": "ember", "heart": "ember", "potion": "ember",

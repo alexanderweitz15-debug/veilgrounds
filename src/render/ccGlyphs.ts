@@ -3,8 +3,8 @@
 // vine knot, slow = down chevrons, silence = crossed-out mouth, blind = closed eye, airborne = up arrow, suppress =
 // chain link, stasis = hourglass. Canvas 2D only, drawn into a box of size s centred at (x, y); no DOM access here.
 
-export type CcKey = 'stasis' | 'suppress' | 'airborne' | 'stun' | 'root' | 'silence' | 'blind' | 'slow';
-export const CC_GLYPH_KEYS: readonly CcKey[] = ['stasis', 'suppress', 'airborne', 'stun', 'root', 'silence', 'blind', 'slow'];
+export type CcKey = 'stasis' | 'suppress' | 'airborne' | 'stun' | 'fear' | 'root' | 'silence' | 'blind' | 'slow';
+export const CC_GLYPH_KEYS: readonly CcKey[] = ['stasis', 'suppress', 'airborne', 'stun', 'fear', 'root', 'silence', 'blind', 'slow'];
 
 type Draw = (g: CanvasRenderingContext2D, x: number, y: number, s: number, color: string, t: number) => void;
 
@@ -94,6 +94,25 @@ const GLYPHS: Record<CcKey, Draw> = {
     g.moveTo(x + s * 0.35, y);
     g.ellipse(x + s * 0.15, y, s * 0.2, s * 0.12, -0.5, 0, Math.PI * 2);
     g.stroke();
+  },
+  fear: (g, x, y, s, c, t) => {
+    // wide eye with a shaking pupil and a sweat drop (Sev R / fear CC)
+    const j = Math.sin(t / 45) * s * 0.04;
+    stroke(g, c, s * 0.1);
+    g.beginPath();
+    g.moveTo(x - s * 0.4, y);
+    g.quadraticCurveTo(x, y - s * 0.38, x + s * 0.4, y);
+    g.quadraticCurveTo(x, y + s * 0.38, x - s * 0.4, y);
+    g.stroke();
+    g.fillStyle = c;
+    g.beginPath();
+    g.arc(x + j, y, s * 0.1, 0, Math.PI * 2);
+    g.fill();
+    g.beginPath();
+    g.moveTo(x + s * 0.38, y - s * 0.42);
+    g.quadraticCurveTo(x + s * 0.48, y - s * 0.26, x + s * 0.38, y - s * 0.2);
+    g.quadraticCurveTo(x + s * 0.28, y - s * 0.26, x + s * 0.38, y - s * 0.42);
+    g.fill();
   },
   stasis: (g, x, y, s, c) => {
     stroke(g, c, s * 0.1);

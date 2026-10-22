@@ -2,6 +2,54 @@
 
 Jede Abweichung vom Design-Prompt steht hier mit Grund. Neue Einträge oben.
 
+## Gehirn-Rework Phase 1: Reflex-Schicht + Angriffs-Scheduler – Gate-Messung (S, 2026-10-22, main f343d7b)
+
+Gemessen vom Aufsichts-Agenten in einem sauberen Worktree auf f343d7b (A1 4ce5cc5 gemergt, Hitbox 65 aktiv):
+`npm run bot-sim -- --rank=gold --games=4 --minutes=20 --seed=101 --variance=0 [--reflex=true] --report`
+(Seeds 101–104, dieselben Aufstellungen beide Läufe; Reflex-Schicht ist im Spiel nur über den Beta-Schalter aktiv).
+
+| Kennzahl (Gold, 4 × 20 min) | Reflex aus (bisheriges laneLeaf) | Reflex an | Ziel §1/§11 |
+|---|---|---|---|
+| Laner-CS/min bei 15:00 | 3,52 | **3,80** | 6,5 |
+| Laner-CS/min Partieende (20 min) | 3,80 | **4,33** | 6,8 |
+| Angriffsauslastung Laner 2:00–14:00 | 0,29 | **0,39** | > 0,50 (Gate Phase 1) |
+| Idle-Anteil Laner (Ziele in Reichweite) | 0,101 | **0,042** | ≤ 0,10 |
+| Kills/Partie (beide Teams) | 16,0 | 14,5 | 50 |
+| Erster Turm (min, 2/4 Partien) | 17,1 | 16,6 | 14 |
+| Platten je Team bis 14:00 | 4,0 | 2,25 | 4 |
+| Tode ohne gegnerischen Champion | 2,5 % | 4,0 % | ≤ 4 % |
+| Harass-Autos je Laner bis 14:00 | 1,3 | 4,2 | ≥ 40 (Gate Phase 2) |
+| Abwesenheitsverlust bis 15:00 | 27,2 % | 30,3 % | ≤ 12 % |
+| CS-Verlust `timing_miss` / `in_range_no_attack` | 15,1 % / 13,1 % | 10,9 % / 14,4 % | – |
+| Reflex-Kosten ms/Bot/Tick | – | 0,150 (unter Last; A1 allein 0,04) | 0,05 |
+
+S-Prüfung des Lane-allein-Gates auf f343d7b (`--scenario=laneAlone --rank=<r> --games=3 --seed=1 --minutes=10 --variance=0 --reflex=true`, Mira mid, Autos only):
+
+| Rang | S (Seeds 1/2/3) | Ø / min | A1 (a1.md, vor Hitbox 65) | Gate |
+|---|---|---|---|---|
+| Iron | 85 / 73 / 84 | 80,7 / 73 | 79 / 76 / 70 (Ø 75,0) | ≥ 70 **erfüllt** |
+| Gold | 91 / 93 / 80 | 88,0 / 80 | 94 / 86 / 89 (Ø 89,7) | ≥ 88 **gerade erfüllt** (Seed 3 = 80) |
+| Challenger | 100 / 92 / 97 | 96,3 / 92 | 102 / 101 / 99 (Ø 100,7) | ≥ 100 **nicht erfüllt** |
+
+Vorher (altes laneLeaf): Iron 51, Gold 65, Challenger 93. Die A1-Zahlen stammen von Branch 289c506 vor dem Merge der Fernkampf-Hitbox 55 → 65 (b358b80); auf main liegt Challenger 4 Punkte darunter – die größere Hitbox verschiebt Reichweite/Stehpunkt der Fernkämpfer (Mira), die Fenster-Kollisionen (`window_collision` 0,9 → 1,9 %) nehmen zu. A1 muss Lane-allein nach Hitbox 65 neu kalibrieren (Stehpunkt-Puffer, Vorbereitung der Fenster).
+
+Gate-Stand Phase 1 (§11): **nicht grün.** Erfüllt: Iron- und (knapp) Gold-Lane-allein, Tests 1, 2, 3, 11, 12 grün, Reflex an in 5v5 nicht schlechter als aus (CS +0,3 / +0,5, Idle 10 % → 4 %, Auslastung +10 Punkte), Determinismus grün. Nicht erfüllt: Challenger Lane-allein 96,3 < 100 (nach Hitbox 65), Angriffsauslastung Gold 5v5 0,39 < 0,50 (A1: braucht Phase 2 – Harass-Filler mit Budget, Wellenzustände als Zielbild), Test 4 übersprungen (Gold Stehpunkt: 1 `out_of_range`-Abbruch), Test 5 übersprungen (Harass 11 Autos/3 min statt ≥ 12, 4 Minions verloren), Reflex-Kosten 0,15 ms unter Last (Test 11 nur Regressionsschranke 0,5). Platten je Team sinken mit Reflex (4,0 → 2,25) – Laner stehen nach dem Crash nicht mehr am Turm; gehört zu Phase 3 (Platten-Intent). Entscheidung: Phase 2 darf parallel beginnen, weil die 5v5-Auslastung ohnehin Phase-2-Arbeit ist; Challenger-Lane-allein ≥ 100 und Test 4 bleiben Phase-1-Pflicht und werden beim Phase-2-Gate mitgemessen. Der Beta-Schalter bleibt Standard aus.
+
+## Beta-Schalter „Neues Bot-Gehirn" (Lead, 2026-10-20; Eintrag S)
+
+| Thema | Spec / Prompt | Entscheidung | Grund |
+|---|---|---|---|
+| Aktivierung des Gehirn-Reworks im Spiel | BRAIN-REWORK §11/§12: Reflex-Schicht und Nutzenmodell gehen erst nach grünem Gate auf main bzw. „Umschalten erst, wenn A1s Phase 2 auf main ist" | Beide liegen auf main, aber hinter **einem** Einstellungs-Schalter „Neues Bot-Gehirn (Beta: Reflex-Schicht + Nutzenmodell)" (`settings.newBrain`, Standard **aus**; `withClientSettings` setzt `SimConfig.botReflex` + `botUtility`, der Worker gibt `reflex` an den `BotRunner`, der Runner `utility` an `BotStatic`). Headless: `bot-sim --reflex=true` bzw. `BOT_UTILITY=1` getrennt | Der Nutzer will das neue Gehirn im Spiel ausprobieren können, bevor die Gates grün sind; mit Standard „aus" bleibt die Live-Partie bit-identisch zum bisherigen Verhalten (A2: Hash `a5913c9c` Flag aus = main; A1: Reflex nur mit Option). Ein Schalter statt zwei, weil das Nutzenmodell ohne den Scheduler im Farm-Intent (A1) nicht sinnvoll messbar ist und beide zusammen die „Beta" sind |
+| Umschalten auf Standard „an" | – | erst, wenn Phase 2 (A1) und Phase 3 (A2) nach review-checklist.md gemessen grün sind und ein 4-Partien-Gold-Lauf mit Schalter an in keiner Kennzahl aus Tabelle A schlechter ist als mit Schalter aus | §11 Gate-Regel bleibt für den Standard; die Beta ist eine Vorschau |
+
+## Fernkampf-Hitbox 55 → 65 (Agent B5, Nutzerentscheidung 19.10., Commit b358b80; Eintrag S)
+
+| Thema | Spec | Entscheidung | Grund |
+|---|---|---|---|
+| Hitbox-Radius Fernkämpfer | spec-champions: 55 (Nahkampf 65); AGENTS-PLAN B5: „prüfen, Default bleibt 55, Entscheidung mit Nutzer" | **65** für die 15 Fernkämpfer (`base.radius` in aurel, corvin, ferris, ilvane, kiran, lio, lysa, mira, nyx, oda, ottilie, seraphyne, thessaly, tobin, wren); Nahkampf unverändert 65 | LoL-näher (alle Champions dort ~65 Gameplay-Radius); vom Nutzer so entschieden |
+| Folgen für Tests | – | `tests/phase1.test.ts`: der Skript-Last-Hitter hält seinen Abstand jetzt relativ zur Champion-Kante (395 + Radius = früher 450 bei 55); mit festem 450 fiel das gierige Skript auf 49 CS, jetzt 99 CS bei 65. `tests/combat.test.ts` angepasst; `tests/hooksE/hooksF` (Corvin-Fass, Vessa R) prüfen die CC jetzt im Treffmoment (f343d7b, Lead) | größere Hitbox = frühere Treffer von Skillshots, die Tests prüften einen Tick zu spät |
+| Nicht gemessen | – | Wirkung auf Bot-Kennzahlen (Trades, Skillshot-Trefferquote, CS) nicht separat gemessen; die Phase-1-Messung unten läuft bereits mit 65 | Bot-Messungen vor/nach 65 wären ein eigener Lauf; Balance-Folgen (tools/balance.ts) beim nächsten Balance-Durchgang prüfen |
+
 ## Integration aller Agenten-Branches ohne Gate-Review (Lead auf Nutzeranweisung, 2026-10-19; Eintrag vom Aufsichts-Agenten S)
 
 Abweichung von BRAIN-REWORK §11/§12 („kein Merge vor grünem Gate, Gates misst der Aufsichts-Agent") und AGENTS-PLAN §2 („kein Merge mit roten Tests oder ohne DECISIONS-Eintrag"): Der Nutzer hat am 16.10. alle Agenten gestoppt und die Zusammenführung aller Branches auf main angeordnet, damit nichts verloren geht und die Agenten vom gleichen Stand weiterarbeiten. Merge e576592 (A3 → B → A1 → A2 → C → D → E), Folge-Commits 45d0622 (rote Tests übersprungen, `bot-sim --reflex=true`) und e0f40bb (Wren-Passiv-HUD, Reflex-Gate-Tests schalten die Reflex-Schicht jetzt wirklich ein). Kein Gate ist gemessen; die Gate-Messung je Phase bleibt offen (status.md).

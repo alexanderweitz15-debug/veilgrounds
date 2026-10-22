@@ -84,6 +84,44 @@ window.__dward = async (name) => {
   const wards = v.state.snap.entities.filter((e) => e.kind === 12).map((e) => [e.ward, e.stealth ?? null]);
   return [await (await fetch('http://localhost:4399/' + name, { method: 'POST', body: url })).text(), JSON.stringify(wards)];
 };
+/**
+ * Sev (sandbox as Sev): W ember + Q Nachbild + R Augenbann on the dummy, capture during the fear. `asVictim` renders
+ * the frame as the dummy's client would (snap.me.eid patched): phantoms + vignette are only drawn for the feared unit.
+ */
+window.__dsev = async (name, asVictim) => {
+  const v = window.__vg;
+  const s = (c) => v.link.send(c);
+  // a fresh dummy on the bright lane (the first one stands at the dark cliff edge)
+  const me0 = v.state.me();
+  const px = me0.x + 380;
+  const py = me0.y + 120;
+  if (!v.state.snap.entities.some((e) => e.kind === 9 && Math.hypot(e.x - px, e.y - py) < 60)) {
+    s({ t: 'cheat', op: 'spawnDummy', x: px, y: py });
+    await w(500);
+  }
+  const d = v.state.snap.entities.filter((e) => e.kind === 9).sort((a, b) => Math.hypot(a.x - px, a.y - py) - Math.hypot(b.x - px, b.y - py))[0];
+  focus = [d.x - 150, d.y];
+  await w(300);
+  s({ t: 'cast', slot: 1, x: d.x, y: d.y, target: d.id });
+  await w(700);
+  s({ t: 'cast', slot: 0, x: d.x, y: d.y });
+  await w(800);
+  s({ t: 'cast', slot: 3, x: d.x, y: d.y, target: d.id });
+  const myEid = v.state.snap.me.eid;
+  const t0 = performance.now();
+  while (performance.now() - t0 < 1100) {
+    if (asVictim) v.state.snap.me.eid = d.id;
+    await w(16);
+  }
+  if (asVictim) v.state.snap.me.eid = d.id;
+  v.world.rig.focus(focus[0], focus[1]);
+  v.frame(performance.now());
+  const url = v.world.canvas.toDataURL('image/jpeg', 0.9);
+  v.state.snap.me.eid = myEid;
+  focus = null;
+  const objs = v.state.snap.objects.filter((o) => o.tag.startsWith('sev')).map((o) => o.tag);
+  return [await (await fetch('http://localhost:4399/' + name, { method: 'POST', body: url })).text(), JSON.stringify(objs)];
+};
 /** Tower shot: god mode, stand 500 in front of the nearest enemy tower, save a frame while a tower missile flies. */
 window.__dtower = async (name) => {
   const v = window.__vg;

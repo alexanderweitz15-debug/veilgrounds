@@ -25,6 +25,7 @@
           ]
         },
         { "type": "action", "name": "followUp" },
+        { "type": "action", "name": "uTeleportJoin" },
         { "type": "action", "name": "joinFight" }
       ]
     },

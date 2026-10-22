@@ -105,7 +105,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.hpBarStyle'), select<Settings['hpBarStyle']>(settings.hpBarStyle, [['segmented', t('set.hpBar.segmented')], ['thousands', t('set.hpBar.thousands')], ['plain', t('set.hpBar.plain')]], (v) => updateSettings({ hpBarStyle: v })));
     row(t('set.enemySkillshotOutline'), check('enemySkillshotOutline'));
     row(t('set.attackMoveOnCursor'), check('attackMoveOnCursor'));
-    row(t('set.attackMoveTargetCursor'), check('attackMoveTargetCursor'));
+    row(t('set.attackMoveTargetCursor'), check('attackMoveNearCursor'));
     row(t('set.castIndicator'), check('castIndicator'));
     // cast mode per ability key (LoL: quick / quick with indicator / normal)
     for (const k of CAST_KEYS) {

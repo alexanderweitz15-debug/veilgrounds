@@ -1,7 +1,7 @@
 # Agent B "Sim & Mechanik" - report
 
 **B1-B3 READY FOR MERGE** (merged to main once in e0f40bb; follow-ups since then on `sim/b-mechanics`).
-**B4, B5 (sim side), B6 done; B7 proposal only (other agents' files); B8 see "Tests".**
+**B4, B5 (sim side), B6, ranged hitbox 65 done; B7 moved to agent D (lead 19.10.); B8 see "Tests".**
 
 Branch `sim/b-mechanics`, merged with origin/main (last merge 3d48b5a). All commits pushed.
 
@@ -45,11 +45,38 @@ Bot use: issue in issues.md. Test tests/sim/topTeleport.test.ts.
 - atkStart/atkEnd were already in the snapshot (render: D).
 - Facing: decision = render smooths (sim facing stays exact for casts/bots); D2.
 - Auto reset: Dagny Q castTime 0, `auto_reset` also ends the backswing (next auto same tick).
-- Ranged hitbox 55 -> 65: unchanged (default 55; needs the user's decision).
+- Ranged hitbox 55 -> 65: **done** (user 19.10.: like LoL), see the section below.
 - Attack-move "target at cursor": command `attackMove.cursor`; setting/input: C.
 - Seraphyne passive: verified done in 188f75f.
 - Hit flash: damage events `flash` (champion hits always, others max 4/s per target); render: D.
 - Tests: tests/sim/mechanicsFeel.test.ts. Also: item actives emit `castFail` with `item: true` (C's issue).
+
+## Ranged hitbox 55 -> 65 (user decision 19.10.) - done
+- `base.radius` 65 for all 15 ranged champions (melee were already 65); tests/combat.test.ts spawn check updated.
+- phase1: the scripted last-hitter is chaotic. With its fixed 450 stand-off the radius change alone moved CS 73 -> 49
+  (radius 60 -> 54, 70 -> 76). The script now keeps its stand-off from the champion edge (395 + radius = the old 450
+  at radius 55, identical result 73 there): 99 CS at 65. Determinism, sideMirror, champion data, abilities tests green.
+- Bot-sim gold 4 x 20 min, current main 04a1eb5 vs branch (radius 65), 8 games (seeds 1-4 and 5-8):
+
+  | | main 1-4 | 65 1-4 | main 5-8 | 65 5-8 |
+  |---|---|---|---|---|
+  | laner CS/min | 3.33 | 3.23 | 3.37 | 3.29 |
+  | laner CS/min @15 | 2.95 | 2.67 | 3.09 | 3.04 |
+  | deaths/game | 2.13 | 2.05 | 2.15 | 2.33 |
+  | gold/min | 220.8 | 217.9 | 216.4 | 221.8 |
+  | towers/game | 0.8 | 1.0 | 0 | 0.5 |
+
+  8-game mean: CS/min -2.7 %, CS@15 -5.5 % (seeds 1-4 -9.5 %, 5-8 -1.4 %), gold/min +0.6 %, deaths +2 %. Slight early
+  farm dip, within the seed spread; no mechanism found in B's code (bot reach already uses the snapshot radius).
+  Brain team: please watch CS@15 for ranged laners in your next runs.
+
+- Review of the lead's test fix f343d7b (22.10.): correct, not a sim bug. Both tests checked a fixed-duration CC a
+  fixed number of ticks after the order. With radius 65 the hit lands earlier: Corvin (ranged) reaches the keg one
+  attack-range step sooner (reach = range + own radius + target radius), and Vessa R stops at the larger Ilvane
+  hitbox (dash stops at radius sum), so the 1.5 s keg slow / 0.5 s airborne had expired at the old check tick. Checking at
+  the hit moment tests what the spec says (CC applied on hit). Full suite before the fix: 893 passed, exactly these
+  2 failed; after merging f343d7b hooksE/hooksF 63/63 green. The skipped reflex test 4 (1 out_of_range cancel of the
+  stand point) is A1's re-tuning, nothing in the sim's range rule changed except the radius itself.
 
 ## B6 Kesselbrut objective - done
 `CampDef.epic` (Leviathan, Kesselbrut, Schleierwaechter), death events `epic` reach both teams, `SnapEntity.epic`.
@@ -73,6 +100,7 @@ optional Playwright bake step, menu placeholder background) in shared-changes.md
   wards/min 0.21. Not attributable to B alone (A1-A3/C/D/E changes merged at the same time).
 
 ## DECISIONS proposals
+- Ranged champion hitbox: spec 55 -> 65 like LoL (user 19 Oct 2026); phase1 script stand-off from the champion edge.
 - Siegelward reveal radius 900 -> 450 (AGENTS-PLAN B1 (a)).
 - Lysa E wire visible (user 19.10.); stealth only for Schleierwards, Nyx seeds, Grimald traps.
 - Ally-targeted buffs (Ferris E, Kiran E, Oda E) and buffs Grimald W, Hagen R, Nyx W/R, Ottilie R, Renn W keep walking;
@@ -83,4 +111,4 @@ optional Playwright bake step, menu placeholder background) in shared-changes.md
 - Facing smoothing in the render, not the sim.
 
 ## Questions for the user
-- Ranged hitbox radius 55 (spec) or 65 (LoL)?
+- none open

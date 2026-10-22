@@ -2,8 +2,7 @@
 
 - Branch: `sim/b-mechanics` (pushed, merged with origin/main at 3d48b5a). B1-B6 done, see b.md.
 - Half-done: nothing in code.
-- Next steps: (1) final full suite + bot-sim done (b.md); (2) B7 only with D / the lead
-  (proposal in shared-changes.md); (3) user question ranged hitbox 55/65; (4) answer C/D/A requests in
+- Next steps: (1) final full suite + bot-sim done (b.md); (2) B7 moved to agent D; (3) ranged hitbox 65 done; (4) answer C/D/A requests in
   shared-changes.md as they come.
 - Waiting on others: C (minimap stealth symbol, TP slot F2/T + announcement, attack-move cursor setting, enemy items
   display, announce.ts for public grub kills), D (dash/air arcs, `flash` flag, atkStart/atkEnd, facing smoothing,

@@ -59,25 +59,32 @@ outline), D5 logic + panel, B7 load time. tsc green, touched tests green, full s
   wiring (main.ts record save, trainerMenu mount, i18n keys) proposed in shared-changes.md.
 - Test `tests/trainingPlan.test.ts`.
 
-### B7 - load time (2a9ff77)
+### B7 - load time (2a9ff77, 5a1342a, 3b5d3dd)
 
-- Persistent sprite cache: every baked id is stored as a PNG strip in Cache Storage (`vg-atlas-<hash of the built
-  chunk URL>`); the next build blits cached ids (scaled down when the atlas is crowded) and only bakes the rest.
-- Menu-idle precache: after the menu's minion atlas, all champions are baked into the cache one by one (2 workers);
-  stops as soon as a game requests its atlas. Dev server always bakes.
-- Measured with vite preview, `?play=classic`, navigation -> game running (loading text gone), ~5 agents on the CPU:
-  before 23.6 s cold / 18.8 s warm; after 15.0 s cold, 4.0 s and 4.1 s warm (after the menu precache; champion atlas
-  2.4 s from cache, minions 0.4 s). Goal < 5 s warm met. `docs/ist/b7-cached-sprites-check.jpg` (sprite from cache).
-- Not done: first menu frame dark on a cold start (needs a CSS placeholder in C's menu files; with a warm cache the
-  minion backdrop is ready in ~0.4 s). Pre-baked PNGs at build time (cold < 5 s) would need a browser bake step in the
-  build (lead / package.json).
+- Persistent sprite cache in IndexedDB (src/render/atlasStore.ts, DB `veilgrounds-atlas`): every baked id is stored as a
+  PNG strip with the build version (hash of the content-hashed chunk URL); the next build blits cached ids (scaled down
+  when the atlas is crowded: 10 champions use 112 px cells, the cache holds 128 px) and only bakes the rest. First
+  version used Cache Storage, but public/sw.js deletes every foreign cache on activate.
+- Menu-idle precache: after the menu's minion atlas, all champions are baked into the store one by one (2 workers);
+  stops as soon as a game requests its atlas and does not restart in the same session (a second game in the same
+  session only gains from what the first game and the menu stored). Strips stored by a crowded 112 px atlas are
+  re-baked at 128 by the precache.
+- Painted ground: shared between the menu backdrop and the game in one session, kept in the same store (4096 PNG);
+  a warm start decodes it (1.3-1.7 s, async under the loading cover) instead of painting 2.2 s on the main thread.
+- Measured with vite preview, `?play=classic`, navigation -> game running (loading text gone), several agents on the
+  CPU: before 23.6 s cold / 18.8 s warm; after: warm (menu precache finished, ~60-90 s idle after a new build) 4.0,
+  4.1, 4.1, 4.5 s; cold 15-34 s depending on load (cold is unchanged by design). Longest main-thread task at start
+  4.0 s -> 1.0 s. "Warm" = after one menu visit with the new build; the supervisor should measure the same way.
+- Quality: `docs/ist/b7-sprite-zoom-{cold,warm}.jpg` (Aurel at camera distance 900, baked directly at 112 px vs
+  scaled from the cached 128 px strip): no visible difference. `docs/ist/b7-cached-sprites-check.jpg`.
+- Not done: first menu frame on a cold start is still dark (CSS placeholder belongs to C's menu files); pre-baked
+  PNGs at build time (cold < 5 s) would need a browser bake step in the build (lead / package.json).
 
 ## Tests run
 
 - `npx tsc --noEmit` green after every package.
 - Touched tests green: abilityMotifs, abilityVisuals*, telegraph, readability, spriteTiming, trainingPlan.
-- Full suite on f234b1b (before D5/B7): 868 passed, 2 skipped, 1 todo, 1 failed = tests/brainReflex.test.ts reflex
-  cost timing (A1 wall-clock limit 0.05 ms under CPU load; B reports the same failure; not D code).
+- Full suite on 9e661be (D1-D5 + B7 Cache-Storage version): 903 passed, 1 todo, 0 failed (74 files).
 
 ## Open (next steps)
 

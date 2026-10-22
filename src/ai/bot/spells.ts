@@ -12,6 +12,7 @@ import type { BotAction, BotMemory, BotStatic, SnapEntity } from './types';
 import { ticksOfMs, towerCovering, type View } from './perception';
 import { hpPct } from './combat';
 import { dst } from './geo';
+import { utilityOn } from '../utility/flag';
 
 /** Summoner slot (0/1) with this id that is ready, else -1. */
 function sumReady(v: View, id: string): 0 | 1 | -1 {
@@ -47,9 +48,20 @@ export function exhaustStep(v: View): BotAction | null {
 }
 
 /** In the fountain with full HP: Teleport to the own lane's furthest alive tower. */
+/**
+ * Ready Teleport slot for the spell command: summoner 0/1, or (utility flag only) the top laner's unlocked third
+ * summoner (PlayerHud.abilities[6], command slot 2; sim B4). -1 = none.
+ */
+export function teleportSlot(v: View, ctx: BotStatic): 0 | 1 | 2 | -1 {
+  const s = sumReady(v, 'teleport');
+  if (s !== -1 || !utilityOn(ctx)) return s;
+  const t = v.me.abilities[6];
+  return t?.id === 'teleport' && t.rank > 0 && t.cdLeft <= 0 ? 2 : -1;
+}
+
 export function teleportStep(v: View, ctx: BotStatic, mem: BotMemory): BotAction | null {
   if (!ctx.lane || v.hpPct < 0.9 || (v.me.teleportLeft ?? 0) > 0) return null;
-  const slot = sumReady(v, 'teleport');
+  const slot = teleportSlot(v, ctx);
   if (slot === -1) return null;
   const fountain = ctx.map.sides[ctx.team].fountain;
   const spots = ctx.map.sides[ctx.team].towers[ctx.lane];

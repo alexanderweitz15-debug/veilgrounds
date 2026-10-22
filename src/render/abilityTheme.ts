@@ -67,8 +67,22 @@ export interface ParticleKind {
   /** Additive glow (sparks) instead of alpha blending (keeps the colour on bright ground). */
   additive: boolean;
 }
-export type ParticleKindId = 'ember' | 'spark' | 'drip' | 'mote' | 'shard';
-const PD = motifData as unknown as { particleKinds: Record<ParticleKindId, ParticleKind>; motifParticles: Record<string, ParticleKindId> };
+export type ParticleKindId = 'ember' | 'spark' | 'drip' | 'mote' | 'shard' | 'blackflame';
+/** Emitter on a marked unit (abilityMotifs.json markParticles): particles per second at height h. */
+export interface MarkEmitter {
+  kind: ParticleKindId;
+  rate: number;
+  hue: number;
+  h: number;
+}
+const PD = motifData as unknown as {
+  particleKinds: Record<ParticleKindId, ParticleKind>;
+  motifParticles: Record<string, ParticleKindId>;
+  tagParticles: Record<string, { kind: ParticleKindId; hue: number }>;
+  markParticles: Record<string, MarkEmitter[]>;
+};
+/** Particle emitters of a unit mark id (empty for most marks). */
+export const markEmitters = (id: string): readonly MarkEmitter[] => PD.markParticles[id] ?? [];
 export const PARTICLE_KINDS: Readonly<Record<ParticleKindId, ParticleKind>> = PD.particleKinds;
 export const PARTICLE_KIND_IDS = Object.keys(PD.particleKinds) as ParticleKindId[];
 
@@ -84,6 +98,8 @@ export function abilityParticles(champ: string, slot: number): { kind: ParticleK
 const SLOT_OF: Record<string, number> = { q: 0, w: 1, e: 2, r: 3 };
 /** Particles of a hook ground-object tag `<champ>_<q|w|e|r|p>...` (passive objects: golden motes). */
 export function tagParticles(tag: string): { kind: ParticleKindId; hue: number } | null {
+  const special = PD.tagParticles[tag];
+  if (special) return special;
   const [champ, key] = tag.split('_');
   if (!champ || !key) return null;
   const slot = SLOT_OF[key[0]!];

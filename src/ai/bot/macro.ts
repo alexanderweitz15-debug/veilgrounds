@@ -16,6 +16,7 @@ import { decisionInterval, summonerReady } from './trade';
 import { emitPing, say } from './social';
 import treeData from '../../data/bots/tree.json';
 import { utilityOn } from '../utility/flag';
+import { recallMinionClear } from '../utility/world';
 import wardSpotsJson from '../../data/bots/wardSpots.json';
 
 const RECALL = treeData.params.recall;
@@ -149,7 +150,9 @@ export function recallScore(n: NodeCtx): boolean {
 export function recall(n: NodeCtx): NodeResult {
   const v = n.v;
   const fountain = n.ctx.map.sides[n.ctx.team].fountain;
-  const safe = near([...v.enemies, ...v.unnoticed], v.self, 1600).length === 0 && near(v.enemyMinions, v.self, 650).length === 0;
+  // utility flag: the minion check covers a caster's full reach (recallMinionClear); classic 650 otherwise
+  const clear = utilityOn(n.ctx) ? recallMinionClear(v.self.radius) : 650;
+  const safe = near([...v.enemies, ...v.unnoticed], v.self, 1600).length === 0 && near(v.enemyMinions, v.self, clear).length === 0;
   cancelOrbwalk(n);
   if (safe) {
     n.mem.mode = 'recall';

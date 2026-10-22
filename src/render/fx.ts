@@ -305,6 +305,20 @@ export class Fx {
   private readonly trails = new Map<number, { x: number; y: number; h: number; kind: ParticleKindId; hue: number; frame: number }>();
   private frameNo = 0;
   private lastNow = 0;
+  /** Sev R / fear: dark screen vignette for the feared player (clip-space quad, drawn last). */
+  private readonly vignette = new THREE.Mesh(
+    new THREE.PlaneGeometry(2, 2),
+    new THREE.ShaderMaterial({
+      uniforms: { strength: { value: 0 } },
+      vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+      fragmentShader:
+        'uniform float strength; varying vec2 vUv; void main() { float d = distance(vUv, vec2(0.5)); float a = smoothstep(0.25, 0.75, d) * strength; gl_FragColor = vec4(0.05, 0.02, 0.04, a); }',
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    }),
+  );
+  private vignetteK = 0;
 
   constructor() {
     const g = new THREE.IcosahedronGeometry(1, 1);
@@ -336,6 +350,10 @@ export class Fx {
     this.chanRing.renderOrder = this.chanArc.renderOrder = 3;
     this.chanRing.visible = this.chanArc.visible = false;
     this.group.add(this.chanRing, this.chanArc); // particles.group is added to the scene by World
+    this.vignette.frustumCulled = false;
+    this.vignette.renderOrder = 100;
+    this.vignette.visible = false;
+    this.group.add(this.vignette);
   }
 
   /**
@@ -736,6 +754,12 @@ export class Fx {
       }
     }
     for (let i = nt; i < this.towerRings.length; i++) this.towerRings[i]!.visible = this.towerLines[i]!.visible = false;
+
+    // feared (Sev R eye contact or any fear CC on me): dark vignette, eases in/out
+    const feared = !!me && me.alive && (((me.cc ?? 0) & 256) !== 0 || (snap?.objects ?? []).some((o) => o.tag === 'sev_r_bann' && o.follow === me.id));
+    this.vignetteK += ((feared ? 0.85 : 0) - this.vignetteK) * Math.min(1, dt * 6);
+    this.vignette.visible = this.vignetteK > 0.01;
+    (this.vignette.material as THREE.ShaderMaterial).uniforms.strength!.value = this.vignetteK;
 
     // attack range circle (hold C)
     const stats = snap?.me?.stats;

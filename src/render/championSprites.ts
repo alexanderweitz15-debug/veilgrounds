@@ -99,11 +99,18 @@ interface Ghost {
 }
 
 /** Selects the frame rect via the instanced `aUvRect` attribute (works for the colour and the depth material). */
-function patchUv(mat: THREE.Material): void {
+function patchUv(mat: THREE.Material, footDepth = false): void {
   mat.onBeforeCompile = (s) => {
     s.vertexShader = 'attribute vec4 aUvRect;\n' + s.vertexShader.replace('#include <uv_vertex>', '#include <uv_vertex>\n#ifdef USE_MAP\n\tvMapUv = mix(aUvRect.xy, aUvRect.zw, uv);\n#endif');
+    // 2.5D sprites: the whole quad takes the depth of its feet, so a tilted billboard no longer cuts into walls,
+    // cliffs and tower bases standing next to it (it is in front of or behind them as a whole, like LoL's units)
+    if (footDepth)
+      s.vertexShader = s.vertexShader.replace(
+        '#include <project_vertex>',
+        '#include <project_vertex>\nvec4 footPos = vec4(0.0, 0.0, 0.0, 1.0);\n#ifdef USE_INSTANCING\nfootPos = instanceMatrix * footPos;\n#endif\nvec4 footClip = projectionMatrix * modelViewMatrix * footPos;\ngl_Position.z = (footClip.z / footClip.w - 0.0004) * gl_Position.w;',
+      );
   };
-  mat.customProgramCacheKey = () => 'aUvRect';
+  mat.customProgramCacheKey = () => (footDepth ? 'aUvRect-foot' : 'aUvRect');
 }
 
 export class ChampionSprites {
@@ -142,8 +149,9 @@ export class ChampionSprites {
     this.uv = new THREE.InstancedBufferAttribute(new Float32Array(CAP * 4), 4);
     this.uv.setUsage(THREE.DynamicDrawUsage);
     geo.setAttribute('aUvRect', this.uv);
-    const mat = new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide });
-    patchUv(mat);
+    // alphaToCoverage: soft, antialiased sprite edges under MSAA instead of hard alpha-test stair steps
+    const mat = new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5, alphaToCoverage: true, side: THREE.DoubleSide });
+    patchUv(mat, true);
     const castMat = new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5, colorWrite: false, depthWrite: false, side: THREE.DoubleSide });
     patchUv(castMat);
     const depth = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: tex, alphaTest: 0.5, side: THREE.DoubleSide });

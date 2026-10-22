@@ -16,7 +16,7 @@ import { CHAMP_ABILITY_DMG_MULT, DT, Kind, isMinion, isStructure, sec, type Cast
 import { dealDamage } from '../damage';
 import { dir, dist2, circleInCone, cosDeg, segDist2 } from '../vec';
 import { findPath, lineWalkable, nearestWalkable, walkable } from '../map';
-import { addBuff, addShield, canAttack, canCast, canMove, channelBroken, healUnit, removeBuffs, reveal, type StatKey } from '../buffs';
+import { addBuff, addShield, canAttack, canCast, canMove, channelBroken, healUnit, isFeared, removeBuffs, reveal, type StatKey } from '../buffs';
 import { championData, championHooks, champIdOf, passiveHooksOf } from '../champions';
 import type { AbilityData, Effect, EffectTarget, Ranked, Scaling } from '../champions/schema';
 import type { CastMods, DashPlan, EffectCtx, EffectPhase } from '../champions/hooks';
@@ -550,13 +550,12 @@ function pickTarget(sim: Sim, eid: number, ab: AbilityData, rank: number, x: num
   const team = Unit.team[eid]!;
   // enemy casts: fighting units only (no wards, plants, structures, projectiles); ally casts: allied champions only
   const kindOk = (k: number): boolean => (ally ? k === Kind.Champion : k === Kind.Champion || k === Kind.Dummy || isMinion(k) || k === Kind.Monster || k === Kind.Pet);
+  const base = (t: number): boolean =>
+    !Unit.untargetable[t] && kindOk(Unit.kind[t]!) && (ally ? Unit.team[t] === team && t !== eid : Unit.team[t] !== team && sees(sim, team, t));
+  // champion hook may narrow or widen the valid targets (Sev: R needs Nachbild, W also accepts his own decoy)
+  const filter = championHooks(champIdOf(sim, eid)).targetOk;
   const ok = (t: number): boolean =>
-    t >= 0 &&
-    !!Unit.alive[t] &&
-    !Unit.untargetable[t] &&
-    kindOk(Unit.kind[t]!) &&
-    (ally ? Unit.team[t] === team && t !== eid : Unit.team[t] !== team && sees(sim, team, t)) &&
-    (anyRange || within(sim, eid, t, rv(ab.range, rank)));
+    t >= 0 && !!Unit.alive[t] && (filter ? filter(sim, eid, ab, t, base(t)) : base(t)) && (anyRange || within(sim, eid, t, rv(ab.range, rank)));
   if (target !== undefined) return ok(target) ? target : -1;
   // no explicit target: the valid unit closest to the cursor (within 150)
   let best = -1;
@@ -1097,6 +1096,7 @@ export function castSummoner(sim: Sim, eid: number, slot: number, x: number, y: 
   if (!def || def.todo) return 'unlearned';
   if (id === 'teleport' && cancelTeleport(sim, eid)) return null; // recast during the channel cancels it
   if (sim.tick < a.sumCdUntil[slot]!) return 'cooldown';
+  if (isFeared(sim, eid)) return 'cc'; // Furcht (Sev R) locks every summoner, Reinigen included
   if (id !== 'reinigen' && (!canAttack(sim, eid) || (id === 'sprung' && !canMove(sim, eid)))) return 'cc';
   const channel = a.channel !== null && a.channel.until > sim.tick;
   // a targeted wind-up resolves without a new range check: Flash waits for it (buffered) instead of moving the caster

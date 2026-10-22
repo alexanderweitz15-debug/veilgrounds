@@ -53,6 +53,7 @@ export const CHAMPION_BATCH: SpriteBatchOptions = {
   corpseMs: 1800,
   idFor: (e, atlas) => {
     if (e.kind === Kind.Champion) return e.champ && atlas.frames[e.champ] ? e.champ : null;
+    if (e.kind === Kind.Pet && e.look && atlas.frames[e.look]) return e.look; // decoy (Sev E) looks like its owner
     if (e.kind === Kind.Pet && e.maxHp > 1 && atlas.frames.hark) return 'hark';
     return null;
   },

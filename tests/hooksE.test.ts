@@ -159,7 +159,9 @@ describe('Vessa R', () => {
   it('leaps onto the enemy champion near the cursor: damage + airborne on landing', () => {
     const { sim, m, o } = setup('vessa', [1, 1, 1, 1], [enemy('ilvane', CX + 500, CY + 50)]);
     const t = o[0]!;
-    const hits = collect(sim, 30, m, cast(3, CX + 500, CY + 50));
+    // step until the landing hit, then check airborne at that moment (hitbox 65 shortens the leap)
+    const hits: ReturnType<typeof collect> = [];
+    for (let i = 0; i < 30 && !hits.some((h) => h.dst === t); i++) hits.push(...collect(sim, 1, m, i === 0 ? cast(3, CX + 500, CY + 50) : undefined));
     expect(hits.some((h) => h.dst === t)).toBe(true);
     expect(hasBuff(sim, t, 'airborne')).toBe(true);
     const gap = Math.sqrt((sim.c.Pos.x[t]! - sim.c.Pos.x[m]!) ** 2 + (sim.c.Pos.y[t]! - sim.c.Pos.y[m]!) ** 2);

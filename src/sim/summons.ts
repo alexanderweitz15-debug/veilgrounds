@@ -153,6 +153,24 @@ export function removePet(sim: Sim, eid: number): void {
   s.pets.delete(eid);
 }
 
+/** Owner eid of a live pet `t` (spawnPet / trackLifetime), else -1. */
+export function petOwner(sim: Sim, t: number): number {
+  const r = (sim.state.summons as SummonState | undefined)?.pets.get(t);
+  return r && live(sim, t, r) && sim.c.Unit.serial[r.owner] === r.ownerSerial ? r.owner : -1;
+}
+
+/** Tag of a live pet `t` ('' otherwise). Read-only (snapshots). */
+export function petTag(sim: Sim, t: number): string {
+  const r = (sim.state.summons as SummonState | undefined)?.pets.get(t);
+  return r && live(sim, t, r) ? r.tag : '';
+}
+
+/** Keep a live pet alive at least until `tick` (Sev: a burning decoy lasts as long as its ember). */
+export function extendPet(sim: Sim, t: number, tick: number): void {
+  const r = (sim.state.summons as SummonState | undefined)?.pets.get(t);
+  if (r && live(sim, t, r)) r.until = Math.max(r.until, tick);
+}
+
 /** Owner eid if `t` is an owner-only target (keg), else -1. */
 export function ownerOnlyTarget(sim: Sim, t: number): number {
   const s = sim.state.summons as SummonState | undefined;

@@ -1,0 +1,147 @@
+{
+  "id": "sev",
+  "name": "Sev Aschenblick",
+  "title": { "de": "Der Deserteur der Aschehalle", "en": "The Ash Hall Deserter" },
+  "roles": ["mid", "jungle"],
+  "archetype": "trickster_burn_mage",
+  "botBias": { "tradeLength": -1, "resourceUse": 1 },
+  "trainingPurpose": {
+    "de": "Fake-Casts lesen, unlöschbaren Brand managen, Trugbild vom echten Ziel unterscheiden, lange Cooldowns tracken.",
+    "en": "Read fake casts, manage an uncleansable burn, tell the decoy from the real target, track long cooldowns."
+  },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 575,
+    "hpGrowth": 100,
+    "hpRegen": 5.5,
+    "hpRegenGrowth": 0.55,
+    "mana": 400,
+    "manaGrowth": 28,
+    "manaRegen": 8,
+    "manaRegenGrowth": 0.8,
+    "ad": 52,
+    "adGrowth": 3,
+    "armor": 24,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.625,
+    "asGrowth": 1.5,
+    "range": 525,
+    "ms": 335,
+    "windup": 0.22,
+    "projectileSpeed": 1600,
+    "radius": 55
+  },
+  "passive": {
+    "name": { "de": "Nachbild", "en": "Afterimage" },
+    "desc": {
+      "de": "Jeder Fähigkeitstreffer hinterlässt 3 s ein Nachbild. Autos auf Gegner mit Nachbild: +10–30 (+15 % AP) magischer Schaden und laufende Schwarzglut +0,5 s.",
+      "en": "Every ability hit leaves an afterimage for 3 s. Basic attacks on afterimaged enemies deal +10-30 (+15% AP) magic damage and extend an active Black Ember by 0.5 s."
+    },
+    "hooks": ["sev_nachbild"]
+  },
+  "abilities": [
+    {
+      "id": "sev_q",
+      "name": { "de": "Glutblick", "en": "Ember Gaze" },
+      "desc": {
+        "de": "Nach 0,4 s schießt das Glutauge einen Strahl (950, Breite 60): 70/110/150/190/230 (+60 % AP) magisch. Re-Cast während der 0,4 s bricht ab (Fake): Mana zurück, 2 s Abklingzeit.",
+        "en": "After 0.4 s the ember eye fires a beam (950, width 60): 70/110/150/190/230 (+60% AP) magic. Recast during the 0.4 s cancels it (fake): mana refunded, 2 s cooldown."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.4,
+      "movesWhileCasting": false,
+      "range": 950,
+      "cooldown": 7,
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "width": 60,
+      "speed": 1700,
+      "flags": ["blocked_by_minions", "recast"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [70, 110, 150, 190, 230], "ap": 0.6 } },
+        { "kind": "hook", "id": "sev_q_fake_cancel" }
+      ]
+    },
+    {
+      "id": "sev_w",
+      "name": { "de": "Schwarzglut", "en": "Black Ember" },
+      "desc": {
+        "de": "Champion oder Vasall (650): 4 s schwarzes Feuer, 20/32/44/56/68 (+22 % AP) magisch pro Sekunde und schwere Wunden (−40 % Heilung). Nicht reinigbar. Stirbt das Ziel, springt die Glut einmal auf den nächsten Gegner in 300. Auf das eigene Trugbild: es brennt 4 s und macht 50 % davon an Gegnern in 250.",
+        "en": "Champion or minion (650): 4 s of black fire, 20/32/44/56/68 (+22% AP) magic per second and grievous wounds (-40% healing). Cannot be cleansed. If the target dies the ember jumps once to the nearest enemy within 300. On his own decoy: it burns for 4 s and deals 50% of that to enemies within 250."
+      },
+      "type": "targeted",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 650,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": [70, 75, 80, 85, 90],
+      "costType": "mana",
+      "duration": 4,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [20, 32, 44, 56, 68], "ap": 0.22 } },
+        { "kind": "hook", "id": "sev_w_ember" }
+      ]
+    },
+    {
+      "id": "sev_e",
+      "name": { "de": "Trugbild", "en": "Decoy" },
+      "desc": {
+        "de": "Blink 450. An der Startposition bleibt 2,5 s ein Trugbild mit Sevs Aussehen und gefälschter Lebensleiste, das Autos ohne Schaden ausführt. Trifft ein Gegner es mit einer Fähigkeit, erhält er ein Nachbild.",
+        "en": "Blink 450. A decoy with Sev's look and a fake health bar stays at the start position for 2.5 s and fires harmless basic attacks. An enemy hitting it with an ability gets an afterimage."
+      },
+      "type": "blink",
+      "castTime": 0,
+      "movesWhileCasting": true,
+      "range": 450,
+      "cooldown": [18, 17, 16, 15, 14],
+      "cost": 60,
+      "costType": "mana",
+      "duration": 2.5,
+      "effects": [{ "kind": "hook", "id": "sev_e_decoy" }]
+    },
+    {
+      "id": "sev_r",
+      "name": { "de": "Augenbann", "en": "Eye Ward" },
+      "desc": {
+        "de": "Champion mit Nachbild (700): 0,5 s Blickkontakt (bricht bei Sichtverlust ab), dann 1,5 s Bann: enthüllt, Fähigkeiten und Beschwörerzauber gesperrt, flieht 50 % verlangsamt vor Sev (Furcht). Am Ende 180/300/420 (+70 % AP) magisch, +50 % wenn das Ziel währenddessen Schwarzglut hatte.",
+        "en": "Champion with an afterimage (700): 0.5 s of eye contact (breaks on lost sight), then a 1.5 s ward: revealed, abilities and summoner spells locked, flees from Sev slowed by 50% (fear). At the end 180/300/420 (+70% AP) magic, +50% if the target had Black Ember meanwhile."
+      },
+      "type": "targeted",
+      "castTime": 0.5,
+      "movesWhileCasting": false,
+      "range": 700,
+      "cooldown": [110, 90, 70],
+      "cost": 100,
+      "costType": "mana",
+      "duration": 1.5,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [180, 300, 420], "ap": 0.7 } },
+        { "kind": "hook", "id": "sev_r_bann" }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": {
+    "de": "Level 6: Augenbann macht aus Schwarzglut + Glutblick einen Kill-Combo.",
+    "en": "Level 6: Eye Ward turns Black Ember + Ember Gaze into a kill combo."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Brand und Blick", "en": "Burn and Gaze" }, "sequence": ["W", "Q", "AA"] },
+    { "name": { "de": "Falsches Auge", "en": "False Eye" }, "sequence": ["E", "Q", "Q", "W"] },
+    { "name": { "de": "Aschebann", "en": "Ash Ward" }, "sequence": ["W", "R", "Q", "AA"] }
+  ],
+  "scores": { "engage": 2, "peel": 2, "range": 3, "scaling": 3, "waveclear": 2, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Ich schlage nie zuerst.", "en": "I never strike first." },
+    "firstBlood": { "de": "Du hast angefangen.", "en": "You started it." },
+    "kill": { "de": "Asche sieht nicht zurück.", "en": "Ash does not look back." },
+    "death": { "de": "Das Auge ... erlischt.", "en": "The eye ... goes out." },
+    "recall": { "de": "Zurück ins Grau.", "en": "Back into the grey." },
+    "taunt": { "de": "Welchen von uns willst du treffen?", "en": "Which one of us do you mean to hit?" }
+  },
+  "silhouette": "tall narrow figure in a floor-length high-collared charcoal coat, one arm stretched out palm up with a small floating ember eye above the hand"
+}

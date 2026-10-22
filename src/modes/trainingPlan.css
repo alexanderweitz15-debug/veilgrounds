@@ -1,0 +1,29 @@
+/* D5 training plan panel (src/modes/trainingPlanView.ts), same palette as the trainer hub (src/ui/trainer.css). */
+.tp { margin: 6px 0 16px; padding: 12px 14px; border: 1px solid #2c2c31; background: rgba(255, 255, 255, 0.025); color: #e8e0cc; }
+.tp-title { margin: 0 0 2px; font-family: var(--font-label, sans-serif); font-size: 18px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold-hi, #f0e6d2); }
+.tp-note, .tp-sub { color: var(--text-dim, #a09b8c); font-size: 13px; margin: 2px 0 8px; }
+.tp-sub { margin-top: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-size: 12px; }
+.tp-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.tp-card { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid #2c2c31; border-left: 3px solid var(--gold, #c8aa6e); background: rgba(0, 0, 0, 0.2); }
+.tp-card.cat-survival { border-left-color: #d9614c; }
+.tp-card.cat-farming { border-left-color: #7fbf5a; }
+.tp-card.cat-economy { border-left-color: #e2c15a; }
+.tp-card.cat-fighting { border-left-color: #c77dde; }
+.tp-card-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.tp-mode { font-weight: 600; font-size: 15px; color: var(--gold-hi, #f0e6d2); }
+.tp-min { font-size: 12px; color: var(--text-dim, #a09b8c); }
+.tp-reason { font-size: 13px; line-height: 1.35; flex: 1; }
+.tp-start { align-self: flex-start; padding: 4px 14px; font-size: 13px; }
+.tp-bars { display: grid; gap: 4px; max-width: 520px; }
+.tp-bar { display: grid; grid-template-columns: 90px 1fr 90px; align-items: center; gap: 8px; font-size: 13px; }
+.tp-bar-t { height: 8px; background: #1d1c20; border: 1px solid #2c2c31; }
+.tp-bar-f { display: block; height: 100%; background: linear-gradient(90deg, #6b5a3a, var(--gold, #c8aa6e)); }
+.tp-bar-r { color: var(--text-dim, #a09b8c); }
+.tp-sparks { display: flex; flex-wrap: wrap; gap: 14px; }
+.tp-spark { display: grid; grid-template-columns: auto auto; gap: 2px 8px; align-items: end; font-size: 12px; }
+.tp-spark-l { grid-column: 1 / 3; color: var(--text-dim, #a09b8c); }
+.tp-spark-v, .tp-spark-e { font-size: 13px; color: var(--gold-hi, #f0e6d2); }
+.tp-spark-line { fill: none; stroke: var(--gold, #c8aa6e); stroke-width: 1.6; }
+.tp-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.tp-chip { padding: 2px 8px; border: 1px solid #3a352a; border-radius: 10px; font-size: 12px; color: #e8dcc0; }
+@media (max-width: 600px) { .tp-bar { grid-template-columns: 70px 1fr 70px; } }

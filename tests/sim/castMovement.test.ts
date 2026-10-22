@@ -10,6 +10,7 @@ import { CHAMPION_DATA, championData } from '../../src/sim/champions';
 import { champAbil, isDisplacing, levelAbility } from '../../src/sim/systems/abilities';
 import { spawnDummy } from '../../src/sim/systems/champions';
 import { SUMMONERS } from '../../src/sim/summoners';
+import { addBuff } from '../../src/sim/buffs';
 import { rv } from '../../src/sim/systems/abilities';
 import { CX, CY, makeSim, place } from '../combat-helpers';
 
@@ -43,7 +44,8 @@ function run(champ: string, slot: number | null): Run {
   if (slot !== null) levelAbility(sim, m, slot);
   place(sim, m, START.x, START.y);
   place(sim, ally, ALLY.x, ALLY.y);
-  spawnDummy(sim, FOE.x, FOE.y, 1);
+  const foe = spawnDummy(sim, FOE.x, FOE.y, 1);
+  if (champ === 'sev') addBuff(sim, foe, { kind: 'mark', id: 'sev_nachbild', src: m, ticks: sec(30) }); // Sev R needs a Nachbild target
   step(sim);
   sim.c.Mana.cur[m] = sim.c.Mana.max[m]!;
   const go = (c?: Command): void => step(sim, c ? [{ slot: 0, cmd: c }] : []);

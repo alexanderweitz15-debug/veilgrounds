@@ -162,7 +162,7 @@ describe('archetypes (spec §2 table, kiting sign inverted per DECISIONS.md)', (
   });
 
   it('champion bias: all 26 champions, spec examples (Lysa kiting inverted)', () => {
-    expect(Object.keys(CHAMPION_DATA).length).toBe(26);
+    expect(Object.keys(CHAMPION_DATA).length).toBe(27);
     for (const c of Object.values(CHAMPION_DATA)) expect(c.botBias, c.id).toBeDefined();
     expect(CHAMPION_DATA.renn!.botBias).toEqual({ aggression: 2, roam: 2 });
     expect(CHAMPION_DATA.lysa!.botBias).toEqual({ kiting: -2, farmPriority: 2 });

@@ -244,6 +244,8 @@ export interface SimConfig {
   botLang?: 'de' | 'en';
   /** Bot brain rework: the utility selector (src/ai/utility, BOT_UTILITY=1 in node). Off by default. */
   botUtility?: boolean;
+  /** Bot brain rework: per-tick reflex layer (src/ai/reflex). Off by default; settings switch "Neues Bot-Gehirn". */
+  botReflex?: boolean;
   /** Lanes that spawn minions. Default: all three. */
   minionLanes?: LaneId[];
   minionsEnabled?: boolean;

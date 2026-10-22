@@ -9,12 +9,19 @@
 // --variance=0 switches the per-game rank variance off (reproducible win rates). --report writes a markdown summary
 // against the targets in tools/botSimTargets.json (red outside the tolerance) to stdout or the given file.
 // --scenario=laneAlone: the last-hit trainer scenario (one bot alone in mid, autos only, --minutes default 10).
+// --champion=<id>: laneAlone champion; in normal games blue's mid laner.
 
 import { RANKS, type Rank } from '../src/ai/profiles/schema';
 import { ARCHETYPES, type Archetype } from '../src/ai/contract';
 import { botGameConfig } from '../src/ai/runner';
 import { CS_CAUSES, runBotGame, runLaneAlone, type ChampStats, type CsCause, type GameResult } from '../src/ai/harness';
 import targets from './botSimTargets.json';
+import { BUILDS } from '../src/ai/bot/builds';
+import sevBuild from '../src/data/builds/sev.json';
+
+// ponytail: Sev (agent E) has no line in src/ai/bot/builds.ts yet (brain team, docs/agents/issues.md); until then the
+// tool registers his build at runtime so bot-sim Sevs buy items.
+BUILDS.sev ??= sevBuild as (typeof BUILDS)[string];
 
 // No @types/node in this repo: declare the bits of the Node API this tool uses.
 declare const process: { argv: string[]; stdout: { write(s: string): void }; stderr: { write(s: string): void } };
@@ -79,6 +86,8 @@ for (let g = 0; g < games; g++) {
   } else {
     const config = botGameConfig(seed, rank);
     if (archetype) for (const p of config.players) p.bot!.archetype = archetype;
+    // --champion=<id> (normal games): blue's mid laner plays this champion
+    if (args.has('champion')) config.players.find((p) => p.team === 0 && p.role === 'mid')!.champion = args.get('champion')!;
     if (vs) for (const p of config.players) if (p.team === (swap ? 0 : 1)) p.bot!.rank = vs;
     if (sideSwap) {
       for (const p of config.players) {

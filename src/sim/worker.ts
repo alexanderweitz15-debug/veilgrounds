@@ -33,7 +33,7 @@ onmessage = (ev: MessageEvent<ToWorker>) => {
     case 'start':
       sim = createSim(m.config);
       rec = new Recorder(m.config);
-      bots = m.config.players.some(isBotSlot) ? new BotRunner(m.config) : null;
+      bots = m.config.players.some(isBotSlot) ? new BotRunner(m.config, undefined, { reflex: !!m.config.botReflex }) : null;
       slot = m.slot;
       ghost = GHOST_MODES.has(m.config.mode) && m.config.players.some((p) => p.slot === m.slot && p.isHuman) ? new GhostRunner(m.config, m.slot) : null;
       ghostPosted = -1;

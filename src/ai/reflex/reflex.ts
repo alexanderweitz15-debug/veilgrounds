@@ -18,6 +18,8 @@ import { towerCovering } from '../bot/perception';
 import { dst } from '../bot/geo';
 import { laneSpot, structureToHit } from '../bot/laning';
 import { clearOfStructures } from '../bot/brain';
+import { rollError } from '../bt/deps';
+import { championData } from '../../sim/champions';
 import { ORBWALK } from '../bot/kite';
 import { type LastHitMem, entityIndex, observeAttacks, ownAttack, predictWindows, prehitFits, prehitRoll, spellLastHitFor, windowAfterHit, type MinionWindow, type OwnAttack } from '../bot/lasthit';
 import { FARM_KINDS, insertPlan, type CancelReason, type Plan } from '../plan';
@@ -132,7 +134,9 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
       const start = Math.max(own.ready, T + 1, Math.ceil(a + margin(a, b) - w.lead));
       p.window = { a: Math.round(a), b: b === Infinity ? -1 : Math.round(b) };
       if (start + w.lead >= b) {
-        cancel(p, w.walk > 0 ? 'out_of_range' : 'prediction_drift');
+        // out_of_range only when the walk is what makes the window unreachable (standing in reach it would fit)
+        const noWalk = Math.max(own.ready, T + 1, Math.ceil(a + margin(a, b) - (w.lead - w.walk))) + w.lead - w.walk < b;
+        cancel(p, w.walk > 0 && noWalk ? 'out_of_range' : 'prediction_drift');
         continue;
       }
       p.executeAtTick = start - 1;
@@ -335,6 +339,22 @@ function feasible(w: MinionWindow, bias: number, startMin: number, own: OwnAttac
   return s + w.lead < b - safety;
 }
 
+/** How many of the windows one auto per period serves from startMin on, earliest deadline first (with slack). */
+function serveCount(wins: MinionWindow[], bias: (w: MinionWindow) => number, startMin: number, period: number): number {
+  const order = [...wins].sort((p, q) => p.b + bias(p) - (q.b + bias(q)) || p.m.id - q.m.id);
+  let t = startMin;
+  let n = 0;
+  for (const w of order) {
+    const a = w.a + bias(w);
+    const b = w.b + bias(w);
+    const s = Math.max(t, Math.ceil(a + margin(a, b) - w.lead));
+    if (s + w.lead >= b - PROTECT_SAFETY) continue;
+    n++;
+    t = s + Math.floor(period);
+  }
+  return n;
+}
+
 /** Start tick of the earliest auto serving w no earlier than startMin (Infinity: not servable). */
 function serveAt(a: number, b: number, lead: number, startMin: number): number {
   const s = Math.max(startMin, Math.ceil(a + margin(a, b) - lead));
@@ -379,6 +399,63 @@ function attackSpotSafe(v: View, m: { x: number; y: number; radius: number }): b
 function untankedMinions(v: View): View['enemyMinions'] {
   return v.enemyMinions.filter((m) => dst(m, v.self) < 1200 && !v.ownMinions.some((o) => dst(o, m) < TANK_R));
 }
+
+/** Harass budget shift per aggression axis step (autos/min; §4.3: aggression axis +-3 at +-5). */
+const HARASS_PER_AGGRESSION = 0.6;
+/** One step: an enemy champion this far beyond auto reach still counts as harassable (§4.3). */
+const HARASS_STEP = 150;
+/** "In the enemy wave" (§4.3): enemy minions this close to the bot's attack spot. Minions further back still answer
+ *  the call for help (sim CALL_RANGE 1000), but a bot outside the wave can step back out of their reach. */
+const AGGRO_R = 350;
+
+/**
+ * Harass target (§4.3) or -1. Budget: profile harassPerMin + aggression axis, counted over the last 60 s (autos the
+ * reflex layer threw at champions). Minion aggro: more than one enemy minion near the attack spot is "in the enemy
+ * wave" unless the bot is ranged and the enemy melee; Iron-Bronze sometimes ignore it (named error
+ * ignore_minion_aggro, rolled at most every 10 s). Diamond+ prefer the enemy's CS window (its wind-up on a minion).
+ */
+function harassTarget(v: View, ctx: BotStatic, st: ReflexState, rng: Rng, T: number): number {
+  const b = ctx.params.behavior;
+  const autos = st.harass.autos;
+  while (autos.length && autos[0]! < T - 60 * 30) autos.shift();
+  const budget = b.harassPerMin + HARASS_PER_AGGRESSION * ctx.params.playstyle.aggression;
+  if (autos.length + 1 > budget) return -1;
+  const me = v.self;
+  let best: View['enemies'][number] | null = null;
+  for (const e of v.enemies) {
+    const reach = v.reach + e.radius;
+    const d = dst(me, e);
+    if (d > reach + HARASS_STEP || (best && d >= dst(me, best))) continue;
+    // attacking a champion inside the enemy tower's range draws the tower, tanked or not
+    const q = d <= reach ? me : { x: e.x + ((me.x - e.x) * reach) / d, y: e.y + ((me.y - e.y) * reach) / d };
+    if (towerCovering(v, q)) continue;
+    best = e;
+  }
+  if (!best) return -1;
+  const d = dst(me, best);
+  const r = v.reach + best.radius;
+  const spot = d <= r ? me : { x: best.x + ((me.x - best.x) * r) / d, y: best.y + ((me.y - best.y) * r) / d };
+  const waveNear = v.enemyMinions.filter((m) => dst(m, spot) < AGGRO_R).length;
+  const ranged = ctx.champ.attackType === 'ranged' && championMelee(best);
+  if (waveNear > 1 && !ranged) {
+    if (T >= st.aggroErrUntil && T - st.aggroRollAt >= 10 * 30) {
+      st.aggroRollAt = T;
+      if (rollError('ignore_minion_aggro', ctx.params, rng)) {
+        st.aggroErrUntil = T + 3 * 30;
+        ctx.log.push({ tick: T, bot: ctx.slot, node: 'reflex', inputs: { target: best.slot, minions: waveNear }, chosen: 'harass', reason: 'attacks the champion inside the enemy wave', injectedError: 'ignore_minion_aggro' });
+      }
+    }
+    if (T >= st.aggroErrUntil) return -1;
+  }
+  // Diamond+: wait for the enemy's CS window (it winds up on a minion and cannot answer without losing it)
+  const tgt = best.atkTarget;
+  const csWindow = best.atkPhase === 1 && tgt >= 0 && v.ownMinions.some((m) => m.id === tgt);
+  if (!csWindow && b.harassCsWindowPct > 0 && rng.chance(b.harassCsWindowPct / 100)) return -1;
+  autos.push(T);
+  return best.id;
+}
+
+const championMelee = (e: { champ: string | null }): boolean => championData(e.champ ?? '').attackType === 'melee';
 
 /** Busy time of a reflex cast (same rule as brain.think for decision casts). */
 function markCast(ctx: BotStatic, mem: BotMemory, a: BotAction, T: number): void {
@@ -446,7 +523,7 @@ function chooseFiller(
   rng: Rng,
   T: number,
   lh: LastHitMem,
-): { target: number; kind: 'minion' | 'structure' | 'prepare' | 'prehit' } | null {
+): { target: number; kind: 'minion' | 'structure' | 'prepare' | 'prehit' | 'harass' } | null {
   const next = T + 1 + Math.floor(own.period);
   const bias = (w: MinionWindow): number => (plan && plan.targetId === w.m.id ? plan.biasTicks : 0);
   // window preparation: the next two windows collide (one auto cannot serve both): hit one now so its window
@@ -483,6 +560,9 @@ function chooseFiller(
   }
   // every protected window must stay servable with the timer taken until `next`
   for (const w of protectedWins) if (!feasible(w, bias(w), next, own, PROTECT_SAFETY)) return null;
+  // jointly: the protected windows served one auto per period (earliest deadline first) must not lose one that the
+  // free timer would have served (two wide windows each servable alone can still collide after a filler)
+  if (protectedWins.length >= 2 && serveCount(protectedWins, bias, next, own.period) < serveCount(protectedWins, bias, T + 1, own.period)) return null;
   // pre-hit: a minion whose next incoming hit jumps over the own damage (no kill window) gets an auto now, so the
   // next auto lands inside the window that opens (tower shots, stacked minion hits); chance by skill per minion
   if (intent.farm) {
@@ -492,6 +572,12 @@ function chooseFiller(
       if (!prehitRoll(lh, w.m, ctx.params.skill, rng)) continue;
       return { target: w.m.id, kind: 'prehit' };
     }
+  }
+  // (1) harass (§4.3): the enemy laner in reach (or one step), no last-hit window lost (checked above), within the
+  // rank's harass budget, not inside the enemy wave (minion aggro; Iron-Bronze ignore it via ignore_minion_aggro)
+  if (intent.harass) {
+    const h = harassTarget(v, ctx, st, rng, T);
+    if (h >= 0) return { target: h, kind: 'harass' };
   }
   if (intent.pushMinions) {
     let best: MinionWindow | null = null;

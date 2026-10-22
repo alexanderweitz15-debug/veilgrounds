@@ -281,6 +281,9 @@ export class GroundObjects {
       m.material.color.set('#f4eed8');
       m.material.opacity = 0.75;
     }
+    // B1 stealth: own stealthed objects (traps, seeds) translucent; revealed enemy ones get a pulsing reveal ring
+    if (o.stealth && o.team === state.myTeam) for (let i = 0; i < n; i++) v.parts[i]!.material.opacity *= 0.55;
+    else if (o.stealth) circle(GEO.thin, o.r + 26, team, 0.6 + 0.3 * Math.sin(now / 140), 6);
     v.hideFrom(n);
   }
 }

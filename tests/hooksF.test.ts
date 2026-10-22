@@ -370,7 +370,9 @@ describe('Corvin W keg', () => {
     expect(onCast).toHaveLength(0);
     const keg = petsOf(sim, m, 'corvin_keg')[0]!;
     expect(keg).toBeGreaterThan(0);
-    const hits = collect(sim, 60, m, { t: 'attack', target: keg });
+    // step until the keg blast lands, then check the slow at that moment (hitbox 65 makes the shot land earlier)
+    const hits: ReturnType<typeof collect> = [];
+    for (let i = 0; i < 60 && !hits.some((h) => h.dst === d); i++) hits.push(...collect(sim, 1, m, i === 0 ? { t: 'attack', target: keg } : undefined));
     expect(hits.some((h) => h.dst === d && Math.abs(h.amount - (70 + 0.7 * sim.c.Stats.ad[m]!)) < 1e-6)).toBe(true);
     expect(strongestSlow(sim, d)).toBe(40);
   });

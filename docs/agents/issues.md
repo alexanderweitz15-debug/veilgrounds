@@ -24,6 +24,19 @@ The sim emits `castFail` only for abilities; item actives that fail (cooldown, n
 The HUD already shows any `castFail` reason it receives (`hud.ts onEvent`), so an event with the same shape for item
 slots is enough.
 
+## 2026-10-19 · E · src/ai · Sev Aschenblick bot rules (spec docs/champions/sev.md) · brain team (A1-A3)
+
+E did not touch src/ai. Wishes for the brain team:
+1. `src/ai/bot/builds.ts`: add `import sev from '../../data/builds/sev.json'` + `sev` in `BUILDS` (without it Sev bots in
+   real matches have no build; tools/botSim.ts registers it at runtime as a stopgap).
+2. Q fakes from Platin on against recognised dodge patterns (recast Q during its 0.4 s wind-up: `sev_q_fake_cancel`).
+3. From Gold, bots do not use abilities on Sev's decoy (pet tag `sev_decoy`, snapshot `look: 'sev'`); below Gold they
+   do 40 % of the time. Hitting it with an ability gives the bot a Nachbild (enables Sev's R).
+4. Bots with Schwarzglut (dot id `sev_w`, uncleansable, grievous 40 %) do not panic-recall; count the remaining burn
+   in `ExchangeEstimate`.
+5. Fear (`fear` CC, `isFeared`, ccLevel 3.5) is treated like a stun in the escape node.
+6. R needs a Nachbild target (`hasNachbild` in src/sim/champions/sev.ts), else the cast fails with 'target': cast R
+   only on marked champions, best after W (+50 % damage with ember). Combos: W→Q→AA, E→Q(fake)→Q→W, W→R→Q→AA.
 ## 2026-10-19 · B · bots never use the top laner's unlocked Teleport (B4) · medium · brain team (A2 macro)
 
 Sim side done (sim/b-mechanics): after 1500 lane-minion gold the lobby top laner gets Teleport as summoner slot 2

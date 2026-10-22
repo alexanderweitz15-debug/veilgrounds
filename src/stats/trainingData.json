@@ -1,0 +1,34 @@
+{
+  "_doc": "D5 training plan + match history (src/stats). categories: how a match metric maps onto the rank targets of src/data/bots/profiles/*.json (Table A); per30 = scaled to a 30-minute game using the rank's gameLengthMin. drills: trainer suggestions per weakest category (mode = src/game/modes.ts TrainerMode, opts = TrainerOpts, minutes = planned duration). planWindow = matches the plan looks at; provisionalBelow = fewer matches than this mark the plan as provisional.",
+  "planWindow": 10,
+  "provisionalBelow": 3,
+  "historyCap": 200,
+  "categories": {
+    "farming": { "metric": "cs10", "target": "csAt10", "higherIsBetter": true, "per30": false },
+    "economy": { "metric": "goldPerMin", "target": "goldPerMin", "higherIsBetter": true, "per30": false },
+    "survival": { "metric": "deathsPer30", "target": "deathsPerGame", "higherIsBetter": false, "per30": true },
+    "fighting": { "metric": "killsPer30", "target": "killsPerGame", "higherIsBetter": true, "per30": true }
+  },
+  "drills": {
+    "farming": [
+      { "mode": "lastHit", "opts": { "durationSec": 300 }, "minutes": 5 },
+      { "mode": "lastHit", "opts": { "durationSec": 300, "tower": true }, "minutes": 5 },
+      { "mode": "laneDuel", "opts": { "cs": 100, "kills": 2 }, "minutes": 10 }
+    ],
+    "economy": [
+      { "mode": "lastHit", "opts": { "durationSec": 420 }, "minutes": 7 },
+      { "mode": "scenario", "opts": { "scenario": "freezeWave" }, "minutes": 5 },
+      { "mode": "jungleDuel", "opts": { "durationSec": 480 }, "minutes": 8 }
+    ],
+    "survival": [
+      { "mode": "dodge", "opts": { "difficulty": 2, "lives": 5 }, "minutes": 4 },
+      { "mode": "scenario", "opts": { "scenario": "gankEscape" }, "minutes": 5 },
+      { "mode": "scenario", "opts": { "scenario": "flashUlt" }, "minutes": 4 }
+    ],
+    "fighting": [
+      { "mode": "kite", "opts": { "dummy": "strafe", "durationSec": 180, "level": 9 }, "minutes": 3 },
+      { "mode": "laneDuel", "opts": { "kills": 2, "cs": 100 }, "minutes": 10 },
+      { "mode": "arena", "opts": { "rounds": 3, "roundSec": 90, "level": 11 }, "minutes": 8 }
+    ]
+  }
+}

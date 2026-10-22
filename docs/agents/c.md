@@ -11,6 +11,27 @@ Branch `ui/c-features` (base `0bbc3d0`). Spec: docs/AGENTS-PLAN.md §5 (C1-C7). 
 | C7 HP-bar tick style + skillshot outline setting | `da0ec05` | src/settings.ts additive (logged); request to D in shared-changes.md |
 | post-game axis labels, screenshots, docs | next commits | – |
 
+## Block 5 (2026-10-20): B's UI requests after B's merge (`b69b12d`)
+
+| Request (shared-changes.md) | Done |
+|---|---|
+| B4 Teleport slot | 7th HUD slot (`.tp-slot`, hidden until `me.abilities[6]` exists), keybind action `tp` default T (rebindable, settings list), controller sends `{ t: 'spell', slot: 2 }`; announcer "Teleport freigeschaltet" + key on `tpUnlocked` for the own champion; scoreboard third summoner for own-team rows when `summonerCds` has 3 entries. The own HUD slot is verified in code only (unlock needs 1500 minion gold by the player); the scoreboard shows it for a bot top laner |
+| B1 revealed ward symbol | already on main (`stealth` field) |
+| B5 attack move target at cursor | setting `attackMoveTargetCursor` -> `cursor: true` on every attack-move command |
+| user decision enemy items | scoreboard/target frame show `ScoreRow.items` of enemies; dimmed + "zuletzt gesehen vor m:ss" when `itemsSeen` is older than 3 s |
+| B6 enemy Kesselbrut | announcer: one banner per team once its `objectives.kesselbrut` count settled ("Das gegnerische Team hat Kesselbrut erlegt") |
+| snapshot fields under C's names | `ScoreRow.respawnIn`, `Snapshot.objectives`, `summonerCds`, `visionScore`, `champDamage` used directly; new columns Sicht / Schaden. Removed the duplicating client fallbacks in src/game/objectives.ts (respawn from death events, Leviathan/Schleier/inhibitor bookkeeping); kept only the epic (re)spawn countdowns, now keyed on `ev.epic` |
+
+Tests: objectives.test.ts rewritten to the snapshot contract (respawn timers still compared with the sim end-to-end),
+settingsIO.test.ts (default keys T / H, no duplicate default key). Screenshot: c2-scoreboard-b-after.jpg (vision, damage,
+ally summoner cooldowns, enemy items with a stale one dimmed). Full suite on `71cd27c`: 73 files, 894 passed, 1 todo,
+0 failed; tsc and build green.
+
+Not seen in a game: the Teleport slot. Bot top laners already carry Teleport (runner.ts SUMMONERS.top), so B4 never
+unlocks for them; it triggers for a player top laner (lobby default Flash + Ignite) after 1500 minion gold, which
+the headless runs (player standing in the fountain) never reach. An 18-minute headless game showed no unlock, so
+FEATURE-GAP 1.18 stays "teilweise" until someone plays it (or the brain team gives bot tops Flash + Ignite).
+
 ## Block 4 (2026-10-20): supervisor browser-check fixes (`6348bef`)
 
 | Finding (docs/ist/s-check-03-death.jpg) | Fix | Proof |

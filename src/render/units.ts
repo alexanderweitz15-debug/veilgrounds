@@ -5,16 +5,6 @@ import type { SnapEntity } from '../sim/snapshot';
 import { Kind, isMinion as isMinionKind } from '../sim/types';
 import type { ClientState } from '../game/state';
 import { FlashGate, READ, airborneLift, dashLift, flashAmp } from './readability';
-
-/**
- * Optional motion flags (agent B5, not in SnapEntity yet): progress 0..1 of a knock-up / dash, dash length in world
- * units. Rendered when present; without them the airborne CC bit drives the hop and dashes stay flat.
- */
-interface MotionFlags {
-  airborne?: number;
-  dashing?: number;
-  dashLen?: number;
-}
 import { PITCH } from './camera';
 import { REL } from './palette';
 import { settings } from '../settings';
@@ -105,6 +95,8 @@ export class Units {
   private readonly flashGate = new FlashGate();
   /** Airborne (CC bit 16) start per unit serial: client time, sim tick and CC end tick. */
   private readonly airAt = new Map<number, { t0: number; tick0: number; end: number }>();
+  /** Dash start position per unit serial (arc height from the dash length). */
+  private readonly dashAt = new Map<number, { x: number; y: number }>();
   private readonly lungeAt = new Map<number, { t: number; dx: number; dy: number; armed: boolean }>();
   private readonly rings: THREE.InstancedMesh;
   private readonly qVis = new THREE.Quaternion().setFromEuler(new THREE.Euler(-PITCH, 0, 0));
@@ -208,11 +200,20 @@ export class Units {
     this.flashAmpOf.set(serial, flashAmp(kind === Kind.Champion ? 'champion' : kind !== undefined && isMinionKind(kind) ? 'minion' : 'other', settings.reduceMotion));
   }
 
-  /** D2: sprite lift (world units) for knock-ups and dashes: optional B5 snapshot flags, else the airborne CC bit. */
+  /**
+   * D2: sprite lift (world units). B5 snapshot progress: `air` (knock-up arc) and `dash` (dash / knockback / pull; the
+   * arc height follows the length, estimated from the distance covered so far / progress). Fallback for snapshots
+   * without `air` (old replays): the airborne CC bit with ccEnd.
+   */
   private lift(state: ClientState, e: SnapEntity, now: number): number {
-    const f = e as SnapEntity & MotionFlags;
-    if (f.airborne !== undefined) return airborneLift(f.airborne);
-    if (f.dashing !== undefined) return dashLift(f.dashing, f.dashLen ?? 400);
+    if (e.air !== undefined) return airborneLift(e.air);
+    if (e.dash !== undefined) {
+      let d = this.dashAt.get(e.serial);
+      if (!d) this.dashAt.set(e.serial, (d = { x: e.px, y: e.py }));
+      const moved = Math.hypot(state.x(e) - d.x, state.y(e) - d.y);
+      return dashLift(e.dash, e.dash > 0.1 ? moved / e.dash : moved * 4);
+    }
+    this.dashAt.delete(e.serial);
     const cc = e.cc ?? 0;
     if (!(cc & 16)) {
       this.airAt.delete(e.serial);

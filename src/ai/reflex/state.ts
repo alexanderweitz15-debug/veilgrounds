@@ -44,6 +44,10 @@ export interface ReflexState {
   harass: { autos: number[] };
   /** ignore_minion_aggro episode (harass inside the enemy wave) until this tick; last roll tick. */
   aggroErrUntil: number;
+  /** §4.5 wave state of the latest decision (reflex path) and its switch tick. */
+  /** Forced wave state (tests, trainer scenarios); undefined = decided by chooseWaveState. */
+  waveOverride?: LaneIntent['wave'];
+  waveState: { state: LaneIntent['wave']; reason: string; at: number } | null;
   aggroRollAt: number;
   /** Orbwalk bookkeeping: wind-up start (recorded tick) already handled for the backswing move. */
   orbHandled: number;
@@ -53,11 +57,14 @@ export interface ReflexState {
   inflight: { target: number; tick: number } | null;
   /** Filler target chosen by the scheduler (stand moves wait while it is being attacked). */
   filler: number;
+  /** Tick the current filler target was chosen; whether it is an enemy champion (harass). */
+  fillerAt: number;
+  fillerChamp: boolean;
   /** Window-preparation rolls per minion pair (rolled once per pair). */
   prepRolls: Map<string, boolean>;
   /** Counters for tests / bot-sim: moves or stops issued during the own wind-up by the reflex layer (must stay 0
    *  except orbwalk timing errors), orbwalk early cancels, plans executed, cancels by reason. */
-  stats: { windupBreaks: number; orbEarly: number; executed: number; cancels: Record<string, number>; fillers: number; prepares: number };
+  stats: { windupBreaks: number; orbEarly: number; executed: number; cancels: Record<string, number>; fillers: number; prepares: number; harassBlock: Record<string, number> };
   attention?: AttentionProbe;
   /** Diagnostics: the window table and own attack timing of the latest tick (reference, no copy). */
   last?: { tick: number; windows: readonly { m: { id: number }; a: number; b: number; lead: number; walk: number }[]; ready: number; period: number };
@@ -83,13 +90,16 @@ export function reflexState(mem: BotMemory): ReflexState {
       lastCmdTick: -1,
       harass: { autos: [] },
       aggroErrUntil: -1,
+      waveState: null,
       aggroRollAt: -1e9,
       orbHandled: -1,
       attackCmd: null,
       inflight: null,
       filler: -1,
+      fillerAt: -1,
+      fillerChamp: false,
       prepRolls: new Map(),
-      stats: { windupBreaks: 0, orbEarly: 0, executed: 0, cancels: {}, fillers: 0, prepares: 0 },
+      stats: { windupBreaks: 0, orbEarly: 0, executed: 0, cancels: {}, fillers: 0, prepares: 0, harassBlock: {} },
       attention: undefined,
     };
     STATES.set(mem, s);

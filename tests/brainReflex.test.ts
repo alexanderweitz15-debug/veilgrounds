@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSim, step, stateHash } from '../src/sim/sim';
 import { Recorder, playReplay } from '../src/replay/replay';
-import { isMinion, Lane, type PlayerSetup, type SimConfig } from '../src/sim/types';
+import { isMinion, Kind, Lane, type PlayerSetup, type SimConfig } from '../src/sim/types';
 import { BotRunner, botGameConfig, seedPersonalities } from '../src/ai/runner';
 import { runBotGame, runLaneAlone } from '../src/ai/harness';
 import { reflexState } from '../src/ai/reflex/state';
@@ -118,6 +118,33 @@ describe.skip('reflex layer: harass without CS loss (test 5)', () => {
     console.log(`harass autos 1:40-4:40: ${harass}, lane minions lost while harassing: ${lostWhileHarassing}`);
     expect(harass).toBeGreaterThanOrEqual(12);
     expect(lostWhileHarassing).toBe(0);
+  }, 300_000);
+});
+
+describe('reflex layer: wave states (test 6)', () => {
+  it('freeze is not standing still: freeze forced for 60 s from 2:00, >= 1 own auto per 2 s, the wave is not pushed into the enemy tower', () => {
+    const config = laneAloneConfig('gold', 8);
+    const sim = createSim(config);
+    const bots = new BotRunner(config, undefined, { noVariance: true, noSpells: true, reflex: true });
+    const me = sim.slots[0]!;
+    const st = reflexState(bots.bots[0]!.mem);
+    let autos = 0;
+    let towerHits = 0;
+    while (sim.tick < 180 * 30) {
+      if (sim.tick >= 120 * 30) st.waveOverride = 'freeze';
+      const inputs = bots.tick(sim).filter((i) => i.cmd.t !== 'cast' && i.cmd.t !== 'recall' && i.cmd.t !== 'ward');
+      step(sim, inputs);
+      if (sim.tick < 120 * 30) continue;
+      for (const ev of sim.events) {
+        if (ev.e === 'attack' && ev.src === me) autos++;
+        if (ev.e === 'damage' && ev.dst >= 0 && sim.c.Unit.kind[ev.dst] === Kind.Tower && sim.c.Unit.team[ev.dst] === 1) towerHits++;
+      }
+    }
+    const waves = bots.log.entries(0).filter((e) => e.node === 'wave').map((e) => e.chosen);
+    console.log(`freeze 2:00-3:00: own autos ${autos}, enemy tower hits ${towerHits}, wave log ${waves.join(',')}`);
+    expect(waves).toContain('freeze');
+    expect(autos).toBeGreaterThanOrEqual(30);
+    expect(towerHits).toBe(0);
   }, 300_000);
 });
 

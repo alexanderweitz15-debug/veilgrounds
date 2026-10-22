@@ -12,6 +12,7 @@
 
 import type { Rng } from '../../sim/rng';
 import { MINION_STATS } from '../../sim/systems/minions';
+import { Kind } from '../../sim/types';
 import type { BotAction, BotMemory, BotStatic, Snapshot } from '../bot/types';
 import type { View } from '../bot/perception';
 import { towerCovering } from '../bot/perception';
@@ -61,6 +62,10 @@ const FILLER_WALK_TICKS = 15;
 const PROTECT_SAFETY = 3;
 /** Pre-hits are considered for minions whose killing hit lands within this many ticks. */
 const PREHIT_LOOKAHEAD = 75;
+/** Minions counted for the wave comparison of the neutral / hold / freeze states. */
+const WAVE_COUNT_R = 1200;
+/** Freeze corridor: keep 2-3 enemy minions surplus (§4.5); hit enemy minions only above it. */
+const FREEZE_SURPLUS_MAX = 3;
 /** Own minion within this distance of an enemy minion = the enemy minion has another target than the bot. */
 const TANK_R = 700;
 /** Extra distance kept to the reach of untanked enemy minions (stand point) - a step of the minion. */
@@ -73,6 +78,8 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
   const T = v.tick;
   const lh = mem.ext.lh;
   observeAttacks(v, lh); // this tick's events only (the runner hands reflex exactly one tick of events)
+  // harass budget counts thrown autos on enemy champions (not choices: a walk-in is chosen on several ticks)
+  for (const ev of snap.events) if (ev.e === 'attack' && ev.src === v.me.eid && v.enemies.some((e) => e.id === ev.dst) && !mem.ext.trade) reflexState(mem).harass.autos.push(snap.tick);
   recordUtil(st, T, v.self.atkPhase !== 0 && v.self.alive);
   if (st.issued.length && st.issued[0]!.tick < T - 30) st.issued = st.issued.filter((i) => i.tick >= T - 30);
   const out: BotAction[] = [];
@@ -264,10 +271,16 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
   if (!canIssue || isWindup(v)) return out;
 
   // ---- 4. attack scheduler: fill the free attack period
+  // a harass walk-in in progress is not re-decided every tick (the walk changes every lead; re-deciding flip-flops
+  // between harass and hold): it runs until the wind-up, a due last hit or HARASS_WALK_TICKS
+  const harassWalk = st.fillerChamp && st.filler >= 0 && v.self.atkTarget === st.filler && v.self.atkPhase === 0 && T - st.fillerAt < HARASS_WALK_TICKS;
+  if (harassWalk && !(farmPlan && farmPlan.executeAtTick <= T + 2)) return out;
   if (own.ready <= T + 1) {
     const choice = chooseFiller(v, ctx, st, intent, windows, protectedWins, farmPlan, own, P, rng, T, lh);
     if (choice) {
+      if (st.filler !== choice.target) st.fillerAt = T;
       st.filler = choice.target;
+      st.fillerChamp = choice.kind === 'harass';
       if (v.self.atkTarget !== choice.target) {
         out.push({ cmd: { t: 'attack', target: choice.target } });
         st.attackCmd = { target: choice.target, tick: T };
@@ -405,8 +418,12 @@ function untankedMinions(v: View): View['enemyMinions'] {
 
 /** Harass budget shift per aggression axis step (autos/min; §4.3: aggression axis +-3 at +-5). */
 const HARASS_PER_AGGRESSION = 0.6;
-/** One step: an enemy champion this far beyond auto reach still counts as harassable (§4.3). */
-const HARASS_STEP = 150;
+/** Step-up: an enemy champion this far beyond auto reach is still harassed (the bot walks in, hits, the stand point
+ *  pulls it back). §4.3 says one step (<= 150); both laners stand ~400 behind the wave contact, so with 150 the enemy
+ *  was in reach only when it walked up for a last hit (2-4 harass autos per laner in 12 min). Deviation, see a1.md. */
+const HARASS_STEP = 400;
+/** A harass walk-in is given this long (ticks) before the scheduler decides again. */
+const HARASS_WALK_TICKS = 45;
 /** "In the enemy wave" (§4.3): enemy minions this close to the bot's attack spot. Minions further back still answer
  *  the call for help (sim CALL_RANGE 1000), but a bot outside the wave can step back out of their reach. */
 const AGGRO_R = 350;
@@ -417,24 +434,25 @@ const AGGRO_R = 350;
  * wave" unless the bot is ranged and the enemy melee; Iron-Bronze sometimes ignore it (named error
  * ignore_minion_aggro, rolled at most every 10 s). Diamond+ prefer the enemy's CS window (its wind-up on a minion).
  */
-function harassTarget(v: View, ctx: BotStatic, st: ReflexState, rng: Rng, T: number): number {
+function harassTarget(v: View, ctx: BotStatic, st: ReflexState, rng: Rng, T: number, step: number): number {
   const b = ctx.params.behavior;
   const autos = st.harass.autos;
   while (autos.length && autos[0]! < T - 60 * 30) autos.shift();
   const budget = b.harassPerMin + HARASS_PER_AGGRESSION * ctx.params.playstyle.aggression;
-  if (autos.length + 1 > budget) return -1;
+  const block = (why: string): number => ((st.stats.harassBlock[why] = (st.stats.harassBlock[why] ?? 0) + 1), -1);
+  if (autos.length + 1 > budget) return block('budget');
   const me = v.self;
   let best: View['enemies'][number] | null = null;
   for (const e of v.enemies) {
     const reach = v.reach + e.radius;
     const d = dst(me, e);
-    if (d > reach + HARASS_STEP || (best && d >= dst(me, best))) continue;
+    if (d > reach + step || (best && d >= dst(me, best))) continue;
     // attacking a champion inside the enemy tower's range draws the tower, tanked or not
     const q = d <= reach ? me : { x: e.x + ((me.x - e.x) * reach) / d, y: e.y + ((me.y - e.y) * reach) / d };
     if (towerCovering(v, q)) continue;
     best = e;
   }
-  if (!best) return -1;
+  if (!best) return block(v.enemies.length ? (v.enemies.some((e) => dst(me, e) <= v.reach + e.radius + step) ? 'tower' : 'distance') : 'no_enemy');
   const d = dst(me, best);
   const r = v.reach + best.radius;
   const spot = d <= r ? me : { x: best.x + ((me.x - best.x) * r) / d, y: best.y + ((me.y - best.y) * r) / d };
@@ -448,13 +466,13 @@ function harassTarget(v: View, ctx: BotStatic, st: ReflexState, rng: Rng, T: num
         ctx.log.push({ tick: T, bot: ctx.slot, node: 'reflex', inputs: { target: best.slot, minions: waveNear }, chosen: 'harass', reason: 'attacks the champion inside the enemy wave', injectedError: 'ignore_minion_aggro' });
       }
     }
-    if (T >= st.aggroErrUntil) return -1;
+    if (T >= st.aggroErrUntil) return block('enemy_wave');
   }
   // Diamond+: wait for the enemy's CS window (it winds up on a minion and cannot answer without losing it)
   const tgt = best.atkTarget;
   const csWindow = best.atkPhase === 1 && tgt >= 0 && v.ownMinions.some((m) => m.id === tgt);
-  if (!csWindow && b.harassCsWindowPct > 0 && rng.chance(b.harassCsWindowPct / 100)) return -1;
-  autos.push(T);
+  if (!csWindow && b.harassCsWindowPct > 0 && rng.chance(b.harassCsWindowPct / 100)) return block('cs_window_wait');
+  st.stats.harassBlock.ok = (st.stats.harassBlock.ok ?? 0) + 1;
   return best.id;
 }
 
@@ -579,12 +597,30 @@ function chooseFiller(
   // (1) harass (§4.3): the enemy laner in reach (or one step), no last-hit window lost (checked above), within the
   // rank's harass budget, not inside the enemy wave (minion aggro; Iron-Bronze ignore it via ignore_minion_aggro)
   if (intent.harass) {
-    const h = harassTarget(v, ctx, st, rng, T);
+    const h = harassTarget(v, ctx, st, rng, T, intent.wave === 'hold' ? 0 : HARASS_STEP);
     if (h >= 0) return { target: h, kind: 'harass' };
   }
+  // §4.5: which minions the wave state lets the bot hit (target picture, never "nothing")
+  const ownN = v.ownMinions.filter((m) => dst(m, v.self) < WAVE_COUNT_R).length;
+  const foeN = v.enemyMinions.filter((m) => dst(m, v.self) < WAVE_COUNT_R).length;
+  const minionOk = (m: MinionWindow['m']): boolean => {
+    switch (intent.wave) {
+      case 'push':
+        return true;
+      case 'neutral':
+      case 'hold':
+        return ownN <= foeN;
+      case 'slowPush':
+        return m.kind === Kind.MinionMelee;
+      case 'freeze':
+        // only enemy minions that hit own minions, and only while the enemy surplus stays above the corridor
+        return foeN - ownN > FREEZE_SURPLUS_MAX && v.ownMinions.some((o) => o.id === m.atkTarget);
+    }
+  };
   if (intent.pushMinions) {
     let best: MinionWindow | null = null;
     for (const w of windows) {
+      if (!minionOk(w.m)) continue;
       // a short step in (melee behind the wave) is fine; the attack order walks it
       if (w.walk > FILLER_WALK_TICKS || (plan && plan.targetId === w.m.id)) continue;
       if (protectedWins.includes(w) || !attackSpotSafe(v, w.m)) continue;
@@ -606,7 +642,7 @@ function chooseFiller(
     }
     if (best) return { target: best.m.id, kind: 'minion' };
   }
-  if (intent.hitStructures && !windows.some((w) => w.walk === 0)) {
+  if (intent.hitStructures && intent.wave === 'push' && !windows.some((w) => w.walk === 0)) {
     const s = structureToHit(v, ctx);
     if (s >= 0) return { target: s, kind: 'structure' };
   }

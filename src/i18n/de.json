@@ -324,6 +324,7 @@
   "act.pingMissing": "Ping: Vermisst",
   "act.pingQuestion": "Ping: ?",
   "ping.question": "?",
+  "ping.myBad": "Mein Fehler",
   "set.newBrain": "Neues Bot-Gehirn (Beta: Reflex-Schicht + Nutzenmodell)",
   "set.botToxicity": "Toxische Bots (Flame-Chat, „?“-Pings)",
   "chat.placeholder": "Nachricht an dein Team (Enter senden, Esc abbrechen)",

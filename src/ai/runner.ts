@@ -26,6 +26,9 @@ import { BUILDS } from './bot/builds';
 import { newMemory, type BotAction, type BotMemory, type BotStatic, type Brain } from './bot/types';
 import { think, decisionTicks } from './bot/brain';
 import { TeamAI } from './bot/teamai';
+import { utilityOn } from './utility/flag';
+import { attentionDebug, attentionProbe, ensureAttention, observeAttention } from './humanize/attention';
+import { detectErrors } from './errors';
 
 let mapCache: MapData | null = null;
 /** Static map (walls, lanes, camps); built once and shared by all bots. */
@@ -48,6 +51,9 @@ interface BotSlot {
   audio: SnapAudio[];
   /** HUD of the latest decision snapshot (reflex patches its live fields every tick). */
   hud: PlayerHud | null;
+  /** New bot brain on for this bot (reflex layer or utility model): the BRAIN-REWORK §9 attention model and error
+   *  episodes run only then (src/ai/humanize/attention.ts); off = pre-rework behaviour, bit-identical. */
+  human: boolean;
 }
 
 const NO_TAGS: ReadonlySet<string> = new Set();
@@ -148,13 +154,20 @@ export class BotRunner {
       // stagger first decisions so bots do not all think on the same tick
       const mem = newMemory();
       reflexState(mem).enabled = !!opts.reflex;
-      this.bots.push({ ctx, mem, rng: new Rng(rng.u32()), interval, next: rng.int(interval), events: [], eventTicks: [], audio: [], hud: null });
+      const human = !!opts.reflex || utilityOn(ctx);
+      if (human) {
+        // §9 attention model (own Rng from the personality seed, never this bot's Rng): created before the first
+        // decision so think's hooks (reaction penalty, tilt mode, error episodes) see it; reflex only queries it
+        ensureAttention(mem, ctx, 0);
+        reflexState(mem).attention = attentionProbe(mem);
+      }
+      this.bots.push({ ctx, mem, rng: new Rng(rng.u32()), interval, next: rng.int(interval), events: [], eventTicks: [], audio: [], hud: null, human });
     }
   }
 
   /** F9 overlay rows: latest decision, scores, injected error, reaction time and perception age per bot, plus the
    *  reflex layer (intent, plans with countdown, attack utilisation of the last 30 s; plan-api.md §5). */
-  debugRows(): (BotDebugRow & { reflex: ReflexDebug })[] {
+  debugRows(): (BotDebugRow & { reflex: ReflexDebug; attention?: { text: string; share: number } })[] {
     const tick = this.bufferedTick;
     const rows = debugRows(
       this.log,
@@ -170,7 +183,8 @@ export class BotRunner {
     );
     return rows.map((r) => {
       const b = this.bots.find((x) => x.ctx.slot === r.slot);
-      return { ...r, reflex: b ? reflexDebug(b.mem, tick) : { intent: 'none', plans: [], util30s: 0, stand: null } };
+      const attention = b?.human ? attentionDebug(b.mem, tick) : undefined;
+      return { ...r, reflex: b ? reflexDebug(b.mem, tick) : { intent: 'none', plans: [], util30s: 0, stand: null }, ...(attention ? { attention } : {}) };
     });
   }
 
@@ -307,6 +321,13 @@ export class BotRunner {
       if (this.clock) {
         this.cost.thinkMs += this.clock() - t0;
         this.cost.thinks++;
+      }
+      if (b.human) {
+        // §9: feed the attention triggers of this decision (perception glance, kill feed, chat, gold step, tilt) with
+        // the think snapshot (its eventTicks dedupe the event buffer), then notice error episodes whose time is up
+        observeAttention(b.mem, b.ctx, snap);
+        const me = snap.me && !snap.me.dead ? snap.entities.find((e) => e.id === snap.me!.eid) : undefined;
+        actions.push(...detectErrors(b.mem, b.ctx, snap.tick, me));
       }
       let cancelled: ReadonlySet<string> = NO_TAGS;
       // drop queued orders whose tag the brain cancelled (orbwalk plans superseded by a dodge / retreat)

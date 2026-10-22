@@ -3,6 +3,7 @@
 
 import { Kind, isMinion } from '../../sim/types';
 import { sampleReactionMs } from '../profiles';
+import { reactionPenaltyMs } from '../humanize/attention';
 import type { Rng } from '../../sim/rng';
 import type { BotMemory, BotStatic, PlayerHud, SnapEntity, Snapshot } from './types';
 import { dst } from './geo';
@@ -64,7 +65,7 @@ export function perceive(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rn
       else {
         let a = mem.aware.get(e.serial);
         if (!a) {
-          a = { from: snap.tick + ticksOfMs(sampleReactionMs(ctx.profile.behavior, rng)), lastSeen: snap.tick, x: e.x, y: e.y };
+          a = { from: snap.tick + ticksOfMs(sampleReactionMs(ctx.profile.behavior, rng) + reactionPenaltyMs(mem, snap.tick)), lastSeen: snap.tick, x: e.x, y: e.y };
           mem.aware.set(e.serial, a);
         }
         a.lastSeen = snap.tick;

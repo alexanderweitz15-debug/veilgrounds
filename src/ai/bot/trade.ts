@@ -14,7 +14,8 @@ import type { BotAction, SnapEntity } from './types';
 import type { NodeCtx, NodeResult } from '../bt/types';
 import { castSlot, hpPct, slotReach, offensiveCast } from './combat';
 import { dst, unit } from './geo';
-import { estimateExchange, laningSafety, rankIdx, rollError, tacticsFocus } from '../bt/deps';
+import { estimateExchange, laningSafety, rankIdx, tacticsFocus } from '../bt/deps';
+import { rollErrorUntil } from '../errors';
 import { cancelOrbwalk, kitePoint, orbwalkAttack, moveCmd } from './kite';
 import { TOWER_DANGER, towerCovering } from './perception';
 import { lv } from '../ganks/common';
@@ -119,7 +120,7 @@ function evalWindow(n: NodeCtx): Window | null {
   const inWave = enemyWave >= 3 && enemyWave > ownAround + 1;
   let waveErr = false;
   if (inWave) {
-    if (!rollError('fight_in_enemy_wave', n.p, n.rng)) failed.push('minionAggro');
+    if (rollErrorUntil(n.mem, n.ctx, n.p, 'fight_in_enemy_wave', n.v.tick, n.rng) < 0) failed.push('minionAggro'); // §9 episode with the new brain
     else waveErr = true;
   }
   // triggers (one is enough)
@@ -140,7 +141,7 @@ function evalWindow(n: NodeCtx): Window | null {
   let injected: 'trade_on_cooldown' | 'fight_in_enemy_wave' | undefined = waveErr ? 'fight_in_enemy_wave' : undefined;
   if (!trigger) {
     const allReady = [0, 1, 2].every((s) => (n.v.me.abilities[s]?.rank ?? 0) === 0 || (n.v.me.abilities[s]?.cdLeft ?? 1) <= 0);
-    if (allReady && rollError('trade_on_cooldown', n.p, n.rng)) (trigger = 'cooldowns_ready'), (injected = 'trade_on_cooldown');
+    if (allReady && rollErrorUntil(n.mem, n.ctx, n.p, 'trade_on_cooldown', n.v.tick, n.rng) >= 0) (trigger = 'cooldowns_ready'), (injected = 'trade_on_cooldown');
   }
   if (!trigger) failed.push('trigger');
   // aggression above +2 loosens one condition per step
@@ -254,7 +255,7 @@ export function tradeRunCore(n: NodeCtx): NodeResult {
     let chase = !!last && n.v.hpPct > 0.4 && n.rng.chance(Math.max(0, Math.min(1, chance)));
     // §6 chase_third_kill (Gold): two kills just now -> runs after the next one into the fog, whatever the HP
     const ext = n.mem.ext;
-    if (!chase && last && ext.killStreak >= 2 && n.v.tick - ext.lastKillAt < 20 * 30 && rollError('chase_third_kill', n.p, n.rng)) {
+    if (!chase && last && ext.killStreak >= 2 && n.v.tick - ext.lastKillAt < 20 * 30 && rollErrorUntil(n.mem, n.ctx, n.p, 'chase_third_kill', n.v.tick, n.rng) >= 0) {
       chase = true;
       n.log('trade', 'chase', 'chases the third kill into the fog', { target: tr.id, kills: ext.killStreak }, { hp: n.v.hpPct }, 'chase_third_kill');
     }
@@ -291,8 +292,10 @@ export function tradeRunCore(n: NodeCtx): NodeResult {
     const ext = n.mem.ext;
     if (ext.lastKillAt > ext.overcommitRolledFor && n.v.tick - ext.lastKillAt < 10 * 30) {
       ext.overcommitRolledFor = ext.lastKillAt;
-      if (rollError('overcommit_after_kill', n.p, n.rng)) {
-        ext.overcommitUntil = n.v.tick + 10 * 30;
+      // §9 new brain: episode of errors.json durS instead of the fixed 10 s (one draw either way)
+      const until = rollErrorUntil(n.mem, n.ctx, n.p, 'overcommit_after_kill', n.v.tick, n.rng, 10 * 30);
+      if (until >= 0) {
+        ext.overcommitUntil = until;
         n.log('trade', 'overcommit', 'keeps diving after the kill', { target: t.slot }, { hp: n.v.hpPct }, 'overcommit_after_kill');
       }
     }
@@ -525,7 +528,7 @@ export function diveDefence(n: NodeCtx): NodeResult {
   };
   if (fl >= 0 && divers.length >= 2 && !n.mem.bt.get('_diveRolled')?.on) {
     n.mem.bt.set('_diveRolled', { on: true, since: n.v.tick });
-    if (rollError('flash_in_dive', n.p, n.rng)) return flashOut('flash instead of tower dance', 'flash_in_dive');
+    if (rollErrorUntil(n.mem, n.ctx, n.p, 'flash_in_dive', n.v.tick, n.rng) >= 0) return flashOut('flash instead of tower dance', 'flash_in_dive');
   }
   if (fl >= 0 && n.v.hpPct < 0.2 && ri >= PLATINUM) return flashOut('about to die under tower');
   // tower dance: hit the diver the tower shoots (or the lowest), stay within the tower's reach

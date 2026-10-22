@@ -17,6 +17,7 @@ import { joinFight, teamfight, teamfightNear } from '../bot/teamfight';
 import { hasObjectiveDesire, idleAfterShove, objective, recall, recallScore, splitPush, vision } from '../bot/macro';
 import { dst } from '../bot/geo';
 import { MAX_TILT, withTilt } from '../params';
+import { attentionOn } from '../humanize/attention';
 
 import { escape } from '../ganks/escape';
 import { gankRiskReaction } from '../ganks/risk';
@@ -187,7 +188,8 @@ export function runTree(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng
     ctx,
     mem,
     rng,
-    p: mem.ext.tilt > 0 ? withTilt(ctx.params, mem.ext.tilt) : ctx.params,
+    // §9 new brain (attention model running): tilt = longer distraction windows + aggression only
+    p: mem.ext.tilt > 0 ? withTilt(ctx.params, mem.ext.tilt, attentionOn(mem) ? 'attention' : 'legacy') : ctx.params,
     pv,
     out: [],
     log(node, chosen, reason, inputs = {}, scores, err) {

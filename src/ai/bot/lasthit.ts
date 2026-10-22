@@ -10,8 +10,10 @@
 // at decision tick T starts its wind-up at recorded T + 1 at the earliest.
 //
 // Rank: the bot sees every window shifted by a per-minion timing error ~ N(0, lastHitJitterMs) (consistent per
-// minion, not resampled per decision), and lets a minion go entirely with errorInjectionPct (attention lapse,
-// rolled once per minion). Nothing here reads the Sim.
+// minion, not resampled per decision), and - pre-rework brain only - lets a minion go entirely with errorInjectionPct
+// (attention lapse, rolled once per minion). With the new brain (BRAIN-REWORK §9) that lapse is gone: missed last hits
+// come from the attention windows (src/ai/humanize/attention.ts; reflex cancels plans with 'distracted', the legacy
+// planner skips the decision while distracted). Nothing here reads the Sim.
 
 import { Kind } from '../../sim/types';
 import { MINION_STATS, minionScale } from '../../sim/systems/minions';
@@ -26,8 +28,9 @@ import { ready } from './combat';
 /** Minion auto wind-up (s at 1 AS; spawnUnit default) and projectile speeds of the sim's unit kinds. */
 const MINION_WINDUP = 0.3;
 const PROJ_SPEED: Partial<Record<number, number>> = { [Kind.MinionCaster]: 650, [Kind.MinionSiege]: 1200, [Kind.Tower]: 1200 };
-/** Share of the profile's errorInjectionPct that becomes a per-minion attention lapse (the rest of the rank's CS gap
- *  comes from the timing error, trades, recalls and deaths; calibrated with npm run bot-sim against Table A). */
+/** Pre-rework brain only: share of the profile's errorInjectionPct that becomes a per-minion attention lapse (the rest
+ *  of the rank's CS gap comes from the timing error, trades, recalls and deaths; calibrated with npm run bot-sim
+ *  against Table A). The new brain (planLastHit `human`) keeps the draw but not its effect. */
 const LAPSE_SHARE = 0.5;
 /** Pre-hit under the own tower (auto - tower shot - auto on casters): probability per minion by skill, Iron 0 ..
  *  Gold ~0.5 .. Challenger 1 (LoL: low ranks lose most tower-farm CS). */
@@ -348,7 +351,7 @@ function spellLastHit(v: View, ctx: BotStatic, m: SnapEntity, hits: { at: number
  * Plan the bot's next last hit. Returns an attack now, a delayed attack within this decision interval, or nothing
  * (plus the next window so the caller keeps the attack timer free).
  */
-export function planLastHit(v: View, ctx: BotStatic, mem: LastHitMem, rng: Rng, intervalTicks: number, b: RankBehavior = ctx.profile.behavior): LastHitPlan {
+export function planLastHit(v: View, ctx: BotStatic, mem: LastHitMem, rng: Rng, intervalTicks: number, b: RankBehavior = ctx.profile.behavior, human?: { distracted: boolean }): LastHitPlan {
   observeAttacks(v, mem);
   const T = v.tick;
   const as = Math.max(0.1, v.me.stats.as);
@@ -369,11 +372,18 @@ export function planLastHit(v: View, ctx: BotStatic, mem: LastHitMem, rng: Rng, 
     if (d > reach + 700) continue;
     let r = mem.roll.get(m.id);
     if (!r) {
-      r = { bias: (rng.normal() * b.lastHitJitterMs * 30) / 1000, skip: rng.chance((b.errorInjectionPct / 100) * LAPSE_SHARE), pre: rng.chance(prehitChance(ctx.params.skill)) };
+      // BRAIN-REWORK §9 (new brain, `human`): no per-minion lapse - the draw stays (same Rng stream as the pre-rework
+      // brain), its effect goes; lapses come from the attention windows (src/ai/humanize/attention.ts) instead
+      // (draw order bias, lapse, pre-hit as before)
+      r = { bias: (rng.normal() * b.lastHitJitterMs * 30) / 1000, skip: rng.chance((b.errorInjectionPct / 100) * LAPSE_SHARE) && !human, pre: rng.chance(prehitChance(ctx.params.skill)) };
       mem.roll.set(m.id, r);
     }
     if (r.skip) {
       mem.why.set(m.id, { s: 'skip', t: T });
+      continue;
+    }
+    if (human?.distracted) {
+      mem.why.set(m.id, { s: 'distracted', t: T });
       continue;
     }
     const dmg = (v.me.stats.ad * 100) / (100 + (MINION_STATS[m.kind]?.armor ?? 0));

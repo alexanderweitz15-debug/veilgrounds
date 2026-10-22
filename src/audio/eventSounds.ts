@@ -4,7 +4,8 @@ import type { SnapEntity } from '../sim/snapshot';
 import { Kind, isMinion } from '../sim/types';
 import type { ClientState } from '../game/state';
 import { championData } from '../sim/champions';
-import { play, playCast } from './sfx';
+import { abilityForSlot } from '../data/champions';
+import { play, playCast, playFizzle } from './sfx';
 
 /** Auto attack leaving the wind-up (projectile launch / melee strike): champions full, minions soft. */
 export function soundForFire(e: SnapEntity): void {
@@ -22,8 +23,10 @@ export function soundForEvent(ev: SimEvent, state: ClientState): void {
     case 'cast': {
       const e = state.byId.get(ev.src);
       if (!e?.champ) return;
-      const a = championData(e.champ).abilities[ev.slot];
-      if (a) playCast(a.id, a.type, e.x, e.y, ev.slot === 3);
+      const a = abilityForSlot(e.champ, ev.slot, e.ult ?? -1) ?? championData(e.champ).abilities[ev.slot];
+      // a recast of a fake-cancel ability (hook *_fake_cancel) is the cancel: fizzle, not a second cast cue
+      if (a && ev.recast && a.effects.some((x) => x.kind === 'hook' && x.id.endsWith('_fake_cancel'))) playFizzle(e.x, e.y);
+      else if (a) playCast(a.id, a.type, e.x, e.y, ev.slot === 3);
       return;
     }
     case 'attack': {

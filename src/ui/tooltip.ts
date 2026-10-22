@@ -4,6 +4,7 @@
 import './tooltip.css';
 import type { Effect, Ranked, Scaling } from '../sim/champions/schema';
 import { CHAMPION_DATA } from '../sim/champions';
+import { abilityForSlot } from '../data/champions';
 import { itemById } from '../sim/items/inventory';
 import { RUNES } from '../sim/items/runes';
 import { summonerDef } from '../sim/summoners';
@@ -70,16 +71,16 @@ function effectChips(effects: Effect[]): { text: string; cls: string }[] {
 
 function abilityTip(champ: string, slot: number, rank: number): Tip | null {
   const c = CHAMPION_DATA[champ];
-  const a = c?.abilities[slot];
+  const a = abilityForSlot(champ, slot); // 4..6 = R choices (Sev)
   if (!c || !a) return null;
   const cost = a.costType === 'none' || !a.cost ? '' : `${ranked(a.cost)} ${a.costType === 'mana' ? L('Mana', 'mana') : a.costType === 'energy' ? L('Energie', 'energy') : 'HP'}`;
   const range = typeof a.range === 'number' ? a.range : a.range[0];
-  const max = slot === 3 ? 3 : 5;
+  const max = slot >= 3 ? 3 : 5;
   return {
     icon: abilityIcon(champ, slot),
     title: a.name[settings.lang],
     // rank < 0: outside a match (lobby, encyclopedia) - no rank line
-    sub: rank < 0 ? `${KEYS[slot]} · ${slot === 3 ? L('Ultimative Fähigkeit', 'Ultimate') : L('Fähigkeit', 'Ability')}` : `${KEYS[slot]} · ${rank > 0 ? L(`Rang ${rank}/${max}`, `Rank ${rank}/${max}`) : L('Nicht erlernt', 'Not learned')}`,
+    sub: rank < 0 ? `${KEYS[Math.min(3, slot)]} · ${slot >= 3 ? L('Ultimative Fähigkeit', 'Ultimate') : L('Fähigkeit', 'Ability')}` : `${KEYS[Math.min(3, slot)]} · ${rank > 0 ? L(`Rang ${rank}/${max}`, `Rank ${rank}/${max}`) : L('Nicht erlernt', 'Not learned')}`,
     meta: [`⟳ ${ranked(a.cooldown)} s`, ...(cost ? [cost] : []), ...(range ? [`${L('Reichweite', 'Range')} ${fmt(range)}`] : [])],
     chips: effectChips(a.effects),
     body: [a.desc[settings.lang]],

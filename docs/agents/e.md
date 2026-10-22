@@ -1,94 +1,75 @@
-# Agent E - new champion Sev Aschenblick (status)
+# Agent E - Sev Aschenblick (status)
 
-Branch: `champ/e-sev` (on main e0f40bb). Spec (user, verbatim): `docs/champions/sev.md`.
-History: started as "Itachi"; the user replaced it with Sev (Fassung 2) before any code existed. No Itachi files,
-names or branches remain.
+Branch: `champ/e-sev`. Spec: `docs/champions/sev.md` (Fassung 3 on top, Fassung 2 kept below it).
 
-## Done (commits on champ/e-sev)
+## History
+- Itachi (first prompt) -> dropped before code. Fassung 2 ("das Auge, das brennt und täuscht") shipped to main
+  (fear CC, uncleansable, decoy with fake HP bar). User feedback: "zu langweilig, sieht nicht aus wie Itachi" ->
+  Fassung 3 (Itachi-inspired, R choice). Then: "Itachi braucht eine bessere AoE-Ability" -> bigger Q/W AoE.
+- Fassung 2 balance (archived): 8 gold + 6 platinum bot games, Sev dealt about as much damage to champions as the
+  enemy mid (gold avg 3132 vs 3005, platinum 2627 vs 3216); the ember jump fired ~1/game for ~100-130 burn ->
+  jump was kept. Fassung 2 also added: Sev rows in docs/ability-cast-audit.md, Sev in the trainer MID/JG pools
+  (fallback), encyclopedia screenshots (docs/ist/e-sev-encyclopedia*.jpg), a fizzle sound for fake casts.
+
+## Fassung 3 - done
 | Commit | What |
 |---|---|
-| c310e23 | spec `docs/champions/sev.md` |
-| 068d755 | `src/data/champions/sev.json`, `src/sim/champions/sev.ts`, registry lines, build `src/data/builds/sev.json`, rune presets, motif row, `tests/sev.test.ts`; sim extensions: CC `fear`, `Buff.uncleansable`, `ChampionHooks.targetOk`, `PassiveHook.onPetDamaged`, pet helpers; i18n `cc.fear`; roster counts 26 -> 27; combo harness fake step |
-| bfa425b | sprite kit (`src/render/champions/sev.ts` props + kit entry + Hold `palm`); `tools/botSim.ts --champion=<id>`; `tools/scratch/sevCasts.ts` |
-| 4f29a96 | decoy looks like Sev: snapshot `look`/level, champion sprite + fake champion bar |
-| cc48f6c | docs: `docs/champion-hooks.md` (Sev section, 107 hooks / 26 champions), `docs/spec-champions.md` roster #27 + roles, shared-changes, bot wishes in issues.md |
-| 46f0929 | `tests/sim/castMovement.test.ts`: dummy gets a Nachbild so Sev R can be cast |
-| c4476d4 | overlay: black-ember / Nachbild glyphs next to the HP bar; e.md + handoff |
-| 8279a7f | merge origin/main c15e402 (conflicts in buffs/damage/snapshot + docs resolved keeping both sides); champ/e-sev now contains main and fast-forwards |
-| 14c2252 | visuals: no duplicate Nachbild mark (the snapshot already lists champion-prefixed mark buffs); screenshots |
+| ba18be0 | spec Fassung 3 |
+| d089dc0 | kit + R choice engine + client lookups + choice cards (`src/ui/ultChoice.ts`) + tests |
+| f71b883 | new look (long black hair, low ponytail, front strands, red three-blade eyes, tear troughs, crimson-lined high-collar cloak, crow-feather marks, three-ring necklace, crows circling + a crow over the palm), per-ability ground FX (`src/render/sevFx.ts`), Tsukuyomi red-black screen tint |
+| e93f32c | stronger AoE (user feedback): Q explosion radius 300 + 2 s burning ground with a flame ring, W crow storm radius 350 |
+| 97831b2 | docs: champion-hooks (Sev section, 110 hooks), roster entry, shared-changes, bot rules (issues.md) |
+| (merges) | origin/main 9ed4070 and 660c54e merged without conflicts |
 
-### Kit as implemented (numbers in sev.json; hook constants at the top of sev.ts)
-- Passive Nachbild: every ability hit marks 3 s (`mark` buff `sev_nachbild`); autos on marked enemies +10-30 (+15 % AP)
-  magic and extend his ember by 0.5 s (cap 8 s total). Enemy ability hits on his decoy mark the attacker.
-- Q Glutblick: line 950, width 60, wind-up 0.4 s; recast during the wind-up = fake (refund, 2 s CD).
-- W Schwarzglut: targeted 650: dot 4 s + grievous 40 %, both `uncleansable`; jumps once (300) when the target dies
-  (any killer); on his own decoy: decoy lives 4 s and burns enemies within 250 for 50 %.
-- E Trugbild: blink 450, decoy pet at the start for 2.5 s with Sev's HP/mana (fake bar), 0 AD autos at Sev's target.
-- R Augenbann: needs a Nachbild target (otherwise the cast fails 'target'); 0.5 s wind-up = eye contact (lost sight
-  cancels, refund, 2 s CD); 1.5 s fear (tenacity applies) + 50 % slow + reveal; end damage, x1.5 with ember.
-- Fear CC (bot consumers of `me.cc` in src/ai/ganks/escape.ts and src/ai/bot/spells.ts only compare `>= 3` / `< 3` / `>= 5`, so 3.5 reads as hard CC; spells.ts may then try Reinigen, which fails with 'cc' under fear): no attacks/casts/summoners (Reinigen too), breaks channels/recall/Teleport, unit walks away from the source
-  (movement pre-pass), ccLevel 3.5 (between root 3 and stun 4), CC_BIT 256, HUD label "Verängstigt"/"Feared".
+### Kit (numbers in `src/data/champions/sev.json`)
+- Passive Rabenblick: Gaze stacks (3 max, 6 s) from ability hits on champions; at 3: 0.75 s genjutsu stun, 12 s per target.
+- Q Feuerball: 0.4 s wind-up, line 900 (width 90, speed 1300), explodes on first unit or at max range, radius 300
+  80/125/170/215/260 (+70 % AP), burning ground 2 s 25/40/55/70/85 (+15 % AP)/s; fake recast (refund, 2 s CD).
+- W Krähendoppel: blink 400, castable while rooted (`root_ok`), crow clone with fake HP bar at the start, enemy homing
+  projectiles switch to it; bursts after 1.5 s or when hit: radius 350, 70/110/150/190/230 (+60 % AP), 35 % slow 1.5 s.
+- E Bannblick: targeted 650, 0.4 s eye contact (gaze line telegraph): stun 1.25 s if the target faces Sev, else 40 % slow.
+- R: choice at the first point (cards above the ability bar, keys 1/2/3; permanent; bots: `botUltChoice` [4,3,3]):
+  Amaterasu (5 s uncleansable black flames 40/60/80 +12 % AP +1.5 % target max HP per s, grievous, jump once 400),
+  Susanoo (6 s shield 250/400/550 +80 % AP, slow immunity, sweeping autos, one 1000-long sword thrust),
+  Tsukuyomi (500, 1.5 s suppression, Sev rooted, 150/225/300 +50 % AP +25 % missing HP, red-black tint).
 
 ### Tests
-- `tests/sev.test.ts` (16): hooks exported, Q hit + Nachbild, Q fake, W dot/grievous/uncleansable vs Reinigen, W jump
-  once, W on decoy, E blink + decoy + lifetime, decoy snapshot look, decoy ability vs auto mark, passive bonus +
-  ember extension, R needs Nachbild, R fear/flee/locks/ccLevel/+50 % ember, tenacity, lost sight cancels, determinism.
-- Full `npx vitest run` (under heavy CPU load): 886 passed, 2 failed -> castMovement/sev fixed in 46f0929 (re-run
-  green); `tests/brainReflex.test.ts` "reflex logic < 0.05 ms per bot and tick" failed on time budget (test took 239 s
-  while 4+ agents shared the CPU; timing test, not related to Sev) - re-run it alone on a quiet machine.
-- Post-merge full `npx vitest run` (tree 14c2252 = main c15e402 + Sev): 919 passed, 1 failed:
-  `tests/botStyle.test.ts` spec test 9 throws `TypeError ... reading 'utility'` in `src/ai/utility/flag.ts:26`
-  (TeamAI.evaluate called without a ctx; brom-only test, no Sev involved; src/ai and that test are identical to main
-  -> brain team). brainReflex passed this time.
-- Second merge of origin/main 04a1eb5 (contains the utilityOn fix 941993f; snapshot import conflict resolved): tsc clean;
-  sev, snapshot, championData, replay, abilityMotifs, items, botParams, sideMirror, combos, botStyle, castMovement,
-  telegraph, summonersWards all green (397 tests).
-- `npx tsc --noEmit`: clean.
+- `tests/sev.test.ts` (15): hooks, passive genjutsu + cooldown, Q hit/expire explosions + burning ground, Q fake,
+  W blink while rooted / not stunned + clone look, burst on timer and on hit, projectile substitution, E facing rule,
+  R choice permanence + not castable before, bot pick deterministic and weighted, Amaterasu (uncleansable, jump once),
+  Susanoo (shield, slow immunity, sweep, single thrust), Tsukuyomi (suppress, root, tint mark, missing-HP scaling),
+  determinism for each ult.
+- Touched suites green: championData, abilityMotifs, botParams, items, telegraph (smoke test needs a quiet CPU: 5 s
+  timeout on the dynamic import), combos, replay, sideMirror, snapshot, castMovement, summonersWards, i18n,
+  abilityVisuals, aimPreview, abilities, scenarios, spriteTiming. tsc clean.
+- Final check on 8cb0f27 (= main 660c54e + Sev): full `npx vitest run` 76 files / 928 tests green, `npx tsc --noEmit`
+  clean, `npx vite build` green; branch merges into origin/main without conflicts.
 
-### Screenshots (1280x720, `npx vite build` + `vite preview --port 5392`, headless Edge, no console errors)
-`docs/ist/e-sev-lobby.jpg` (classic lobby, Sev card + ability icons), `e-sev-ingame-idle.jpg`, `e-sev-q.jpg` (Q wind-up
-telegraph), `e-sev-w.jpg` (ember + Nachbild glyphs on the dummy), `e-sev-e-decoy.jpg` (Sev + decoy with fake champion
-bar), `e-sev-r.jpg` (fear: ring, three phantoms, "Verängstigt"). All six from the preview build.
-Sprite close-ups were checked in the stylelab (`window.__champSheet`).
+### Screenshots (dev server, 1280x720, docs/ist/)
+e-sev3-choice-cards, e-sev3-idle, e-sev3-q-windup, e-sev3-q-fire (300 flame ring), e-sev3-e-gaze, e-sev3-w-clone,
+e-sev3-w-burst, e-sev3-r-amaterasu, e-sev3-r-susanoo, e-sev3-r-susanoo-thrust, e-sev3-r-tsukuyomi.
 
-### Bot games (gold, 15 min, Sev in blue mid; tools/scratch/sevCasts.ts)
-| seed | Sev casts Q/W/E/R | fear s | Sev cs / k-d / dmg to champs | enemy mid |
+## Balance (Fassung 3 with the AoE buff, gold, 15 min, Sev blue mid, `tools/scratch/sevCasts.ts 6 15 gold 1`)
+| seed | ult (bot pick) | Sev casts Q/W/E/R | Sev cs, k/d, dmg to champs | enemy mid cs, k/d, dmg |
 |---|---|---|---|---|
-| 1 | 14/6/2/0 | 0 | 42 / 1-1 / 1570 | Ilvane 56 / 1-1 / 1460 |
-| 2 | 16/9/7/3 | 4.4 | 35 / 4-1 / 4735 | Kaelen 35 / 1-3 / 2763 |
-Bots play him without crashes and cast every ability (R only when a Nachbild is up). Bots never fake Q (no brain logic).
-Official run `npm run bot-sim -- --rank=gold --games=2 --minutes=15 --champion=sev`: exit 0, same numbers (deterministic).
-Build: `npx vite build` green (one earlier run under heavy load printed "error during build" without details; the
-re-run on the same tree passed in 3m42s).
+| 1 | Susanoo | 7/4/5/0 | 33, 0/1, 1242 | Ilvane 60, 1/0, 2576 |
+| 2 | Susanoo | 14/6/8/2 | 39, 1/2, 4795 | Kaelen 19, 2/2, 3826 |
+| 3 | Amaterasu | 6/5/7/1 | 49, 3/4, 1682 | Thessaly 32, 5/2, 5915 |
+| 4 | Tsukuyomi | 7/2/3/0 | 57, 0/1, 886 | Thessaly 40, 1/0, 3191 |
+| 5 | Tsukuyomi | 8/6/5/1 | 46, 2/0, 2548 | Ilvane 48, 0/5, 2403 |
+| 6 | Amaterasu | 12/7/10/3 | 31, 4/0, 5229 | Renn 36, 0/4, 2793 |
+Totals: Sev 2730 dmg/game vs enemy mids 3451, K/D 10/8 vs 9/13, CS 255 vs 235. With the bigger AoE Sev clears waves
+at least as well as the other mids and is not ahead on damage -> numbers kept (strong but fair). Caveat: the bots
+cast Q only 6-14 times in 15 min and never fake it; once A2 plays the kit actively the damage will rise - re-run then.
 
-## Open items (exact next steps)
-1. **Balance decision on the ember jump** (spec "Einwand"): 2 games are too few. Run
-   `npx tsx tools/scratch/sevCasts.ts 10 20 gold` (and platinum) and compare Sev's damage to champions with the other
-   mids; if Sev is clearly ahead, drop the jump (set `JUMP_RANGE` use off: remove the jump block in `tickEmbers`) or
-   lower W to 16/26/36/46/56. Current proposal: keep the jump until the brain team's Sev logic exists (bots do not yet
-   play around the ember either).
-2. **Black-ember visual on burning units**: today the ember shows as a mark (pips/diamond over the HP bar) and the
-   burning decoy as an orange disc (`sev_w_decoy`, hue 14). Wanted: black flame tongues with a copper core on the
-   unit (render, agent D area: a per-mark effect in `src/render/groundObjects.ts` or `fx.ts` keyed on mark id `sev_w`).
-3. **Augenbann phantoms**: drawn as three generic pins + a ring (`sev_r_phantom`, `sev_r_bann`). Better: three
-   translucent Sev sprites around the target, only on the feared player's client, plus a dark vignette for him.
-4. **Ability sounds**: none per champion yet (check `src/audio` for per-champion cues).
-5. **Fear icon**: overlay CC chip uses the generic label; a fear glyph for `src/ui/icons.ts` would help.
-6. **Bot rules / build line**: see docs/agents/issues.md (2026-10-19 E entry): `BUILDS` line in src/ai/bot/builds.ts
-   (stopgap in tools/botSim.ts), Q fakes, decoy rules, ember in ExchangeEstimate, fear in escape node, R only on
-   marked targets.
-7. `docs/ability-cast-audit.md` rows for sev_q..sev_r (B2 audit, optional; `B2_AUDIT=1` prints them).
-8. Trainer scenarios: add `'sev'` to the MID / JG pools in `src/sim/trainer/scenarios.ts` once bots handle him.
-9. Encyclopedia/showcase pick Sev up automatically from CHAMPION_DATA (not checked visually).
+## Open items
+1. Balance vs other mids: `tools/balance.ts` does not exist in the repo; numbers come from bot games
+   (`npx tsx tools/scratch/sevCasts.ts <games> <min> <rank> <seed>`). See the balance section below.
+2. Brain team (A2): ult choice, Q fakes, look-away vs E, clone rules, Amaterasu in ExchangeEstimate, Tsukuyomi
+   timing (docs/agents/issues.md, 2026-10-22 entry). `BUILDS.sev` is in src/ai/bot/builds.ts now.
+3. The fear CC from Fassung 2 stays in the engine (unused by Sev now; documented in buffs.ts) - B may keep or drop it.
+4. Passive icon: chosen by keyword rules (flame); a table entry for passives would let it show an eye.
+5. Final screenshots from a `vite build` + preview run (dev-server shots are the same code).
 
 ## Shared-file edits
-All listed with commits in `docs/agents/shared-changes.md` (2026-10-19 · E entry).
-
-## DECISIONS proposals
-- Fear = CcKind `fear` between root and stun (ccLevel 3.5), tenacity applies, locks every summoner incl. Reinigen,
-  forced walk away from the source in the movement system.
-- `Buff.uncleansable`: every cleanse must skip it (Reinigen does; Ferris/Oda only cleanse slows - Sev's R slow is
-  marked uncleansable too).
-- Decoy pets: tag suffix `_decoy` makes the snapshot report `look` = owner's champion; render/HUD treat it as that
-  champion (sprite + champion bar + name).
-- `ChampionHooks.targetOk` for champion-specific target rules (narrow or widen), `PassiveHook.onPetDamaged`.
+`docs/agents/shared-changes.md`: 2026-10-19 (Fassung 2) and 2026-10-22 (Fassung 3) E entries with commits.

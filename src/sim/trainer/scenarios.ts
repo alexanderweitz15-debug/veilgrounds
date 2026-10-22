@@ -54,8 +54,8 @@ export interface ScenarioInfo {
   units: ScenarioUnit[];
 }
 
-const JG = ['grimald', 'nyx', 'lio', 'vessa'];
-const MID = ['thessaly', 'renn', 'aurel', 'ilvane'];
+const JG = ['grimald', 'nyx', 'lio', 'vessa', 'sev'];
+const MID = ['thessaly', 'renn', 'aurel', 'ilvane', 'sev'];
 const TOP = ['isolde', 'brom', 'dagny'];
 const ADC = ['tobin', 'lysa', 'corvin', 'mira'];
 /** Attackers: all-in, long trades, tower dives allowed (playstyle axes, src/data/bots/playstyleAxes.json). */

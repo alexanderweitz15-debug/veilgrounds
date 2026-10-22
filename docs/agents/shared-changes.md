@@ -400,3 +400,21 @@ Measure: console lines `champion atlas: ... in N ms` (sheets.ts) cold vs warm, 1
 - **For D:** picking reads `barAnchor()` / `unitHeight()` (sprite heights) as before. If the HP-bar position
   changes, `src/ui/hpBarGeom.ts` (shared by overlay drawing and picking) is the single place for bar geometry.
   The hover ring in units.ts is untouched; the overlay additionally draws a front arc + bar frame on the hovered unit.
+
+## 2026-10-22 · E · Sev Fassung 3 (R choice, rework): shared-file edits · on champ/e-sev
+
+| File | Owner | Change | Commit |
+|---|---|---|---|
+| src/sim/champions/schema.ts, src/data/champions/validate.ts | B | optional `ultChoices` (3 abilities, rank arrays of 3) + `botUltChoice` weights; flag `root_ok`; hookIds include ultChoices | d089dc0 |
+| src/sim/systems/abilities.ts | B | `ChampAbil.ult`, `chooseUlt`, `ultChoiceOf`, `botUltPick` (seed+slot hash, no shared RNG), R uncastable before the choice, bots that learn R get the data pick, `abilityOf` returns the chosen ult, `AbilityHud.ultChoice`, `root_ok` skips the root check for movers | d089dc0 |
+| src/sim/systems/input.ts, src/sim/types.ts | B | command `ultChoice` (also while dead), event `ultChoice` | d089dc0 |
+| src/sim/champions/index.ts | B | `slotAbility(id, slot, ult)` | d089dc0 |
+| src/sim/snapshot.ts | B | `SnapEntity.ult` | d089dc0 |
+| src/data/champions/index.ts | B | `abilityForSlot` (virtual slots 4..6 = R choices), `ultDisplaySlot` | d089dc0 |
+| src/render/abilityTheme.ts, fx.ts, world.ts, src/audio/eventSounds.ts | D | ability lookups via `abilityForSlot` (chosen R for telegraphs, sounds, aim) | d089dc0 |
+| src/ui/icons.ts, names.ts, tooltip.ts, hud.ts | C | same lookups; R slot shows the chosen ult; HUD hosts the choice cards and the Tsukuyomi tint class | d089dc0, f71b883 |
+| src/ui/ultChoice.ts + .css (new), src/game/game.ts | C | choice cards above the ability bar (keys 1/2/3), hook `ultChoice` -> command | d089dc0 |
+| src/render/groundObjects.ts + src/render/sevFx.ts (new) | D | `sev_*` object tags drawn by sevFx (fire field + flame ring, crow storm, gaze line, black flames, Susanoo ribcage, thrust, red moon) | f71b883, e93f32c |
+| src/render/abilityMotifs.json | D | sev row with 7 motifs (Q W E R + the three ults) | d089dc0 |
+| src/i18n/de.json, en.json | C | `ultChoice.title` | d089dc0 |
+| tests/combos.test.ts, tests/sim/castMovement.test.ts | B | champions with an R choice pick the first ult; castMovement reads `slotAbility` | d089dc0 |

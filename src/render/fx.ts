@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import type { ClientState } from '../game/state';
 import { Kind, type SimEvent } from '../sim/types';
 import type { AbilityData } from '../sim/champions/schema';
-import { champions } from '../data/champions';
+import { abilityForSlot } from '../data/champions';
 import { REL } from './palette';
 import { abilityHue, abilityParticles, type ParticleKindId } from './abilityTheme';
 import { Particles } from './particles';
@@ -363,7 +363,7 @@ export class Fx {
   showAim(state: ClientState, slot: number | null, at: { x: number; y: number } | null): void {
     const me = state.me();
     const hud = state.snap?.me;
-    const ab = slot !== null && me?.champ ? champions[me.champ]?.abilities[slot] : undefined;
+    const ab = slot !== null && me?.champ ? abilityForSlot(me.champ, slot, me.ult ?? -1) : undefined;
     if (!ab || !me || !hud || !at) {
       this.aimRange.visible = false;
       for (const v of this.aimViews) v.hide();
@@ -463,7 +463,7 @@ export class Fx {
 
   private addPreview(ev: Extract<SimEvent, { e: 'cast' }>, state: ClientState): void {
     const src = state.byId.get(ev.src);
-    const ab = src?.champ ? champions[src.champ]?.abilities[ev.slot] : undefined;
+    const ab = src?.champ ? abilityForSlot(src.champ, ev.slot, src.ult ?? -1) : undefined;
     if (!src || !ab || !state.snap) return;
     const [dx, dy] = castDir(src.x, src.y, ev.x, ev.y, src.fx, src.fy);
     this.lastCast.set(ev.src, { ab, ox: src.x, oy: src.y, dx, dy, champ: src.champ!, slot: ev.slot });

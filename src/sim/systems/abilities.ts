@@ -17,7 +17,7 @@ import { dealDamage } from '../damage';
 import { dir, dist2, circleInCone, cosDeg, segDist2 } from '../vec';
 import { findPath, lineWalkable, nearestWalkable, walkable } from '../map';
 import { addBuff, addShield, canAttack, canCast, canMove, channelBroken, healUnit, isFeared, removeBuffs, reveal, type StatKey } from '../buffs';
-import { championData, championHooks, champIdOf, passiveHooksOf } from '../champions';
+import { championData, championHooks, champIdOf, passiveHooksOf, slotAbility } from '../champions';
 import type { AbilityData, Effect, EffectTarget, Ranked, Scaling } from '../champions/schema';
 import type { CastMods, DashPlan, EffectCtx, EffectPhase } from '../champions/hooks';
 import { onMoveCommand } from './attack';
@@ -41,6 +41,8 @@ export interface AbilityHud {
   recast?: { opensIn: number; left: number; total: number };
   /** Next auto empowered by this slot (armNextAuto / *_next_auto): seconds left. */
   armed?: number;
+  /** R choice (ChampionData.ultChoices): option ability ids and the chosen index (-1 = not chosen yet). */
+  ultChoice?: { options: string[]; chosen: number };
 }
 
 /** Payload of an ability projectile (line skillshot or homing targeted ability). */
@@ -118,6 +120,8 @@ interface ChampAbil {
   walk: CastIntent | null;
   /** One input pressed while busy (own wind-up, dash, channel), retried each tick until `until` (input buffer). */
   queued: (CastIntent & { until: number }) | null;
+  /** Chosen ultimate (ChampionData.ultChoices index), -1 = none yet / champion without a choice. Permanent. */
+  ult: number;
 }
 
 /** A cast command kept for later: summoner (slot = D/F) or ability (slot = Q..R). */
@@ -185,6 +189,7 @@ export function champAbil(sim: Sim, eid: number): ChampAbil {
       lastDashEnd: -1e9,
       walk: null,
       queued: null,
+      ult: -1,
     };
     s.champs.set(eid, a);
   }
@@ -211,6 +216,39 @@ export function levelAbility(sim: Sim, eid: number, slot: number): void {
   if (!canLevelSlot(sim, eid, slot)) return;
   champAbil(sim, eid).ranks[slot]!++;
   sim.c.Champ.skillPoints[eid] = sim.c.Champ.skillPoints[eid]! - 1;
+  // R choice: a bot (non-human slot) that learns R without having chosen gets the data pick
+  if (slot === 3 && champAbil(sim, eid).ult < 0 && championData(champIdOf(sim, eid)).ultChoices) {
+    const setup = sim.config.players.find((p) => p.slot === sim.c.Unit.slot[eid]);
+    if (!setup?.isHuman) chooseUlt(sim, eid, botUltPick(sim, eid));
+  }
+}
+
+/** Chosen ultimate index (-1 = none). Read-only. */
+export function ultChoiceOf(sim: Sim, eid: number): number {
+  const a = (sim.state.abilities as AbilState | undefined)?.champs.get(eid);
+  return a && a.serial === sim.c.Unit.serial[eid] ? a.ult : -1;
+}
+
+/** Pick ultimate `choice` (0..2) once per match; later choices are ignored. Returns true if it was set. */
+export function chooseUlt(sim: Sim, eid: number, choice: number): boolean {
+  if (sim.c.Unit.kind[eid] !== Kind.Champion || !Number.isInteger(choice) || choice < 0 || choice > 2) return false;
+  const d = championData(champIdOf(sim, eid));
+  const a = champAbil(sim, eid);
+  if (!d.ultChoices || a.ult >= 0) return false;
+  a.ult = choice;
+  sim.events.push({ e: 'ultChoice', src: eid, choice });
+  return true;
+}
+
+/** Deterministic weighted bot pick from botUltChoice (seed + slot hash; does not consume the shared RNG). */
+export function botUltPick(sim: Sim, eid: number): number {
+  const w = championData(champIdOf(sim, eid)).botUltChoice ?? [1, 1, 1];
+  const total = w.reduce((x, y) => x + y, 0);
+  let h = (Math.imul((sim.config.seed | 0) ^ 0x5e7a11, 2654435761) + Math.imul(sim.c.Unit.slot[eid]! + 1, 40503)) >>> 0;
+  h = Math.imul(h ^ (h >>> 15), 2246822519) >>> 0;
+  let r = (h / 4294967296) * total;
+  for (let i = 0; i < w.length; i++) if ((r -= w[i]!) < 0) return i;
+  return w.length - 1;
 }
 
 export function refreshCooldowns(sim: Sim, eid: number): void {
@@ -350,7 +388,7 @@ export function movementLocked(sim: Sim, eid: number): boolean {
   return !(a.cast !== null && abilityOf(sim, eid, a.cast.slot).movesWhileCasting);
 }
 
-export const abilityOf = (sim: Sim, eid: number, slot: number): AbilityData => championData(champIdOf(sim, eid)).abilities[slot]!;
+export const abilityOf = (sim: Sim, eid: number, slot: number): AbilityData => slotAbility(champIdOf(sim, eid), slot, slot === 3 ? ultChoiceOf(sim, eid) : -1);
 
 // ------------------------------------------------------------------ casting
 
@@ -373,13 +411,14 @@ export function castAbility(sim: Sim, eid: number, slot: number, x: number, y: n
   const ab = abilityOf(sim, eid, slot);
   const rank = a.ranks[slot]!;
   if (rank === 0) return 'unlearned';
+  if (slot === 3 && a.ult < 0 && championData(champIdOf(sim, eid)).ultChoices) return 'unlearned'; // R not chosen yet
   if (ab.flags?.includes('recast')) {
     const w = a.recast[slot]!;
     const win = sim.tick >= w.from && sim.tick <= w.until;
     // a press during the own wind-up is a cancel/feint (Gorvam Q) and always allowed; a hook-opened window is a real
     // cast: blocked by stun/silence/airborne (and roots for dash/blink/mobility recasts), the window stays open
     const windup = a.cast?.slot === slot;
-    if (win && !windup && (!canCast(sim, eid) || (movesCaster(ab) && !canMove(sim, eid)))) return 'cc';
+    if (win && !windup && (!canCast(sim, eid) || (movesCaster(ab) && !rootOk(ab) && !canMove(sim, eid)))) return 'cc';
     if (windup || win) {
       if (win) w.until = -1;
       sim.events.push({ e: 'cast', src: eid, slot, x, y, rank, recast: true });
@@ -388,7 +427,7 @@ export function castAbility(sim: Sim, eid: number, slot: number, x: number, y: n
     }
   }
   if (sim.tick < a.cdUntil[slot]!) return 'cooldown';
-  if (!canCast(sim, eid) || (movesCaster(ab) && !canMove(sim, eid))) return 'cc';
+  if (!canCast(sim, eid) || (movesCaster(ab) && !rootOk(ab) && !canMove(sim, eid))) return 'cc';
   const mods: CastMods = { cost: rv(ab.cost, rank), timeMult: 1 };
   for (const h of passiveHooksOf(sim, eid)) h.modifyCast?.(sim, eid, slot, mods);
   const cost = Math.max(0, mods.cost);
@@ -541,6 +580,8 @@ function intentRange(sim: Sim, eid: number, i: CastIntent): number {
 }
 
 /** Dashes, blinks and abilities flagged 'mobility' (e.g. Isolde R's leap) relocate the caster: roots block them. */
+/** Flag root_ok (Sev W): the blink works while rooted (stuns still block it through canCast). */
+const rootOk = (ab: AbilityData): boolean => ab.flags?.includes('root_ok') ?? false;
 const movesCaster = (ab: AbilityData): boolean => ab.type === 'dash' || ab.type === 'blink' || (ab.flags?.includes('mobility') ?? false);
 
 /** Target of a targeted ability: explicit, else the valid unit nearest the cursor (150). anyRange: ignore cast range. */
@@ -1146,10 +1187,12 @@ export function abilityHud(sim: Sim, eid: number): AbilityHud[] {
   if (eid < 0 || sim.c.Unit.kind[eid] !== Kind.Champion) return [];
   const a = champAbil(sim, eid);
   const d = championData(champIdOf(sim, eid));
-  const out: AbilityHud[] = d.abilities.map((ab, slot) => {
+  const out: AbilityHud[] = d.abilities.map((_, slot) => {
+    const ab = abilityOf(sim, eid, slot);
     const rank = a.ranks[slot]!;
     return {
       id: ab.id,
+      ...(slot === 3 && d.ultChoices ? { ultChoice: { options: d.ultChoices.map((u) => u.id), chosen: a.ult } } : {}),
       rank,
       maxRank: maxRank(slot),
       cdLeft: Math.max(0, a.cdUntil[slot]! - sim.tick) / 30,

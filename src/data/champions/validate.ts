@@ -30,7 +30,7 @@ export const ABILITY_TYPES = [
   'summon',
 ] as const;
 export const COMBO_TOKENS = ['Q', 'W', 'E', 'R', 'AA', 'FLASH'] as const;
-const FLAGS = ['blocked_by_minions', 'pierce', 'unstoppable', 'recast', 'ground_target', 'ally_target', 'auto_reset', 'channel', 'mobility', 'stealth'];
+const FLAGS = ['blocked_by_minions', 'pierce', 'unstoppable', 'recast', 'ground_target', 'ally_target', 'auto_reset', 'channel', 'mobility', 'stealth', 'root_ok'];
 const COST_TYPES = ['mana', 'energy', 'hp', 'none'];
 const RESOURCES = ['mana', 'energy', 'none'];
 const TARGETS = ['hit', 'self', 'ally', 'allies', 'enemies'];
@@ -43,7 +43,7 @@ const TOP_KEYS = [
   'abilities', 'spikeLevels', 'spikeNote', 'maxOrder', 'combos', 'scores', 'voiceLines', 'silhouette',
 ];
 /** Optional top-level keys (spec-bots §2 champion bias for rolled bot playstyles). */
-const OPTIONAL_TOP_KEYS = ['botBias'];
+const OPTIONAL_TOP_KEYS = ['botBias', 'ultChoices', 'botUltChoice'];
 const BASE_KEYS = [
   'hp', 'hpGrowth', 'hpRegen', 'hpRegenGrowth', 'mana', 'manaGrowth', 'manaRegen', 'manaRegenGrowth', 'ad', 'adGrowth',
   'armor', 'armorGrowth', 'mr', 'mrGrowth', 'as', 'asGrowth', 'range', 'ms', 'windup', 'radius',
@@ -79,7 +79,7 @@ const isStr = (v: unknown): v is string => typeof v === 'string' && v.length > 0
 /** Every hook id referenced by a champion (passive hooks + ability hook effects), in order. */
 export function hookIds(c: ChampionData): string[] {
   const ids = [...c.passive.hooks];
-  for (const a of c.abilities) for (const e of a.effects) if (e.kind === 'hook') ids.push(e.id);
+  for (const a of [...c.abilities, ...(c.ultChoices ?? [])]) for (const e of a.effects) if (e.kind === 'hook') ids.push(e.id);
   return ids;
 }
 
@@ -223,14 +223,9 @@ export function validateChampion(raw: unknown, where = 'champion'): string[] {
     }
   };
 
-  if (!Array.isArray(c.abilities) || c.abilities.length !== 4) err('abilities', 'expected exactly 4 abilities (Q W E R)');
-  else {
-    let dashes = 0;
-    c.abilities.forEach((a, i) => {
-      const slot = 'QWER'[i]!;
-      const path = `abilities[${slot}]`;
-      const len = i === 3 ? 3 : 5;
-      if (!isObj(a)) return err(path, 'expected object');
+  let dashes = 0;
+  const ability = (a: unknown, path: string, len: number): void => {
+      if (!isObj(a)) return void err(path, 'expected object');
       keys(a, path, ABILITY_REQUIRED, ABILITY_OPTIONAL);
       if (!isStr(a.id) || !a.id.startsWith(id + '_')) err(`${path}.id`, `ability id must start with "${id}_"`);
       l10n(a.name, `${path}.name`);
@@ -257,9 +252,20 @@ export function validateChampion(raw: unknown, where = 'champion'): string[] {
       if (a.type === 'cone' && typeof a.angle !== 'number') err(path, 'cone needs angle');
       if (!Array.isArray(a.effects)) err(`${path}.effects`, 'expected array');
       else a.effects.forEach((e, j) => effect(e, `${path}.effects[${j}]`, len));
-    });
+  };
+  if (!Array.isArray(c.abilities) || c.abilities.length !== 4) err('abilities', 'expected exactly 4 abilities (Q W E R)');
+  else {
+    c.abilities.forEach((a, i) => ability(a, `abilities[${'QWER'[i]!}]`, i === 3 ? 3 : 5));
     if (dashes > 1) err('abilities', `${dashes} abilities of type dash (max 1 hard dash)`);
   }
+  // optional R choice (Sev): exactly 3 alternative ultimates (rank arrays of length 3) + bot pick weights
+  if (c.ultChoices !== undefined) {
+    if (!Array.isArray(c.ultChoices) || c.ultChoices.length !== 3) err('ultChoices', 'expected exactly 3 ultimates');
+    else c.ultChoices.forEach((a, i) => ability(a, `ultChoices[${i}]`, 3));
+    const w = c.botUltChoice;
+    if (!Array.isArray(w) || w.length !== 3 || w.some((x) => typeof x !== 'number') || (w as number[]).reduce((a, b) => a + b, 0) <= 0)
+      err('botUltChoice', 'expected 3 non-negative weights with a positive sum');
+  } else if (c.botUltChoice !== undefined) err('botUltChoice', 'needs ultChoices');
 
   if (!Array.isArray(c.spikeLevels) || c.spikeLevels.length < 1 || c.spikeLevels.some((l) => typeof l !== 'number' || l < 1 || l > 18))
     err('spikeLevels', 'expected 1+ levels in 1..18');

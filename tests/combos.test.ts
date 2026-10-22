@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { query } from 'bitecs';
 import { createSim, step, type Sim } from '../src/sim/sim';
 import { Kind, type Command, type SimEvent } from '../src/sim/types';
-import { champAbil, isBusy } from '../src/sim/systems/abilities';
+import { champAbil, chooseUlt, isBusy } from '../src/sim/systems/abilities';
 import { CHAMPION_DATA } from '../src/sim/champions';
 import { CX, CY, place } from './combat-helpers';
 
@@ -41,6 +41,7 @@ function setup(champion: string): Run {
   sim.c.Champ.level[me] = 18;
   step(sim);
   champAbil(sim, me).ranks = [5, 5, 5, 3];
+  chooseUlt(sim, me, 0); // champions with an R choice (Sev): the first ultimate
   step(sim);
   sim.c.Hp.cur[me] = sim.c.Hp.max[me]!;
   sim.c.Mana.cur[me] = sim.c.Mana.max[me]!;

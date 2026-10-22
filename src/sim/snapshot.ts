@@ -4,7 +4,7 @@ import { query } from 'bitecs';
 import type { Sim } from './sim';
 import { pointVisible, sees } from './vision';
 import { Kind, VARIANTS, enemyOf, isStructure, type LaneId, type SimEvent, type Variant } from './types';
-import { abilityHud, armedSlot, displaceProgress, type AbilityHud } from './systems/abilities';
+import { abilityHud, armedSlot, displaceProgress, ultChoiceOf, type AbilityHud } from './systems/abilities';
 import { CHAMPION_DATA, championHooks, champIdOf } from './champions';
 import type { ChampionVisuals, HintMarker, VisualShape } from './champions/hooks';
 import { inFountain, inventory, itemValue } from './items/inventory';
@@ -48,6 +48,8 @@ export interface SnapEntity {
   champ: string | null;
   /** Decoy pet (tag `*_decoy`, e.g. Sev E): champion id it looks like; render/HUD treat it like that champion. */
   look?: string;
+  /** Chosen ultimate (ChampionData.ultChoices index) of a champion with an R choice (Sev); absent = none / not chosen. */
+  ult?: number;
   slot: number;
   /** 0 idle, 1 windup, 2 backswing. */
   atkPhase: number;
@@ -412,6 +414,7 @@ export function snapshotEntities(sim: Sim, team: number): SnapEntity[] {
       alive,
       ...(k === Kind.Ward ? wardFields(sim, e, team) : {}),
       ...(k === Kind.Pet ? decoyFields(sim, e) : {}),
+      ...(k === Kind.Champion && ultChoiceOf(sim, e) >= 0 ? { ult: ultChoiceOf(sim, e) } : {}),
       ...(k === Kind.Ward && isStealthUnit(sim, e) ? { stealth: true as const } : {}),
       ...(k === Kind.Tower && sim.c.Tower.tier[e] === 0 ? { plates: sim.c.Tower.plates[e]! } : {}),
       ...revealFields(sim, e, team, alive),

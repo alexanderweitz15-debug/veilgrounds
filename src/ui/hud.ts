@@ -429,6 +429,7 @@ export class Hud {
     }
     this.drawAbilities(me.abilities);
     this.ultCards.update(this.champ, me.abilities[3]);
+    toggle(this.root, 'sev-moon', (me.marks ?? []).some((m) => m.id === 'sev_r3_moon')); // Tsukuyomi: red-black screen tint
     const pv = me.passive;
     toggle(this.passive, 'ready', !!pv?.ready);
     setStyle(this.passiveCd, '--p', pv?.cdTotal && pv.cdLeft ? String(Math.min(1, pv.cdLeft / pv.cdTotal)) : '0');

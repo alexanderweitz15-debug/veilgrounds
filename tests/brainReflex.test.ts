@@ -73,7 +73,7 @@ describe('reflex layer: last hits independent of the decision rate (tests 2, 4)'
   }, 300_000);
 });
 
-describe.skip('reflex layer: harass without CS loss (test 5)', () => {
+describe('reflex layer: harass without CS loss (test 5)', () => {
   it('Gold vs a passive enemy laner in reach, 3 min from 1:40: >= 12 harass autos, no lane minion lost while harassing', () => {
     const players: PlayerSetup[] = [
       { slot: 0, team: 0, champion: 'mira', role: 'mid', summoners: ['sprung', 'heilen'], isHuman: false, bot: { rank: 'gold', variance: 'normal', playstyle: { vision: -5 } } },
@@ -111,7 +111,10 @@ describe.skip('reflex layer: harass without CS loss (test 5)', () => {
         if (ev.e === 'damage' && ev.src === me && ev.dst === foe && ev.auto) harass++;
         if (ev.e === 'death' && isMinion(ev.kind) && ev.team === 1 && ev.killer !== me) {
           const d = Math.hypot(Pos.x[me]! - ev.x, Pos.y[me]! - ev.y);
-          if (d <= Stats.range[me]! + 200 && Atk.target[me] === foe) lostWhileHarassing++;
+          // harass of the reflex layer (lane intent, champion filler); a trade started by the decision (combat leaf) is a
+          // trade, its farm cost is the utility model's business (A2)
+          const rs = reflexState(bots.bots[0]!.mem);
+          if (d <= Stats.range[me]! + 200 && Atk.target[me] === foe && rs.intent && rs.fillerChamp) lostWhileHarassing++;
         }
       }
     }

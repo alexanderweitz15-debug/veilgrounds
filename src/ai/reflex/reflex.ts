@@ -274,7 +274,7 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
   // a harass walk-in in progress is not re-decided every tick (the walk changes every lead; re-deciding flip-flops
   // between harass and hold): it runs until the wind-up, a due last hit or HARASS_WALK_TICKS
   const harassWalk = st.fillerChamp && st.filler >= 0 && v.self.atkTarget === st.filler && v.self.atkPhase === 0 && T - st.fillerAt < HARASS_WALK_TICKS;
-  if (harassWalk && !(farmPlan && farmPlan.executeAtTick <= T + 2)) return out;
+  if (harassWalk && !(farmPlan && farmPlan.executeAtTick <= T + 2) && timerFree(protectedWins, farmPlan, own, T)) return out;
   if (own.ready <= T + 1) {
     const choice = chooseFiller(v, ctx, st, intent, windows, protectedWins, farmPlan, own, P, rng, T, lh);
     if (choice) {
@@ -353,6 +353,14 @@ function feasible(w: MinionWindow, bias: number, startMin: number, own: OwnAttac
   const b = w.b + bias;
   const s = Math.max(startMin, Math.ceil(a + margin(a, b) - w.lead));
   return s + w.lead < b - safety;
+}
+
+/** The protected windows stay servable with the attack timer taken by an auto starting at T + 1 (filler rule). */
+function timerFree(protectedWins: MinionWindow[], plan: Plan | null, own: OwnAttack, T: number): boolean {
+  const next = T + 1 + Math.floor(own.period);
+  const bias = (w: MinionWindow): number => (plan && plan.targetId === w.m.id ? plan.biasTicks : 0);
+  for (const w of protectedWins) if (!feasible(w, bias(w), next, own, PROTECT_SAFETY)) return false;
+  return protectedWins.length < 2 || serveCount(protectedWins, bias, next, own.period) >= serveCount(protectedWins, bias, T + 1, own.period);
 }
 
 /** How many of the windows one auto per period serves from startMin on, earliest deadline first (with slack). */

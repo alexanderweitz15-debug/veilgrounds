@@ -206,7 +206,10 @@ export class Units {
    * without `air` (old replays): the airborne CC bit with ccEnd.
    */
   private lift(state: ClientState, e: SnapEntity, now: number): number {
-    if (e.air !== undefined) return airborneLift(e.air);
+    if (e.air !== undefined) {
+      this.dashAt.delete(e.serial);
+      return airborneLift(e.air);
+    }
     if (e.dash !== undefined) {
       let d = this.dashAt.get(e.serial);
       if (!d) this.dashAt.set(e.serial, (d = { x: e.px, y: e.py }));

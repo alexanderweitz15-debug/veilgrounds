@@ -154,7 +154,7 @@ export class InputController {
       // LoL: a plain left click selects the unit under the cursor for the target frame, ground clears it
       if (!this.armed) this.host.select?.(this.hover ? this.hover.id : null);
       if (this.armed === 'attackMove') {
-        this.send(settings.attackMoveTargetCursor ? { t: 'attackMove', x: g.x, y: g.y, cursor: true } : { t: 'attackMove', x: g.x, y: g.y });
+        this.send(settings.attackMoveNearCursor ? { t: 'attackMove', x: g.x, y: g.y, cursor: true } : { t: 'attackMove', x: g.x, y: g.y });
         this.host.world.fx.clickMarker(g.x, g.y, true, now);
       } else if (this.armed === 'teleport') this.send({ t: 'cheat', op: 'teleport', x: g.x, y: g.y });
       else if (this.armed === 'spawnDummy') this.send({ t: 'cheat', op: 'spawnDummy', x: g.x, y: g.y });
@@ -248,7 +248,7 @@ export class InputController {
         if (settings.attackMoveOnCursor) {
           const g = this.cursorGround();
           if (g) {
-            this.send(settings.attackMoveTargetCursor ? { t: 'attackMove', x: g.x, y: g.y, cursor: true } : { t: 'attackMove', x: g.x, y: g.y });
+            this.send(settings.attackMoveNearCursor ? { t: 'attackMove', x: g.x, y: g.y, cursor: true } : { t: 'attackMove', x: g.x, y: g.y });
             this.host.world.fx.clickMarker(g.x, g.y, true, performance.now());
           }
         } else this.setArmed('attackMove');

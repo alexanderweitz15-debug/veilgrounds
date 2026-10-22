@@ -25,6 +25,7 @@ import { cancelOrbwalk, attackTicks } from './kite';
 import { chooseWave, laneOf, sealWard, sweep, visionShop, wardDue } from './macro';
 import { laningSafety, rankIdx, rollError } from '../bt/deps';
 import { utilityOn } from '../utility/flag';
+import { recallMinionClear } from '../utility/world';
 
 /** Decision interval in ticks for this bot (profile microHz). */
 export const decisionTicks = (ctx: BotStatic): number => Math.max(1, Math.round(30 / ctx.profile.behavior.microHz));
@@ -242,7 +243,7 @@ export function retreat(n: NodeCtx): NodeResult {
   const goHome = v.hpPct < lowHp || (!util && ((mem.mode === 'retreat' && v.hpPct < 0.4) || mem.mode === 'home'));
   if (goHome) {
     // a recall broken by damage (DoT, unseen attacker) is retried only after 6 s of walking home: no recall spam
-    if (safe && dst(v.self, home) > 2500 && near(v.enemyMinions, v.self, 650).length === 0 && v.tick - mem.ext.recallTryAt > 6 * 30) {
+    if (safe && dst(v.self, home) > 2500 && near(v.enemyMinions, v.self, util ? recallMinionClear(v.self.radius) : 650).length === 0 && v.tick - mem.ext.recallTryAt > 6 * 30) {
       mem.ext.recallTryAt = v.tick;
       mem.mode = 'recall';
       mem.lastMove = null;

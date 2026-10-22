@@ -102,6 +102,19 @@ function uGroup(n: NodeCtx): NodeResult {
   return 'failure';
 }
 
+/** Fight join by Teleport (top laner's unlocked TP, B4): channel onto the chosen own unit near the fight. */
+function uTeleportJoin(n: NodeCtx): NodeResult {
+  const tp = dataOf(n).tp;
+  if (!tp || (n.v.me.teleportLeft ?? 0) > 0) return 'failure';
+  n.out.push({ cmd: { t: 'spell', slot: tp.slot, x: tp.x, y: tp.y, target: tp.id } });
+  n.mem.lastMove = null;
+  n.mem.busyFrom = n.v.tick;
+  n.mem.busyUntil = n.v.tick + Math.round(VALUES.teleport.channelS * 30) + 2;
+  n.mem.busySlot = -1;
+  n.log('joinFight', 'teleport', 'teleport into the fight', { landSrc: 'ally', landX: Math.round(tp.x), landY: Math.round(tp.y) });
+  return 'running';
+}
+
 /** Jungler catches an abandoned wave (§4.6): play that lane meanwhile. */
 function uCatchLane(n: NodeCtx): NodeResult {
   const d = dataOf(n);
@@ -115,7 +128,7 @@ let compiled: Partial<Record<IntentId | 'none', BtNode>> | null = null;
 function trees(): Partial<Record<IntentId | 'none', BtNode>> {
   if (compiled) return compiled;
   const base = registry();
-  const reg: Registry = { ...base, actions: { ...base.actions, uPoke, uTrade, uPush, uRoam, uGank, uRecall, uGroup, uCatchLane } };
+  const reg: Registry = { ...base, actions: { ...base.actions, uPoke, uTrade, uPush, uRoam, uGank, uRecall, uGroup, uCatchLane, uTeleportJoin } };
   const out: Partial<Record<IntentId | 'none', BtNode>> = {};
   for (const [id, def] of Object.entries(intentsJson.intents)) out[id as IntentId] = compile(def as NodeDef, reg, new Set(), `u.${id}`);
   return (compiled = out);

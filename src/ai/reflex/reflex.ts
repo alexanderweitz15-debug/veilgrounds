@@ -611,7 +611,7 @@ function chooseFiller(
   // next auto lands inside the window that opens (tower shots, stacked minion hits); chance by skill per minion
   if (intent.farm) {
     for (const w of windows) {
-      if (w.walk > 0 || !(w.a === Infinity || w.a >= w.b) || w.b === Infinity || w.b - T >= PREHIT_LOOKAHEAD) continue;
+      if (w.walk > FILLER_WALK_TICKS || !(w.a === Infinity || w.a >= w.b) || w.b === Infinity || w.b - T >= PREHIT_LOOKAHEAD) continue;
       if (!attackSpotSafe(v, w.m) || !prehitFits(w, T + 1 + w.lead, own.period, 0, T)) continue;
       if (!prehitRoll(lh, w.m, ctx.params.skill, rng)) continue;
       return { target: w.m.id, kind: 'prehit' };

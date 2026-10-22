@@ -39,7 +39,7 @@ export function getChampionAtlas(ids: string[], onProgress?: (done: number, tota
   let p = cache.get(key);
   if (!p) {
     const t0 = performance.now();
-    p = buildChampionAtlasAsync(list, { master: CHAMP_MASTER, frame: CHAMP_FRAME, autoHark: true, worker: makeWorker, cache: cellStore(), onProgress }).then((a) => {
+    p = buildChampionAtlasAsync(list, { master: CHAMP_MASTER, frame: CHAMP_FRAME, maxSize: ATLAS_MAX, autoHark: true, worker: makeWorker, cache: cellStore(), onProgress }).then((a) => {
       console.info(`champion atlas: ${list.length} champions, ${a.canvas.width}x${a.canvas.height} @${a.frameSize}px in ${Math.round(performance.now() - t0)} ms`);
       return a;
     });
@@ -52,8 +52,20 @@ export function getChampionAtlas(ids: string[], onProgress?: (done: number, tota
   return p;
 }
 
-const CHAMP_MASTER = 192;
-const CHAMP_FRAME = 128;
+// Champion frames ~1:1 with their on-screen size (a 260-unit sprite is ~160 px tall at 1080p, max zoom-out): the
+// old 128 px frames (shrunk to ~112 px when ten champions had to fit 4096x4096) were upscaled and looked blurry
+// next to the native-resolution world. The atlas may grow to 8192 wide when the GPU allows it.
+const CHAMP_MASTER = 240;
+const CHAMP_FRAME = 152;
+/** Largest atlas side this GPU takes (capped at 8192; 4096 without WebGL info, e.g. in tests). */
+const ATLAS_MAX = ((): number => {
+  try {
+    const gl = typeof document !== 'undefined' ? document.createElement('canvas').getContext('webgl2') : null;
+    return gl ? Math.min(8192, gl.getParameter(gl.MAX_TEXTURE_SIZE) as number) : 4096;
+  } catch {
+    return 4096;
+  }
+})();
 let gameRequested = false;
 let precaching = false;
 

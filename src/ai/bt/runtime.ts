@@ -13,6 +13,7 @@
 // situation (trade window, objective call). Dodges sample their own reaction (they need projectile timing).
 
 import { sampleReactionMs } from '../profiles';
+import { reactionPenaltyMs } from '../humanize/attention';
 import type { NodeCtx, NodeDef, NodeResult, NodeState, Registry } from './types';
 
 export interface BtNode {
@@ -144,7 +145,7 @@ export function compile(def: NodeDef, reg: Registry, ids = new Set<string>(), pa
             st.readyAt = undefined;
             return r;
           }
-          if (st.readyAt === undefined) st.readyAt = n.v.tick + Math.round((sampleReactionMs(n.ctx.profile.behavior, n.rng) * 30) / 1000);
+          if (st.readyAt === undefined) st.readyAt = n.v.tick + Math.round(((sampleReactionMs(n.ctx.profile.behavior, n.rng) + reactionPenaltyMs(n.mem, n.v.tick)) * 30) / 1000);
           return n.v.tick >= st.readyAt ? r : 'failure';
         },
       };

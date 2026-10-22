@@ -325,6 +325,7 @@
   "act.pingQuestion": "Ping: ?",
   "act.targetChampionsOnly": "Target champions only (hold)",
   "ping.question": "?",
+  "ping.myBad": "My bad",
   "set.newBrain": "New bot brain (beta: reflex layer + utility model)",
   "set.botToxicity": "Toxic bots (flame chat, \"?\" pings)",
   "chat.placeholder": "Message your team (Enter to send, Esc to cancel)",

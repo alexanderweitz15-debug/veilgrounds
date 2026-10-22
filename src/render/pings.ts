@@ -21,6 +21,7 @@ const ICON: Record<PingKind, string> = {
   objective: '★',
   ok: '✓',
   question: '?',
+  myBad: '✗',
 };
 
 const iconTex = new Map<PingKind, THREE.Texture>();

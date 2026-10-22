@@ -7,7 +7,7 @@
 import type { NodeCtx, NodeResult } from '../bt/types';
 import type { LaneName, Pt } from '../../sim/map';
 import { dst, lanePoint } from '../bot/geo';
-import { maybeInject } from '../errors';
+import { rollErrorUntil } from '../errors';
 import { atLeast } from '../perception/rankModel';
 import { estimateStyle } from '../perception/enemyStyle';
 import { laneLength, lanePos } from '../perception/waves';
@@ -44,7 +44,7 @@ export function roamPrerequisite(n: NodeCtx, pv: BotPerception): { ok: boolean; 
   if (w.crashed) return { ok: true, why: 'wave crashed into the enemy tower' };
   if (w.visible && w.pos < 0.45 && w.enemyCount >= w.ownCount) return { ok: true, why: 'wave frozen on the own side' };
   if (w.visible && (w.pushing || w.pos >= 0.45) && !atLeast(n.p, 'gold')) {
-    const err = maybeInject(n.p, 'roam_from_push', n.rng);
+    const err = rollErrorUntil(n.mem, n.ctx, n.p, 'roam_from_push', n.snap.tick, n.rng) >= 0 ? ('roam_from_push' as const) : undefined; // §9 episode with the new brain
     if (err) return { ok: true, why: 'roams off a pushing wave', err };
   }
   return { ok: false, why: w.visible ? 'wave not crashed / frozen' : 'wave not visible' };

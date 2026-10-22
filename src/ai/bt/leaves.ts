@@ -17,6 +17,7 @@ import { joinFight, teamfight, teamfightNear } from '../bot/teamfight';
 import { hasObjectiveDesire, idleAfterShove, objective, recall, recallScore, splitPush, vision } from '../bot/macro';
 import { dst } from '../bot/geo';
 import { MAX_TILT, withTilt } from '../params';
+import { attentionOn } from '../humanize/attention';
 
 import { escape } from '../ganks/escape';
 import { gankRiskReaction } from '../ganks/risk';
@@ -179,7 +180,8 @@ export function runTree(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng
   }
   const v = perceive(snap, ctx, mem, rng);
   if (!v) return [];
-  const pv = perceiveL(mem.ext.perception, snap, ctx, ctx.params, rng);
+  // mem only with the §9 attention model (new brain): reaction penalty + no_flash_tracking episode in perception
+  const pv = perceiveL(mem.ext.perception, snap, ctx, ctx.params, rng, attentionOn(mem) ? mem : undefined);
   attachTracks(v, pv.enemies);
   const n: NodeCtx = {
     snap,
@@ -187,7 +189,8 @@ export function runTree(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng
     ctx,
     mem,
     rng,
-    p: mem.ext.tilt > 0 ? withTilt(ctx.params, mem.ext.tilt) : ctx.params,
+    // §9 new brain (attention model running): tilt = longer distraction windows + aggression only
+    p: mem.ext.tilt > 0 ? withTilt(ctx.params, mem.ext.tilt, attentionOn(mem) ? 'attention' : 'legacy') : ctx.params,
     pv,
     out: [],
     log(node, chosen, reason, inputs = {}, scores, err) {

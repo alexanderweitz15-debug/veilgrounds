@@ -114,6 +114,13 @@ export function ensureAttention(mem: BotMemory, ctx: Pick<BotStatic, 'slot' | 'l
 /** The bot's attention state if the model runs for it (null: never observed -> always focused). */
 export const attentionState = (mem: BotMemory): AttentionState | null => states.get(mem) ?? null;
 
+/**
+ * True when the §9 model runs for this bot: the runner creates the state only with the new brain (reflex layer or
+ * utility model, src/ai/runner.ts). Hooks in shared code use it to switch from the pre-rework behaviour (per-minion
+ * lapse, legacy tilt, fixed error timers) to the attention / episode behaviour; off = bit-identical to before.
+ */
+export const attentionOn = (mem: BotMemory): boolean => states.has(mem);
+
 /** Exponential focused gap (ticks) before the next random distraction. */
 function gap(st: AttentionState): number {
   const mean = st.b.distractionIntervalS * TPS;

@@ -21,9 +21,10 @@ import { Kind, type Command } from '../../sim/types';
 import type { SnapEntity } from '../../sim/snapshot';
 import type { ErrorId } from '../contract';
 import { dst } from '../bot/geo';
-import { maybeInject } from '../errors';
+import { rollErrorUntil } from '../errors';
 import { estimateExchange } from '../bt/deps';
 import { sampleReactionMs } from '../profiles';
+import { attentionAt, reactionPenaltyMs } from '../humanize/attention';
 import { NEAR_RANGE, isCC } from '../perception/perceive';
 import { atLeast, coinFlipFights } from '../perception/rankModel';
 import { pathThreat } from '../perception/threat';
@@ -217,7 +218,7 @@ export function escape(n: NodeCtx): NodeResult {
     } else if (st.ccHit && (me.cc ?? 0) < 3 && !st.lateFlashRolled) {
       // Iron/Bronze: no wind-up reading; after eating the CC a late (often wrong) Flash
       st.lateFlashRolled = true;
-      err = maybeInject(n.p, 'flash_wrong_direction', n.rng);
+      err = rollErrorUntil(n.mem, n.ctx, n.p, 'flash_wrong_direction', tick, n.rng) >= 0 ? 'flash_wrong_direction' : undefined; // §9 episode with the new brain
       if (err) flashWhy = 'late flash after the CC';
     } else if (hp < 0.15) flashWhy = 'panic flash';
   }
@@ -245,13 +246,14 @@ export function escape(n: NodeCtx): NodeResult {
       dir = norm({ x: -cc.dy * side + dir.x * 0.5, y: cc.dx * side + dir.y * 0.5 });
     }
     if (atLeast(n.p, 'diamond')) dir = wallFlash(n, self, goal, routeLen) ?? dir;
-    if (!err && !atLeast(n.p, 'silver')) err = maybeInject(n.p, 'flash_into_wall', n.rng);
+    if (!err && !atLeast(n.p, 'silver')) err = rollErrorUntil(n.mem, n.ctx, n.p, 'flash_into_wall', tick, n.rng) >= 0 ? 'flash_into_wall' : undefined;
     if (err === 'flash_wrong_direction') dir = rotate(dir, Math.PI * (0.5 + n.rng.next()));
     else if (err === 'flash_into_wall') dir = towardWall(n, self) ?? dir;
     // reaction: the decision is now, the key press after the reaction time unless a prediction was made
     const castTick = cc ? cc.tick : tick;
-    const predicted = !!cc && n.rng.chance(n.p.behavior.predictiveDodgePct / 100);
-    const delay = predicted ? 0 : Math.max(0, castTick + Math.round((sampleReactionMs(n.p.behavior, n.rng) * 30) / 1000) - tick);
+    // §9 while distracted: no predictive dodge, +150 ms reaction (the chance draw stays, so the Rng stream is unchanged)
+    const predicted = !!cc && n.rng.chance(n.p.behavior.predictiveDodgePct / 100) && attentionAt(n.mem, tick).predictiveDodge;
+    const delay = predicted ? 0 : Math.max(0, castTick + Math.round(((sampleReactionMs(n.p.behavior, n.rng) + reactionPenaltyMs(n.mem, tick)) * 30) / 1000) - tick);
     const p = { x: self.x + dir.x * FLASH_RANGE, y: self.y + dir.y * FLASH_RANGE };
     const cmd: Command = { t: 'spell', slot: flash, x: Math.round(p.x), y: Math.round(p.y) };
     n.out.push(delay > 0 ? { cmd, delay } : { cmd });

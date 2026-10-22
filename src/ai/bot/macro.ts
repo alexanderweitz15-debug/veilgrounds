@@ -10,7 +10,8 @@ import type { Desire } from './teamai';
 import { dst, laneProgress } from './geo';
 import { near, towerCovering } from './perception';
 import { nextItemPrice, spendable } from './shop';
-import { rankIdx, rollError } from '../bt/deps';
+import { rankIdx } from '../bt/deps';
+import { rollErrorUntil } from '../errors';
 import { cancelOrbwalk, moveCmd, orbwalkAttack } from './kite';
 import { decisionInterval, summonerReady } from './trade';
 import { emitPing, say } from './social';
@@ -137,8 +138,10 @@ export function recallScore(n: NodeCtx): boolean {
     return false;
   }
   // Gold: shoves and then stands in the river (idle_after_shove 40 %)
-  if (w.crashed && v.tick >= n.mem.ext.idleUntil + 600 && rollError('idle_after_shove', n.p, n.rng)) {
-    n.mem.ext.idleUntil = v.tick + 6 * 30;
+  // (§9 new brain: an error episode of errors.json durS instead of the fixed 6 s; one draw either way)
+  const idleUntil = w.crashed && v.tick >= n.mem.ext.idleUntil + 600 ? rollErrorUntil(n.mem, n.ctx, n.p, 'idle_after_shove', v.tick, n.rng, 6 * 30) : -1;
+  if (idleUntil >= 0) {
+    n.mem.ext.idleUntil = idleUntil;
     n.log('recall', 'idle', 'stands around after the shove', {}, { score: s }, 'idle_after_shove');
     return false;
   }

@@ -13,7 +13,7 @@ import type { Rng } from '../sim/rng';
 import { PROFILES } from './profiles';
 import type { BotParams, DecisionLog, ErrorId } from './contract';
 import type { BotAction, BotMemory, BotStatic } from './bot/types';
-import { ensureAttention } from './humanize/attention';
+import { attentionOn, ensureAttention } from './humanize/attention';
 
 export const ERROR_IDS = Object.keys(errorsJson.errors) as ErrorId[];
 const TABLE = errorsJson.errors as Record<ErrorId, { p: number[]; durS: number[]; detect: string; note: string }>;
@@ -87,6 +87,19 @@ export function rollErrorEpisode(mem: BotMemory, ctx: ErrCtx, id: ErrorId, tick:
   return maybeInject(ctx.params, id, rng) ? startErrorEpisode(mem, ctx, id, tick, inputs) : undefined;
 }
 
+/**
+ * Hook for the classic error call sites (shared-changes A3-9): exactly one draw of the bot's Rng, like maybeInject /
+ * bt rollError, so the Rng stream does not depend on the brain. With the attention model running for this bot (new
+ * brain, attentionOn) a hit starts an episode (logged "injectedError: <id> (dur <s> s)", noticed later by
+ * detectErrors) and the episode end (errors.json durS) is returned; otherwise the caller's old fixed duration
+ * (`legacyTicks`) applies, so the pre-rework brain is unchanged. Returns -1 when the bot does not make the mistake.
+ */
+export function rollErrorUntil(mem: BotMemory, ctx: ErrCtx, p: Pick<BotParams, 'skill'>, id: ErrorId, tick: number, rng: Rng, legacyTicks = 0, inputs?: Record<string, number | string | boolean>): number {
+  if (!maybeInject(p, id, rng)) return -1;
+  if (!attentionOn(mem)) return tick + legacyTicks;
+  return startErrorEpisode(mem, ctx, id, tick, inputs).until;
+}
+
 /** The running (not yet noticed) episode of error `id`, if any: the caller keeps the wrong behaviour while it runs. */
 export function errorActive(mem: BotMemory, id: ErrorId, tick: number): ErrorEpisode | null {
   return episodes.get(mem)?.find((e) => e.id === id && !e.detected && tick < e.until) ?? null;
@@ -98,10 +111,10 @@ export const errorEpisodes = (mem: BotMemory): readonly ErrorEpisode[] => episod
 /**
  * Detection (call once per decision): every episode whose duration is over is noticed and logged
  * (node 'error', chosen 'detected:<id>'); from attention.json myBad.fromSkill (Silver) the bot says "Mein Fehler"
- * with myBad.pct (team chat; a dedicated ping kind is proposed in docs/agents/shared-changes.md). The roll uses the
+ * with myBad.pct: a 'myBad' ping at its own position `at` (alive), else the team chat line. The roll uses the
  * attention model's own Rng, never the bot's.
  */
-export function detectErrors(mem: BotMemory, ctx: ErrCtx, tick: number): BotAction[] {
+export function detectErrors(mem: BotMemory, ctx: ErrCtx, tick: number, at?: { x: number; y: number } | null): BotAction[] {
   const list = episodes.get(mem);
   if (!list?.length) return [];
   const out: BotAction[] = [];
@@ -112,7 +125,7 @@ export function detectErrors(mem: BotMemory, ctx: ErrCtx, tick: number): BotActi
     const say = ctx.params.skill >= attn.myBad.fromSkill && rng.chance(attn.myBad.pct / 100);
     const log: DecisionLog = ctx.log;
     log.push({ tick, bot: ctx.slot, node: 'error', inputs: { afterS: Math.round(((tick - ep.from) / 30) * 10) / 10, myBad: say }, chosen: `detected:${ep.id}`, reason: `${TABLE[ep.id]?.detect ?? 'noticed'}${say ? ' - "Mein Fehler"' : ''}` });
-    if (say) out.push({ cmd: { t: 'chat', text: attn.myBad.text[ctx.lang === 'en' ? 'en' : 'de'] } });
+    if (say) out.push(at ? { cmd: { t: 'ping', kind: 'myBad', x: Math.round(at.x), y: Math.round(at.y) } } : { cmd: { t: 'chat', text: attn.myBad.text[ctx.lang === 'en' ? 'en' : 'de'] } });
   }
   // keep the list short: drop noticed episodes older than 60 s
   episodes.set(mem, list.filter((e) => !e.detected || tick - e.until < 1800));

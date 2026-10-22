@@ -23,11 +23,11 @@ function sumReady(v: View, id: string): 0 | 1 | -1 {
   return -1;
 }
 
-export function cleanseStep(v: View, ctx: BotStatic, rng: Rng): BotAction | null {
+export function cleanseStep(v: View, ctx: BotStatic, rng: Rng, penaltyMs = 0): BotAction | null {
   if ((v.me.cc ?? 0) < 3 || (v.me.cc ?? 0) >= 5) return null;
   const slot = sumReady(v, 'reinigen');
   if (slot === -1 || !v.enemies.some((e) => dst(e, v.self) < 1000)) return null;
-  return { cmd: { t: 'spell', slot, x: v.self.x, y: v.self.y }, delay: ticksOfMs(sampleReactionMs(ctx.profile.behavior, rng)) };
+  return { cmd: { t: 'spell', slot, x: v.self.x, y: v.self.y }, delay: ticksOfMs(sampleReactionMs(ctx.profile.behavior, rng) + penaltyMs) };
 }
 
 export function exhaustStep(v: View): BotAction | null {

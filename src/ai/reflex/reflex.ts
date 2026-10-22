@@ -434,6 +434,9 @@ function tanked(v: View, m: View['enemyMinions'][number]): boolean {
   return v.ownMinions.some((o) => dst(o, m) < TANK_R);
 }
 
+/** Cheap pre-check before structureToHit (it builds the protection chain): an enemy structure within its 1300 range. */
+const structureNear = (v: View): boolean => v.enemyTowers.some((t) => dst(t, v.self) < 1400) || v.enemyStructures.some((t) => dst(t, v.self) < 1400);
+
 /** Enemy minions with no own minion near them (they would target the bot). */
 function untankedMinions(v: View): View['enemyMinions'] {
   return v.enemyMinions.filter((m) => dst(m, v.self) < 1200 && !tanked(v, m));
@@ -643,7 +646,7 @@ function chooseFiller(
   };
   // plates (push state): a structure that a big own wave tanks beats the last enemy minions (they die to the wave)
   if (intent.hitStructures && intent.wave === 'push') {
-    const s = structureToHit(v, ctx);
+    const s = structureNear(v) ? structureToHit(v, ctx) : -1;
     const t = s >= 0 ? entityIndex(v.snap.entities).get(s) : undefined;
     if (t && v.ownMinions.filter((m) => dst(m, t) < TOWER_TANK_R).length >= PLATE_TANKS) return { target: s, kind: 'structure' };
   }
@@ -674,7 +677,7 @@ function chooseFiller(
   }
   // structures: not while freezing or holding the wave (they move it / advance the bot); plates after a crash
   if (intent.hitStructures && intent.wave !== 'freeze' && intent.wave !== 'hold' && !windows.some((w) => w.walk === 0)) {
-    const s = structureToHit(v, ctx);
+    const s = structureNear(v) ? structureToHit(v, ctx) : -1;
     if (s >= 0) return { target: s, kind: 'structure' };
   }
   return null;

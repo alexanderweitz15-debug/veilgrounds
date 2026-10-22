@@ -10,6 +10,8 @@
 // against the targets in tools/botSimTargets.json (red outside the tolerance) to stdout or the given file.
 // --scenario=laneAlone: the last-hit trainer scenario (one bot alone in mid, autos only, --minutes default 10).
 // --champion=<id>: laneAlone champion; in normal games blue's mid laner.
+// --reflex=true: reflex layer on; --utility=true: utility model on; --brain=new: both (the game's beta brain).
+// --jobs=N: parallel child processes (default CPU cores - 2; --jobs=1 sequential, same CSV).
 
 import { RANKS, type Rank } from '../src/ai/profiles/schema';
 import { ARCHETYPES, type Archetype } from '../src/ai/contract';
@@ -105,7 +107,10 @@ function playGame(g: number): GameRec {
       }
       config.players.sort((a, b) => a.slot - b.slot);
     }
-    res = runBotGame(config, Math.round(minutes * 60 * 30), undefined, { noVariance, reflex: args.get('reflex') === 'true', clock: () => performance.now() });
+    // --brain=new: the game's beta setting 'Neues Bot-Gehirn' (reflex layer + utility model); --utility=true alone
+    const newBrain = args.get('brain') === 'new';
+    if (newBrain || args.get('utility') === 'true') config.botUtility = true;
+    res = runBotGame(config, Math.round(minutes * 60 * 30), undefined, { noVariance, reflex: newBrain || args.get('reflex') === 'true', clock: () => performance.now() });
   }
   const { sim: _sim, bots: _bots, hash: _hash, ...lite } = res;
   void _sim;

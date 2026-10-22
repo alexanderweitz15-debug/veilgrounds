@@ -7,8 +7,7 @@
   highlight, D2 overlay wiring (CC glyphs, bar stacking). Details, numbers, screenshots: docs/agents/c.md block 6.
 - Half-done: nothing.
 - Next steps: D5 is mounted (trainer hub); src/main.ts parts are the lead's (shared-changes.md D5 note); A3-dependent parts (scoreboard playstyle
-  scales + rank calibration, post-game error list); full test suite run on `ui/c-picking` (not run in block 6, the
-  machine was shared; C8 test files, settingsIO and i18n are green, tsc 0).
+  scales + rank calibration, post-game error list). Full suite on `c7b2ae6`: 79 files, 943 passed, 0 failed; tsc 0.
 - src/settings.ts is open to C for additive keys (lead, 19 Oct); log every addition in shared-changes.md.
 - Issues for others: docs/agents/issues.md.
 

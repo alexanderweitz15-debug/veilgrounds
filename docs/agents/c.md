@@ -33,10 +33,18 @@ next to an in-range enemy minion that is not the unit nearest to the champion (5
 highlighted minion #70, after the left click the sim's `atkTarget` = 70 (champion-nearest would have been #38).
 tests/attackMove.test.ts compares the prediction with the sim in 40 random layouts (all equal).
 
+Scope / deviations:
+- Hostile-first ranking deviates from the literal "closest body wins": an ally minion standing in the enemy wave or
+  the own HP bar over the minions' feet otherwise swallowed right clicks meant as last hits. Allies are still picked
+  when no hostile unit is in reach (left-click select). One-line change in `rank()` if the user wants it reversed.
+- The attack-move highlight exists while A is armed (default). With "attack move on cursor" (A fires on key down)
+  there is no moment before the command to show it; the hovered enemy is still attacked directly.
+- Bar stacking does not pin the hovered bar (D's proposal did): a pinned hovered bar drops away from the cursor.
+
 Tests: tests/picking.test.ts (12: margin edges, body-axis distance, crowded wave with a champion behind - the old
 picker steals > 20 of the sampled points, the new none -, champions-only key, ally in the wave, front-most overlap,
 minion bar over another body, champion level box, dead / plant), tests/pickingMeasure.test.ts, tests/attackMove.test.ts
-(2), settingsIO / i18n green. `tsc --noEmit` 0. Full suite: not run (machine shared; see handoff).
+(2), settingsIO / i18n green. `tsc --noEmit` 0. Full suite on `c7b2ae6`: 79 files, 943 passed, 2 skipped, 1 todo, 0 failed.
 
 Screenshots (1280x720, built game, no console errors; cyan cross and the label are drawn by the capture script
 because headless captures show no OS cursor; the sim is frozen for the picking shots): docs/ist/c8-picking-before.jpg

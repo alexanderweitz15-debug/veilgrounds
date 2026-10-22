@@ -68,6 +68,9 @@ const PREHIT_LOOKAHEAD = 75;
 const WAVE_COUNT_R = 1200;
 /** Freeze corridor: keep 2-3 enemy minions surplus (§4.5); hit enemy minions only above 2. */
 const FREEZE_SURPLUS_MAX = 2;
+/** Push state: hit the structure before the minions when this many own minions tank it (within TOWER_TANK_R). */
+const PLATE_TANKS = 3;
+const TOWER_TANK_R = 800;
 /** Own minion within this distance of an enemy minion = the enemy minion has another target than the bot. */
 const TANK_R = 700;
 /** Extra distance kept to the reach of untanked enemy minions (stand point) - a step of the minion. */
@@ -638,6 +641,12 @@ function chooseFiller(
         return foeN - ownN > FREEZE_SURPLUS_MAX && (v.ownMinions.some((o) => o.id === m.atkTarget) || v.ownTowers.some((t) => t.id === m.atkTarget));
     }
   };
+  // plates (push state): a structure that a big own wave tanks beats the last enemy minions (they die to the wave)
+  if (intent.hitStructures && intent.wave === 'push') {
+    const s = structureToHit(v, ctx);
+    const t = s >= 0 ? entityIndex(v.snap.entities).get(s) : undefined;
+    if (t && v.ownMinions.filter((m) => dst(m, t) < TOWER_TANK_R).length >= PLATE_TANKS) return { target: s, kind: 'structure' };
+  }
   if (intent.pushMinions) {
     let best: MinionWindow | null = null;
     for (const w of windows) {

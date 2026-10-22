@@ -1,6 +1,6 @@
 # A2 handoff
 
-- Branch: `brain/a2-utility`, pushed. Last code commit: c434680 (19 Oct; main 830aaa3 merged).
+- Branch: `brain/a2-utility`, pushed. Last code commits 66d5219 + the shove-to-plate commit (22 Oct; main 9ed4070 merged).
 - Worktree had a node_modules junction (deleted at stop). Untracked scratch tools in tools/scratch/ (hash.ts,
   prof.ts, cmds.ts, trace.ts, idle.ts, recalls.ts) were not committed; recreate as needed.
 - Flag: `BOT_UTILITY=1 npm run bot-sim ...` or `SimConfig.botUtility = true`; tree node `utilitySelect` (after `arena`).
@@ -58,3 +58,26 @@
 - Death analysis: `tools/scratch/deaths.ts <min> <seed>` (committed) prints the last log entries before every death
   without a champion killer.
 - Kesselbrut feasibility: the team AI's rough DPS model needed a 75 s window (2 champions); it is in values.json.
+
+## 22 Oct: state at stop (lead: max 3 agents, A2 stops)
+
+Done: recall minion clearance, Sev build, top-lane Teleport (lane return + Gold+ fight join), test 8 full game,
+conversion weight + diagnosis, plates 1.25 -> 2.75 (shove to the plate when the opponent is away).
+
+Next steps, in order:
+1. Deaths without an enemy champion rose to 4.7 % with the shove change (target <= 4 %, 1.4 % before). Check
+   tower deaths during `push` with tools/scratch/deaths.ts; likely the shove walks into tower range before the wave
+   tanks - require `tank >= 2` for the structure part when the bot is within tower range, or raise
+   `weights.exposurePush` (0.8) only near the tower.
+2. Plates 2.75 vs main 3.38: remaining gap probably the push candidate losing to farm while the wave is still in
+   mid lane; consider the plate tempo term for `wave.pushing` too (values.json `weights.platePriority`).
+3. Conversion 0 %: decide with the supervisor whether the 30-s window of the harness metric is right (LoL-like
+   tower conversion after a lane 2v2 takes longer) or the team AI should convert to plates / dragon only when the
+   group can finish in 30 s (feasibility check like the objective DPS model).
+4. Kills 13.8 vs 16.8 and trade duration 2.8 s: trade costs (`tradeMissedFarm`, `tradeAggroPerMinion`) after A1's
+   harass filler lands.
+5. A1 now owns `chooseWave` in macro.ts (Phase 2 wave states): coordinate via shared-changes.md before touching it.
+6. tests/utilityRecall.test.ts runs a 12-min Diamond game (~6 min wall time under shared CPU): if the suite gets too
+   slow, move it behind an env switch or shorten to 10 min after checking an item recall still occurs.
+7. Phase 3 gate only after A1's scheduler drives the farm intent (lead decision); §6 combat stays flag-gated until
+   the Phase 4 gate.

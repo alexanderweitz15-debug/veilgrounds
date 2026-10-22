@@ -13,6 +13,7 @@ import { near } from '../bot/perception';
 import { allInWanted, closestEnemy, comboReach } from '../bot/trade';
 import { teamfightNear } from '../bot/teamfight';
 import { wardDue } from '../bot/macro';
+import { teleportSlot } from '../bot/spells';
 import { nextItemPrice, spendable } from '../bot/shop';
 import { estimateExchange, tacticsFocus } from '../bt/deps';
 import { abilityDamage, fighterFromSnapshot } from '../exchange';
@@ -22,7 +23,7 @@ import { frontTower } from '../perception/waves';
 import { laneEnemies, LANE_ROLES } from '../ganks/common';
 import { VALUES, rankCurve } from './values';
 import { absenceLoss, hpGold, killGold, laneRateOf, laneTripLength } from './world';
-import type { CandidateDef, CandidateValue, World } from './types';
+import type { CandidateDef, CandidateValue, IntentData, World } from './types';
 
 const G = VALUES.gold;
 const H = VALUES.horizons;
@@ -171,11 +172,30 @@ export function fightValue(w: World): CandidateValue | null {
     if (e && (!best || d < best.d)) best = { a, e, d };
   }
   if (!best) return null;
-  const arrival = best.d / Math.max(200, v.me.stats.ms);
+  let arrival = best.d / Math.max(200, v.me.stats.ms);
+  // Teleport join (B4 issue: the top laner's unlocked Teleport, from Gold by rank curve, from 10:00 onto an own
+  // minion / ward / tower near the fight, only when the team is not behind on the scoreboard)
+  const T = VALUES.teleport;
+  let tp: IntentData['tp'];
+  const slot = teleportSlot(v, n.ctx);
+  if (slot !== -1 && best.d > T.minJoinDist && v.time >= T.fromS && rankCurve(T.joinRank, n.ctx.params.skill) >= 0.5 && teamItemLead(n) >= T.minTeamItemLead) {
+    const spot = [...v.ownMinions, ...n.snap.entities.filter((e) => e.ward && e.team === n.ctx.team), ...v.ownTowers].filter((e) => dst(e, best!.e) < T.landRange).sort((a, b) => dst(a, best!.e) - dst(b, best!.e))[0];
+    if (spot) {
+      tp = { slot, id: spot.id, x: spot.x, y: spot.y };
+      arrival = T.channelS + dst(spot, best.e) / Math.max(200, v.me.stats.ms);
+    }
+  }
   const ex = estimateExchange(v, n.ctx, best.e, h, n.rng);
   const benefit = ex.winProb * killGold() * W.fightWinGold;
   const cost = ex.deathProb * w.deathCost * 0.5 + absenceLoss(w, arrival * 2);
-  return { benefit, cost, horizonS: h + arrival, terms: { win: ex.winProb, death: ex.deathProb, arrivalS: arrival, join: 1 } };
+  return { benefit, cost, horizonS: h + arrival, terms: { win: ex.winProb, death: ex.deathProb, arrivalS: arrival, join: 1, teleport: tp ? 1 : 0 }, ...(tp ? { data: { tp } } : {}) };
+}
+
+/** Own team's item value minus the enemy's (public scoreboard). */
+function teamItemLead(n: NodeCtx): number {
+  let d = 0;
+  for (const r of n.snap.players) d += r.team === n.ctx.team ? r.itemValue : -r.itemValue;
+  return d;
 }
 
 // ------------------------------------------------------------------ push / plates (§5, §7.1)
@@ -224,7 +244,9 @@ export function pushValue(w: World): CandidateValue | null {
   if (tower) {
     const tank = v.ownMinions.filter((m) => dst(m, tower) < 800).length;
     const reachS = Math.max(0, dst(v.self, tower) - 800) / Math.max(200, v.me.stats.ms);
-    if (tank >= 2 || wave.crashed) {
+    // the opponent is away and the own wave pushes: the bot shoves it in and hits the plate when it arrives
+    const shove = laneOpponentAway(w, lane) && wave.ownCount >= 3;
+    if (tank >= 2 || wave.crashed || shove) {
       const grubs = 1 + 0.04 * (n.snap.kesselbrut ?? 0);
       const dps = v.me.stats.ad * Math.max(0.1, v.me.stats.as) * VALUES.push.towerMitigation * grubs;
       const dmg = dps * Math.max(0, h - reachS);
@@ -232,7 +254,8 @@ export function pushValue(w: World): CandidateValue | null {
       if (v.tick < PLATES_FALL_TICK && dst(tower, outer) < 200) {
         let left = 0;
         for (let i = 1; i <= PLATE_COUNT; i++) if (tower.hp > tower.maxHp - i * PLATE_HP) left++;
-        plates = Math.min(left, dmg / PLATE_HP) * G.plate;
+        // §7.1 plates are worth more than their gold before 14:00 (tower progress, first tower 12-16 min)
+        plates = Math.min(left, dmg / PLATE_HP) * G.plate * W.platePriority;
       }
       structure = (dmg / Math.max(1, tower.maxHp)) * (G.tower.local + G.tower.team);
     }
@@ -335,14 +358,17 @@ export function recallValue(w: World): CandidateValue | null {
   const trip = w.recallTripS;
   const wave = absenceLoss(w, trip);
   const plates = w.waveAtOwnTower ? G.plate * W.roamPlateRisk : 0;
+  // §7.1: a crashed wave tanking the enemy tower is plate time - recalling now gives those plates up
+  const p = n.ctx.role !== 'jungle' ? pushValue(w) : null;
+  const forgone = p ? (p.terms.plates! + p.terms.structure!) * W.recallForgoesPlates : 0;
   // shove-and-recall (§4.6): Silver+ crash the wave first unless it is crashed (or crashes on its own)
   const crashing = !!w.pv && !!w.lane && w.pv.waves[w.lane].pushing && w.pv.waves[w.lane].pos > 0.55;
   const shoveFirst = rankCurve(VALUES.recall.shoveFirst, n.ctx.params.skill) >= 0.5 && !w.waveCrashed && !crashing && !!w.lane && w.minions.length > 0;
   return {
     benefit: item + hp + mana,
-    cost: wave + plates,
+    cost: wave + plates + forgone,
     horizonS: trip,
-    terms: { gold, price: Number.isFinite(price) ? price : -1, item, stayDeath: stay, hp, mana, tripS: trip, wave, plates },
+    terms: { gold, price: Number.isFinite(price) ? price : -1, item, stayDeath: stay, hp, mana, tripS: trip, wave, plates, forgonePlates: forgone },
     data: { shoveFirst },
   };
 }
@@ -373,6 +399,8 @@ export function objectiveValue(w: World): CandidateValue | null {
       // rank-typical non-conversion after a won fight (chase / idle / recall window, team AI): a team call followed
       benefit = killGold() * W.fightWinGold;
   }
+  // §7.4 objective conversion after a won fight is a team call with a short window: weighted up (values.json)
+  if (d.reason.startsWith('won skirmish') && d.kind === 'take_objective') benefit *= W.conversionCall;
   const away = d.kind === 'idle' || d.kind === 'recall_window' ? 0 : absenceLoss(w, Math.min(h, walkS(n, d) + 10));
   const fight = d.kind === 'take_objective' ? (1 - Math.min(1, d.score)) * w.deathCost * W.objectiveFightRisk : 0;
   return { benefit, cost: away + fight, horizonS: h, terms: { obj: objGold, desire: d.score, away, fight }, data: { desire: d.kind } };
@@ -411,7 +439,9 @@ export function groupValue(w: World): CandidateValue | null {
   const h = H.group;
   const target = { x: d.x, y: d.y };
   const depth = d.kind === 'defend_lane' ? 0 : n.ctx.teamAI.nextStructure(n, d.lane).depth;
-  let benefit = d.score * structureGold(depth);
+  let benefit = d.score * structureGold(depth) * (d.reason.startsWith('won skirmish') ? W.conversionCall : 1);
+  // in the own lane the laning leaf farms on the way (punish-absence / siege of the own lane)
+  if (d.lane === w.lane) benefit += farmWithin(w, h);
   // §7.5: a side laner keeps farming until the group actually hits the structure
   const allies = n.v.allies.filter((a) => dst(a, target) < 1500).length;
   const side = d.kind === 'group_mid' && (n.ctx.role === 'top' || n.ctx.role === 'adc') && d.lane !== w.lane;

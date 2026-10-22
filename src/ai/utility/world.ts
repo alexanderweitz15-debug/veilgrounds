@@ -76,6 +76,15 @@ export function laneTripLength(n: NodeCtx, lane: LaneName): number {
   return len;
 }
 
+/**
+ * Enemy minions closer than this break a recall channel: a caster's reach (range + both radii) plus a margin
+ * (A1 finding: the classic 650 is inside a caster's ~663 reach, so recalls next to a caster wave were broken).
+ */
+export function recallMinionClear(selfRadius: number): number {
+  const c = MINION_STATS[Kind.MinionCaster]!;
+  return c.range + c.radius + selfRadius + VALUES.recall.minionClearMargin;
+}
+
 /** Lane of the bot right now (team-AI override, role lane); jungler: null unless overridden. */
 export const laneNow = (n: NodeCtx): LaneName | null => n.mem.ext.laneOverride ?? n.ctx.lane;
 

@@ -206,7 +206,10 @@ export class Units {
    * without `air` (old replays): the airborne CC bit with ccEnd.
    */
   private lift(state: ClientState, e: SnapEntity, now: number): number {
-    if (e.air !== undefined) return airborneLift(e.air);
+    if (e.air !== undefined) {
+      this.dashAt.delete(e.serial);
+      return airborneLift(e.air);
+    }
     if (e.dash !== undefined) {
       let d = this.dashAt.get(e.serial);
       if (!d) this.dashAt.set(e.serial, (d = { x: e.px, y: e.py }));
@@ -343,6 +346,7 @@ export class Units {
         if ((e.kind === Kind.Champion || e.kind === Kind.Dummy || e.id === hoverId) && rings < 48) rings = this.ring(state, e, myEid, rings);
       }
     }
+    if (snap && champs) this.phantoms(state, champs, myEid, now);
     champs?.end(now);
     minions?.end(now);
     for (const b of this.monsters) b.end(now);
@@ -355,6 +359,34 @@ export class Units {
     this.rings.count = rings;
     this.rings.instanceMatrix.needsUpdate = true;
     if (this.rings.instanceColor) this.rings.instanceColor.needsUpdate = true;
+  }
+
+  /**
+   * Sev R (Augenbann): only the feared player sees three shadowy Sev figures around himself (snapshot objects
+   * `sev_r_phantom`, keyed `<sev eid>:ph<i>`, next to the `sev_r_bann` ring that follows the target). Dark, flickering
+   * copies of Sev's sprite facing the victim; everyone else only sees the ring.
+   */
+  private phantoms(state: ClientState, champs: ChampionSprites, myEid: number, now: number): void {
+    const objs = state.snap?.objects ?? [];
+    for (const bann of objs) {
+      if (bann.tag !== 'sev_r_bann' || bann.follow !== myEid) continue;
+      // snapshot keys are `<tag>:<hook key>`, hook keys `<sev eid>:bann` / `<sev eid>:ph<i>`
+      const ownerOf = (k: string | undefined, tag: string): string | undefined => (k?.startsWith(`${tag}:`) ? k.slice(tag.length + 1) : k)?.split(':')[0];
+      const owner = ownerOf(bann.key, bann.tag);
+      const me = state.byId.get(myEid);
+      if (!me) continue;
+      objs.forEach((o, i) => {
+        if (o.tag !== 'sev_r_phantom' || ownerOf(o.key, o.tag) !== owner) return;
+        const dx = state.x(me) - o.x;
+        const dy = state.y(me) - o.y;
+        const d = Math.hypot(dx, dy) || 1;
+        const fake = { id: -9000 - i, serial: -9000 - i, kind: Kind.Champion, champ: 'sev', team: 1 - state.myTeam, fx: dx / d, fy: dy / d, atkPhase: 0, moving: false, alive: true, radius: 65 } as unknown as SnapEntity;
+        const id = champs.idFor(fake);
+        if (!id) return;
+        const flicker = 0.32 + 0.12 * Math.sin(now / 90 + i * 2.1);
+        champs.push(fake, id, o.x, o.y, flicker, now);
+      });
+    }
   }
 
   private ring(state: ClientState, e: SnapEntity, myEid: number, i: number): number {

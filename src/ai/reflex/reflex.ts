@@ -247,7 +247,7 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
   // ---- stand point (every tick)
   // stand point: computed on first use in this tick (most wind-up ticks need none)
   let standAt: { x: number; y: number } | null = null;
-  const standNow = (): { x: number; y: number } => (standAt ??= st.stand = standPoint(v, ctx, intent, farmPlan, byId));
+  const standNow = (): { x: number; y: number } => (standAt ??= st.stand = standPoint(v, ctx, intent, farmPlan, byId, st));
 
   // ---- 5a. orbwalk: a move after the hit point when the stand point is away (kiting chance + rank timing jitter)
   if (v.self.atkPhase === 1 && v.self.atkStart !== undefined && v.self.atkEnd !== undefined && st.orbHandled !== v.self.atkStart) {
@@ -450,6 +450,12 @@ const HARASS_PER_AGGRESSION = 0.6;
 const HARASS_STEP = 400;
 /** A harass walk-in is given this long (ticks) before the scheduler decides again. */
 const HARASS_WALK_TICKS = 45;
+/** Trading stance: lean the stand point toward an enemy laner within reach + STANCE_RANGE, by up to STANCE_SHIFT
+ *  (+ STANCE_SHIFT_PER_AGGRESSION per aggression step), stopping STANCE_MARGIN inside auto reach. */
+const STANCE_RANGE = 700;
+const STANCE_SHIFT = 350;
+const STANCE_SHIFT_PER_AGGRESSION = 40;
+const STANCE_MARGIN = 50;
 /** "In the enemy wave" (§4.3): enemy minions this close to the bot's attack spot. Minions further back still answer
  *  the call for help (sim CALL_RANGE 1000), but a bot outside the wave can step back out of their reach. */
 const AGGRO_R = 350;
@@ -518,7 +524,7 @@ function markCast(ctx: BotStatic, mem: BotMemory, a: BotAction, T: number): void
  * Stand point (§4.4): every tick from the live wave, `behind` units behind the contact point (laneSpot), the
  * support's side point if the decision gave one; the next planned last hit must be reachable from it without a walk.
  */
-function standPoint(v: View, ctx: BotStatic, intent: NonNullable<ReflexState['intent']>, plan: Plan | null, byId: Map<number, MinionWindow>): { x: number; y: number } {
+function standPoint(v: View, ctx: BotStatic, intent: NonNullable<ReflexState['intent']>, plan: Plan | null, byId: Map<number, MinionWindow>, st?: ReflexState): { x: number; y: number } {
   let p = intent.side ?? laneSpot(v, ctx, intent.lane, intent.behind);
   // no own minions at the enemy wave: its minions target the bot (minion aggro). Stand outside their reach
   // (+ a step), unless a planned last hit needs the walk-in (below)
@@ -538,6 +544,24 @@ function standPoint(v: View, ctx: BotStatic, intent: NonNullable<ReflexState['in
       if (!pushed) break;
     }
   }
+  // trading stance (§4.3 / §4.4, user feedback "nicht nur last hitten oder dumm stehen"): with harass budget left the
+  // stand point leans toward the enemy laner until it is at auto reach, up to a step that grows with aggression -
+  // not into the enemy tower's range, not into the enemy wave (minion aggro), never in hold
+  if (st && intent.harass && intent.wave !== 'hold') {
+    const e = stanceTarget(v, ctx, st, p);
+    if (e) {
+      const want = v.reach + e.radius - STANCE_MARGIN;
+      const d = dst(p, e);
+      const maxShift = Math.max(0, STANCE_SHIFT + STANCE_SHIFT_PER_AGGRESSION * ctx.params.playstyle.aggression);
+      if (d > want) {
+        const shift = Math.min(d - want, maxShift);
+        const q = { x: p.x + ((e.x - p.x) * shift) / d, y: p.y + ((e.y - p.y) * shift) / d };
+        const inWave = v.enemyMinions.filter((m) => dst(m, q) < AGGRO_R).length > 1;
+        const intoUntanked = untanked.some((m) => dst(m, q) < (MINION_STATS[m.kind]?.range ?? 0) + m.radius + v.self.radius);
+        if (!towerCovering(v, q) && !inWave && !intoUntanked) p = q;
+      }
+    }
+  }
   const w = plan ? byId.get(plan.targetId) : undefined;
   if (w) {
     const r = v.reach + w.m.radius - 30;
@@ -548,6 +572,19 @@ function standPoint(v: View, ctx: BotStatic, intent: NonNullable<ReflexState['in
     }
   }
   return p;
+}
+
+/** The enemy laner worth leaning toward: noticed, within reach + STANCE_RANGE of the stand point, harass budget left. */
+function stanceTarget(v: View, ctx: BotStatic, st: ReflexState, p: { x: number; y: number }): View['enemies'][number] | null {
+  const budget = ctx.params.behavior.harassPerMin + HARASS_PER_AGGRESSION * ctx.params.playstyle.aggression;
+  if (st.harass.autos.length + 1 > budget) return null;
+  let best: View['enemies'][number] | null = null;
+  for (const e of v.enemies) {
+    const d = dst(p, e);
+    if (d > v.reach + e.radius + STANCE_RANGE || (best && d >= dst(p, best))) continue;
+    best = e;
+  }
+  return best;
 }
 
 /**

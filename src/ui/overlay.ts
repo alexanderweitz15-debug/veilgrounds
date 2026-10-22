@@ -270,13 +270,14 @@ export class Overlay {
       const myEid = snap.me?.eid ?? -1;
       const hc = settings.highContrast;
       // D2 bar stacking: minion / monster bars that would overlap an already placed bar move up (champions,
-      // structures, the dummy and the hovered unit stay). The picker reads the same lifts (barLift).
+      // structures and the dummy stay). The picker reads the same lifts (barLift). Deviation from D's proposal: the
+      // hovered bar is not pinned, otherwise hovering a lifted bar drops it away from the cursor (hover flicker).
       const rects: BarRect[] = [];
       for (const e of snap.entities) {
         if (!e.alive || e.maxHp <= 0) continue;
         const a = world.barAnchor(e, state.x(e), state.y(e));
         const l = a && barLayout(e, a.sx, a.sy);
-        if (l) rects.push({ id: e.id, x: l.x, y: l.y, w: l.bw, h: l.bh, fixed: l.champ || l.structure || l.dummy || e.id === hoverId });
+        if (l) rects.push({ id: e.id, x: l.x, y: l.y, w: l.bw, h: l.bh, fixed: l.champ || l.structure || l.dummy });
       }
       barLift.clear();
       for (const [id, dy] of stackBars(rects)) if (dy) barLift.set(id, dy);

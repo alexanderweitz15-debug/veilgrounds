@@ -2,6 +2,48 @@
 
 Branch `ui/c-features` (base `0bbc3d0`). Spec: docs/AGENTS-PLAN.md §5 (C1-C7). Newest block on top.
 
+## Block 6 (2026-10-22): C8 picking ("Minion-Hitboxen fühlen sich nicht clean an") + attack-move target, branch `ui/c-picking`
+
+| Commit | What |
+|---|---|
+| `6d63a6b` (+ WIP `b85b317`) | `src/input/picking.ts` (new, pure): one pick for hover highlight, right-click attack, left-click select, casts, pings. Per unit: HP-bar frame (clicking a bar targets it, last-drawn bar wins) > drawn sprite body (ellipse feet..bar anchor, 0.22 x height wide; overlapping sprites: the unit in front wins) > click area = sim radius projected to the screen + 8 px (minion at default zoom: 20 + 8 = 28 px, measured with the real camera), from the ground point up the body axis, closest drawn body wins. Hostile units rank before allies / own champion (an ally minion in the wave or the own HP bar over the minions' feet no longer swallow last hits). No champion bonus. `World.pick()` delegates (one-time pass, shared-changes.md). `src/ui/hpBarGeom.ts`: bar geometry shared by overlay and picker. New keybind `targetChampionsOnly` (default ` / Backquote, hold, rebindable, de/en). Hover: front arc of the ground ring + bright bar frame (overlay) in attack / ally colour; LoL-like sword cursor (`src/ui/cursors.ts`, SVG data URI) over anything hostile |
+| `d2739f3` | D2 requests wired: CC glyph per CC type in the bar chips, HP-bar stacking (`stackBars`); the picker reads the same per-frame lifts (`barLift`), so a lifted bar is clicked where it is drawn |
+| `76f1261` | Lead request (user: "A + Linksklick soll den nächsten Gegner zur Maus angreifen"): `src/input/attackMove.ts` predicts the sim's first attack-move target (in range + radii + 200, nearest to the click with `attackMoveNearCursor`, nearest to the champion otherwise); while A is armed it gets the hover highlight + sword cursor and the attack-range circle shows. A-click on a hovered enemy sends a plain attack on it (LoL) |
+
+Measured (tests/pickingMeasure.test.ts, recorded first mid clash `tests/fixtures/pickWave.json` from
+`tools/recordPickWave.ts`, 3 frames x 12 minions, own champion SW of the wave + enemy champion behind its wave, real
+camera 1280x720 default zoom, in-game sprite heights probed in the built game: minions 100, champions 141-216):
+
+| Clicks at random points ... | before (old pick) | after |
+|---|---|---|
+| inside visible enemy minion bodies (n = 4801) | 97.7 % that minion, 0.9 % champion | 98.3 %, 0.0 % champion |
+| inside any visible minion body (n = 9381) | 97.3 %, 1.3 % champion | 98.9 %, 0.1 % champion |
+| 1-10 px next to an enemy minion body, on empty ground (n = 3415) | 88.2 %, 7.9 % nothing, 1.4 % champion | 98.5 %, 0.0 % nothing, 0.1 % champion |
+
+"Visible" = an HP bar drawn there, else the front-most sprite ellipse (0.22 x height). Caveat: the after-picker uses
+the same sprite-ellipse model, so its in-body figure is partly by construction; the independent gains are the
+near-miss row (generous margin) and champion steals going to ~0. The old picker was already good on points squarely
+inside a sprite; the bad feel came from near misses (8 % hit nothing), champion steals, ally / own-bar interference
+and no clear "what will I hit" signal (thin ring only).
+
+Attack move, verified in the built game (classic, 1:39, wave clash in mid): A armed with the cursor on empty ground
+next to an in-range enemy minion that is not the unit nearest to the champion (5 enemies in range): predicted =
+highlighted minion #70, after the left click the sim's `atkTarget` = 70 (champion-nearest would have been #38).
+tests/attackMove.test.ts compares the prediction with the sim in 40 random layouts (all equal).
+
+Tests: tests/picking.test.ts (12: margin edges, body-axis distance, crowded wave with a champion behind - the old
+picker steals > 20 of the sampled points, the new none -, champions-only key, ally in the wave, front-most overlap,
+minion bar over another body, champion level box, dead / plant), tests/pickingMeasure.test.ts, tests/attackMove.test.ts
+(2), settingsIO / i18n green. `tsc --noEmit` 0. Full suite: not run (machine shared; see handoff).
+
+Screenshots (1280x720, built game, no console errors; cyan cross and the label are drawn by the capture script
+because headless captures show no OS cursor; the sim is frozen for the picking shots): docs/ist/c8-picking-before.jpg
+(main 9ed4070: only the thin 3D ring shows the hovered minion), c8-picking-after.jpg (bar frame + front arc + sword
+cursor on the minion whose bar is under the cursor), c8-picking-champs-only-after.jpg (` held: the minions under the
+cursor are ignored, nothing highlighted), c8-attackmove-armed-after.jpg (A armed: range circle, predicted target
+highlighted, sword cursor). In this live scene the old picker did not misattribute any sampled visible point (the
+capture searched for one), so the before/after pair shows the highlight difference; the steal cases are in the tests.
+
 ## Ready for merge (block 3, on top of main `fcbf223`)
 
 | Package | Commits | Merge note |

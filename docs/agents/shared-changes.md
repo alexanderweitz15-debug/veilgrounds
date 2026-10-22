@@ -259,7 +259,7 @@ All additive; no existing behaviour changes for champions other than the new CC 
 | tests/championData, abilityMotifs, botParams, items, telegraph | all | roster count 26 -> 27 / roster list | 068d755 |
 | tests/combos.test.ts | B | harness: a repeated token on a recast-flag skillshot with wind-up = fake (press during wind-up) | 068d755 |
 | tools/botSim.ts | A1 | `--champion=<id>` puts that champion into blue mid; registers `BUILDS.sev` at runtime until builds.ts has the line | bfa425b |
-## 2026-10-19 · D · src/ui/overlay.ts (C) · CC symbols + HP-bar stacking (D2, FEATURE-GAP 7.6 / 7.8) · proposed
+## 2026-10-19 · D · src/ui/overlay.ts (C) · CC symbols + HP-bar stacking (D2, FEATURE-GAP 7.6 / 7.8) · done by C on ui/c-picking `d2739f3` (picker follows the bar lifts; the hovered bar is NOT pinned - pinning it would move a hovered lifted bar away from the cursor and make the hover flicker)
 
 Affects: C only (render-free UI file). Helpers are on art/d-visuals, pure and tested (tests/readability.test.ts):
 `src/render/ccGlyphs.ts` (`drawCcGlyph(ctx, key, x, y, size, color, tMs)`, one shape per CC type) and

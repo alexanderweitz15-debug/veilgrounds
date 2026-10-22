@@ -42,6 +42,8 @@ Branch: `champ/e-sev`. Spec: `docs/champions/sev.md` (Fassung 3 on top, Fassung 
 - Touched suites green: championData, abilityMotifs, botParams, items, telegraph (smoke test needs a quiet CPU: 5 s
   timeout on the dynamic import), combos, replay, sideMirror, snapshot, castMovement, summonersWards, i18n,
   abilityVisuals, aimPreview, abilities, scenarios, spriteTiming. tsc clean.
+- Final check on 8cb0f27 (= main 660c54e + Sev): full `npx vitest run` 76 files / 928 tests green, `npx tsc --noEmit`
+  clean, `npx vite build` green; branch merges into origin/main without conflicts.
 
 ### Screenshots (dev server, 1280x720, docs/ist/)
 e-sev3-choice-cards, e-sev3-idle, e-sev3-q-windup, e-sev3-q-fire (300 flame ring), e-sev3-e-gaze, e-sev3-w-clone,

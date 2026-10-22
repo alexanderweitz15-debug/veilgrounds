@@ -9,7 +9,9 @@ import { settings } from '../settings';
 import { t } from '../i18n';
 import { champName, variantName } from './names';
 import { VisualCues } from './cues';
-import { barLayout } from './hpBarGeom';
+import { barLayout, barLift } from './hpBarGeom';
+import { stackBars, type BarRect } from '../render/barLayout';
+import { drawCcGlyph } from '../render/ccGlyphs';
 import { pickBody, type PickView } from '../input/picking';
 
 /** Hover highlight colour: attack colour on anything hostile, ally / own colour otherwise. */
@@ -112,15 +114,19 @@ export class Overlay {
     const text = key === 'slow' ? `${t('cc.slow')} ${Math.round(e.slow ?? 0)} %` : t(`cc.${key}`);
     const ctx = this.ctx;
     ctx.font = `700 ${champ ? 12 : 10}px system-ui, sans-serif`;
-    const w = ctx.measureText(text).width + 10;
+    // D2: one symbol per CC type (shape, not only colour) left of the text
+    const icon = champ ? 14 : 10;
+    const w = ctx.measureText(text).width + 10 + icon + 2;
     const cy = champ ? y - 32 : y - 14;
     ctx.fillStyle = 'rgba(12,10,8,0.85)';
     ctx.fillRect(x + bw / 2 - w / 2, cy - 8, w, 16);
     ctx.fillStyle = color;
     ctx.fillRect(x + bw / 2 - w / 2, cy + 6, w, 2);
+    drawCcGlyph(ctx, key, x + bw / 2 - w / 2 + 5 + icon / 2, cy - 1, icon, color, settings.reduceMotion ? 0 : performance.now());
+    ctx.fillStyle = color;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, x + bw / 2, cy);
+    ctx.fillText(text, x + bw / 2 + (icon + 2) / 2, cy);
     if (mine && e.ccEnd !== undefined && e.ccEnd > tick) {
       let tm = this.ccTimer.get(e.id);
       if (!tm || tm.end !== e.ccEnd) this.ccTimer.set(e.id, (tm = { end: e.ccEnd, total: Math.max(1, e.ccEnd - tick) }));
@@ -263,12 +269,23 @@ export class Overlay {
     if (snap) {
       const myEid = snap.me?.eid ?? -1;
       const hc = settings.highContrast;
+      // D2 bar stacking: minion / monster bars that would overlap an already placed bar move up (champions,
+      // structures, the dummy and the hovered unit stay). The picker reads the same lifts (barLift).
+      const rects: BarRect[] = [];
+      for (const e of snap.entities) {
+        if (!e.alive || e.maxHp <= 0) continue;
+        const a = world.barAnchor(e, state.x(e), state.y(e));
+        const l = a && barLayout(e, a.sx, a.sy);
+        if (l) rects.push({ id: e.id, x: l.x, y: l.y, w: l.bw, h: l.bh, fixed: l.champ || l.structure || l.dummy || e.id === hoverId });
+      }
+      barLift.clear();
+      for (const [id, dy] of stackBars(rects)) if (dy) barLift.set(id, dy);
       for (const e of snap.entities) {
         if (!e.alive || e.maxHp <= 0) continue;
         const a = world.barAnchor(e, state.x(e), state.y(e));
         if (!a) continue;
         if (e.id === hoverId) this.drawHover(state, world, e);
-        const lay = barLayout(e, a.sx, a.sy);
+        const lay = barLayout(e, a.sx, a.sy + (barLift.get(e.id) ?? 0));
         if (!lay) {
           // plants (1 HP): no bar, only the name while hovered
           if (e.kind === Kind.Plant) this.label(variantName(e.variant, e.kind), a.sx, a.sy - 2, '#f3e6c4');

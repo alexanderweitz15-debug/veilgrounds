@@ -33,6 +33,12 @@ export function barLayout(e: SnapEntity, ax: number, ay: number): BarLayout | nu
   return { x: ax - bw / 2 + (champ ? 10 : 0), y: ay - bh, bw, bh, champ, structure, dummy, monster };
 }
 
+/**
+ * Per-frame vertical lift (px, < 0 = up) of stacked bars (D2 render/barLayout.ts stackBars), written by the
+ * overlay while drawing and read by the picker, so a lifted bar is clicked where it is drawn. Missing = 0.
+ */
+export const barLift = new Map<number, number>();
+
 /** Thin bars get this much extra clickable height above and below (a 5 px minion bar is hard to hit). */
 const BAR_PAD_Y = 1;
 

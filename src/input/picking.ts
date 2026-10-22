@@ -13,7 +13,7 @@
 //      the body axis (a capsule); the unit whose drawn body is closest to the cursor wins.
 // No champion bonus: the "target champions only" key (controller.ts) filters through `accept` instead.
 import type { SnapEntity } from '../sim/snapshot';
-import { barHitRect, barLayout, type Rect } from '../ui/hpBarGeom';
+import { barHitRect, barLayout, barLift, type Rect } from '../ui/hpBarGeom';
 
 /** Extra screen pixels around the projected sim radius (minions: 48 radius ~ 20 px at the default zoom -> 28). */
 export const PICK_MARGIN_PX = 8;
@@ -76,7 +76,7 @@ export function pickBody(state: PickState, view: PickView, e: SnapEntity): PickB
   const rx = Math.abs(east.sx - foot.sx);
   const ry = Math.max(1, Math.abs(south.sy - foot.sy));
   const core = Math.max(MIN_CORE_PX, rx);
-  const lay = barLayout(e, head.sx, head.sy);
+  const lay = barLayout(e, head.sx, head.sy + (barLift.get(e.id) ?? 0)); // stacked bars are clicked where drawn
   return {
     e,
     foot,

@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import type { ClientState } from '../game/state';
 import type { SnapObject } from '../sim/snapshot';
 import { REL } from './palette';
-import { abilityHue, tagParticles } from './abilityTheme';
+import { abilityHue, markEmitters, tagParticles } from './abilityTheme';
 import type { Particles } from './particles';
 
 type Shape = NonNullable<SnapObject['shape']>;
@@ -101,8 +101,23 @@ export class GroundObjects {
     const dt = Math.min(0.1, Math.max(0, (now - this.lastNow) / 1000));
     this.lastNow = now;
     for (const o of snap?.objects ?? []) {
+      // Sev R phantoms are drawn as Sev sprites for the feared player only (render/units.ts), never as pins
+      if (o.tag === 'sev_r_phantom') continue;
       this.draw(state, o, now);
       this.ambient(state, o, now, dt);
+    }
+    // particles on marked units (Sev's black flame on units burning with Schwarzglut)
+    if (this.particles && dt > 0) {
+      for (const e of snap?.entities ?? []) {
+        if (!e.alive || !e.marks?.length) continue;
+        for (const m of e.marks) {
+          for (const em of markEmitters(m.id)) {
+            const a = Math.random() * Math.PI * 2;
+            const rr = e.radius * 0.45 * Math.random();
+            this.particles.emit(em.kind, state.x(e) + Math.cos(a) * rr, state.y(e) + Math.sin(a) * rr, em.h, em.hue, em.rate * dt, now, undefined, 0.35);
+          }
+        }
+      }
     }
     // own ability hints: rings where the ability can go (dim when not usable / out of reach)
     const me = state.me();

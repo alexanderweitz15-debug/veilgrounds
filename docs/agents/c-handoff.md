@@ -1,6 +1,6 @@
 # Agent C handoff
 
-- Branch: `ui/c-picking` (origin), merged main `660c54e` on 22 Oct. Last commit: `git log origin/ui/c-picking -1`.
+- Branch: `ui/c-picking` (origin), merged main `56a197a` on 22 Oct (tsc 0, C tests green after the merge). Last commit: `git log origin/ui/c-picking -1`.
   The old `ui/c-features` is checked out in a stale worktree; do not use it.
 - Done: C1-C7 except the A3-/B-dependent parts; block 6 (22 Oct): C8 picking (src/input/picking.ts, one-time
   pass on `World.pick()`), target-champions-only key, hover outline + sword cursor, attack-move target prediction +

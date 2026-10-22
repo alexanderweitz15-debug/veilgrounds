@@ -74,6 +74,9 @@ export interface RunnerOptions {
   noSpells?: boolean;
   /** Brain rework reflex layer (src/ai/reflex). Off by default until the Phase 1 gate is met (docs/agents/a1.md). */
   reflex?: boolean;
+  /** Last-hit trainer scenario (harness runLaneAlone, the Phase 1 gate of the reflex layer): no §9 attention model
+   *  even with the new brain - it measures execution alone (A3, 22 Oct; open question to S in docs/agents/a3.md). */
+  trainer?: boolean;
 }
 
 /** Accumulated brain cost (bot-sim reflexCostMs / thinkCostMs). */
@@ -154,7 +157,7 @@ export class BotRunner {
       // stagger first decisions so bots do not all think on the same tick
       const mem = newMemory();
       reflexState(mem).enabled = !!opts.reflex;
-      const human = !!opts.reflex || utilityOn(ctx);
+      const human = (!!opts.reflex || utilityOn(ctx)) && !opts.trainer;
       if (human) {
         // §9 attention model (own Rng from the personality seed, never this bot's Rng): created before the first
         // decision so think's hooks (reaction penalty, tilt mode, error episodes) see it; reflex only queries it

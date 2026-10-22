@@ -98,6 +98,7 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
   if (v.me.dead || v.me.recallLeft > 0 || !intent) {
     for (const p of [...st.plans]) cancel(p, 'intent_changed');
     st.filler = -1;
+    st.fillerChamp = false;
     return out;
   }
   // an issued last hit walks in / waits for the timer: nothing else until it is thrown (or lost)
@@ -235,6 +236,7 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
     st.attackCmd = { target: farmPlan.targetId, tick: T };
     st.inflight = { target: farmPlan.targetId, tick: T };
     st.filler = -1;
+    st.fillerChamp = false;
     st.stats.executed++;
     return out;
   }
@@ -267,6 +269,7 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
       out.push({ cmd: orb.cmd });
       st.standMove = { x: (orb.cmd as { x: number }).x, y: (orb.cmd as { y: number }).y };
       st.filler = -1;
+    st.fillerChamp = false;
       return out;
     }
   }
@@ -294,6 +297,7 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
     }
     // hold the timer for the next last hit (or nothing to hit): no auto-repeat on the old target
     st.filler = -1;
+    st.fillerChamp = false;
     if (v.self.atkTarget >= 0 && v.self.atkTarget !== farmPlan?.targetId) {
       const stand = standNow();
       const far = dst(v.self, stand) > P.hyst;

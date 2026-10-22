@@ -85,31 +85,33 @@ describe('reflex layer: harass without CS loss (test 5)', () => {
     const bots = new BotRunner(config, undefined, { noVariance: true, noSpells: true, reflex: true });
     const me = sim.slots[0]!;
     const foe = sim.slots[5]!;
-    const { Unit, Pos, Atk, Stats } = sim.c;
+    const { Pos, Atk, Stats } = sim.c;
     let harass = 0;
     let lostWhileHarassing = 0;
+    const tried = new Map<number, number>(); // minion -> last own auto on it
+    const ownLh: number[] = [];
     while (sim.tick < 280 * 30) {
       const inputs = bots.tick(sim).filter((i) => i.cmd.t !== 'cast' && i.cmd.t !== 'recall' && i.cmd.t !== 'ward');
-      // the passive enemy laner: stands beside its own wave (450 off the lane, as when it steps up for a last hit), never attacks
+      // the passive enemy laner (§10 test 5: a dummy in reach): it keeps ~560 in front of the bot toward its base, a
+      // little to the side (out of the minion line), never attacks; the wave decides where the bot stands
       if (sim.tick % 15 === 0) {
-        let fx = 0;
-        let fy = 0;
-        let n = 0;
-        for (let e = 0; e < 4096; e++) {
-          if (!Unit.alive[e] || Unit.team[e] !== 1 || !isMinion(Unit.kind[e]!)) continue;
-          fx += Pos.x[e]!;
-          fy += Pos.y[e]!;
-          n++;
-        }
-        const tx = n ? fx / n + 320 : 9000;
-        const ty = n ? fy / n - 320 : 9000;
+        const tx = Pos.x[me]! + 520;
+        const ty = Pos.y[me]! + 200;
         if (Math.hypot(Pos.x[foe]! - tx, Pos.y[foe]! - ty) > 80) inputs.push({ slot: 5, cmd: { t: 'move', x: tx, y: ty } });
       }
       step(sim, inputs);
+      // the dummy does not die (the bot's decision may also start trades on it; a dead dummy leaves nothing to harass)
+      if (sim.c.Unit.alive[foe]) sim.c.Hp.cur[foe] = sim.c.Hp.max[foe]!;
       if (sim.tick < 100 * 30) continue;
+      for (const ev of sim.events) if (ev.e === 'attack' && ev.src === me && ev.dst !== foe) tried.set(ev.dst, sim.tick);
       for (const ev of sim.events) {
         if (ev.e === 'damage' && ev.src === me && ev.dst === foe && ev.auto) harass++;
+        if (ev.e === 'death' && isMinion(ev.kind) && ev.team === 1 && ev.killer === me) ownLh.push(sim.tick);
         if (ev.e === 'death' && isMinion(ev.kind) && ev.team === 1 && ev.killer !== me) {
+          // in_range_no_attack (harness cause) while harassing: no own auto on it in the last 1.5 s (timing miss) and no own
+          // last hit within one attack period (window collision)
+          const period = 30 / Math.max(0.1, Stats.as[me]!);
+          if ((tried.get(ev.eid) ?? -1e9) >= sim.tick - 45 || ownLh.some((t) => Math.abs(t - sim.tick) <= period + 3)) continue;
           const d = Math.hypot(Pos.x[me]! - ev.x, Pos.y[me]! - ev.y);
           // harass of the reflex layer (lane intent, champion filler); a trade started by the decision (combat leaf) is a
           // trade, its farm cost is the utility model's business (A2)

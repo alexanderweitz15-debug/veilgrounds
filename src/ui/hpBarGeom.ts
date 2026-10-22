@@ -34,7 +34,7 @@ export function barLayout(e: SnapEntity, ax: number, ay: number): BarLayout | nu
 }
 
 /** Thin bars get this much extra clickable height above and below (a 5 px minion bar is hard to hit). */
-const BAR_PAD_Y = 3;
+const BAR_PAD_Y = 1;
 
 /** Clickable area of a bar: its dark frame (incl. the champion mana strip and level box), thin bars padded. */
 export function barHitRect(l: BarLayout): Rect {

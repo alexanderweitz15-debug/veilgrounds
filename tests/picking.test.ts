@@ -1,6 +1,6 @@
 // C8 picking (src/input/picking.ts, used by render/world.ts pick()): real camera at the default zoom, 1280x720.
 import { describe, expect, it } from 'vitest';
-import { bodyDistance, pickBody, pickUnit, PICK_MARGIN_PX } from '../src/input/picking';
+import { bodyDistance, pickBody, pickUnit, spriteGap, PICK_MARGIN_PX } from '../src/input/picking';
 import { Kind } from '../src/sim/types';
 import type { SnapEntity } from '../src/sim/snapshot';
 import { legacyPick, makeView, rigAt, stateOf, unit } from './pickingHelpers';
@@ -61,15 +61,19 @@ describe('C8 picking: crowded wave with a champion behind it', () => {
   const me = unit(Kind.Champion, 0, 8000, 7700);
   const st = stateOf([champ, ...back, ...front, ally, me]);
 
-  it('the upper body of the front minion picks the minion, not the champion (legacy: the champion stole it)', () => {
-    const m = front[1]!;
+  it('the body of a minion with the champion right behind it picks the minion (legacy: the champion stole it)', () => {
+    const m = unit(Kind.MinionMelee, 1, 8000, 8000);
     let stolen = 0;
-    for (let f = 0.5; f <= 1; f += 0.05) {
-      const p = onBody(m, f);
-      if (legacyPick(st, view, p.sx, p.sy, any) === champ) stolen++;
-      expect(pickUnit(st, view, p.sx, p.sy, any)).toBe(m);
+    for (let dy = 40; dy <= 200; dy += 10) {
+      const c = unit(Kind.Champion, 1, 8000, 8000 + dy);
+      const s2 = stateOf([c, m]);
+      for (let f = 0; f <= 0.95; f += 0.05) for (const dx of [-6, 0, 6]) {
+        const p = onBody(m, f, dx);
+        if (legacyPick(s2, view, p.sx, p.sy, any) === c) stolen++;
+        expect(pickUnit(s2, view, p.sx, p.sy, any)).toBe(m);
+      }
     }
-    expect(stolen).toBeGreaterThan(0);
+    expect(stolen).toBeGreaterThan(20);
   });
 
   it('every point on each front minion axis picks that minion', () => {
@@ -99,17 +103,24 @@ describe('C8 picking: crowded wave with a champion behind it', () => {
     expect(pickUnit(stateOf([ally]), view, p.sx, p.sy, any)).toBe(ally);
   });
 
-  it('where two bodies overlap, the unit standing in front wins', () => {
-    // caster behind the front-left melee: a point inside both cores
-    const m = front[0]!;
-    const c = back[0]!;
-    const bm = pickBody(st, view, m)!;
-    const bc = pickBody(st, view, c)!;
-    const sx = (bm.foot.sx + bc.foot.sx) / 2;
-    const sy = bc.foot.sy + 4;
-    expect(bodyDistance(bm, sx, sy)).toBeLessThanOrEqual(bm.core);
-    expect(bodyDistance(bc, sx, sy)).toBeLessThanOrEqual(bc.core);
-    expect(pickUnit(st, view, sx, sy, any)).toBe(m);
+  it('where two drawn bodies overlap, the unit standing in front wins', () => {
+    const m = unit(Kind.MinionMelee, 1, 8000, 8000);
+    const c = unit(Kind.MinionCaster, 1, 8010, 8060); // just behind
+    const s2 = stateOf([c, m]);
+    const bm = pickBody(s2, view, m)!;
+    const bc = pickBody(s2, view, c)!;
+    let both = 0;
+    for (let f = 0; f <= 1; f += 0.05) {
+      const p = onBody(m, f, 3);
+      if (spriteGap(bm, p.sx, p.sy) > 0 || spriteGap(bc, p.sx, p.sy) > 0) continue;
+      both++;
+      expect(pickUnit(s2, view, p.sx, p.sy, any)).toBe(m);
+    }
+    expect(both).toBeGreaterThan(3);
+    // above the front minion's head only the caster's body is left
+    const top = onBody(c, 0.8);
+    expect(spriteGap(bm, top.sx, top.sy)).toBeGreaterThan(0);
+    expect(pickUnit(s2, view, top.sx, top.sy, any)).toBe(c);
   });
 });
 
@@ -122,11 +133,15 @@ describe('C8 picking: HP bars', () => {
     expect(pickUnit(st, view, bar.x0 + 1, (bar.y0 + bar.y1) / 2, any)).toBe(m);
     expect(pickUnit(st, view, bar.x1 - 1, bar.y0 + 1, any)).toBe(m);
     // a minion standing right behind: its body lies under the bar of the front one
-    const behind = unit(Kind.MinionMelee, 1, 8000, 8190);
-    const bb = pickBody(stateOf([behind]), view, behind)!;
-    const p = { sx: bar.x0 + 4, sy: (bar.y0 + bar.y1) / 2 };
-    expect(bodyDistance(bb, p.sx, p.sy)).toBeLessThanOrEqual(bb.reach);
-    expect(pickUnit(stateOf([behind, m]), view, p.sx, p.sy, any)).toBe(m);
+    const p = { sx: bar.x0 + 18, sy: (bar.y0 + bar.y1) / 2 };
+    let behind: SnapEntity | null = null;
+    for (let dy = 60; dy <= 260 && !behind; dy += 5) {
+      const u = unit(Kind.MinionMelee, 1, 8000 - 20, 8000 + dy);
+      if (spriteGap(pickBody(stateOf([u]), view, u)!, p.sx, p.sy) <= 0) behind = u;
+    }
+    expect(behind).not.toBeNull();
+    expect(pickUnit(stateOf([behind!]), view, p.sx, p.sy, any)).toBe(behind);
+    expect(pickUnit(stateOf([behind!, m]), view, p.sx, p.sy, any)).toBe(m);
   });
 
   it('the champion bar includes its level box', () => {

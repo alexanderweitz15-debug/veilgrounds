@@ -48,7 +48,7 @@ function visibleAt(bs: Body[], x: number, y: number): Body | null {
 
 interface Score { n: number; hit: number; miss: number; champ: number }
 
-function measure(picker: Picker, withChamps: boolean, onlyEnemy: boolean): Score {
+function measure(picker: Picker, withChamps: boolean, onlyEnemy: boolean, near = false): Score {
   const r = rng(42);
   const s: Score = { n: 0, hit: 0, miss: 0, champ: 0 };
   const seen = new Set<string>();
@@ -70,10 +70,23 @@ function measure(picker: Picker, withChamps: boolean, onlyEnemy: boolean): Score
       if (!isMinion(b.e.kind) || (onlyEnemy && b.e.team === 0)) continue;
       for (let i = 0; i < 300; i++) {
         const a = r() * Math.PI * 2;
-        const d = Math.sqrt(r());
-        const x = b.cx + Math.cos(a) * d * b.hw;
-        const y = b.cy + Math.sin(a) * d * b.hh;
-        if (visibleAt(bs, x, y) !== b) continue;
+        let x: number;
+        let y: number;
+        if (!near) {
+          // inside the visible body, where this minion is what the player sees
+          const d = Math.sqrt(r());
+          x = b.cx + Math.cos(a) * d * b.hw;
+          y = b.cy + Math.sin(a) * d * b.hh;
+          if (visibleAt(bs, x, y) !== b) continue;
+        } else {
+          // a near miss: 1-10 px outside the visible body on empty ground, and this minion's body is the closest
+          const out = 1 + r() * 9;
+          x = b.cx + Math.cos(a) * (b.hw + out);
+          y = b.cy + Math.sin(a) * (b.hh + out);
+          if (visibleAt(bs, x, y)) continue;
+          const nd = (o: Body): number => Math.hypot((x - o.cx) / o.hw, (y - o.cy) / o.hh) - 1;
+          if (bs.some((o) => o !== b && nd(o) * o.hw <= nd(b) * b.hw)) continue;
+        }
         s.n++;
         const got = picker(st, view, x, y, any);
         if (got === b.e) s.hit++;
@@ -90,24 +103,29 @@ const line = (name: string, s: Score): string =>
   `${name}: ${pct(s.hit, s.n)} hit (${s.hit}/${s.n}), ${pct(s.miss, s.n)} nothing, ${pct(s.champ, s.n)} champion`;
 
 describe('C8 picking measurement (recorded wave)', () => {
-  it('clicks inside visible enemy minion bodies hit that minion far more often than before', () => {
+  it('clicks on and next to enemy minions in a crowded wave hit that minion', () => {
     const rows: string[] = [];
     const res: Record<string, Score> = {};
-    for (const [label, champs, enemy] of [
-      ['enemy minions, champions near', true, true],
-      ['enemy minions, wave only', false, true],
-      ['all minions, champions near', true, false],
+    for (const [label, champs, enemy, near] of [
+      ['inside enemy minion bodies, champions near', true, true, false],
+      ['inside enemy minion bodies, wave only', false, true, false],
+      ['inside any minion body, champions near', true, false, false],
+      ['1-10 px next to enemy minion bodies, champions near', true, true, true],
     ] as const) {
-      res[`${label} legacy`] = measure(legacyPick, champs, enemy);
-      res[`${label} new`] = measure(pickUnit, champs, enemy);
-      rows.push(line(`${label}, before`, res[`${label} legacy`]!), line(`${label}, after `, res[`${label} new`]!));
+      const b = (res[`${label} before`] = measure(legacyPick, champs, enemy, near));
+      const a = (res[`${label} after`] = measure(pickUnit, champs, enemy, near));
+      rows.push(line(`${label}, before`, b), line(`${label}, after `, a));
     }
     console.log(rows.join('\n'));
-    const before = res['enemy minions, champions near legacy']!;
-    const after = res['enemy minions, champions near new']!;
-    expect(after.n).toBeGreaterThan(500);
-    expect(after.hit / after.n).toBeGreaterThan(0.95);
-    expect(after.hit / after.n).toBeGreaterThan(before.hit / before.n);
-    expect(after.champ).toBe(0);
+    const inBefore = res['inside enemy minion bodies, champions near before']!;
+    const inAfter = res['inside enemy minion bodies, champions near after']!;
+    expect(inAfter.n).toBeGreaterThan(500);
+    expect(inAfter.hit / inAfter.n).toBeGreaterThan(0.97);
+    expect(inAfter.hit / inAfter.n).toBeGreaterThan(inBefore.hit / inBefore.n);
+    expect(inAfter.champ).toBe(0);
+    const nearBefore = res['1-10 px next to enemy minion bodies, champions near before']!;
+    const nearAfter = res['1-10 px next to enemy minion bodies, champions near after']!;
+    expect(nearAfter.n).toBeGreaterThan(300);
+    expect(nearAfter.hit / nearAfter.n).toBeGreaterThan(nearBefore.hit / nearBefore.n + 0.1);
   });
 });

@@ -1,9 +1,12 @@
 // Records the first mid-lane minion clash (positions only) as a picking fixture.
 // run: npx tsx tools/recordPickWave.ts tests/fixtures/pickWave.json
-import { writeFileSync } from 'node:fs';
 import { query } from 'bitecs';
 import { newSim, stepA } from '../tests/structuresHelpers';
 import { isMinion } from '../src/sim/types';
+
+// No @types/node in this repo (same as tools/botSim.ts).
+declare const process: { argv: string[] };
+const { writeFileSync } = (await import('node:' + 'fs')) as { writeFileSync(path: string, data: string): void };
 
 const sim = newSim();
 const out = process.argv[2]!;

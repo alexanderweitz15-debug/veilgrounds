@@ -384,3 +384,13 @@ warm cache" without a Node canvas dependency):
    monsters and writes PNGs to `public/atlas/` (true pre-baked atlases, cold cache fast too). Needs the lead (CI).
 4. Main menu first frame: a static CSS gradient background on the menu root until menuScene's first render.
 Measure: console lines `champion atlas: ... in N ms` (sheets.ts) cold vs warm, 10 runs, under the usual load.
+
+## 2026-10-22 · Agent C · src/render/world.ts `pick()` (D's file, one-time pass granted by the lead) · C8 picking
+
+- `World.pick()` body replaced: it now builds a two-line camera adapter (`PickView`: `rig.project` with the canvas
+  size, `barAnchor`) and delegates to `pickUnit()` in the new C file `src/input/picking.ts`. Plus one import line.
+  Signature unchanged; nothing else in src/render touched. Reason: user report "Minion-Hitboxen fühlen sich nicht
+  clean an" (sprite-rect pick, champions scored x0.5 so a nearby champion stole minion clicks).
+- **For D:** picking reads `barAnchor()` / `unitHeight()` (sprite heights) as before. If the HP-bar position
+  changes, `src/ui/hpBarGeom.ts` (shared by overlay drawing and picking) is the single place for bar geometry.
+  The hover ring in units.ts is untouched; the overlay additionally draws a front arc + bar frame on the hovered unit.

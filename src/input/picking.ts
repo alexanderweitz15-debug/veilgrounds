@@ -1,15 +1,16 @@
-// Unit picking under the cursor (agent C). One function serves the hover highlight, right-click attack, left-click
-// select and pings, so what is highlighted is what a click hits. Pure screen-space maths: the projection comes in
-// through PickView (render/world.ts adapts its camera), which keeps this testable without WebGL.
+// Unit picking under the cursor (agent C, C8). One function serves the hover highlight, right-click attack,
+// left-click select, casts and pings, so what is highlighted is what a click hits. Pure screen-space maths: the
+// projection comes in through PickView (render/world.ts adapts its camera), which keeps this testable without WebGL.
 //
 // Hostile units (other team, neutral monsters) rank before allies and the own champion: an ally minion standing in
 // the enemy wave, or the own HP bar hanging over the minions' feet, must not swallow last hits. Within each class,
 // hit areas best first:
-//   1. the unit's HP bar (frame incl. champion level box; thin bars padded) - clicking a bar targets its unit;
-//   2. the unit's body core: the sim radius projected to the screen, swept from the ground point up to the top of
-//      the sprite (a capsule); where cores overlap the unit standing in front (lower on screen) wins, like the
-//      drawn sprites;
-//   3. the core plus PICK_MARGIN_PX: the unit whose body axis is closest to the cursor.
+//   1. the unit's HP bar (dark frame incl. the champion level box) - clicking a bar targets its unit; the bar drawn
+//      last (on top) wins;
+//   2. the drawn sprite body (an ellipse over the sprite, SPRITE_HALF_W x its height): where sprites overlap, the
+//      unit standing in front (feet lower on screen) wins, because that is the one drawn on top;
+//   3. the click area: the sim radius projected to the screen plus PICK_MARGIN_PX, swept from the ground point up
+//      the body axis (a capsule); the unit whose drawn body is closest to the cursor wins.
 // No champion bonus: the "target champions only" key (controller.ts) filters through `accept` instead.
 import type { SnapEntity } from '../sim/snapshot';
 import { barHitRect, barLayout, type Rect } from '../ui/hpBarGeom';
@@ -18,6 +19,8 @@ import { barHitRect, barLayout, type Rect } from '../ui/hpBarGeom';
 export const PICK_MARGIN_PX = 8;
 /** Smallest core radius in px (tiny units, far zoom). */
 export const MIN_CORE_PX = 16;
+/** Drawn sprite body: half-width as a share of the on-screen height (feet to bar anchor), at least 6 px. */
+export const SPRITE_HALF_W = 0.22;
 
 export interface ScreenPt {
   sx: number;
@@ -45,11 +48,15 @@ export interface PickBody {
   e: SnapEntity;
   /** Ground point (feet). */
   foot: ScreenPt;
-  /** Top of the body axis: the capsule's upper cap reaches the sprite top (bar anchor). */
+  /** Bar anchor (just above the sprite top). */
+  head: ScreenPt;
+  /** Top of the click-area axis: the capsule's upper cap reaches 40 % of a core radius above the bar anchor. */
   top: ScreenPt;
-  /** Core radius in px (projected sim radius) and accept radius (core + margin). */
+  /** Projected sim radius (px) and the click-area radius (core + margin). */
   core: number;
   reach: number;
+  /** Half-width of the drawn sprite body (px). */
+  half: number;
   /** Ground ellipse squash: px below the feet count `squash` times (pitched camera: ry ~ 0.83 rx). */
   squash: number;
   bar: Rect | null;
@@ -69,22 +76,22 @@ export function pickBody(state: PickState, view: PickView, e: SnapEntity): PickB
   const rx = Math.abs(east.sx - foot.sx);
   const ry = Math.max(1, Math.abs(south.sy - foot.sy));
   const core = Math.max(MIN_CORE_PX, rx);
-  // axis from the feet up to one core radius below the bar anchor: the capsule's top cap ends at the anchor
-  const topY = Math.min(foot.sy, head.sy + core);
   const lay = barLayout(e, head.sx, head.sy);
   return {
     e,
     foot,
-    top: { sx: head.sx, sy: topY },
+    head,
+    top: { sx: head.sx, sy: Math.min(foot.sy, head.sy + core * 0.6) },
     core,
     reach: core + PICK_MARGIN_PX,
+    half: Math.max(6, (foot.sy - head.sy) * SPRITE_HALF_W),
     squash: Math.max(1, rx / ry),
     bar: lay ? barHitRect(lay) : null,
     hostile: e.team !== state.myTeam,
   };
 }
 
-/** Distance from the cursor to the body axis (feet -> top), px below the feet stretched by the ground squash. */
+/** Distance from the cursor to the click-area axis (feet -> top), px below the feet stretched by the ground squash. */
 export function bodyDistance(b: PickBody, sx: number, sy: number): number {
   if (sy >= b.foot.sy) return Math.hypot(sx - b.foot.sx, (sy - b.foot.sy) * b.squash);
   const span = b.foot.sy - b.top.sy;
@@ -94,28 +101,38 @@ export function bodyDistance(b: PickBody, sx: number, sy: number): number {
   return Math.hypot(sx - ax, sy - ay);
 }
 
-const inRect = (r: Rect, sx: number, sy: number): boolean => sx >= r.x0 && sx <= r.x1 && sy >= r.y0 && sy <= r.y1;
-
-/** Rank of a candidate: lower wins. [hostile class, tier, metric]. */
-function rank(b: PickBody, order: number, sx: number, sy: number): [number, number, number] | null {
-  const cls = b.hostile ? 0 : 1;
-  // bars are drawn over everything: the last drawn (top-most) bar wins
-  if (b.bar && inRect(b.bar, sx, sy)) return [cls, 0, -order];
-  const d = bodyDistance(b, sx, sy);
-  if (d > b.reach) return null;
-  // core: the unit drawn in front (feet lowest on screen) wins; margin: the closest body axis wins
-  return d <= b.core ? [cls, 1, -b.foot.sy] : [cls, 2, d];
+/**
+ * Drawn sprite body: an ellipse from the feet to the bar anchor, `half` wide. Returns the approximate px distance
+ * outside its outline (<= 0 inside).
+ */
+export function spriteGap(b: PickBody, sx: number, sy: number): number {
+  const hh = Math.max(1, (b.foot.sy - b.head.sy) / 2);
+  const cx = (b.foot.sx + b.head.sx) / 2;
+  const cy = b.foot.sy - hh;
+  return (Math.hypot((sx - cx) / b.half, (sy - cy) / hh) - 1) * b.half;
 }
 
-const better = (a: [number, number, number], b: [number, number, number]): boolean =>
-  a[0] !== b[0] ? a[0] < b[0] : a[1] !== b[1] ? a[1] < b[1] : a[2] < b[2];
+const inRect = (r: Rect, sx: number, sy: number): boolean => sx >= r.x0 && sx <= r.x1 && sy >= r.y0 && sy <= r.y1;
+
+type Rank = [number, number, number];
+
+/** Rank of a candidate: lower wins. [hostile class, tier, metric]. */
+function rank(b: PickBody, order: number, sx: number, sy: number): Rank | null {
+  const cls = b.hostile ? 0 : 1;
+  if (b.bar && inRect(b.bar, sx, sy)) return [cls, 0, -order];
+  const gap = spriteGap(b, sx, sy);
+  if (gap <= 0) return [cls, 1, -b.foot.sy];
+  return bodyDistance(b, sx, sy) <= b.reach ? [cls, 2, gap] : null;
+}
+
+const better = (a: Rank, b: Rank): boolean => (a[0] !== b[0] ? a[0] < b[0] : a[1] !== b[1] ? a[1] < b[1] : a[2] < b[2]);
 
 /** The unit under the cursor (CSS px in the canvas), or null. Only alive entities passing `accept` count. */
 export function pickUnit(state: PickState, view: PickView, sx: number, sy: number, accept: (e: SnapEntity) => boolean): SnapEntity | null {
   const snap = state.snap;
   if (!snap) return null;
   let best: SnapEntity | null = null;
-  let bestRank: [number, number, number] | null = null;
+  let bestRank: Rank | null = null;
   const ents = snap.entities;
   for (let i = 0; i < ents.length; i++) {
     const e = ents[i]!;

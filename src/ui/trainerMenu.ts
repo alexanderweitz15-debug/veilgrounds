@@ -3,6 +3,7 @@
 import './gamePanels.css';
 import './trainer.css';
 import { TRAINER_MODES, type TrainerMode, type TrainerSetup } from '../game/modes';
+import type { TrainerOpts } from '../sim/types';
 import { RANKS, type Rank } from '../ai/profiles/schema';
 import { t } from '../i18n';
 import { SCENARIO_IDS, type ScenarioId } from '../sim/trainer/scenarios';
@@ -15,11 +16,23 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?:
   return e;
 };
 
-export function renderTrainerMenu(root: HTMLElement, onBack: () => void, onPick: (mode: TrainerMode) => void): void {
+export function renderTrainerMenu(
+  root: HTMLElement,
+  onBack: () => void,
+  onPick: (mode: TrainerMode) => void,
+  /** D5 plan cards start a trainer with the suggested options (main.ts merges them into its setup); else onPick. */
+  onPickWith?: (mode: TrainerMode, opts: TrainerOpts) => void,
+): void {
   root.textContent = '';
   root.classList.add('menu-screen', 'classic-lobby');
   const panel = el('div', 'menu-panel classic-panel tr-menu', root);
   el('h2', 'menu-title', panel, t('trainer.title'));
+  // D5 training plan from the match history (IndexedDB; empty history = provisional plan)
+  const planBox = el('div', 'tr-plan', panel);
+  void Promise.all([import('../stats/history'), import('../modes/trainingPlanView')]).then(async ([h, v]) => {
+    const history = await h.loadHistory().catch(() => []);
+    if (planBox.isConnected) v.renderTrainingPlan(planBox, history, (it) => (onPickWith ? onPickWith(it.mode, it.opts) : onPick(it.mode)));
+  });
   const cards = el('div', 'tr-cards', panel);
   for (const m of TRAINER_MODES) {
     const c = el('button', 'tr-card', cards);

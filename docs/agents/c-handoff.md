@@ -6,8 +6,7 @@
   pass on `World.pick()`), target-champions-only key, hover outline + sword cursor, attack-move target prediction +
   highlight, D2 overlay wiring (CC glyphs, bar stacking). Details, numbers, screenshots: docs/agents/c.md block 6.
 - Half-done: nothing.
-- Next steps: D5 training plan wiring (shared-changes.md 2026-10-19 D5: part 2 trainerMenu.ts + part 3 i18n keys are
-  C's; part 1 `afterGame` history recording is in src/main.ts = lead); A3-dependent parts (scoreboard playstyle
+- Next steps: D5 is mounted (trainer hub); src/main.ts parts are the lead's (shared-changes.md D5 note); A3-dependent parts (scoreboard playstyle
   scales + rank calibration, post-game error list); full test suite run on `ui/c-picking` (not run in block 6, the
   machine was shared; C8 test files, settingsIO and i18n are green, tsc 0).
 - src/settings.ts is open to C for additive keys (lead, 19 Oct); log every addition in shared-changes.md.

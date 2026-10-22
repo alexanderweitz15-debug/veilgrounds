@@ -10,6 +10,8 @@ Branch `ui/c-features` (base `0bbc3d0`). Spec: docs/AGENTS-PLAN.md §5 (C1-C7). 
 | `d2739f3` | D2 requests wired: CC glyph per CC type in the bar chips, HP-bar stacking (`stackBars`); the picker reads the same per-frame lifts (`barLift`), so a lifted bar is clicked where it is drawn |
 | `76f1261` | Lead request (user: "A + Linksklick soll den nächsten Gegner zur Maus angreifen"): `src/input/attackMove.ts` predicts the sim's first attack-move target (in range + radii + 200, nearest to the click with `attackMoveNearCursor`, nearest to the champion otherwise); while A is armed it gets the hover highlight + sword cursor and the attack-range circle shows. A-click on a hovered enemy sends a plain attack on it (LoL) |
 
+| next commit | D5 training plan on the trainer hub (trainerMenu.ts mounts D's `renderTrainingPlan`, 24 `plan.*` keys in de/en). History recording + option merge need src/main.ts (lead, shared-changes.md D5). Screenshot docs/ist/c9-training-plan-after.jpg (empty history: provisional plan; the trainer page now scrolls at 720 px) |
+
 Measured (tests/pickingMeasure.test.ts, recorded first mid clash `tests/fixtures/pickWave.json` from
 `tools/recordPickWave.ts`, 3 frames x 12 minions, own champion SW of the wave + enemy champion behind its wave, real
 camera 1280x720 default zoom, in-game sprite heights probed in the built game: minions 100, champions 141-216):

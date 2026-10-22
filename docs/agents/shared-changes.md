@@ -288,7 +288,7 @@ monster bars lifted up to 3 steps when they overlap).
    || dummy || e.id === hoverId }` for every bar, `const off = stackBars(rects)`, then draw with `y + (off.get(e.id) ?? 0)`
    (CC chip and marks use the same shifted y). Minion bars could also go 5 -> 4 px high if the stack still looks busy.
 
-## 2026-10-19 · D · training plan + history wiring (D5, FEATURE-GAP 7.1 / 7.2) · proposed
+## 2026-10-19 · D · training plan + history wiring (D5, FEATURE-GAP 7.1 / 7.2) · parts 2+3 done by C on ui/c-picking; part 1 + `onPickWith` in src/main.ts open for the lead (see note at the end of this entry)
 
 Affects: C (src/ui/trainerMenu.ts, src/i18n), whoever owns src/main.ts (lead). D's side is on art/d-visuals:
 `src/stats/{rankCalibration,history,trainingPlan}.ts` (pure, tests/trainingPlan.test.ts), view
@@ -315,6 +315,12 @@ Affects: C (src/ui/trainerMenu.ts, src/i18n), whoever owns src/main.ts (lead). D
    view falls back to that file while a key is missing.
 4. A3: when `stats/rankCalibration` exists, D maps `calibrateMatch` onto it (types `RankCalibration`,
    `CategoryCalibration` in src/stats/rankCalibration.ts are the contract D consumes).
+
+**C, 2026-10-22:** `renderTrainerMenu(root, onBack, onPick, onPickWith?)` mounts the plan (part 2); the 24 `plan.*`
+keys are in de/en.json (part 3). Until main.ts passes `onPickWith` the plan's "Starten" opens the trainer lobby with
+the mode's current options (options not merged). **Lead (src/main.ts):** part 1 (`afterGame` -> `saveRecord`) and
+`renderTrainerMenu(s, mainMenu, (m) => void trainerLobby(m), (m, opts) => { const d = trainerSetups.get(m) ??
+defaultSetup(m); trainerSetups.set(m, { ...d, opts: { ...d.opts, ...opts } }); void trainerLobby(m); })`.
 
 
 ## 2026-10-19 · Agent B · user decisions 19.10. (snapshot, additive) -> C please read

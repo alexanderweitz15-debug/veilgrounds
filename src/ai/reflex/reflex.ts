@@ -64,8 +64,8 @@ const PROTECT_SAFETY = 3;
 const PREHIT_LOOKAHEAD = 75;
 /** Minions counted for the wave comparison of the neutral / hold / freeze states. */
 const WAVE_COUNT_R = 1200;
-/** Freeze corridor: keep 2-3 enemy minions surplus (§4.5); hit enemy minions only above it. */
-const FREEZE_SURPLUS_MAX = 3;
+/** Freeze corridor: keep 2-3 enemy minions surplus (§4.5); hit enemy minions only above 2. */
+const FREEZE_SURPLUS_MAX = 2;
 /** Own minion within this distance of an enemy minion = the enemy minion has another target than the bot. */
 const TANK_R = 700;
 /** Extra distance kept to the reach of untanked enemy minions (stand point) - a step of the minion. */
@@ -419,9 +419,15 @@ function attackSpotSafe(v: View, m: { x: number; y: number; radius: number }): b
   return v.ownMinions.filter((o) => dst(o, t) < 800).length >= 2;
 }
 
+/** An enemy minion busy with something else than the bot: an own minion near it, or it hits an own minion / tower. */
+function tanked(v: View, m: View['enemyMinions'][number]): boolean {
+  if (m.atkTarget >= 0 && m.atkTarget !== v.me.eid && (v.ownTowers.some((t) => t.id === m.atkTarget) || v.ownMinions.some((o) => o.id === m.atkTarget))) return true;
+  return v.ownMinions.some((o) => dst(o, m) < TANK_R);
+}
+
 /** Enemy minions with no own minion near them (they would target the bot). */
 function untankedMinions(v: View): View['enemyMinions'] {
-  return v.enemyMinions.filter((m) => dst(m, v.self) < 1200 && !v.ownMinions.some((o) => dst(o, m) < TANK_R));
+  return v.enemyMinions.filter((m) => dst(m, v.self) < 1200 && !tanked(v, m));
 }
 
 /** Harass budget shift per aggression axis step (autos/min; §4.3: aggression axis +-3 at +-5). */
@@ -621,8 +627,9 @@ function chooseFiller(
       case 'slowPush':
         return m.kind === Kind.MinionMelee;
       case 'freeze':
-        // only enemy minions that hit own minions, and only while the enemy surplus stays above the corridor
-        return foeN - ownN > FREEZE_SURPLUS_MAX && v.ownMinions.some((o) => o.id === m.atkTarget);
+        // only enemy minions that hit own minions or the own tower, and only while the enemy surplus stays above the
+        // corridor (the wave stays where it is)
+        return foeN - ownN > FREEZE_SURPLUS_MAX && (v.ownMinions.some((o) => o.id === m.atkTarget) || v.ownTowers.some((t) => t.id === m.atkTarget));
     }
   };
   if (intent.pushMinions) {
@@ -633,7 +640,7 @@ function chooseFiller(
       if (w.walk > FILLER_WALK_TICKS || (plan && plan.targetId === w.m.id)) continue;
       if (protectedWins.includes(w) || !attackSpotSafe(v, w.m)) continue;
       // no own minion at it: hitting it draws the whole enemy wave onto the bot (minion aggro)
-      if (!v.ownMinions.some((o) => dst(o, w.m) < TANK_R)) continue;
+      if (!tanked(v, w.m)) continue;
       const land = T + 1 + w.lead;
       const nw = windowAfterHit(w, land, T);
       if (nw.b <= land) continue; // would be a kill: the planner handles kills

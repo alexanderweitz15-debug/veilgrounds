@@ -33,6 +33,8 @@ const OBJ_SLOW_S = 90;
 const ADVANTAGE = 3;
 /** Own jungler within this distance: no freeze (it would rather use the pushed wave). */
 const JUNGLER_NEAR = 2500;
+/** How long one deliberate / not deliberate roll of the rank holds (ticks). */
+const DELIBERATE_TICKS = 60 * 30;
 const RECALL_THRESHOLD = (treeData.params.recall as { threshold: number }).threshold;
 
 export function chooseWaveState(n: NodeCtx, lane: LaneName): { state: WaveState; reason: string } {
@@ -56,7 +58,13 @@ export function chooseWaveState(n: NodeCtx, lane: LaneName): { state: WaveState;
   const own = near(n.v.ownMinions, n.v.self, 1500).length;
   const foe = near(n.v.enemyMinions, n.v.self, 1500).length;
   // not a deliberate choice this time (rank): just push (Iron "nein (Push)", §4.7)
-  if (!n.rng.chance(b.waveStateDeliberatePct / 100)) return set('push', 'no deliberate wave state');
+  // the rank decides per minute whether it plays the wave deliberately (rolled per minute, not per decision: a
+  // per-decision roll flips push/neutral every 10 s)
+  if (T >= st.deliberateUntil) {
+    st.deliberate = n.rng.chance(b.waveStateDeliberatePct / 100);
+    st.deliberateUntil = T + DELIBERATE_TICKS;
+  }
+  if (!st.deliberate) return set('push', 'no deliberate wave state');
   const d = n.ctx.teamAI.desireFor(n.ctx.slot, T);
   if (d && (d.kind === 'push_lane' || d.kind === 'split_push')) return set('push', d.reason);
   if (recallWanted(n) >= RECALL_THRESHOLD + n.p.knobs.recallThresholdShift - 0.15) return set('push', 'shove before recall');

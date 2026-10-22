@@ -46,6 +46,9 @@ export interface ReflexState {
   aggroErrUntil: number;
   /** §4.5 wave state of the latest decision (reflex path) and its switch tick. */
   /** Forced wave state (tests, trainer scenarios); undefined = decided by chooseWaveState. */
+  /** Rank roll "plays the wave deliberately" (§4.7 waveStateDeliberatePct) and until when it holds. */
+  deliberate: boolean;
+  deliberateUntil: number;
   waveOverride?: LaneIntent['wave'];
   waveState: { state: LaneIntent['wave']; reason: string; at: number } | null;
   aggroRollAt: number;
@@ -91,6 +94,8 @@ export function reflexState(mem: BotMemory): ReflexState {
       harass: { autos: [] },
       aggroErrUntil: -1,
       waveState: null,
+      deliberate: false,
+      deliberateUntil: -1,
       aggroRollAt: -1e9,
       orbHandled: -1,
       attackCmd: null,

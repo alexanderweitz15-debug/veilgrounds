@@ -43,3 +43,18 @@ Sim side done (sim/b-mechanics): after 1500 lane-minion gold the lobby top laner
 (`PlayerHud.abilities[6]`, id 'teleport'; command `{ t: 'spell', slot: 2, x, y }` onto an own tower, or minion/ward
 after 10:00; event `tpUnlocked` to the own team). Bots only look at abilities[4] / [5] (brain.ts, laning.ts). Wanted
 (AGENTS-PLAN B4): lane return after a recall, and bot-lane fights once ahead in gold.
+
+## 2026-10-22 · E · src/ai · Sev Fassung 3 bot rules (replaces the Fassung 2 list above) · brain team (A2)
+
+1. R choice: send `{ t: 'ultChoice', choice }` when R is learned (or before); without it the sim picks from
+   `botUltChoice` [4,3,3] deterministically. Suggestion: Amaterasu vs tanks/healers, Susanoo when behind/brawling,
+   Tsukuyomi vs squishy carries.
+2. Q fakes from Platin against recognised dodge patterns (recast Q within its 0.4 s wind-up).
+3. E Bannblick: cast when the target faces Sev; enemy bots should turn away (move command away from Sev) during the
+   0.4 s eye contact (gaze line object `sev_e_gaze`, cast event slot 2) - look-away counterplay.
+4. W: use as escape (also while rooted) and as bait: the clone (pet tag `sev_decoy`, snapshot `look: 'sev'`) bursts
+   when hit; from Gold, enemy bots should not waste abilities on it (below Gold 40 %).
+5. Amaterasu (dot `sev_r1`, uncleansable, grievous): count the burn in `ExchangeEstimate`, no panic recall.
+6. Tsukuyomi: the Sev bot is rooted 1.5 s while suppressing; only cast with allies near or on a low target
+   (missing-health scaling).
+7. Combos: E→Q→AA, Q→W→E, E→R→Q→AA. Gaze stacks (marks `sev_blick` n/3) at 2 -> next ability hit stuns.

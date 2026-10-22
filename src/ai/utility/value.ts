@@ -244,7 +244,8 @@ export function pushValue(w: World): CandidateValue | null {
   if (tower) {
     const tank = v.ownMinions.filter((m) => dst(m, tower) < 800).length;
     const reachS = Math.max(0, dst(v.self, tower) - 800) / Math.max(200, v.me.stats.ms);
-    if (tank >= 2 || wave.crashed) {
+    // plates only while >= 2 own minions tank the tower and it does not shoot the bot (no shove into tower range)
+    if (tank >= W.plateMinTank && tower.atkTarget !== v.self.id) {
       const grubs = 1 + 0.04 * (n.snap.kesselbrut ?? 0);
       const dps = v.me.stats.ad * Math.max(0.1, v.me.stats.as) * VALUES.push.towerMitigation * grubs;
       const dmg = dps * Math.max(0, h - reachS);
@@ -438,6 +439,8 @@ export function groupValue(w: World): CandidateValue | null {
   const target = { x: d.x, y: d.y };
   const depth = d.kind === 'defend_lane' ? 0 : n.ctx.teamAI.nextStructure(n, d.lane).depth;
   let benefit = d.score * structureGold(depth) * (d.reason.startsWith('won skirmish') ? W.conversionCall : 1);
+  // in the own lane the laning leaf farms on the way (punish-absence / siege of the own lane): no worse than farm
+  if (d.lane === w.lane) benefit += farmWithin(w, h);
   // §7.5: a side laner keeps farming until the group actually hits the structure
   const allies = n.v.allies.filter((a) => dst(a, target) < 1500).length;
   const side = d.kind === 'group_mid' && (n.ctx.role === 'top' || n.ctx.role === 'adc') && d.lane !== w.lane;

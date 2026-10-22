@@ -125,6 +125,10 @@ export interface GameResult {
    *  monster taken by the winner within 30 s), per team. */
   fightsWon: [number, number];
   fightsConverted: [number, number];
+  /** Won fights where a conversion was feasible (a winner within 2500 of a live enemy tower, or an epic monster alive
+   *  within 3000 of a winner) and how many of those converted (structure / epic / plate within 30 s). */
+  fightsFeasible: [number, number];
+  fightsConvertedFeasible: [number, number];
   /** Brain cost (only with a clock in the options). */
   cost: RunnerCost;
 }
@@ -243,6 +247,9 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
   const plates: [number, number] = [0, 0];
   const fightsWon: [number, number] = [0, 0];
   const fightsConverted: [number, number] = [0, 0];
+  const fightsFeasible: [number, number] = [0, 0];
+  const fightsConvertedFeasible: [number, number] = [0, 0];
+  const openFeasible: [boolean, boolean] = [false, false];
   // ---- rework metric state
   const laners: LanerTrack[] = stats
     .filter((s) => LANER_LANE[s.role] !== undefined && botBySlot.has(s.slot))
@@ -345,6 +352,9 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
     for (const ev of sim.events) {
       if (ev.e === 'plate') {
         if (T < 14 * 1800) plates[ev.team === 0 ? 1 : 0]++;
+        // a plate after a won lane fight is a (lane) conversion too
+        const pw = ev.team === 0 ? 1 : 0;
+        if (openFight[pw] >= T) convertFight(pw);
       } else if (ev.e === 'death' && isMinion(ev.kind)) {
         const lane = Unit.lane[ev.eid]!;
         for (const l of laners) {
@@ -390,10 +400,7 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
           towersTaken[ev.team === 0 ? 1 : 0]++;
         }
         const winner = ev.kind === Kind.Monster ? ev.killerTeam ?? -1 : ev.team === 0 ? 1 : 0;
-        if ((winner === 0 || winner === 1) && openFight[winner] >= T) {
-          fightsConverted[winner]++;
-          openFight[winner] = -1;
-        }
+        if ((winner === 0 || winner === 1) && openFight[winner] >= T) convertFight(winner);
       }
     }
     while (pending.length && pending[0]!.tick + 40 <= T) finalize(pending.shift()!);
@@ -520,6 +527,26 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
     return n >= 3;
   }
 
+  function convertFight(w: 0 | 1): void {
+    fightsConverted[w]++;
+    if (openFeasible[w]) fightsConvertedFeasible[w]++;
+    openFight[w] = -1;
+  }
+
+  /** A conversion is feasible after a won fight: a living winner near a live enemy tower or a live epic monster. */
+  function conversionFeasible(w: 0 | 1): boolean {
+    const champs = liveUnits(sim).filter((u) => Unit.kind[u] === Kind.Champion && Unit.team[u] === w);
+    for (const u of liveUnits(sim)) {
+      const k = Unit.kind[u];
+      const tower = k === Kind.Tower && Unit.team[u] !== w;
+      const epic = k === Kind.Monster && isEpic(Pos.x[u]!, Pos.y[u]!);
+      if (!tower && !epic) continue;
+      const r = tower ? 2500 : 3000;
+      if (champs.some((c) => Math.hypot(Pos.x[c]! - Pos.x[u]!, Pos.y[c]! - Pos.y[u]!) < r)) return true;
+    }
+    return false;
+  }
+
   function fightCheck(T: number): void {
     while (champDeaths.length && champDeaths[0]!.tick < T - 15 * 30) champDeaths.shift();
     for (const loser of [0, 1] as const) {
@@ -530,6 +557,8 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
         lastFight[w] = T;
         fightsWon[w]++;
         openFight[w] = T + 30 * 30;
+        openFeasible[w] = conversionFeasible(w);
+        if (openFeasible[w]) fightsFeasible[w]++;
       }
     }
   }
@@ -597,6 +626,8 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
     plates,
     fightsWon,
     fightsConverted,
+    fightsFeasible,
+    fightsConvertedFeasible,
     cost: bots.cost,
   };
 }

@@ -65,6 +65,7 @@
     "exposureFarm": 0.2,
     "exposurePush": 0.8,
     "platePriority": 2.0,
+    "plateMinTank": 2,
     "recallForgoesPlates": 1.0,
     "conversionCall": 2.5,
     "pokeRecallForce": 0.6,
@@ -140,6 +141,23 @@
     "landRange": 1200,
     "channelS": 4,
     "minTeamItemLead": 0
+  },
+
+  "sev": {
+    "note": "Sev Fassung 3 bot rules (docs/agents/issues.md 2026-10-22), utility flag only: src/ai/utility/sev.ts",
+    "chooseFromLevel": 5,
+    "choice": { "amaterasu": 0, "susanoo": 1, "tsukuyomi": 2 },
+    "tankHealerArchetypes": "tank|juggernaut|enchanter|healer|bruiser",
+    "squishyArchetypes": "marksman|hypercarry|mage|assassin",
+    "behindDeaths": 2,
+    "gazeTag": "sev_e_gaze",
+    "gazeTurnPct": { "iron": 15, "gold": 55, "diamond": 85, "challenger": 95 },
+    "turnAwayDist": 250,
+    "qFakePct": { "iron": 0, "gold": 0, "platinum": 30, "diamond": 45, "challenger": 60 },
+    "fakeDelayTicks": 6,
+    "fakeTargetRadius": 900,
+    "tsukuyomiLowHp": 0.4,
+    "tsukuyomiAllyRange": 1000
   },
 
   "combat": {

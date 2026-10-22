@@ -8,6 +8,8 @@ import type { Rng } from '../../sim/rng';
 import type { BotAction, BotStatic, SnapEntity } from './types';
 import { towerCovering, near, type View } from './perception';
 import { dst, unit } from './geo';
+import { utilityOn } from '../utility/flag';
+import { sevUltAllowed } from '../utility/sev';
 
 const rv = (v: number | number[] | undefined, rank: number): number =>
   v === undefined ? 0 : typeof v === 'number' ? v : v[Math.max(0, Math.min(v.length - 1, rank - 1))] ?? 0;
@@ -82,6 +84,8 @@ export function offensiveCast(v: View, ctx: BotStatic, rng: Rng, t: SnapEntity):
 export function castSlot(v: View, ctx: BotStatic, rng: Rng, t: SnapEntity, slot: 0 | 1 | 2 | 3): BotAction | null {
   const d = dst(v.self, t);
   if (!ready(v, ctx, slot)) return null;
+  // Sev's Tsukuyomi roots Sev while it suppresses: only with an ally near or on a low target (utility flag)
+  if (slot === 3 && utilityOn(ctx) && !sevUltAllowed(v, ctx, t)) return null;
   const ab = ctx.champ.abilities[slot];
   if (!offensive(ab) && !(ab.type === 'self' && !supportive(ab))) return null;
   const range = rangeOf(v, ab, slot);

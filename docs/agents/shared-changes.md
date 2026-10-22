@@ -384,3 +384,11 @@ warm cache" without a Node canvas dependency):
    monsters and writes PNGs to `public/atlas/` (true pre-baked atlases, cold cache fast too). Needs the lead (CI).
 4. Main menu first frame: a static CSS gradient background on the menu root until menuScene's first render.
 Measure: console lines `champion atlas: ... in N ms` (sheets.ts) cold vs warm, 10 runs, under the usual load.
+
+## 2026-10-22 · A1 · src/ai/utility/value.ts + src/data/bots/values.json (A2's area, lead-approved for poke/trade weights)
+
+- `tradeValue`: benefit x opportunity, opportunity = 1 + tradeCsWindowBonus x harassCsWindowPct/100 when the enemy
+  winds up on an own minion (CS window) + tradePunishBonus x skill/100 when it cast an ability in the last
+  tradePunishS seconds (on cooldown). New triggers `cs_window` / `punish` in the log; term `opportunity`.
+- values.json weights: `tradeCsWindowBonus` 1.0, `tradePunishBonus` 0.8, `tradePunishS` 3.
+- Reason: user feedback "trade when the enemy misses a cast or last-hits"; only active with the utility flag.

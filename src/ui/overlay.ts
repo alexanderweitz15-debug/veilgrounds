@@ -9,6 +9,14 @@ import { settings } from '../settings';
 import { t } from '../i18n';
 import { champName, variantName } from './names';
 import { VisualCues } from './cues';
+import { barLayout } from './hpBarGeom';
+import { pickBody, type PickView } from '../input/picking';
+
+/** Hover highlight colour: attack colour on anything hostile, ally / own colour otherwise. */
+function hoverColor(state: ClientState, e: SnapEntity): string {
+  if (e.id === (state.snap?.me?.eid ?? -1)) return REL.me;
+  return e.team === state.myTeam ? REL.ally : REL.attackClick;
+}
 
 interface Floater {
   x: number;
@@ -208,6 +216,30 @@ export class Overlay {
     }
   }
 
+  /**
+   * Hover highlight (C8): the front arc of the hovered unit's ground ring, drawn from the same body the picker
+   * (src/input/picking.ts) tests, so the highlighted unit is the one a click hits. The bar frame follows in draw().
+   */
+  private drawHover(state: ClientState, world: World, e: SnapEntity): void {
+    const view: PickView = {
+      project: (x, y, z) => world.rig.project(x, y, z, this.w, this.h),
+      barAnchor: (u, x, y) => world.barAnchor(u, x, y),
+    };
+    const b = pickBody(state, view, e);
+    if (!b) return;
+    const ctx = this.ctx;
+    const rx = b.core * 1.2;
+    const ry = rx / b.squash;
+    ctx.beginPath();
+    ctx.ellipse(b.foot.sx, b.foot.sy, rx, ry, 0, 0.04 * Math.PI, 0.96 * Math.PI);
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(10,8,6,0.7)';
+    ctx.stroke();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = hoverColor(state, e);
+    ctx.stroke();
+  }
+
   private label(text: string, x: number, y: number, color: string): void {
     const ctx = this.ctx;
     ctx.font = '600 12px system-ui, sans-serif';
@@ -233,22 +265,17 @@ export class Overlay {
       const hc = settings.highContrast;
       for (const e of snap.entities) {
         if (!e.alive || e.maxHp <= 0) continue;
-        const champ = e.kind === Kind.Champion || !!e.look; // decoys (Sev E) get the fake champion bar
-        const structure = e.kind >= Kind.Tower && e.kind <= Kind.Nexus;
-        const dummy = e.kind === Kind.Dummy;
         const a = world.barAnchor(e, state.x(e), state.y(e));
         if (!a) continue;
-        if (e.kind === Kind.Plant) {
+        if (e.id === hoverId) this.drawHover(state, world, e);
+        const lay = barLayout(e, a.sx, a.sy);
+        if (!lay) {
           // plants (1 HP): no bar, only the name while hovered
-          this.label(variantName(e.variant, e.kind), a.sx, a.sy - 2, '#f3e6c4');
+          if (e.kind === Kind.Plant) this.label(variantName(e.variant, e.kind), a.sx, a.sy - 2, '#f3e6c4');
           continue;
         }
-        const monster = e.kind === Kind.Monster;
+        const { champ, dummy, monster, bw, bh, x, y } = lay;
         const color = e.id === myEid ? REL.meBar : monster ? '#d8a64a' : e.team === state.myTeam ? REL.ally : REL.enemy;
-        const bw = champ ? 104 : structure ? 130 : dummy ? 104 : monster && e.radius >= 130 ? 150 : monster && e.radius >= 100 ? 116 : monster && e.radius >= 80 ? 86 : monster && e.radius >= 70 ? 72 : 54;
-        const bh = champ ? 11 : structure ? 9 : dummy ? 10 : 5;
-        const x = a.sx - bw / 2 + (champ ? 10 : 0);
-        const y = a.sy - bh;
         const total = Math.max(e.maxHp, e.hp + e.shield);
         ctx.fillStyle = 'rgba(12,10,8,0.85)';
         ctx.fillRect(x - 2, y - 2, bw + 4, bh + 4 + (champ ? 5 : 0));
@@ -275,6 +302,12 @@ export class Overlay {
           ctx.strokeStyle = '#fff';
           ctx.lineWidth = 1.5;
           ctx.strokeRect(x - 1, y - 1, bw + 2, bh + 2);
+        }
+        if (e.id === hoverId) {
+          // hovered (= what a click hits): bright frame around the whole bar
+          ctx.strokeStyle = hoverColor(state, e);
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x - 3.5, y - 3.5, bw + 7, bh + 7 + (champ ? 5 : 0));
         }
         if ((champ || dummy) && settings.hpBarStyle !== 'plain') {
           // 100-HP ticks (setting hpBarStyle: segmented = LoL, thousands = only every 1000 HP, plain = none)

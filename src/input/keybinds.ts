@@ -10,7 +10,8 @@ export type Action =
   | 'recall' | 'centerCamera' | 'toggleCameraLock' | 'pause' | 'showRange'
   | 'item1' | 'item2' | 'item3' | 'item4' | 'item5' | 'item6' | 'trinket'
   | 'scoreboard' | 'debug' | 'shop'
-  | 'pingWheel' | 'pingMissing' | 'pingQuestion';
+  | 'pingWheel' | 'pingMissing' | 'pingQuestion'
+  | 'targetChampionsOnly';
 
 export const DEFAULT_BINDS: Record<Action, string> = {
   stop: 'KeyS',
@@ -42,6 +43,8 @@ export const DEFAULT_BINDS: Record<Action, string> = {
   pingMissing: 'KeyV',
   /** LoL '?' ping (no LoL default key; H is free here). */
   pingQuestion: 'KeyH',
+  /** LoL "target champions only" (hold): hover, clicks and casts ignore everything but champions. */
+  targetChampionsOnly: 'Backquote',
 };
 
 export const ACTIONS = Object.keys(DEFAULT_BINDS) as Action[];
@@ -103,5 +106,6 @@ export function keyLabel(code: string): string {
   if (code.startsWith('Key')) return code.slice(3);
   if (code.startsWith('Digit')) return code.slice(5);
   if (code === 'Space') return 'Space';
+  if (code === 'Backquote') return '`';
   return code;
 }

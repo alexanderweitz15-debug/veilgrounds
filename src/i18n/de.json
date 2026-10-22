@@ -323,6 +323,7 @@
   "act.pingWheel": "Ping-Rad",
   "act.pingMissing": "Ping: Vermisst",
   "act.pingQuestion": "Ping: ?",
+  "act.targetChampionsOnly": "Nur Champions anvisieren (halten)",
   "ping.question": "?",
   "set.newBrain": "Neues Bot-Gehirn (Beta: Reflex-Schicht + Nutzenmodell)",
   "set.botToxicity": "Toxische Bots (Flame-Chat, „?“-Pings)",

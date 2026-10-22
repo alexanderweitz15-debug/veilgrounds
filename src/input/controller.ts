@@ -9,6 +9,11 @@ import { actionFor, type Action } from './keybinds';
 import { castModeFor } from './castMode';
 import { PingWheel } from '../ui/pingWheel';
 import { Kind, type PingKind } from '../sim/types';
+import { ATTACK_CURSOR } from '../ui/cursors';
+
+const anyUnit = (): boolean => true;
+/** Champions and their decoys (Sev E clones look like champions, LoL lets champion-only targeting hit them). */
+const championLike = (e: SnapEntity): boolean => e.kind === Kind.Champion || !!e.look;
 
 const EDGE_PX = 20;
 const EDGE_SPEED = 4200; // units per second at cameraSpeed 1 (LoL-like brisk pan; 2600 felt sluggish)
@@ -45,6 +50,10 @@ export class InputController {
   /** performance.now() until which the camera lock is suspended (minimap peek). */
   cameraPeekUntil = 0;
   private centerHeld = false;
+  /** "Target champions only" key held (LoL `): picking ignores everything but champions. */
+  private champsOnly = false;
+  /** Last CSS cursor written to the canvas (the attack cursor is a long data URI: write on change only). */
+  private cursor = '';
   private rightHeld = false;
   private lastHoldMove = 0;
   /** Enemy already ordered to attack while the right button is held (-1 = none). */
@@ -84,7 +93,7 @@ export class InputController {
     on(window, 'keyup', (e) => this.keyUp(e));
     on(window, 'blur', () => {
       // keys/buttons released while the window was in the background never send keyup/mouseup
-      this.centerHeld = this.rightHeld = this.showRange = false;
+      this.centerHeld = this.rightHeld = this.showRange = this.champsOnly = false;
       this.aiming = null;
       this.dragFrom = null; // middle-mouse camera drag
       this.wheel.hide(); // ping wheel (G held): closes without pinging
@@ -99,7 +108,7 @@ export class InputController {
 
   setArmed(a: Armed): void {
     this.armed = a;
-    this.el.style.cursor = a ? 'crosshair' : '';
+    this.el.style.cursor = this.cursor = a ? 'crosshair' : '';
     this.host.onArmedChange(a);
   }
 
@@ -208,6 +217,10 @@ export class InputController {
     const action = actionFor(e.code);
     if (!action) return;
     e.preventDefault();
+    if (action === 'targetChampionsOnly') {
+      this.champsOnly = true; // held modifier, also while paused (keyUp / blur release it)
+      return;
+    }
     if (action === 'pause') {
       if (!e.repeat) this.host.togglePause();
       return;
@@ -353,14 +366,21 @@ export class InputController {
       return;
     }
     if (action === 'centerCamera') this.centerHeld = false;
+    else if (action === 'targetChampionsOnly') this.champsOnly = false;
     else if (action === 'showRange') this.showRange = false;
     else if (action === 'scoreboard') this.host.togglePanel('scoreboard', false);
   }
 
+  /**
+   * The single pick behind hover highlight, right-click attack, left-click select, casts and pings (C8): whatever is
+   * highlighted is what a click hits. "Target champions only" (held) narrows it to champions (and their decoys).
+   */
   private refreshHover(): void {
     const r = this.el.getBoundingClientRect();
     this.hover =
-      this.mouseX >= 0 && !this.host.menuOpen() ? this.host.world.pick(this.host.state, this.mouseX - r.left, this.mouseY - r.top, () => true) : null;
+      this.mouseX >= 0 && !this.host.menuOpen()
+        ? this.host.world.pick(this.host.state, this.mouseX - r.left, this.mouseY - r.top, this.champsOnly ? championLike : anyUnit)
+        : null;
   }
 
   /** Per frame: hover pick, held right-click, camera follow / edge scroll / drag. */
@@ -373,7 +393,9 @@ export class InputController {
     this.refreshHover();
     if (this.aiming && this.host.menuOpen()) this.aiming = null;
     world.fx.showAim(state, this.aiming ? this.aiming.slot : null, this.aiming ? this.cursorGround() : null);
-    this.el.style.cursor = this.armed ? 'crosshair' : this.hoveredEnemy() ? 'pointer' : '';
+    // attack cursor over whatever a right click would attack (the hovered hostile unit, highlighted by the overlay)
+    const cursor = this.armed ? 'crosshair' : this.hoveredEnemy() ? ATTACK_CURSOR : '';
+    if (cursor !== this.cursor) this.el.style.cursor = this.cursor = cursor;
 
     if (this.rightHeld && !state.paused && now - this.lastHoldMove > HOLD_MOVE_MS) this.rightClick(now, false);
 

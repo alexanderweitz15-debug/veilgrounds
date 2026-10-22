@@ -21,6 +21,7 @@ import { settings } from '../settings';
 import { QUALITY, setFastPcf } from './quality';
 import { WORLD_LIGHT } from './materials';
 import { disposeTree } from './dispose';
+import { pickUnit, type PickView } from '../input/picking';
 
 /** Direction toward the sun: low warm evening light from behind-right (style C), long shadows toward the camera. */
 const SUN_DIR = WORLD_LIGHT.sunDir;
@@ -184,32 +185,15 @@ export class World {
   }
 
   /**
-   * Screen-space pick against sprite rectangles / structure footprints. Returns the entity whose screen rect
-   * contains the point and whose centre is closest, preferring champions.
+   * Unit under the screen point (agent C, src/input/picking.ts): HP bar, then the body (sim radius projected to the
+   * screen + margin, from the ground point up the sprite) closest to the cursor; hostile units before allies.
    */
   pick(state: ClientState, sx: number, sy: number, accept: (e: SnapEntity) => boolean): SnapEntity | null {
-    if (!state.snap) return null;
-    let best: SnapEntity | null = null;
-    let bestScore = Infinity;
-    for (const e of state.snap.entities) {
-      if (!e.alive || !accept(e)) continue;
-      const x = state.x(e);
-      const y = state.y(e);
-      const foot = this.rig.project(x, y, 0, this.w, this.h);
-      const head = this.barAnchor(e, x, y);
-      if (!head) continue;
-      const hgt = Math.max(20, foot.sy - head.sy);
-      const halfW = Math.max(18, hgt * (e.kind >= Kind.Tower && e.kind <= Kind.Nexus ? 0.3 : 0.32));
-      const cy = (foot.sy + head.sy) / 2;
-      if (Math.abs(sx - foot.sx) > halfW || sy < head.sy || sy > foot.sy + 14) continue;
-      let score = Math.hypot(sx - foot.sx, sy - cy);
-      if (e.kind === Kind.Champion) score *= 0.5;
-      if (score < bestScore) {
-        bestScore = score;
-        best = e;
-      }
-    }
-    return best;
+    const view: PickView = {
+      project: (x, y, z) => this.rig.project(x, y, z, this.w, this.h),
+      barAnchor: (e, x, y) => this.barAnchor(e, x, y),
+    };
+    return pickUnit(state, view, sx, sy, accept);
   }
 
   /** Frees everything on the GPU (geometries, materials, textures, shadow map) and the WebGL context itself. */

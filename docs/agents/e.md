@@ -47,6 +47,19 @@ Branch: `champ/e-sev`. Spec: `docs/champions/sev.md` (Fassung 3 on top, Fassung 
 e-sev3-choice-cards, e-sev3-idle, e-sev3-q-windup, e-sev3-q-fire (300 flame ring), e-sev3-e-gaze, e-sev3-w-clone,
 e-sev3-w-burst, e-sev3-r-amaterasu, e-sev3-r-susanoo, e-sev3-r-susanoo-thrust, e-sev3-r-tsukuyomi.
 
+## Balance (Fassung 3 with the AoE buff, gold, 15 min, Sev blue mid, `tools/scratch/sevCasts.ts 6 15 gold 1`)
+| seed | ult (bot pick) | Sev casts Q/W/E/R | Sev cs, k/d, dmg to champs | enemy mid cs, k/d, dmg |
+|---|---|---|---|---|
+| 1 | Susanoo | 7/4/5/0 | 33, 0/1, 1242 | Ilvane 60, 1/0, 2576 |
+| 2 | Susanoo | 14/6/8/2 | 39, 1/2, 4795 | Kaelen 19, 2/2, 3826 |
+| 3 | Amaterasu | 6/5/7/1 | 49, 3/4, 1682 | Thessaly 32, 5/2, 5915 |
+| 4 | Tsukuyomi | 7/2/3/0 | 57, 0/1, 886 | Thessaly 40, 1/0, 3191 |
+| 5 | Tsukuyomi | 8/6/5/1 | 46, 2/0, 2548 | Ilvane 48, 0/5, 2403 |
+| 6 | Amaterasu | 12/7/10/3 | 31, 4/0, 5229 | Renn 36, 0/4, 2793 |
+Totals: Sev 2730 dmg/game vs enemy mids 3451, K/D 10/8 vs 9/13, CS 255 vs 235. With the bigger AoE Sev clears waves
+at least as well as the other mids and is not ahead on damage -> numbers kept (strong but fair). Caveat: the bots
+cast Q only 6-14 times in 15 min and never fake it; once A2 plays the kit actively the damage will rise - re-run then.
+
 ## Open items
 1. Balance vs other mids: `tools/balance.ts` does not exist in the repo; numbers come from bot games
    (`npx tsx tools/scratch/sevCasts.ts <games> <min> <rank> <seed>`). See the balance section below.

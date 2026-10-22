@@ -110,6 +110,10 @@ Tempo-Buffs wie Oda R oder Seraphynes Passiv holen Zeit auf).
 | seraphyne | W | Wetterfeld | zone | 0.25 |  | nein | Skillshot/Fläche (Wind-up) | 9 | 0 | +6 |
 | seraphyne | E | Donnerschritt | blink | 0.2 | 0.3 | ja | Dash/Blink | 16 | 170 | +10 |
 | seraphyne | R | Gewitterfront | skillshot_circle | 0.3 |  | nein | Skillshot/Fläche (Wind-up) | 10 | 0 | +7 |
+| sev | Q | Glutblick | skillshot_line | 0.4 |  | nein | Skillshot/Fläche (Wind-up; Re-Cast im Wind-up = Fake) | 13 | 0 | +13 |
+| sev | W | Schwarzglut | targeted | 0.25 |  | nein | Gezielt (Wind-up) | 9 | 0 | +9 |
+| sev | E | Trugbild | blink | 0 |  | ja | Dash/Blink | 0 | 0 | -3 |
+| sev | R | Augenbann | targeted | 0.5 |  | nein | Gezielt (Wind-up = Blickkontakt) | 16 | 0 | +16 |
 | thessaly | Q | Lichtlanze | targeted | 0.25 |  | nein | Gezielt (Wind-up) | 9 | 0 | +9 |
 | thessaly | W | Prisma | self | 0.2 |  | ja | Schild | 7 | 67 | +0 |
 | thessaly | E | Blendung | cone | 0.25 |  | nein | Skillshot/Fläche (Wind-up) | 9 | 0 | +9 |

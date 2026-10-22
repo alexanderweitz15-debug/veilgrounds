@@ -75,6 +75,8 @@ export type Command =
   /** Summoner spell: 0 D, 1 F, 2 Teleport of the top laner once unlocked (B4). */
   | { t: 'spell'; slot: 0 | 1 | 2; x: number; y: number; target?: number }
   | { t: 'levelUp'; slot: 0 | 1 | 2 | 3 }
+  /** R choice (champions with ultChoices, e.g. Sev): permanent for the match; also allowed while dead. */
+  | { t: 'ultChoice'; choice: 0 | 1 | 2 }
   | { t: 'recall' }
   /** Team ping at a map point; target = entity eid for focus/objective pings. */
   | { t: 'ping'; kind: PingKind; x: number; y: number; target?: number }
@@ -140,6 +142,8 @@ export type SimEvent =
   | { e: 'level'; eid: number; level: number }
   | { e: 'attack'; src: number; dst: number }
   /** Ability cast started (slot 0..3; rank for telegraphs). recast: second cast of a recast ability (no new wind-up). */
+  /** R choice made (Sev): choice = ultChoices index. */
+  | { e: 'ultChoice'; src: number; choice: number }
   | { e: 'cast'; src: number; slot: number; x: number; y: number; rank?: number; recast?: boolean; /** Wind-up end tick (incl. hook time mods). */ at?: number }
   /**
    * A cast/summoner command that could not be executed (render: message + error sound). Only delivered to the

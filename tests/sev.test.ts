@@ -1,25 +1,31 @@
-// Sev Aschenblick kit (docs/champions/sev.md): one behavioural test per mechanic + the sim extensions it brought
-// (fear CC, uncleansable buffs, decoy pet with fake HP bar, targetOk / onPetDamaged hooks).
+// Sev Aschenblick kit, Fassung 3 (docs/champions/sev.md): one behavioural test per mechanic, the R choice (permanent,
+// bot default from data) and the sim extensions it uses (decoy clone with fake HP bar, uncleansable, root_ok).
 import '../src/sim/sim';
 import { describe, expect, it } from 'vitest';
+import { query } from 'bitecs';
 import { stateHash, step, type Sim } from '../src/sim/sim';
-import { addBuff, buffs, canCast, ccLevel, hasBuff, healMult, isFeared } from '../src/sim/buffs';
+import { addBuff, buffs, canMove, hasBuff, healMult, strongestSlow } from '../src/sim/buffs';
 import { castSummonerSpell } from '../src/sim/summoners';
-import { abilityHud, castSummoner, levelAbility, refreshCooldowns } from '../src/sim/systems/abilities';
+import { abilityHud, abilityOf, botUltPick, levelAbility, refreshCooldowns, ultChoiceOf } from '../src/sim/systems/abilities';
 import { missingHooks } from '../src/sim/champions';
-import { buildSnapshot } from '../src/sim/snapshot';
 import { dealDamage } from '../src/sim/damage';
 import { spawnDummy } from '../src/sim/systems/champions';
-import { petsOf } from '../src/sim/summons';
+import { buildSnapshot } from '../src/sim/snapshot';
 import { sec, type Command, type PlayerSetup } from '../src/sim/types';
-import { DECOY, EMBER, NACHBILD, hasNachbild, isEmbered, sevBann, sevDecoy } from '../src/sim/champions/sev';
+import { AMATERASU, GENJUTSU, MOON, blickStacks, isAmaterasuBurning, sevClone, susanooActive, tsukuyomiTarget } from '../src/sim/champions/sev';
 import { CX, CY, cmd, collect, makeSim, place, steps } from './combat-helpers';
 
-const player = (slot: number, champion: string, team: 0 | 1, summoners: [string, string] = ['sprung', 'heilen']): PlayerSetup => ({ slot, team, champion, role: 'mid', summoners, isHuman: slot === 0 });
+const player = (slot: number, champion: string, team: 0 | 1, human: boolean, summoners: [string, string] = ['sprung', 'heilen']): PlayerSetup => ({ slot, team, champion, role: 'mid', summoners, isHuman: human });
 
-/** Sev at (CX, CY) with ranks [Q, W, E, R]; enemies (team 1) at the given offsets. */
-function setup(ranks: [number, number, number, number], enemies: [number, number][] = [], level = 9): { sim: Sim; s: number; foes: number[] } {
-  const sim = makeSim({ players: [player(0, 'sev', 0), ...enemies.map((_, i) => player(i + 1, 'thessaly', 1, ['reinigen', 'heilen']))] });
+interface Setup {
+  sim: Sim;
+  s: number;
+  foes: number[];
+}
+
+/** Sev at (CX, CY) with ranks [Q, W, E, R] (human unless `bot`); enemy Thessalys (team 1) at the given offsets. */
+function setup(ranks: [number, number, number, number], enemies: [number, number][] = [], o: { bot?: boolean; seed?: number; ult?: 0 | 1 | 2 } = {}): Setup {
+  const sim = makeSim({ seed: o.seed ?? 1, players: [player(0, 'sev', 0, !o.bot), ...enemies.map((_, i) => player(i + 1, 'thessaly', 1, false, ['reinigen', 'heilen']))] });
   const s = sim.slots[0]!;
   place(sim, s, CX, CY);
   const foes = enemies.map(([dx, dy], i) => {
@@ -27,238 +33,288 @@ function setup(ranks: [number, number, number, number], enemies: [number, number
     place(sim, e, CX + dx, CY + dy);
     return e;
   });
-  sim.c.Champ.level[s] = Math.max(level, ranks[3] > 0 ? 6 : 1);
+  sim.c.Champ.level[s] = ranks[3] > 0 ? 16 : 9;
   sim.c.Champ.skillPoints[s] = 30;
   ranks.forEach((r, slot) => {
     for (let i = 0; i < r; i++) levelAbility(sim, s, slot);
   });
   step(sim);
+  if (o.ult !== undefined) cmd(sim, { t: 'ultChoice', choice: o.ult });
   return { sim, s, foes };
 }
 
 const cast = (slot: 0 | 1 | 2 | 3, x: number, y: number, target?: number): Command => ({ t: 'cast', slot, x, y, target });
+const dmgTo = (hits: { dst: number; amount: number }[], t: number): number => hits.filter((h) => h.dst === t).reduce((a, h) => a + h.amount, 0);
 
 describe('Sev hooks', () => {
-  it('every hook id is exported', () => {
+  it('every hook id (abilities + the three ultimates) is exported', () => {
     expect(missingHooks('sev')).toEqual([]);
   });
 });
 
-describe('Sev Q Glutblick', () => {
-  it('hits the first unit for magic damage and leaves a Nachbild', () => {
+describe('Passive Rabenblick', () => {
+  it('3 ability hits stun for 0.75 s (genjutsu), then 12 s per-target cooldown', () => {
+    const { sim, s, foes } = setup([1, 0, 1, 0], [[450, 0]]);
+    const f = foes[0]!;
+    addBuff(sim, f, { kind: 'stat', stat: 'dmgReduction', id: 'test', src: f, pct: 90, ticks: sec(30) }); // survives five fireballs
+    for (let i = 0; i < 2; i++) {
+      refreshCooldowns(sim, s);
+      cmd(sim, cast(0, CX + 450, CY));
+      steps(sim, 45);
+    }
+    expect(blickStacks(sim, s, f)).toBe(2);
+    refreshCooldowns(sim, s);
+    sim.c.Face.x[f] = 1; // looks away: E only slows, but still a hit
+    sim.c.Face.y[f] = 0;
+    cmd(sim, cast(2, CX + 450, CY, f));
+    steps(sim, 14);
+    expect(hasBuff(sim, f, 'stun', GENJUTSU)).toBe(true);
+    expect(blickStacks(sim, s, f)).toBe(0);
+    steps(sim, 30);
+    for (let i = 0; i < 3; i++) {
+      refreshCooldowns(sim, s);
+      cmd(sim, cast(0, CX + 450, CY));
+      steps(sim, 45);
+    }
+    expect(blickStacks(sim, s, f)).toBe(3); // capped, genjutsu on cooldown
+    expect(hasBuff(sim, f, 'stun', GENJUTSU)).toBe(false);
+  });
+});
+
+describe('Q Feuerball', () => {
+  it('explodes on the first unit hit (AoE 300) and leaves burning ground', () => {
     const { sim, s } = setup([1, 0, 0, 0]);
-    const d = spawnDummy(sim, CX + 500, CY, 1);
+    const a = spawnDummy(sim, CX + 500, CY, 1);
+    const b = spawnDummy(sim, CX + 600, CY + 150, 1); // off the line, inside the blast
     step(sim);
-    const hits = collect(sim, 40, s, cast(0, CX + 500, CY));
-    expect(hits.filter((h) => h.dst === d).length).toBe(1);
-    expect(hasNachbild(sim, d, s)).toBe(true);
+    const hits = collect(sim, sec(2.5), s, cast(0, CX + 500, CY));
+    expect(dmgTo(hits, a)).toBeGreaterThan(0);
+    expect(dmgTo(hits, b)).toBeGreaterThan(0);
+    // explosion + at least two burning-ground ticks on a
+    expect(hits.filter((h) => h.dst === a).length).toBeGreaterThanOrEqual(3);
   });
 
-  it('recast during the 0.4 s wind-up is a fake: no beam, mana back, 2 s cooldown', () => {
+  it('explodes at max range when it hits nothing', () => {
+    const { sim, s } = setup([1, 0, 0, 0]);
+    const d = spawnDummy(sim, CX + 900, CY + 160, 1); // beside the end point, not on the path
+    step(sim);
+    const hits = collect(sim, sec(1.5), s, cast(0, CX + 900, CY));
+    expect(dmgTo(hits, d)).toBeGreaterThan(0);
+  });
+
+  it('recast during the 0.4 s wind-up is a fake: no fireball, mana back, 2 s cooldown', () => {
     const { sim, s } = setup([1, 0, 0, 0]);
     const d = spawnDummy(sim, CX + 500, CY, 1);
     step(sim);
     const mana = sim.c.Mana.cur[s]!;
     cmd(sim, cast(0, CX + 500, CY));
-    expect(sim.c.Mana.cur[s]!).toBeLessThan(mana);
     steps(sim, 4);
     cmd(sim, cast(0, CX + 500, CY));
     const hits = collect(sim, 30, s);
-    expect(hits.filter((h) => h.dst === d)).toEqual([]);
+    expect(dmgTo(hits, d)).toBe(0);
     expect(sim.c.Mana.cur[s]!).toBeGreaterThanOrEqual(mana - 1e-6);
     const cd = abilityHud(sim, s)[0]!.cdLeft;
-    // 2 s cooldown started at the fake (30 ticks stepped since): about 1 s left, far below the 7 s cooldown
     expect(cd).toBeGreaterThan(0.5);
     expect(cd).toBeLessThan(1.5);
   });
 });
 
-describe('Sev W Schwarzglut', () => {
-  it('burns 4 s per second, grievous wounds 40 %, Nachbild; Reinigen does not remove it', () => {
-    const { sim, s, foes } = setup([0, 1, 0, 0], [[400, 0]]);
-    const f = foes[0]!;
-    const hits = collect(sim, sec(5), s, cast(1, CX + 400, CY, f));
-    const onF = hits.filter((h) => h.dst === f);
-    expect(onF.length).toBe(4);
-    expect(new Set(onF.map((h) => Math.round(h.amount))).size).toBe(1);
-    // re-apply and try to cleanse
-    refreshCooldowns(sim, s);
-    cmd(sim, cast(1, CX + 400, CY, f));
-    steps(sim, 10);
-    expect(isEmbered(sim, f)).toBe(true);
-    expect(hasNachbild(sim, f, s)).toBe(true);
-    expect(healMult(sim, f)).toBeCloseTo(0.6);
-    expect(buffs(sim, f).filter((b) => b.id === EMBER).every((b) => b.uncleansable)).toBe(true);
-    castSummonerSpell(sim, f, 'reinigen', 0, 0);
-    step(sim);
-    expect(isEmbered(sim, f)).toBe(true);
-    expect(hasBuff(sim, f, 'grievous', EMBER)).toBe(true);
+describe('W Krähendoppel', () => {
+  it('blinks 400 even while rooted (not while stunned) and leaves a crow clone with Sev’s look', () => {
+    const { sim, s } = setup([0, 1, 0, 0], [[300, 300]]);
+    addBuff(sim, s, { kind: 'root', id: 'test', src: -1, ticks: sec(2) });
+    cmd(sim, cast(1, CX + 1000, CY));
+    expect(sim.c.Pos.x[s]!).toBeGreaterThan(CX + 350);
+    const c = sevClone(sim, s);
+    expect(c).toBeGreaterThan(0);
+    expect(sim.c.Pos.x[c]!).toBeCloseTo(CX, 0);
+    expect(sim.c.Hp.max[c]).toBe(sim.c.Hp.max[s]);
+    const e = buildSnapshot(sim, 1, 1).entities.find((x) => x.id === c)!;
+    expect(e.look).toBe('sev');
+    // stunned: no blink
+    const { sim: sim2, s: s2 } = setup([0, 1, 0, 0]);
+    addBuff(sim2, s2, { kind: 'stun', id: 'test', src: -1, ticks: sec(2) });
+    cmd(sim2, cast(1, CX + 1000, CY));
+    expect(sim2.c.Pos.x[s2]!).toBeCloseTo(CX, 0);
   });
 
-  it('jumps once to the nearest enemy within 300 when the target dies', () => {
-    const { sim, foes } = setup([0, 1, 0, 0], [[400, 0], [400, 200], [400, -280]]);
+  it('the clone bursts after 1.5 s (damage + slow + Gaze) or at once when hit', () => {
+    const { sim, s, foes } = setup([0, 1, 0, 0], [[-150, 0], [-150, 120]]);
+    const [a, b] = foes as [number, number];
+    const hits = collect(sim, sec(1.5) + 3, s, cast(1, CX + 1000, CY));
+    expect(sevClone(sim, s)).toBe(-1);
+    expect(dmgTo(hits, a)).toBeGreaterThan(0);
+    expect(strongestSlow(sim, a)).toBe(35);
+    expect(blickStacks(sim, s, a)).toBe(1);
+    // hit by anything (an auto) -> bursts immediately
+    refreshCooldowns(sim, s);
+    place(sim, s, CX, CY);
+    step(sim);
+    cmd(sim, cast(1, CX + 1000, CY));
+    const c = sevClone(sim, s);
+    dealDamage(sim, b, c, 5, 'phys', { isAuto: true });
+    expect(sevClone(sim, s)).toBe(-1);
+  });
+
+  it('enemy projectiles already flying at Sev switch to the clone (substitution)', () => {
+    const { sim, s, foes } = setup([0, 1, 0, 0], [[520, 0]]);
+    const f = foes[0]!;
+    const { Proj } = sim.c;
+    const flying = (): boolean => [...query(sim.world, [Proj])].some((p) => Proj.target[p] === s && Proj.src[p] === f);
+    let fired = false;
+    for (let i = 0; i < 90 && !fired; i++) {
+      step(sim, i === 0 ? [{ slot: 1, cmd: { t: 'attack', target: s } }] : []);
+      fired = flying();
+    }
+    expect(fired).toBe(true);
+    const hp = sim.c.Hp.cur[s]!;
+    cmd(sim, cast(1, CX - 1000, CY));
+    step(sim, [{ slot: 1, cmd: { t: 'stop' } }]);
+    let hitSev = false;
+    for (let i = 0; i < 20; i++) {
+      step(sim);
+      hitSev ||= sim.events.some((e) => e.e === 'damage' && e.src === f && e.dst === s);
+    }
+    expect(hitSev).toBe(false);
+    expect(sim.c.Hp.cur[s]!).toBeGreaterThanOrEqual(hp - 1e-6);
+    expect(sevClone(sim, s)).toBe(-1); // the auto popped the clone
+  });
+});
+
+describe('E Bannblick', () => {
+  it('stuns 1.25 s if the target faces Sev, else slows 40 % (look-away counterplay)', () => {
+    for (const facing of [true, false]) {
+      const { sim, foes } = setup([0, 0, 1, 0], [[500, 0]]);
+      const f = foes[0]!;
+      sim.c.Face.x[f] = facing ? -1 : 1;
+      sim.c.Face.y[f] = 0;
+      cmd(sim, cast(2, CX + 500, CY, f));
+      steps(sim, 14);
+      expect(hasBuff(sim, f, 'stun', 'sev_e')).toBe(facing);
+      expect(strongestSlow(sim, f)).toBe(facing ? 0 : 40);
+      if (facing) {
+        const st = buffs(sim, f).find((b) => b.kind === 'stun' && b.id === 'sev_e')!;
+        expect(st.until - st.start).toBe(sec(1.25));
+      }
+    }
+  });
+});
+
+describe('R choice', () => {
+  it('a human picks once (permanent); R is not castable before the choice', () => {
+    const { sim, s, foes } = setup([0, 0, 0, 1], [[400, 0]]);
+    expect(ultChoiceOf(sim, s)).toBe(-1);
+    expect(abilityHud(sim, s)[3]!.ultChoice).toEqual({ options: ['sev_r1', 'sev_r2', 'sev_r3'], chosen: -1 });
+    let casted = false;
+    for (let i = 0; i < 10; i++) {
+      step(sim, i === 0 ? [{ slot: 0, cmd: cast(3, CX + 400, CY, foes[0]) }] : []);
+      casted ||= sim.events.some((e) => e.e === 'cast' && e.src === s);
+    }
+    expect(casted).toBe(false);
+    cmd(sim, { t: 'ultChoice', choice: 2 });
+    cmd(sim, { t: 'ultChoice', choice: 0 });
+    expect(ultChoiceOf(sim, s)).toBe(2);
+    expect(abilityOf(sim, s, 3).id).toBe('sev_r3');
+    expect(abilityHud(sim, s)[3]!.id).toBe('sev_r3');
+  });
+
+  it('a bot learning R without a choice gets the deterministic data pick (botUltChoice)', () => {
+    const picks = new Set<number>();
+    for (let seed = 1; seed <= 12; seed++) {
+      const a = setup([0, 0, 0, 1], [], { bot: true, seed });
+      const b = setup([0, 0, 0, 1], [], { bot: true, seed });
+      expect(ultChoiceOf(a.sim, a.s)).toBe(ultChoiceOf(b.sim, b.s));
+      expect(ultChoiceOf(a.sim, a.s)).toBe(botUltPick(a.sim, a.s));
+      picks.add(ultChoiceOf(a.sim, a.s));
+    }
+    expect(picks.size).toBe(3); // every option is in the weighted pool
+  });
+});
+
+describe('R1 Amaterasu', () => {
+  it('uncleansable black flames with grievous wounds; jump once to the nearest enemy within 400 on death', () => {
+    const { sim, foes } = setup([0, 0, 0, 1], [[450, 0], [450, 200], [450, -330]], { ult: 0 });
     const [a, b, c] = foes as [number, number, number];
-    cmd(sim, cast(1, CX + 400, CY, a));
-    steps(sim, 12);
-    expect(isEmbered(sim, a)).toBe(true);
+    cmd(sim, cast(3, CX + 450, CY, a));
+    steps(sim, 10);
+    expect(isAmaterasuBurning(sim, a)).toBe(true);
+    expect(healMult(sim, a)).toBeCloseTo(0.6);
+    castSummonerSpell(sim, a, 'reinigen', 0, 0);
+    step(sim);
+    expect(isAmaterasuBurning(sim, a)).toBe(true);
     dealDamage(sim, -1, a, 1e6, 'true');
     steps(sim, 2);
-    expect(isEmbered(sim, b)).toBe(true); // 200 away beats 280
-    expect(isEmbered(sim, c)).toBe(false);
+    expect(isAmaterasuBurning(sim, b)).toBe(true); // 200 beats 330
     dealDamage(sim, -1, b, 1e6, 'true');
     steps(sim, 2);
-    expect(isEmbered(sim, c)).toBe(false); // only one jump
-  });
-
-  it('on his own decoy: the decoy burns 4 s and damages enemies within 250', () => {
-    const { sim, s, foes } = setup([0, 1, 1, 0], [[-150, 0]]);
-    const f = foes[0]!;
-    cmd(sim, cast(2, CX + 450, CY));
-    step(sim);
-    const d = sevDecoy(sim, s);
-    expect(d).toBeGreaterThan(0);
-    const hits = collect(sim, sec(4.5), s, cast(1, CX, CY, d));
-    expect(hits.filter((h) => h.dst === f).length).toBeGreaterThanOrEqual(3);
-    // the burning decoy outlived its 2.5 s lifetime
-    expect(petsOf(sim, s, DECOY).length).toBe(0);
+    expect(isAmaterasuBurning(sim, c)).toBe(false); // once only
+    expect(buffs(sim, b).filter((x) => x.id === AMATERASU).length).toBe(0);
   });
 });
 
-describe('Sev E Trugbild', () => {
-  it('blinks 450 and leaves a decoy with Sev’s HP numbers at the start for 2.5 s', () => {
-    const { sim, s } = setup([0, 0, 1, 0]);
-    cmd(sim, cast(2, CX + 1000, CY));
-    expect(sim.c.Pos.x[s]!).toBeGreaterThan(CX + 400);
-    const d = sevDecoy(sim, s);
-    expect(d).toBeGreaterThanOrEqual(0);
-    expect(sim.c.Pos.x[d]!).toBeCloseTo(CX, 0);
-    expect(sim.c.Hp.max[d]).toBe(sim.c.Hp.max[s]);
-    steps(sim, sec(2.5) + 2);
-    expect(sevDecoy(sim, s)).toBe(-1);
-  });
-
-  it('snapshots show the decoy as Sev (look + level) to the enemy team', () => {
-    const { sim, s } = setup([0, 0, 1, 0], [[300, 0]]);
-    cmd(sim, cast(2, CX + 450, CY));
-    const d = sevDecoy(sim, s);
-    const snap = buildSnapshot(sim, 1, 1);
-    const e = snap.entities.find((x) => x.id === d)!;
-    expect(e.look).toBe('sev');
-    expect(e.level).toBe(sim.c.Champ.level[s]);
-    expect(e.maxMana).toBe(sim.c.Mana.max[s]);
-  });
-
-  it('an enemy ability hitting the decoy gives the attacker a Nachbild; autos do not', () => {
-    const { sim, s, foes } = setup([0, 0, 1, 0], [[300, 0], [300, 200]]);
-    cmd(sim, cast(2, CX - 450, CY));
-    const d = sevDecoy(sim, s);
-    dealDamage(sim, foes[0]!, d, 10, 'magic');
-    dealDamage(sim, foes[1]!, d, 10, 'phys', { isAuto: true });
-    expect(hasNachbild(sim, foes[0]!, s)).toBe(true);
-    expect(hasNachbild(sim, foes[1]!, s)).toBe(false);
-  });
-});
-
-describe('Sev passive Nachbild', () => {
-  it('autos on a Nachbild target deal bonus magic damage and extend the ember by 0.5 s', () => {
-    const { sim, s, foes } = setup([0, 1, 0, 0], [[400, 0]]);
-    const f = foes[0]!;
-    cmd(sim, cast(1, CX + 400, CY, f));
+describe('R2 Susanoo', () => {
+  it('shield, slow immunity, sweeping autos, one sword-thrust recast', () => {
+    const { sim, s, foes } = setup([0, 0, 0, 1], [[450, 0], [450, 150], [900, 0]], { ult: 1 });
+    const [a, b, c] = foes as [number, number, number];
+    addBuff(sim, s, { kind: 'slow', id: 'test', src: a, pct: 50, ticks: sec(3) });
+    cmd(sim, cast(3, CX, CY));
     steps(sim, 10);
-    const before = buffs(sim, f).find((b) => b.kind === 'dot' && b.id === EMBER)!.until;
-    const hits = collect(sim, 45, s, { t: 'attack', target: f });
-    const after = buffs(sim, f).find((b) => b.kind === 'dot' && b.id === EMBER)!.until;
-    expect(after - before).toBeGreaterThanOrEqual(sec(0.5));
-    // auto + bonus instance land on the same tick
-    const byTick = new Map<number, number>();
-    for (const h of hits.filter((x) => x.dst === f)) byTick.set(h.tick, (byTick.get(h.tick) ?? 0) + 1);
-    expect([...byTick.values()].some((n) => n >= 2)).toBe(true);
+    expect(susanooActive(sim, s)).toBe(true);
+    expect(sim.c.Hp.shield[s]!).toBeGreaterThan(200);
+    expect(strongestSlow(sim, s)).toBe(0);
+    const autos = collect(sim, 60, s, { t: 'attack', target: a });
+    expect(dmgTo(autos, b)).toBeGreaterThan(0); // the sweep hits the neighbour of the auto target
+    const thrust = collect(sim, 5, s, cast(3, CX + 1000, CY));
+    expect(dmgTo(thrust, c)).toBeGreaterThan(0); // 900 away on the line
+    const again = collect(sim, 5, s, cast(3, CX + 1000, CY));
+    expect(dmgTo(again, c)).toBe(0); // recast only once
   });
 });
 
-describe('Sev R Augenbann', () => {
-  it('needs a Nachbild target', () => {
-    const { sim, s, foes } = setup([0, 0, 0, 1], [[500, 0]]);
-    cmd(sim, cast(3, CX + 500, CY, foes[0]!));
-    steps(sim, 20);
-    expect(isFeared(sim, foes[0]!)).toBe(false);
-    expect(abilityHud(sim, s)[3]!.cdLeft).toBe(0);
-  });
-
-  it('after 0.5 s eye contact: fear 1.5 s (flees, no casts/summoners, revealed), then damage; +50 % with ember', () => {
-    const run = (withEmber: boolean): number => {
-      const { sim, s, foes } = setup([0, 1, 0, 1], [[500, 0]]);
+describe('R3 Tsukuyomi', () => {
+  it('suppresses 1.5 s, roots Sev, tints the target, damage scales with missing health', () => {
+    const run = (hpFrac: number): number => {
+      const { sim, s, foes } = setup([0, 0, 0, 1], [[400, 0]], { ult: 2 });
       const f = foes[0]!;
-      addBuff(sim, f, { kind: 'mark', id: NACHBILD, src: s, ticks: sec(5) });
-      if (withEmber) {
-        cmd(sim, cast(1, CX + 500, CY, f));
-        steps(sim, 10);
-      }
-      cmd(sim, cast(3, CX + 500, CY, f));
-      steps(sim, sec(0.5) + 1);
-      expect(isFeared(sim, f)).toBe(true);
-      expect(canCast(sim, f)).toBe(false);
-      expect(castSummoner(sim, f, 0, 0, 0)).toBe('cc');
-      expect(ccLevel(sim, f)).toBe(3.5);
-      expect(sevBann(sim, s)?.t).toBe(f);
-      const x0 = sim.c.Pos.x[f]!;
-      steps(sim, 20);
-      expect(sim.c.Pos.x[f]!).toBeGreaterThan(x0 + 40); // walks away from Sev (who is at -x)
-      const hits = collect(sim, sec(1.5), s);
-      const big = hits.filter((h) => h.dst === f).map((h) => h.amount).sort((a, b) => b - a)[0] ?? 0;
-      expect(isFeared(sim, f)).toBe(false);
-      return big;
+      sim.c.Hp.cur[f] = sim.c.Hp.max[f]! * hpFrac;
+      cmd(sim, cast(3, CX + 400, CY, f));
+      steps(sim, 10);
+      expect(hasBuff(sim, f, 'suppress', 'sev_r3')).toBe(true);
+      expect(hasBuff(sim, f, 'mark', MOON)).toBe(true);
+      expect(canMove(sim, s)).toBe(false);
+      expect(tsukuyomiTarget(sim, s)).toBe(f);
+      const hits = collect(sim, sec(1.6), s);
+      expect(hasBuff(sim, f, 'suppress', 'sev_r3')).toBe(false);
+      return dmgTo(hits, f);
     };
-    const plain = run(false);
-    const burned = run(true);
-    expect(plain).toBeGreaterThan(100);
-    expect(burned / plain).toBeCloseTo(1.5, 1);
-  });
-
-  it('tenacity shortens the fear', () => {
-    const { sim, s, foes } = setup([0, 0, 0, 1], [[500, 0]]);
-    const f = foes[0]!;
-    addBuff(sim, f, { kind: 'mark', id: NACHBILD, src: s, ticks: sec(5) });
-    addBuff(sim, f, { kind: 'stat', stat: 'tenacity', id: 'test', src: f, pct: 50, ticks: sec(10) });
-    step(sim);
-    expect(sim.c.Stats.tenacity[f]!).toBeGreaterThan(0);
-    cmd(sim, cast(3, CX + 500, CY, f));
-    steps(sim, sec(0.5) + 1);
-    const fear = buffs(sim, f).find((b) => b.kind === 'fear')!;
-    expect(fear.until - fear.start).toBeLessThan(sec(1.5));
-  });
-
-  it('losing sight during the eye contact cancels the cast', () => {
-    const { sim, s, foes } = setup([0, 0, 0, 1], [[500, 0]]);
-    const f = foes[0]!;
-    addBuff(sim, f, { kind: 'mark', id: NACHBILD, src: s, ticks: sec(5) });
-    cmd(sim, cast(3, CX + 500, CY, f));
-    steps(sim, 3);
-    addBuff(sim, f, { kind: 'stat', stat: 'invisible', id: 'test', src: f, ticks: sec(3) });
-    steps(sim, 20);
-    expect(isFeared(sim, f)).toBe(false);
+    const full = run(1);
+    const half = run(0.5);
+    expect(full).toBeGreaterThan(100);
+    expect(half).toBeGreaterThan(full * 1.2);
   });
 });
 
 describe('Sev determinism', () => {
-  it('same inputs give the same state hash', () => {
-    const run = (): string => {
-      const { sim, s, foes } = setup([1, 1, 1, 1], [[450, 0], [450, 150]]);
-      const f = foes[0]!;
-      const script: [number, Command][] = [
-        [1, cast(1, CX + 450, CY, f)],
-        [15, cast(0, CX + 450, CY)],
-        [40, cast(3, CX + 450, CY, f)],
-        [80, cast(2, CX - 300, CY)],
-        [100, { t: 'attack', target: f }],
-      ];
-      for (let i = 0; i < 200; i++) {
-        const c = script.find(([t]) => t === i);
-        step(sim, c ? [{ slot: 0, cmd: c[1] }] : []);
-      }
-      void s;
-      return stateHash(sim);
-    };
-    expect(run()).toBe(run());
+  it('same inputs give the same state hash (all abilities, each ultimate)', () => {
+    for (const ult of [0, 1, 2] as const) {
+      const run = (): string => {
+        const { sim, foes } = setup([1, 1, 1, 1], [[450, 0], [450, 150]], { ult });
+        const f = foes[0]!;
+        const script: [number, Command][] = [
+          [1, cast(2, CX + 450, CY, f)],
+          [20, cast(0, CX + 450, CY)],
+          [60, cast(3, CX + 450, CY, f)],
+          [90, cast(3, CX + 450, CY, f)],
+          [120, cast(1, CX - 300, CY)],
+          [140, { t: 'attack', target: f }],
+        ];
+        for (let i = 0; i < 220; i++) {
+          const c = script.find(([t]) => t === i);
+          step(sim, c ? [{ slot: 0, cmd: c[1] }] : []);
+        }
+        return stateHash(sim);
+      };
+      expect(run()).toBe(run());
+    }
   });
 });

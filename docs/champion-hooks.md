@@ -266,15 +266,21 @@ recast / channel helpers) is documented at the top of `src/sim/champions/hooks.t
 
 ## Sev Aschenblick (`sev`)
 
-Spec: `docs/champions/sev.md`. Module hooks: `onTick` (ember upkeep + jump, ward end damage, eye contact, decoy autos), `targetOk` (W also accepts his own decoy; R only enemy champions/dummies with his Nachbild), `ownsHits: ['sev_w', 'sev_r']`.
+Spec: `docs/champions/sev.md` (Fassung 3). Module hooks: `onTick` (Gaze expiry, burning grounds, clone timer/autos,
+Amaterasu jump, Tsukuyomi end, Susanoo slow immunity + recast close), `targetOk` (Tsukuyomi only on champions/dummies),
+`ownsHits: ['sev_q', 'sev_w', 'sev_e', 'sev_r1', 'sev_r2', 'sev_r3']`. R is chosen once per match
+(`ChampionData.ultChoices`, command `ultChoice`, bots: `botUltChoice` weights); `abilities[3]` is the placeholder.
 
 | Hook | Slot | Behaviour |
 |---|---|---|
-| `sev_nachbild` | Passive | Every Sev ability hit marks the enemy with Nachbild (`mark` buff, 3 s). His basic attacks on a marked enemy deal +10→30 by level (+0.15 AP) magic damage and extend his running Schwarzglut on it by 0.5 s (max 8 s in total). `onPetDamaged`: an enemy ability (not an auto) hitting his decoy marks the attacker. |
-| `sev_q_fake_cancel` | Q | Recast during the 0.4 s wind-up cancels the beam (fake): mana refunded, 2 s cooldown (Gorvam Q pattern). |
-| `sev_w_ember` | W | Owned hits. Enemy target: `dot` (listed damage per second, ×1.4 vs champions like ability damage) and `grievous` 40 % for 4 s, both `uncleansable`; Nachbild. If the target dies (any killer) while burning, the ember jumps once with the remaining duration to the nearest enemy unit within 300 of the death point. Own decoy as target: the decoy lives as long as the ember (4 s) and deals 50 % of the per-second damage to enemies within 250 every second. |
-| `sev_e_decoy` | E | After the 450 blink a decoy pet (`sev_decoy`) stays at the start position for 2.5 s: Sev's current HP / max HP / mana (fake bar; snapshot `look: 'sev'` + level, rendered with Sev's sprite and a champion bar), 0 AD, mirrors Sev's attack target (harmless autos). Only one decoy per Sev. |
-| `sev_r_bann` | R | Owned hits. The 0.5 s wind-up is the eye contact: losing sight of the target cancels it (refund, 2 s cooldown). Then `fear` (new CC, 1.5 s, tenacity applies) + 50 % slow (uncleansable) + reveal for Sev's team; while feared the target walks away from Sev and cannot attack, cast or use summoners (Reinigen included). At the end of the fear: listed magic damage (×1.4 vs champions), ×1.5 if the target had Schwarzglut at any time during the ward; Nachbild. Visuals: ring on the target and three Sev phantoms around it. |
+| `sev_rabenblick` | Passive | Ability hits on champions/dummies add a Gaze stack (max 3, 6 s); at 3 a 0.75 s stun (`sev_genjutsu`), per-target cooldown 12 s (stacks stay capped meanwhile). Also: the W clone bursts when it takes any damage (`onPetDamaged`); during Susanoo autos sweep all enemies within 300 of the target (2nd damage effect of `sev_r2`). |
+| `sev_q_fireball` | Q | Owned hits: on the first unit hit or at max range (phase `expire`) the fireball explodes (radius 300, 1st damage effect, Gaze) and leaves burning ground for 2 s (2nd damage effect per second, ticks every 0.5 s). |
+| `sev_q_fake_cancel` | Q | Recast during the 0.4 s wind-up cancels (refund, 2 s cooldown). |
+| `sev_w_crow_clone` | W | Blink 400 (flag `root_ok`: castable while rooted, not while stunned). Spawns the clone pet `sev_decoy` at the start position (Sev's HP/mana, snapshot `look`), retargets enemy homing projectiles flying at Sev to it. The clone bursts after 1.5 s or when hit: radius 350 damage + slow + Gaze. |
+| `sev_e_bannblick` | E | Owned hits: after the 0.4 s eye contact, stun (data `stun`) if the target faces Sev (facing · direction to Sev > 0), else slow (data `slow`); Gaze. Visual gaze line during the wind-up. |
+| `sev_r1_amaterasu` | R1 | Uncleansable dot (`sev_r1`, damage effect per second, ×1.4 vs champions) + grievous 40 % for 5 s; if the target dies burning the flames jump once (radius 400) with the remaining time; burning-ground visual. |
+| `sev_r2_susanoo` | R2 | Self: generic shield; 6 s slow immunity and sword sweeps; recast window opens: instant sword thrust 1000 × 120 (1st damage effect) on every enemy in the line, once. |
+| `sev_r3_tsukuyomi` | R3 | Suppress the target 1.5 s (+ mark `sev_r3_moon` = red-black tint on its HUD), root Sev as long; at the end damage incl. 25 % of the target's missing health. |
 
 ---
-Total: 107 hook ids across 26 champions.
+Total: 110 hook ids across 26 champions.

@@ -1,3 +1,45 @@
+# Sev Aschenblick – Fassung 3 (aktuell)
+
+Nutzer-Feedback (über den Lead): „Sev spielt sich zu langweilig und sieht nicht aus wie Itachi – reworke die Abilities.“
+Sev soll klar Itachi-inspiriert sein. Name bleibt Sev Aschenblick. Nur die geschützten Marken bleiben draußen (kein
+Rote-Wolken-Mantelmuster, kein Blatt-Stirnband-Symbol, kein kopiertes Komma-Auge); alles andere darf nach Itachi aussehen.
+
+AUSSEHEN: blasses Gesicht, lange schwarze Haare mit tiefem Pferdeschwanz und langen Ponysträhnen, die das Gesicht rahmen,
+Tränensäcke-Linien unter den Augen, leuchtend rote Augen mit langsam drehendem Dreiklingen-Muster (eigenes Design),
+dunkler langer hochgeschlossener Mantel mit karmesinrotem Futter und Krähenfeder-Muster, Halskette mit drei Ringen,
+Krähen kreisen im Idle um ihn und brechen bei Casts hervor. Silhouette bei 64 px: „langhaarige Mantelfigur mit Krähen“.
+
+KIT (Spaß zuerst; Zahlen in sev.json, gegen die anderen Mids mit tools/balance.ts und Bot-Sim tunen):
+- Passiv „Rabenblick“: Fähigkeitstreffer geben einen Blick-Stack (max. 3, 6 s); bei 3 fällt das Ziel in ein kurzes
+  Genjutsu: Betäubung 0,75 s, Abklingzeit pro Ziel 12 s. Die Augen flackern sichtbar bei 3 Stacks.
+- Q „Feuerball“: großer Feuerball als Linien-Skillshot (~900), explodiert als Fläche beim ersten Treffer oder bei
+  maximaler Reichweite, hinterlässt ~1,5 s brennenden Boden. Der Fake-Recast bleibt (Re-Cast innerhalb 0,4 s bricht ab,
+  Mana zurück, kurze Abklingzeit) – Trainingswert.
+- W „Krähendoppel“: sofortiger Blink ~400 Richtung Cursor, auch gewurzelt/verlangsamt wirkbar (nicht betäubt), lässt an
+  der alten Stelle einen Krähen-Klon mit Sevs Aussehen und falscher Lebensleiste; der Klon zerplatzt in Krähen, wenn er
+  von irgendetwas getroffen wird oder nach 1,5 s (Flächenschaden + Verlangsamung + Blick-Stack). Projektile, die schon
+  auf Sev fliegen, wechseln auf den Klon (Gefühl eines Tausch-Jutsu).
+- E „Bannblick“: gezielt ~650, 0,4 s Blickkontakt; schaut das Ziel zu Sev (Winkel < 90°), wird es 1,25 s betäubt,
+  sonst verlangsamt. Wegschauen ist der Konter; Telegraph, damit der Gegner reagieren kann.
+- R (Level 6): der Spieler WÄHLT eines von dreien, dauerhaft für das Match (Wahlkarten über der Fähigkeitsleiste,
+  Tasten 1/2/3, Bots wählen aus den Daten `botUltChoice`, deterministisch):
+  1. „Amaterasu“: gezielt, schwarze Flammen mit karmesinrotem Kern auf dem Ziel: starker Schaden über Zeit, nicht
+     reinigbar, schwere Wunden; springt einmal auf den nächsten Gegner, wenn das Ziel brennend stirbt; brennender Boden
+     darunter.
+  2. „Susanoo“: 6 s riesiger durchscheinender orange-roter Geisterkrieger um Sev: großer Schild, Immunität gegen
+     Verlangsamung, Autos werden breite Schwerthiebe; einmal Re-Cast: langer Schwertstoß als Skillshot.
+  3. „Tsukuyomi“: gezielt 500, Unterdrückung 1,5 s (Bildschirm des Ziels rot-schwarz getönt, roter Mond), Sev
+     währenddessen gewurzelt, Schaden am Ende skaliert mit fehlendem Leben des Ziels.
+Wiederverwenden: Trugbild-Entity, Furcht-CC, uncleansable, falsche Lebensleiste. Visuals auffällig und je Fähigkeit
+verschieden (Feuerball, Krähenexplosion, Augenflackern, schwarze Flamme, Geisterkrieger, roter Mond); neues Sprite nach
+obigem Look. Bot-Regeln in docs/agents/issues.md (A2 ergänzt Build/Ult-Wahl). Tests: Kit-Tests aktualisiert,
+Ult-Wahl dauerhaft + Bot-Default, Determinismus, sideMirror, validate. Screenshots jeder Fähigkeit und der drei Ults in
+docs/ist/e-sev3-*.jpg.
+
+---
+
+# Frühere Fassung (2), nicht mehr gültig
+
 Prompt: Neuer Champion „Sev Aschenblick“ (Fassung 2)
 Baue einen 27. Champion nach den Konventionen aus `docs/spec-champions.md` (JSON in `src/data/champions/sev.json`, Hooks in `src/sim/champions/sev.ts`, Eintrag in `champion-hooks.md`, Build, Prägungen, drei Signature-Combos, Sprite nach Stilvariante A, Silhouette bei 64 px erkennbar, Visuals für jeden Zustand).
 Konzept: Mid/Jungle, Ranged 525, AP-Mage um ein Thema: das Auge, das brennt und täuscht. Schweigsamer Deserteur der Aschehalle; greift nie zuerst an, bestraft stattdessen. Trainingszweck: Fake-Casts lesen, unlöschbaren Brand managen, Trugbild vom echten Ziel unterscheiden, lange Cooldowns tracken.

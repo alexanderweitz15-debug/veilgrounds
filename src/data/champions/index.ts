@@ -1,7 +1,7 @@
 // Typed champion registry for all 27 roster champions (order = spec roster).
 // `satisfies` checks every JSON file's shape against the widened schema (Json<ChampionData>) at compile time;
 // asChampion() then checks enums, tuple and rank-array lengths and unknown keys at runtime and narrows the type.
-import type { ChampionData } from '../../sim/champions/schema';
+import type { AbilityData, ChampionData } from '../../sim/champions/schema';
 import { asChampion, type Json } from './validate';
 import aurel from './aurel.json';
 import brom from './brom.json';
@@ -64,3 +64,17 @@ const raw = {
 export const champions: Record<string, ChampionData> = Object.fromEntries(
   Object.entries(raw).map(([id, data]) => [id, asChampion(data, `${id}.json`)]),
 );
+
+/**
+ * Ability of a slot for display/render code. 0..3 = Q W E R; with `ult` >= 0 slot 3 is that chosen ultimate
+ * (ChampionData.ultChoices, Sev). Virtual slots 4..6 = ultChoices[0..2] (icons, tooltips, choice cards).
+ */
+export function abilityForSlot(id: string, slot: number, ult = -1): AbilityData | undefined {
+  const d = champions[id];
+  if (!d) return undefined;
+  if (slot >= 4 && slot <= 6) return d.ultChoices?.[slot - 4];
+  return slot === 3 && ult >= 0 && d.ultChoices?.[ult] ? d.ultChoices[ult] : d.abilities[slot];
+}
+
+/** Display slot of the R button: 4 + chosen ultimate once chosen, else 3. */
+export const ultDisplaySlot = (slot: number, chosen: number | undefined): number => (slot === 3 && chosen !== undefined && chosen >= 0 ? 4 + chosen : slot);

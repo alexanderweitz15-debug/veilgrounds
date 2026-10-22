@@ -1,13 +1,13 @@
 {
   "id": "sev",
   "name": "Sev Aschenblick",
-  "title": { "de": "Der Deserteur der Aschehalle", "en": "The Ash Hall Deserter" },
+  "title": { "de": "Der Rabe der Aschehalle", "en": "The Raven of the Ash Hall" },
   "roles": ["mid", "jungle"],
-  "archetype": "trickster_burn_mage",
+  "archetype": "genjutsu_mage",
   "botBias": { "tradeLength": -1, "resourceUse": 1 },
   "trainingPurpose": {
-    "de": "Fake-Casts lesen, unlöschbaren Brand managen, Trugbild vom echten Ziel unterscheiden, lange Cooldowns tracken.",
-    "en": "Read fake casts, manage an uncleansable burn, tell the decoy from the real target, track long cooldowns."
+    "de": "Fake-Casts lesen, Blickkontakt meiden (wegschauen), Klon vom echten Ziel unterscheiden, Ult-Wahl des Gegners erkennen.",
+    "en": "Read fake casts, break eye contact (look away), tell the clone from the real target, recognise the enemy's ultimate choice."
   },
   "attackType": "ranged",
   "resource": "mana",
@@ -35,113 +35,188 @@
     "radius": 55
   },
   "passive": {
-    "name": { "de": "Nachbild", "en": "Afterimage" },
+    "name": { "de": "Rabenblick", "en": "Raven Gaze" },
     "desc": {
-      "de": "Jeder Fähigkeitstreffer hinterlässt 3 s ein Nachbild. Autos auf Gegner mit Nachbild: +10–30 (+15 % AP) magischer Schaden und laufende Schwarzglut +0,5 s.",
-      "en": "Every ability hit leaves an afterimage for 3 s. Basic attacks on afterimaged enemies deal +10-30 (+15% AP) magic damage and extend an active Black Ember by 0.5 s."
+      "de": "Fähigkeitstreffer auf Champions geben einen Blick-Stack (max. 3, 6 s). Bei 3 Stacks fällt das Ziel in ein kurzes Genjutsu: 0,75 s betäubt (pro Ziel alle 12 s).",
+      "en": "Ability hits on champions add a Gaze stack (max 3, 6 s). At 3 stacks the target falls into a short genjutsu: stunned for 0.75 s (once per 12 s per target)."
     },
-    "hooks": ["sev_nachbild"]
+    "hooks": ["sev_rabenblick"]
   },
   "abilities": [
     {
       "id": "sev_q",
-      "name": { "de": "Glutblick", "en": "Ember Gaze" },
+      "name": { "de": "Feuerball", "en": "Great Fireball" },
       "desc": {
-        "de": "Nach 0,4 s schießt das Glutauge einen Strahl (950, Breite 60): 70/110/150/190/230 (+60 % AP) magisch. Re-Cast während der 0,4 s bricht ab (Fake): Mana zurück, 2 s Abklingzeit.",
-        "en": "After 0.4 s the ember eye fires a beam (950, width 60): 70/110/150/190/230 (+60% AP) magic. Recast during the 0.4 s cancels it (fake): mana refunded, 2 s cooldown."
+        "de": "Nach 0,4 s ein großer Feuerball (900): explodiert am ersten Ziel oder am Ende in einem Flammenring (Radius 300): 80/125/170/215/260 (+70 % AP) magisch, dann 2 s brennender Boden (25/40/55/70/85 (+15 % AP)/s). Re-Cast in den 0,4 s bricht ab (Fake): Mana zurück, 2 s Abklingzeit.",
+        "en": "After 0.4 s a great fireball (900): explodes on the first unit or at the end in a ring of flame (radius 300): 80/125/170/215/260 (+70% AP) magic, then 2 s of burning ground (25/40/55/70/85 (+15% AP)/s). Recast within the 0.4 s cancels it (fake): mana refunded, 2 s cooldown."
       },
       "type": "skillshot_line",
       "castTime": 0.4,
       "movesWhileCasting": false,
-      "range": 950,
-      "cooldown": 7,
-      "cost": [50, 55, 60, 65, 70],
+      "range": 900,
+      "cooldown": [9, 8.5, 8, 7.5, 7],
+      "cost": [60, 65, 70, 75, 80],
       "costType": "mana",
-      "width": 60,
-      "speed": 1700,
+      "width": 90,
+      "speed": 1300,
+      "radius": 300,
+      "duration": 2,
       "flags": ["blocked_by_minions", "recast"],
       "effects": [
-        { "kind": "damage", "type": "magic", "amount": { "base": [70, 110, 150, 190, 230], "ap": 0.6 } },
+        { "kind": "damage", "type": "magic", "amount": { "base": [80, 125, 170, 215, 260], "ap": 0.7 } },
+        { "kind": "damage", "type": "magic", "amount": { "base": [25, 40, 55, 70, 85], "ap": 0.15 } },
+        { "kind": "hook", "id": "sev_q_fireball" },
         { "kind": "hook", "id": "sev_q_fake_cancel" }
       ]
     },
     {
       "id": "sev_w",
-      "name": { "de": "Schwarzglut", "en": "Black Ember" },
+      "name": { "de": "Krähendoppel", "en": "Crow Double" },
       "desc": {
-        "de": "Champion oder Vasall (650): 4 s schwarzes Feuer, 20/32/44/56/68 (+22 % AP) magisch pro Sekunde und schwere Wunden (−40 % Heilung). Nicht reinigbar. Stirbt das Ziel, springt die Glut einmal auf den nächsten Gegner in 300. Auf das eigene Trugbild: es brennt 4 s und macht 50 % davon an Gegnern in 250.",
-        "en": "Champion or minion (650): 4 s of black fire, 20/32/44/56/68 (+22% AP) magic per second and grievous wounds (-40% healing). Cannot be cleansed. If the target dies the ember jumps once to the nearest enemy within 300. On his own decoy: it burns for 4 s and deals 50% of that to enemies within 250."
-      },
-      "type": "targeted",
-      "castTime": 0.25,
-      "movesWhileCasting": false,
-      "range": 650,
-      "cooldown": [14, 13, 12, 11, 10],
-      "cost": [70, 75, 80, 85, 90],
-      "costType": "mana",
-      "duration": 4,
-      "effects": [
-        { "kind": "damage", "type": "magic", "amount": { "base": [20, 32, 44, 56, 68], "ap": 0.22 } },
-        { "kind": "hook", "id": "sev_w_ember" }
-      ]
-    },
-    {
-      "id": "sev_e",
-      "name": { "de": "Trugbild", "en": "Decoy" },
-      "desc": {
-        "de": "Blink 450. An der Startposition bleibt 2,5 s ein Trugbild mit Sevs Aussehen und gefälschter Lebensleiste, das Autos ohne Schaden ausführt. Trifft ein Gegner es mit einer Fähigkeit, erhält er ein Nachbild.",
-        "en": "Blink 450. A decoy with Sev's look and a fake health bar stays at the start position for 2.5 s and fires harmless basic attacks. An enemy hitting it with an ability gets an afterimage."
+        "de": "Blink 400, auch gewurzelt. An der alten Stelle bleibt ein Krähen-Klon mit Sevs Aussehen und falscher Lebensleiste; Projektile auf Sev wechseln auf ihn. Wird er getroffen oder nach 1,5 s bricht ein Krähensturm los (Radius 350): 70/110/150/190/230 (+60 % AP) magisch, 35 % Slow 1,5 s, Blick-Stack.",
+        "en": "Blink 400, also while rooted. A crow clone with Sev's look and a fake health bar stays at the old spot; projectiles flying at Sev switch to it. When hit, or after 1.5 s, it bursts into a crow storm (radius 350): 70/110/150/190/230 (+60% AP) magic, 35% slow for 1.5 s, Gaze stack."
       },
       "type": "blink",
       "castTime": 0,
       "movesWhileCasting": true,
-      "range": 450,
-      "cooldown": [18, 17, 16, 15, 14],
+      "range": 400,
+      "cooldown": [16, 15, 14, 13, 12],
       "cost": 60,
       "costType": "mana",
-      "duration": 2.5,
-      "effects": [{ "kind": "hook", "id": "sev_e_decoy" }]
+      "radius": 350,
+      "duration": 1.5,
+      "flags": ["root_ok"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [70, 110, 150, 190, 230], "ap": 0.6 } },
+        { "kind": "slow", "pct": 35, "duration": 1.5 },
+        { "kind": "hook", "id": "sev_w_crow_clone" }
+      ]
+    },
+    {
+      "id": "sev_e",
+      "name": { "de": "Bannblick", "en": "Binding Gaze" },
+      "desc": {
+        "de": "Ziel (650), 0,4 s Blickkontakt. Schaut das Ziel zu Sev (Winkel unter 90°), ist es 1,25 s betäubt, sonst 1,25 s um 40 % verlangsamt. Wegschauen kontert.",
+        "en": "Target (650), 0.4 s of eye contact. If the target faces Sev (angle below 90°) it is stunned for 1.25 s, otherwise slowed by 40% for 1.25 s. Looking away counters it."
+      },
+      "type": "targeted",
+      "castTime": 0.4,
+      "movesWhileCasting": false,
+      "range": 650,
+      "cooldown": [15, 14, 13, 12, 11],
+      "cost": [60, 65, 70, 75, 80],
+      "costType": "mana",
+      "effects": [
+        { "kind": "stun", "duration": 1.25 },
+        { "kind": "slow", "pct": 40, "duration": 1.25 },
+        { "kind": "hook", "id": "sev_e_bannblick" }
+      ]
     },
     {
       "id": "sev_r",
-      "name": { "de": "Augenbann", "en": "Eye Ward" },
+      "name": { "de": "Erwachtes Auge", "en": "Awakened Eye" },
       "desc": {
-        "de": "Champion mit Nachbild (700): 0,5 s Blickkontakt (bricht bei Sichtverlust ab), dann 1,5 s Bann: enthüllt, Fähigkeiten und Beschwörerzauber gesperrt, flieht 50 % verlangsamt vor Sev (Furcht). Am Ende 180/300/420 (+70 % AP) magisch, +50 % wenn das Ziel währenddessen Schwarzglut hatte.",
-        "en": "Champion with an afterimage (700): 0.5 s of eye contact (breaks on lost sight), then a 1.5 s ward: revealed, abilities and summoner spells locked, flees from Sev slowed by 50% (fear). At the end 180/300/420 (+70% AP) magic, +50% if the target had Black Ember meanwhile."
+        "de": "Mit dem ersten Punkt wählt Sev für das ganze Match eines von drei Ultimates: Amaterasu, Susanoo oder Tsukuyomi.",
+        "en": "With the first point Sev chooses one of three ultimates for the whole match: Amaterasu, Susanoo or Tsukuyomi."
+      },
+      "type": "self",
+      "castTime": 0,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [100, 85, 70],
+      "cost": 0,
+      "costType": "none",
+      "effects": []
+    }
+  ],
+  "ultChoices": [
+    {
+      "id": "sev_r1",
+      "name": { "de": "Amaterasu", "en": "Amaterasu" },
+      "desc": {
+        "de": "Ziel (700): 5 s schwarze Flammen, 40/60/80 (+12 % AP, +1,5 % max. Leben des Ziels) magisch pro Sekunde, schwere Wunden (−40 % Heilung), nicht reinigbar, brennender Boden darunter. Stirbt das Ziel brennend, springen die Flammen einmal auf den nächsten Gegner in 400.",
+        "en": "Target (700): 5 s of black flames, 40/60/80 (+12% AP, +1.5% target max health) magic per second, grievous wounds (-40% healing), cannot be cleansed, burning ground beneath. If the target dies burning, the flames jump once to the nearest enemy within 400."
       },
       "type": "targeted",
-      "castTime": 0.5,
+      "castTime": 0.25,
       "movesWhileCasting": false,
       "range": 700,
-      "cooldown": [110, 90, 70],
+      "cooldown": [100, 85, 70],
+      "cost": 100,
+      "costType": "mana",
+      "duration": 5,
+      "radius": 400,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [40, 60, 80], "ap": 0.12, "targetMaxHp": 0.015 } },
+        { "kind": "hook", "id": "sev_r1_amaterasu" }
+      ]
+    },
+    {
+      "id": "sev_r2",
+      "name": { "de": "Susanoo", "en": "Susanoo" },
+      "desc": {
+        "de": "6 s Geisterkrieger: Schild 250/400/550 (+80 % AP), immun gegen Verlangsamung, Autos werden Schwerthiebe (alle Gegner in 300 um das Ziel: 30/50/70 (+20 % AP) magisch). Einmal Re-Cast: Schwertstoß (Linie 1.000, Breite 120) 150/250/350 (+60 % AP).",
+        "en": "6 s spectral warrior: shield 250/400/550 (+80% AP), immune to slows, basic attacks become sword sweeps (all enemies within 300 of the target: 30/50/70 (+20% AP) magic). Recast once: sword thrust (line 1,000, width 120) 150/250/350 (+60% AP)."
+      },
+      "type": "self",
+      "castTime": 0.25,
+      "movesWhileCasting": true,
+      "range": 1000,
+      "cooldown": [110, 95, 80],
+      "cost": 100,
+      "costType": "mana",
+      "duration": 6,
+      "width": 120,
+      "speed": 1800,
+      "flags": ["recast"],
+      "effects": [
+        { "kind": "shield", "amount": { "base": [250, 400, 550], "ap": 0.8 }, "duration": 6, "target": "self" },
+        { "kind": "damage", "type": "magic", "amount": { "base": [150, 250, 350], "ap": 0.6 } },
+        { "kind": "damage", "type": "magic", "amount": { "base": [30, 50, 70], "ap": 0.2 } },
+        { "kind": "hook", "id": "sev_r2_susanoo" }
+      ]
+    },
+    {
+      "id": "sev_r3",
+      "name": { "de": "Tsukuyomi", "en": "Tsukuyomi" },
+      "desc": {
+        "de": "Champion (500): 1,5 s unterdrückt im Mondbann, Sev ist so lange gewurzelt. Am Ende 150/225/300 (+50 % AP, +25 % fehlendes Leben des Ziels) magisch.",
+        "en": "Champion (500): suppressed for 1.5 s inside the moon illusion, Sev is rooted as long. At the end 150/225/300 (+50% AP, +25% of the target's missing health) magic."
+      },
+      "type": "targeted",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 500,
+      "cooldown": [120, 100, 80],
       "cost": 100,
       "costType": "mana",
       "duration": 1.5,
       "effects": [
-        { "kind": "damage", "type": "magic", "amount": { "base": [180, 300, 420], "ap": 0.7 } },
-        { "kind": "hook", "id": "sev_r_bann" }
+        { "kind": "damage", "type": "magic", "amount": { "base": [150, 225, 300], "ap": 0.5, "targetMissingHp": 0.25 } },
+        { "kind": "hook", "id": "sev_r3_tsukuyomi" }
       ]
     }
   ],
+  "botUltChoice": [4, 3, 3],
   "spikeLevels": [6],
   "spikeNote": {
-    "de": "Level 6: Augenbann macht aus Schwarzglut + Glutblick einen Kill-Combo.",
-    "en": "Level 6: Eye Ward turns Black Ember + Ember Gaze into a kill combo."
+    "de": "Level 6: die Ult-Wahl entscheidet den Spielstil (Amaterasu Druck, Susanoo Kampf, Tsukuyomi Exekution).",
+    "en": "Level 6: the ultimate choice sets the play style (Amaterasu pressure, Susanoo brawl, Tsukuyomi execute)."
   },
-  "maxOrder": ["Q", "W", "E"],
+  "maxOrder": ["Q", "E", "W"],
   "combos": [
-    { "name": { "de": "Brand und Blick", "en": "Burn and Gaze" }, "sequence": ["W", "Q", "AA"] },
-    { "name": { "de": "Falsches Auge", "en": "False Eye" }, "sequence": ["E", "Q", "Q", "W"] },
-    { "name": { "de": "Aschebann", "en": "Ash Ward" }, "sequence": ["W", "R", "Q", "AA"] }
+    { "name": { "de": "Feuer und Blick", "en": "Fire and Gaze" }, "sequence": ["E", "Q", "AA"] },
+    { "name": { "de": "Krähentausch", "en": "Crow Swap" }, "sequence": ["Q", "W", "E"] },
+    { "name": { "de": "Genjutsu-Kette", "en": "Genjutsu Chain" }, "sequence": ["E", "R", "Q", "AA"] }
   ],
-  "scores": { "engage": 2, "peel": 2, "range": 3, "scaling": 3, "waveclear": 2, "mobility": 2 },
+  "scores": { "engage": 3, "peel": 2, "range": 3, "scaling": 4, "waveclear": 3, "mobility": 2 },
   "voiceLines": {
-    "pick": { "de": "Ich schlage nie zuerst.", "en": "I never strike first." },
-    "firstBlood": { "de": "Du hast angefangen.", "en": "You started it." },
-    "kill": { "de": "Asche sieht nicht zurück.", "en": "Ash does not look back." },
-    "death": { "de": "Das Auge ... erlischt.", "en": "The eye ... goes out." },
-    "recall": { "de": "Zurück ins Grau.", "en": "Back into the grey." },
-    "taunt": { "de": "Welchen von uns willst du treffen?", "en": "Which one of us do you mean to hit?" }
+    "pick": { "de": "Ihr seht nur, was ich euch zeige.", "en": "You only see what I show you." },
+    "firstBlood": { "de": "Das erste Feuer brennt am längsten.", "en": "The first fire burns the longest." },
+    "kill": { "de": "Du hast zu lange hingesehen.", "en": "You looked too long." },
+    "death": { "de": "Auch Krähen ... fallen.", "en": "Even crows ... fall." },
+    "recall": { "de": "Die Krähen tragen mich.", "en": "The crows carry me." },
+    "taunt": { "de": "Schau mir in die Augen. Oder lieber nicht.", "en": "Look me in the eye. Or better not." }
   },
-  "silhouette": "tall narrow figure in a floor-length high-collared charcoal coat, one arm stretched out palm up with a small floating ember eye above the hand"
+  "silhouette": "tall long-haired figure in a floor-length high-collared dark cloak, low ponytail, crows circling him"
 }

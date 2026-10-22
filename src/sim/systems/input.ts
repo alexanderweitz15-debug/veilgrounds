@@ -4,7 +4,7 @@ import type { Sim } from '../sim';
 import type { System } from './index';
 import { findPath, nearestWalkable } from '../map';
 import { canTarget, onMoveCommand, setHoldFire, setAttackMoveCursor } from './attack';
-import { cancelCastIntents, commandCast, levelAbility, refreshCooldowns, updateCastIntents } from './abilities';
+import { cancelCastIntents, chooseUlt, commandCast, levelAbility, refreshCooldowns, updateCastIntents } from './abilities';
 import { cancelRecall, grantGold, grantXp, startRecall, xpToNext } from './economy';
 import { spawnDummy } from './champions';
 import { PING_KINDS, type Command } from '../types';
@@ -69,6 +69,7 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
   if (cmd.t === 'trinket') return void swapTrinket(sim, eid, cmd.id); // shop rule: also while dead
   if (cmd.t === 'ping') return ping(sim, eid, cmd); // pings also while dead
   if (cmd.t === 'chat') return chat(sim, eid, cmd);
+  if (cmd.t === 'ultChoice') return void chooseUlt(sim, eid, cmd.choice);
   if (!Unit.alive[eid]) return;
   switch (cmd.t) {
     case 'move':

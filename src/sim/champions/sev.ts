@@ -1,233 +1,362 @@
-// Sev Aschenblick hooks. Contract: ./hooks.ts, behaviour list: docs/champion-hooks.md, spec: docs/champions/sev.md.
-// Passive Nachbild (afterimage mark), Q Glutblick fake recast, W Schwarzglut (uncleansable ember, jumps once on death,
-// burning decoy), E Trugbild (decoy pet with a fake HP bar), R Augenbann (0.5 s eye contact, then fear).
+// Sev Aschenblick hooks (Fassung 3, docs/champions/sev.md). Contract: ./hooks.ts, behaviour list: docs/champion-hooks.md.
+// Passive Rabenblick (Gaze stacks -> genjutsu stun), Q Feuerball (fake recast, explosion, burning ground), W Krähendoppel
+// (blink + crow clone decoy that bursts), E Bannblick (eye contact: stun if facing Sev, else slow), R = choice of
+// Amaterasu (uncleansable black flames, jump on death) / Susanoo (shield, sweeps, thrust recast) / Tsukuyomi
+// (suppression, Sev rooted, missing-HP execute). All numbers live in sev.json except the hook constants below.
 
+import { query } from 'bitecs';
 import type { Sim } from '../sim';
 import { CHAMP_ABILITY_DMG_MULT, Kind, sec } from '../types';
-import { addBuff, buffs, extendBuff, hasBuff, reveal } from '../buffs';
+import { addBuff, buffs, hasBuff, removeBuffs } from '../buffs';
 import { dealDamage } from '../damage';
-import { cancelCast, champAbil, effectAmount, enemiesInRadius, rv } from '../systems/abilities';
+import { cancelCast, closeRecast, effectAmount, enemiesInRadius, enemiesOnSegment, openRecast, rv, ultChoiceOf } from '../systems/abilities';
 import { extendPet, petOwner, petTag, petsOf, removePet, spawnPet } from '../summons';
-import { sees } from '../vision';
-import type { ChampionHooks, ChampionVisuals, UnitMark, VisualObject } from './hooks';
-import { byLevel, ctxFor, hookState, isChampLike, peekState } from './util';
+import type { ChampionHooks, ChampionVisuals, EffectCtx, UnitMark, VisualObject } from './hooks';
+import { ctxFor, hookState, isChampLike, peekState } from './util';
+import type { Effect } from './schema';
 
-export const NACHBILD = 'sev_nachbild';
-export const EMBER = 'sev_w';
+export const BLICK = 'sev_blick';
+export const GENJUTSU = 'sev_genjutsu';
 export const DECOY = 'sev_decoy';
-export const FEAR = 'sev_r';
+export const AMATERASU = 'sev_r1';
+export const MOON = 'sev_r3_moon';
 
-const NACHBILD_TICKS = sec(3);
-/** Passive auto bonus: 10-30 by level (+15 % AP) magic; extends a running ember by 0.5 s (cap: 8 s in total). */
-const AUTO_LO = 10;
-const AUTO_HI = 30;
-const AUTO_AP = 0.15;
-const EMBER_EXTEND = sec(0.5);
-const EMBER_MAX = sec(8);
+// hook constants (not ability numbers)
+const BLICK_MAX = 3;
+const BLICK_TICKS = sec(6);
+const GENJUTSU_TICKS = sec(0.75);
+const GENJUTSU_CD = sec(12);
+const FIRE_TICK = sec(0.5);
 const GRIEVOUS_PCT = 40;
-const JUMP_RANGE = 300;
-/** Ember on the own decoy: 50 % of the ember damage per second to enemies within 250. */
-const DECOY_BURN_PCT = 0.5;
-const DECOY_BURN_RADIUS = 250;
-const R_SLOW_PCT = 50;
-const R_EMBER_BONUS = 1.5;
-/** R eye contact lost during the wind-up: cast cancelled, mana refunded, this cooldown. */
-const R_BREAK_CD = sec(2);
-/** Phantoms the feared target sees around itself (visual only). */
-const PHANTOM_DIST = 170;
+const SWEEP_RADIUS = 300;
+const BURST_SHOW = sec(0.9);
 
 // ------------------------------------------------------------------ state
 
-interface Ember {
+interface Blick {
   t: number;
   serial: number;
-  /** Per-second pre-multiplier damage (rank + AP at cast). */
+  n: number;
+  until: number;
+  /** Genjutsu ready again at this tick. */
+  cdUntil: number;
+}
+interface Ground {
+  x: number;
+  y: number;
+  r: number;
+  start: number;
+  until: number;
+  rank: number;
+}
+interface Clone {
+  eid: number;
+  serial: number;
+  until: number;
+  rank: number;
+}
+interface Flame {
+  t: number;
+  serial: number;
   amount: number;
   start: number;
   until: number;
   x: number;
   y: number;
   jumped: boolean;
-  /** Burning own decoy (no buff, Sev deals the aura damage). */
-  decoy: boolean;
+  rank: number;
 }
-
-interface Bann {
+interface Moon {
   t: number;
   serial: number;
   rank: number;
   start: number;
   end: number;
-  ember: boolean;
+}
+interface SevState {
+  blick: Blick[];
+  grounds: Ground[];
+  clone: Clone | null;
+  bursts: { x: number; y: number; r: number; until: number }[];
+  flames: Flame[];
+  susanooUntil: number;
+  susanooRank: number;
+  /** Last sword thrust (visual): segment + end tick. */
+  thrust: { ax: number; ay: number; bx: number; by: number; until: number } | null;
+  moon: Moon | null;
 }
 
-const embers = (sim: Sim): Map<number, Ember[]> => hookState<Ember[]>(sim, 'sevEmbers');
-const banns = (sim: Sim): Map<number, Bann> => hookState<Bann>(sim, 'sevBann');
+const states = (sim: Sim): Map<number, SevState> => hookState<SevState>(sim, 'sev3');
+function st(sim: Sim, sev: number): SevState {
+  let s = states(sim).get(sev);
+  if (!s) states(sim).set(sev, (s = { blick: [], grounds: [], clone: null, bursts: [], flames: [], susanooUntil: 0, susanooRank: 1, thrust: null, moon: null }));
+  return s;
+}
+const peek = (sim: Sim, sev: number): SevState | undefined => peekState<SevState>(sim, 'sev3')?.get(sev);
 
-/** Sev's (or any Sev's if eid < 0) Nachbild on `t`. */
-export function hasNachbild(sim: Sim, t: number, sev = -1): boolean {
-  for (const b of buffs(sim, t)) if (b.kind === 'mark' && b.id === NACHBILD && b.until > sim.tick && (sev < 0 || b.src === sev)) return true;
-  return false;
+const champMult = (sim: Sim, t: number): number => (sim.c.Unit.kind[t] === Kind.Champion ? CHAMP_ABILITY_DMG_MULT : 1);
+const effOf = (e: Effect[], kind: Effect['kind']): Effect | undefined => e.find((x) => x.kind === kind);
+
+// ------------------------------------------------------------------ passive: Rabenblick
+
+/** Gaze stacks of `sev` on `t` (0 if none / expired). */
+export function blickStacks(sim: Sim, sev: number, t: number): number {
+  const b = peek(sim, sev)?.blick.find((x) => x.t === t && x.serial === sim.c.Unit.serial[t]);
+  return b && b.until > sim.tick ? b.n : 0;
 }
 
-function markNachbild(sim: Sim, sev: number, t: number): void {
+/** One Gaze stack on an enemy champion (or dummy); at 3 the genjutsu stun fires (per-target cooldown). */
+export function addBlick(sim: Sim, sev: number, t: number): void {
   const { Unit } = sim.c;
-  if (t < 0 || !Unit.alive[t] || Unit.team[t] === Unit.team[sev] || Unit.kind[t] === Kind.Pet) return;
-  addBuff(sim, t, { kind: 'mark', id: NACHBILD, src: sev, ticks: NACHBILD_TICKS });
-}
-
-export const isEmbered = (sim: Sim, t: number): boolean => hasBuff(sim, t, 'dot', EMBER);
-
-/** Live decoy of this Sev, -1 if none. */
-export function sevDecoy(sim: Sim, sev: number): number {
-  return petsOf(sim, sev, DECOY)[0] ?? -1;
-}
-
-/** Ember dot + grievous wounds on an enemy unit for `ticks` (both uncleansable). */
-function applyEmber(sim: Sim, sev: number, t: number, amount: number, ticks: number, jumped: boolean): void {
-  const { Unit, Pos } = sim.c;
-  const champMult = Unit.kind[t] === Kind.Champion ? CHAMP_ABILITY_DMG_MULT : 1;
-  addBuff(sim, t, { kind: 'dot', id: EMBER, src: sev, amount: amount * champMult, period: sec(1), dmgType: 'magic', ticks, uncleansable: true });
-  addBuff(sim, t, { kind: 'grievous', id: EMBER, src: sev, pct: GRIEVOUS_PCT, ticks, uncleansable: true });
-  const list = embers(sim).get(sev) ?? [];
-  const rest = list.filter((e) => e.t !== t || e.decoy);
-  rest.push({ t, serial: Unit.serial[t]!, amount, start: sim.tick, until: sim.tick + ticks, x: Pos.x[t]!, y: Pos.y[t]!, jumped, decoy: false });
-  embers(sim).set(sev, rest);
-}
-
-/** Nearest living enemy unit (champion, minion, monster) of Sev within r of (x, y), excluding `not`; ties: lower eid. */
-function nearestEnemy(sim: Sim, sev: number, x: number, y: number, r: number, not: number): number {
-  const { Pos, Unit } = sim.c;
-  let best = -1;
-  let bestD = Infinity;
-  for (const e of enemiesInRadius(sim, sev, x, y, r)) {
-    if (e === not || Unit.kind[e] === Kind.Pet) continue;
-    const dx = Pos.x[e]! - x;
-    const dy = Pos.y[e]! - y;
-    const d = dx * dx + dy * dy;
-    if (d < bestD) (bestD = d), (best = e);
+  if (t < 0 || !Unit.alive[t] || Unit.team[t] === Unit.team[sev] || !isChampLike(sim, t)) return;
+  const s = st(sim, sev);
+  let b = s.blick.find((x) => x.t === t && x.serial === Unit.serial[t]);
+  if (!b) s.blick.push((b = { t, serial: Unit.serial[t]!, n: 0, until: 0, cdUntil: 0 }));
+  if (b.until <= sim.tick) b.n = 0;
+  b.n = Math.min(BLICK_MAX, b.n + 1);
+  b.until = sim.tick + BLICK_TICKS;
+  if (b.n >= BLICK_MAX && sim.tick >= b.cdUntil) {
+    addBuff(sim, t, { kind: 'stun', id: GENJUTSU, src: sev, ticks: GENJUTSU_TICKS });
+    b.n = 0;
+    b.cdUntil = sim.tick + GENJUTSU_CD;
   }
-  return best;
 }
 
-// ------------------------------------------------------------------ per tick
+// ------------------------------------------------------------------ Q Feuerball
 
-function tickEmbers(sim: Sim, sev: number): void {
-  const list = embers(sim).get(sev);
-  if (!list || list.length === 0) return;
-  const { Unit, Pos } = sim.c;
-  const keep: Ember[] = [];
-  for (const e of list) {
-    if (sim.tick >= e.until) continue;
-    const alive = Unit.serial[e.t] === e.serial && Unit.alive[e.t] === 1;
-    if (e.decoy) {
-      if (alive) (e.x = Pos.x[e.t]!), (e.y = Pos.y[e.t]!);
-      const age = sim.tick - e.start;
-      if (age > 0 && age % sec(1) === 0) {
-        for (const t of enemiesInRadius(sim, sev, e.x, e.y, DECOY_BURN_RADIUS)) {
-          if (Unit.kind[t] === Kind.Pet) continue;
-          const mult = Unit.kind[t] === Kind.Champion ? CHAMP_ABILITY_DMG_MULT : 1;
-          dealDamage(sim, sev, t, e.amount * DECOY_BURN_PCT * mult, 'magic');
-        }
-      }
-      keep.push(e);
-      continue;
+function explode(sim: Sim, ctx: EffectCtx, x: number, y: number): void {
+  const sev = ctx.caster;
+  const r = ctx.ability.radius ?? 300;
+  for (const t of enemiesInRadius(sim, sev, x, y, r)) {
+    if (sim.c.Unit.kind[t] === Kind.Pet) continue;
+    const d = effectAmount(sim, ctx, t, 0);
+    dealDamage(sim, sev, t, d.amount * champMult(sim, t), d.type);
+    addBlick(sim, sev, t);
+  }
+  const dur = sec(rv(ctx.ability.duration, ctx.rank) || 1.5);
+  st(sim, sev).grounds.push({ x, y, r, start: sim.tick, until: sim.tick + dur, rank: ctx.rank });
+}
+
+function tickGrounds(sim: Sim, sev: number, s: SevState): void {
+  if (!s.grounds.length) return;
+  s.grounds = s.grounds.filter((g) => g.until > sim.tick);
+  for (const g of s.grounds) {
+    const age = sim.tick - g.start;
+    if (age <= 0 || age % FIRE_TICK !== 0) continue;
+    const ctx = ctxFor(sim, sev, 0, g.rank, g.x, g.y);
+    for (const t of enemiesInRadius(sim, sev, g.x, g.y, g.r)) {
+      if (sim.c.Unit.kind[t] === Kind.Pet) continue;
+      const d = effectAmount(sim, ctx, t, 1); // per second
+      dealDamage(sim, sev, t, ((d.amount * FIRE_TICK) / sec(1)) * champMult(sim, t), d.type);
     }
-    if (alive) {
-      e.x = Pos.x[e.t]!;
-      e.y = Pos.y[e.t]!;
-      keep.push(e);
-      continue;
-    }
-    // target died (or its eid was recycled) while burning: the ember jumps once with the remaining duration
-    if (e.jumped) continue;
-    const next = nearestEnemy(sim, sev, e.x, e.y, JUMP_RANGE, e.t);
-    if (next < 0) continue;
-    const left = e.until - sim.tick;
-    const champMult = Unit.kind[next] === Kind.Champion ? CHAMP_ABILITY_DMG_MULT : 1;
-    addBuff(sim, next, { kind: 'dot', id: EMBER, src: sev, amount: e.amount * champMult, period: sec(1), dmgType: 'magic', ticks: left, uncleansable: true });
-    addBuff(sim, next, { kind: 'grievous', id: EMBER, src: sev, pct: GRIEVOUS_PCT, ticks: left, uncleansable: true });
-    keep.push({ t: next, serial: Unit.serial[next]!, amount: e.amount, start: sim.tick, until: sim.tick + left, x: Pos.x[next]!, y: Pos.y[next]!, jumped: true, decoy: false });
   }
-  embers(sim).set(sev, keep);
 }
 
-function tickBann(sim: Sim, sev: number): void {
-  const b = banns(sim).get(sev);
-  if (!b) return;
+// ------------------------------------------------------------------ W Krähendoppel
+
+function spawnClone(sim: Sim, ctx: EffectCtx): void {
+  const sev = ctx.caster;
+  const s = st(sim, sev);
+  if (s.clone) burst(sim, sev, s);
+  const { Pos, Hp, Mana, Stats, Unit, Face } = sim.c;
+  // start position = position at the start of this tick (the blink already moved Sev)
+  const x = Pos.px[sev]!;
+  const y = Pos.py[sev]!;
+  const life = sec(rv(ctx.ability.duration, ctx.rank) || 1.5);
+  const d = spawnPet(sim, {
+    owner: sev, tag: DECOY, x, y, ticks: life + 2, radius: Unit.radius[sev]!, hp: Hp.cur[sev]!, ad: 0, as: Stats.as[sev]!,
+    range: Stats.range[sev]!, armor: Stats.armor[sev]!, mr: Stats.mr[sev]!, projectileSpeed: 1600,
+  });
+  Hp.max[d] = Hp.max[sev]!; // fake health bar: Sev's numbers
+  Mana.max[d] = Mana.max[sev]!;
+  Mana.cur[d] = Mana.cur[sev]!;
+  Pos.px[d] = x;
+  Pos.py[d] = y;
+  Face.x[d] = Face.x[sev]!;
+  Face.y[d] = Face.y[sev]!;
+  s.clone = { eid: d, serial: Unit.serial[d]!, until: sim.tick + life, rank: ctx.rank };
+  // substitution: enemy homing projectiles (autos, targeted abilities) already flying at Sev switch to the clone
+  const { Proj } = sim.c;
+  for (const p of query(sim.world, [Proj])) {
+    if (Proj.kind[p] === 1 || Proj.target[p] !== sev || Proj.team[p] === Unit.team[sev]) continue;
+    Proj.target[p] = d;
+    Proj.targetSerial[p] = Unit.serial[d]!;
+  }
+}
+
+/** The clone bursts into crows: AoE damage + slow + Gaze stacks, then disappears. */
+function burst(sim: Sim, sev: number, s: SevState): void {
+  const c = s.clone;
+  s.clone = null;
+  if (!c) return;
   const { Unit, Pos } = sim.c;
-  if (Unit.serial[b.t] !== b.serial || !Unit.alive[b.t]) return void banns(sim).delete(sev);
-  if (isEmbered(sim, b.t)) b.ember = true;
-  // the fear ends earlier with tenacity / cleansing immunity: the ward ends with it
-  const fear = buffs(sim, b.t).find((x) => x.kind === 'fear' && x.id === FEAR && x.src === sev);
-  const end = fear ? Math.min(b.end, fear.until) : sim.tick;
-  if (sim.tick < end) return;
-  banns(sim).delete(sev);
-  const ctx = ctxFor(sim, sev, 3, b.rank, Pos.x[b.t]!, Pos.y[b.t]!, [b.t]);
-  const { amount, type } = effectAmount(sim, ctx, b.t);
-  const mult = (b.ember ? R_EMBER_BONUS : 1) * (Unit.kind[b.t] === Kind.Champion ? CHAMP_ABILITY_DMG_MULT : 1);
-  dealDamage(sim, sev, b.t, amount * mult, type);
-  markNachbild(sim, sev, b.t);
-}
-
-/** R wind-up = eye contact: losing sight of the target cancels it (refund, short cooldown). */
-function tickEyeContact(sim: Sim, sev: number): void {
-  const c = champAbil(sim, sev).cast;
-  if (!c || c.slot !== 3 || c.target < 0) return;
-  const { Unit } = sim.c;
-  if (Unit.serial[c.target] !== c.targetSerial || !Unit.alive[c.target] || !sees(sim, Unit.team[sev]!, c.target)) {
-    cancelCast(sim, sev, { refund: true, cooldownTicks: R_BREAK_CD });
+  if (Unit.serial[c.eid] !== c.serial) return;
+  const x = Pos.x[c.eid]!;
+  const y = Pos.y[c.eid]!;
+  removePet(sim, c.eid);
+  const ctx = ctxFor(sim, sev, 1, c.rank, x, y);
+  const slow = effOf(ctx.ability.effects, 'slow') as Extract<Effect, { kind: 'slow' }> | undefined;
+  for (const t of enemiesInRadius(sim, sev, x, y, ctx.ability.radius ?? 350)) {
+    if (Unit.kind[t] === Kind.Pet) continue;
+    const d = effectAmount(sim, ctx, t, 0);
+    dealDamage(sim, sev, t, d.amount * champMult(sim, t), d.type);
+    if (slow) addBuff(sim, t, { kind: 'slow', id: 'sev_w', src: sev, pct: rv(slow.pct, c.rank), ticks: sec(rv(slow.duration, c.rank)) });
+    addBlick(sim, sev, t);
   }
+  s.bursts.push({ x, y, r: ctx.ability.radius ?? 350, until: sim.tick + BURST_SHOW });
 }
 
-/** The decoy mirrors Sev's attack target (harmless autos: it has 0 AD). */
-function tickDecoy(sim: Sim, sev: number): void {
-  const d = sevDecoy(sim, sev);
-  if (d < 0) return;
-  const { Atk, Unit, Pos, Face } = sim.c;
+function tickClone(sim: Sim, sev: number, s: SevState): void {
+  if (s.bursts.length) s.bursts = s.bursts.filter((b) => b.until > sim.tick);
+  const c = s.clone;
+  if (!c) return;
+  const { Unit, Atk, Face, Pos } = sim.c;
+  if (Unit.serial[c.eid] !== c.serial || !Unit.alive[c.eid]) return void (s.clone = null);
+  if (sim.tick >= c.until) return burst(sim, sev, s);
+  // the clone mirrors Sev's attack target (harmless autos: 0 AD)
   const t = Atk.target[sev]!;
-  const valid = t >= 0 && Atk.targetSerial[sev] === Unit.serial[t] && Unit.alive[t] && Unit.team[t] !== Unit.team[sev];
-  if (valid) {
-    if (Atk.target[d] !== t) (Atk.target[d] = t), (Atk.targetSerial[d] = Unit.serial[t]!);
-    const dx = Pos.x[t]! - Pos.x[d]!;
-    const dy = Pos.y[t]! - Pos.y[d]!;
+  if (t >= 0 && Atk.targetSerial[sev] === Unit.serial[t] && Unit.alive[t] && Unit.team[t] !== Unit.team[sev]) {
+    if (Atk.target[c.eid] !== t) (Atk.target[c.eid] = t), (Atk.targetSerial[c.eid] = Unit.serial[t]!);
+    const dx = Pos.x[t]! - Pos.x[c.eid]!;
+    const dy = Pos.y[t]! - Pos.y[c.eid]!;
     const len = Math.sqrt(dx * dx + dy * dy);
-    if (len > 0) (Face.x[d] = dx / len), (Face.y[d] = dy / len);
-  } else Atk.target[d] = -1;
+    if (len > 0) (Face.x[c.eid] = dx / len), (Face.y[c.eid] = dy / len);
+  } else Atk.target[c.eid] = -1;
 }
 
-// ------------------------------------------------------------------ visuals
+export const sevClone = (sim: Sim, sev: number): number => {
+  const c = peek(sim, sev)?.clone;
+  return c && sim.c.Unit.serial[c.eid] === c.serial && sim.c.Unit.alive[c.eid] ? c.eid : -1;
+};
+
+// ------------------------------------------------------------------ E Bannblick
+
+/** True if `t` looks toward `sev` (angle between its facing and the direction to Sev below 90 degrees). */
+export function facesSev(sim: Sim, t: number, sev: number): boolean {
+  const { Pos, Face } = sim.c;
+  const dx = Pos.x[sev]! - Pos.x[t]!;
+  const dy = Pos.y[sev]! - Pos.y[t]!;
+  return Face.x[t]! * dx + Face.y[t]! * dy > 0;
+}
+
+// ------------------------------------------------------------------ R1 Amaterasu
+
+function igniteFlames(sim: Sim, sev: number, t: number, amount: number, ticks: number, jumped: boolean, rank: number): void {
+  const { Unit, Pos } = sim.c;
+  addBuff(sim, t, { kind: 'dot', id: AMATERASU, src: sev, amount: amount * champMult(sim, t), period: sec(1), dmgType: 'magic', ticks, uncleansable: true });
+  addBuff(sim, t, { kind: 'grievous', id: AMATERASU, src: sev, pct: GRIEVOUS_PCT, ticks, uncleansable: true });
+  const s = st(sim, sev);
+  s.flames = s.flames.filter((f) => f.t !== t);
+  s.flames.push({ t, serial: Unit.serial[t]!, amount, start: sim.tick, until: sim.tick + ticks, x: Pos.x[t]!, y: Pos.y[t]!, jumped, rank });
+}
+
+function tickFlames(sim: Sim, sev: number, s: SevState): void {
+  if (!s.flames.length) return;
+  const { Unit, Pos } = sim.c;
+  const keep: Flame[] = [];
+  for (const f of s.flames) {
+    if (sim.tick >= f.until) continue;
+    if (Unit.serial[f.t] === f.serial && Unit.alive[f.t]) {
+      f.x = Pos.x[f.t]!;
+      f.y = Pos.y[f.t]!;
+      keep.push(f);
+      continue;
+    }
+    // died burning: jump once to the nearest enemy (champion, minion, monster) within the ability radius
+    if (f.jumped) continue;
+    const r = ctxFor(sim, sev, 3, f.rank, 0, 0).ability.radius ?? 400;
+    let best = -1;
+    let bestD = Infinity;
+    for (const e of enemiesInRadius(sim, sev, f.x, f.y, r)) {
+      if (e === f.t || Unit.kind[e] === Kind.Pet) continue;
+      const d = (Pos.x[e]! - f.x) * (Pos.x[e]! - f.x) + (Pos.y[e]! - f.y) * (Pos.y[e]! - f.y);
+      if (d < bestD) (bestD = d), (best = e);
+    }
+    if (best < 0) continue;
+    igniteFlames(sim, sev, best, f.amount, f.until - sim.tick, true, f.rank);
+    keep.push(st(sim, sev).flames.pop()!);
+  }
+  s.flames = keep;
+}
+
+export const isAmaterasuBurning = (sim: Sim, t: number): boolean => hasBuff(sim, t, 'dot', AMATERASU);
+
+// ------------------------------------------------------------------ R2 Susanoo
+
+export const susanooActive = (sim: Sim, sev: number): boolean => (peek(sim, sev)?.susanooUntil ?? 0) > sim.tick;
+
+// ------------------------------------------------------------------ R3 Tsukuyomi
+
+function tickMoon(sim: Sim, sev: number, s: SevState): void {
+  const m = s.moon;
+  if (!m) return;
+  const { Unit, Pos } = sim.c;
+  if (Unit.serial[m.t] !== m.serial || !Unit.alive[m.t]) return void (s.moon = null);
+  if (sim.tick < m.end) return;
+  s.moon = null;
+  const ctx = ctxFor(sim, sev, 3, m.rank, Pos.x[m.t]!, Pos.y[m.t]!, [m.t]);
+  const d = effectAmount(sim, ctx, m.t);
+  dealDamage(sim, sev, m.t, d.amount * champMult(sim, m.t), d.type);
+  addBlick(sim, sev, m.t);
+}
+
+export const tsukuyomiTarget = (sim: Sim, sev: number): number => peek(sim, sev)?.moon?.t ?? -1;
+
+// ------------------------------------------------------------------ visuals (read-only)
+
+interface CastView {
+  slot: number;
+  target: number;
+}
+function castOf(sim: Sim, eid: number): CastView | null {
+  const a = (sim.state.abilities as { champs: Map<number, { serial: number; cast: CastView | null }> } | undefined)?.champs.get(eid);
+  return a && a.serial === sim.c.Unit.serial[eid] ? a.cast : null;
+}
 
 function sevVisuals(sim: Sim, eid: number): ChampionVisuals {
   const { Unit, Pos } = sim.c;
+  const s = peek(sim, eid);
   const v: ChampionVisuals = {};
   const marks: UnitMark[] = [];
   const objects: VisualObject[] = [];
-  let marked = 0;
-  // Nachbild / ember marks Sev put on enemies (read-only scan of the units that have buffs)
-  const withBuffs = (sim.state.buffs as { ents: Map<number, unknown> } | undefined)?.ents;
-  for (const e of withBuffs ? withBuffs.keys() : []) {
-    if (!Unit.alive[e] || Unit.team[e] === Unit.team[eid]) continue;
-    for (const b of buffs(sim, e)) {
-      if (b.until <= sim.tick || b.src !== eid) continue;
-      // Nachbild itself reaches the unit marks generically (snapshot: champion-prefixed mark buffs); count it for the badge
-      if (b.kind === 'mark' && b.id === NACHBILD) marked += isChampLike(sim, e) ? 1 : 0;
-      else if (b.kind === 'dot' && b.id === EMBER) marks.push({ target: e, id: EMBER, left: b.until - sim.tick });
-    }
+  let flare = false;
+  for (const b of s?.blick ?? []) {
+    if (b.until <= sim.tick || Unit.serial[b.t] !== b.serial || !Unit.alive[b.t] || b.n <= 0) continue;
+    marks.push({ target: b.t, id: BLICK, n: b.n, max: BLICK_MAX, left: b.until - sim.tick });
+    if (b.n >= BLICK_MAX - 1) flare = true;
   }
-  for (const e of peekState<Ember[]>(sim, 'sevEmbers')?.get(eid) ?? []) {
-    if (e.decoy && e.until > sim.tick) objects.push({ key: `${eid}:ember`, tag: 'sev_w_decoy', x: e.x, y: e.y, r: DECOY_BURN_RADIUS, shape: 'disc', left: e.until - sim.tick, total: e.until - e.start, hue: 14 });
+  for (const g of s?.grounds ?? []) {
+    if (g.until > sim.tick) objects.push({ key: `${eid}:q${g.start}:${g.x | 0}`, tag: 'sev_q_fire', x: g.x, y: g.y, r: g.r, shape: 'disc', left: g.until - sim.tick, total: g.until - g.start, hue: 22 });
   }
-  const b = peekState<Bann>(sim, 'sevBann')?.get(eid);
-  if (b && Unit.serial[b.t] === b.serial && Unit.alive[b.t]) {
-    // three phantoms of Sev around the warded target (what it "sees")
-    const dirs: [number, number][] = [[1, 0], [-0.5, 0.866], [-0.5, -0.866]];
-    dirs.forEach(([dx, dy], i) => objects.push({ key: `${eid}:ph${i}`, tag: 'sev_r_phantom', x: Pos.x[b.t]! + dx * PHANTOM_DIST, y: Pos.y[b.t]! + dy * PHANTOM_DIST, r: 45, shape: 'pin', left: Math.max(0, b.end - sim.tick), total: b.end - b.start }));
-    objects.push({ key: `${eid}:bann`, tag: 'sev_r_bann', x: Pos.x[b.t]!, y: Pos.y[b.t]!, r: 110, shape: 'ring', follow: b.t, left: Math.max(0, b.end - sim.tick), total: b.end - b.start });
+  for (const b of s?.bursts ?? []) objects.push({ key: `${eid}:w${b.until}`, tag: 'sev_w_crows', x: b.x, y: b.y, r: b.r, shape: 'ring', left: b.until - sim.tick, total: BURST_SHOW, hue: 270 });
+  for (const f of s?.flames ?? []) {
+    if (f.until <= sim.tick) continue;
+    objects.push({ key: `${eid}:r1:${f.t}`, tag: 'sev_r1_flames', x: f.x, y: f.y, r: 110, shape: 'disc', left: f.until - sim.tick, total: f.until - f.start, hue: 350 });
+    marks.push({ target: f.t, id: AMATERASU, left: f.until - sim.tick });
+  }
+  if (s && s.susanooUntil > sim.tick && Unit.alive[eid]) {
+    objects.push({ key: `${eid}:r2`, tag: 'sev_r2_susanoo', x: Pos.x[eid]!, y: Pos.y[eid]!, r: 240, shape: 'dome', left: s.susanooUntil - sim.tick, total: sec(6), hue: 14 });
+  }
+  if (s?.thrust && s.thrust.until > sim.tick) {
+    const th = s.thrust;
+    objects.push({ key: `${eid}:r2t`, tag: 'sev_r2_thrust', x: th.ax, y: th.ay, x2: th.bx, y2: th.by, r: 60, shape: 'wall', left: th.until - sim.tick, total: sec(0.35), hue: 14 });
+  }
+  if (s?.moon && Unit.alive[s.moon.t]) {
+    const m = s.moon;
+    objects.push({ key: `${eid}:r3`, tag: 'sev_r3_moon', x: Pos.x[m.t]!, y: Pos.y[m.t]!, r: 200, shape: 'disc', left: Math.max(0, m.end - sim.tick), total: m.end - m.start, hue: 355 });
+  }
+  // E eye contact during the wind-up: a gaze line Sev -> target (telegraph)
+  const c = castOf(sim, eid);
+  if (c && c.slot === 2 && c.target >= 0 && Unit.alive[c.target]) {
+    objects.push({ key: `${eid}:e`, tag: 'sev_e_gaze', x: Pos.x[eid]!, y: Pos.y[eid]!, x2: Pos.x[c.target]!, y2: Pos.y[c.target]!, follow: c.target, r: 12, shape: 'line', hue: 0 });
+    flare = true;
   }
   if (marks.length) v.marks = marks;
   if (objects.length) v.objects = objects;
-  v.passive = { stacks: marked, ready: marked > 0 };
+  const ult = ultChoiceOf(sim, eid);
+  v.passive = { stacks: Math.max(0, ...(s?.blick ?? []).filter((b) => b.until > sim.tick).map((b) => b.n)), max: BLICK_MAX, ready: flare };
+  if (flare) v.aura = 4; // eyes flare
+  if (ult === 1 && s && s.susanooUntil > sim.tick) v.empowered = 3; // sword sweeps
   return v;
 }
 
@@ -235,94 +364,126 @@ function sevVisuals(sim: Sim, eid: number): ChampionVisuals {
 
 export const hooks: ChampionHooks = {
   visuals: sevVisuals,
-  ownsHits: ['sev_w', 'sev_r'],
+  ownsHits: ['sev_q', 'sev_w', 'sev_e', AMATERASU, 'sev_r2', 'sev_r3'],
   onTick(sim, eid) {
-    tickEmbers(sim, eid);
-    tickBann(sim, eid);
-    tickEyeContact(sim, eid);
-    tickDecoy(sim, eid);
+    const s = states(sim).get(eid);
+    if (!s) return;
+    if (s.blick.length) s.blick = s.blick.filter((b) => b.until > sim.tick || b.cdUntil > sim.tick);
+    tickGrounds(sim, eid, s);
+    tickClone(sim, eid, s);
+    tickFlames(sim, eid, s);
+    tickMoon(sim, eid, s);
+    if (s.susanooUntil > sim.tick) removeBuffs(sim, eid, (b) => b.kind === 'slow'); // slow immunity
+    else if (s.susanooUntil > 0 && s.susanooUntil <= sim.tick) {
+      s.susanooUntil = 0;
+      closeRecast(sim, eid, 3);
+    }
   },
-  // W: enemy champions/minions/monsters, or Sev's own decoy. R: only enemy champions with Sev's Nachbild.
-  targetOk(sim, caster, ab, t, base) {
-    if (ab.id === 'sev_w') return base || (petTag(sim, t) === DECOY && petOwner(sim, t) === caster);
-    if (ab.id === 'sev_r') return base && isChampLike(sim, t) && hasNachbild(sim, t, caster);
-    return base;
+  // Tsukuyomi only on champions (and practice dummies)
+  targetOk(sim, _caster, a, t, base) {
+    return a.id === 'sev_r3' ? base && isChampLike(sim, t) : base;
   },
   passive: {
-    sev_nachbild: {
+    sev_rabenblick: {
       onAbilityHit(sim, eid, target) {
-        markNachbild(sim, eid, target);
+        addBlick(sim, eid, target);
       },
+      // the crow clone bursts when hit by anything
+      onPetDamaged(sim, eid, pet) {
+        const s = states(sim).get(eid);
+        if (s?.clone && s.clone.eid === pet && petTag(sim, pet) === DECOY && petOwner(sim, pet) === eid) burst(sim, eid, s);
+      },
+      // Susanoo: basic attacks become sword sweeps around the target
       onAutoHit(sim, eid, target) {
-        if (!hasNachbild(sim, target, eid) || !sim.c.Unit.alive[target]) return;
-        dealDamage(sim, eid, target, byLevel(sim, eid, AUTO_LO, AUTO_HI) + AUTO_AP * sim.c.Stats.ap[eid]!, 'magic');
-        if (extendBuff(sim, target, EMBER, EMBER_EXTEND, EMBER_MAX)) {
-          for (const e of embers(sim).get(eid) ?? []) if (e.t === target && !e.decoy) e.until = Math.min(e.until + EMBER_EXTEND, e.start + EMBER_MAX);
+        const s = states(sim).get(eid);
+        if (!s || s.susanooUntil <= sim.tick) return;
+        const { Pos, Unit } = sim.c;
+        const ctx = ctxFor(sim, eid, 3, s.susanooRank, Pos.x[target]!, Pos.y[target]!);
+        for (const t of enemiesInRadius(sim, eid, Pos.x[target]!, Pos.y[target]!, SWEEP_RADIUS)) {
+          if (Unit.kind[t] === Kind.Pet) continue;
+          const d = effectAmount(sim, ctx, t, 1); // damage effects: [thrust, sweep]
+          dealDamage(sim, eid, t, d.amount * champMult(sim, t), d.type);
         }
-      },
-      // an enemy ability (not an auto) hitting the decoy gives the attacker a Nachbild
-      onPetDamaged(sim, eid, pet, src, info) {
-        if (info.isAuto || src < 0 || petTag(sim, pet) !== DECOY) return;
-        markNachbild(sim, eid, src);
       },
     },
   },
   effects: {
+    // Projectile hit (first unit) or max range ('expire'): explosion + burning ground.
+    sev_q_fireball(sim, ctx) {
+      if (ctx.phase === 'expire') return explode(sim, ctx, ctx.x, ctx.y);
+      if (ctx.phase === 'cast' && ctx.hits.length) explode(sim, ctx, sim.c.Pos.x[ctx.hits[0]!]!, sim.c.Pos.y[ctx.hits[0]!]!);
+    },
     // Recast during the 0.4 s wind-up: cancel (fake), refund the mana, 2 s cooldown.
     sev_q_fake_cancel(sim, ctx) {
       if (ctx.phase === 'recast') cancelCast(sim, ctx.caster, { refund: true, cooldownTicks: sec(2) });
     },
-    sev_w_ember(sim, ctx) {
-      if (ctx.phase !== 'cast' || ctx.target < 0) return;
+    sev_w_crow_clone(sim, ctx) {
+      if (ctx.phase === 'cast') spawnClone(sim, ctx);
+    },
+    sev_e_bannblick(sim, ctx) {
+      if (ctx.phase !== 'cast' || ctx.target < 0 || !sim.c.Unit.alive[ctx.target]) return;
       const t = ctx.target;
-      const ticks = sec(rv(ctx.ability.duration, ctx.rank) || 4);
-      const amount = effectAmount(sim, ctx, t).amount;
-      if (petTag(sim, t) === DECOY) {
-        // burning decoy: lasts as long as the ember, Sev deals the aura damage
-        extendPet(sim, t, sim.tick + ticks);
-        const list = (embers(sim).get(ctx.caster) ?? []).filter((e) => !e.decoy);
-        const { Pos, Unit } = sim.c;
-        list.push({ t, serial: Unit.serial[t]!, amount, start: sim.tick, until: sim.tick + ticks, x: Pos.x[t]!, y: Pos.y[t]!, jumped: true, decoy: true });
-        embers(sim).set(ctx.caster, list);
-        return;
-      }
-      applyEmber(sim, ctx.caster, t, amount, ticks, false);
-      markNachbild(sim, ctx.caster, t);
-    },
-    sev_e_decoy(sim, ctx) {
-      if (ctx.phase !== 'cast') return;
       const sev = ctx.caster;
-      const { Pos, Hp, Stats, Unit, Face } = sim.c;
-      for (const old of petsOf(sim, sev, DECOY)) removePet(sim, old);
-      // start position = position at the start of this tick (the blink already moved Sev)
-      const x = Pos.px[sev]!;
-      const y = Pos.py[sev]!;
-      const d = spawnPet(sim, {
-        owner: sev, tag: DECOY, x, y, ticks: sec(rv(ctx.ability.duration, ctx.rank) || 2.5), radius: Unit.radius[sev]!,
-        hp: Hp.cur[sev]!, ad: 0, as: Stats.as[sev]!, range: Stats.range[sev]!, armor: Stats.armor[sev]!, mr: Stats.mr[sev]!,
-        projectileSpeed: 1600,
-      });
-      Hp.max[d] = Hp.max[sev]!; // fake health bar: the same numbers as Sev
-      sim.c.Mana.max[d] = sim.c.Mana.max[sev]!;
-      sim.c.Mana.cur[d] = sim.c.Mana.cur[sev]!;
-      Pos.px[d] = x;
-      Pos.py[d] = y;
-      Face.x[d] = Face.x[sev]!;
-      Face.y[d] = Face.y[sev]!;
+      if (facesSev(sim, t, sev)) {
+        const stun = effOf(ctx.ability.effects, 'stun') as { duration: number | number[] };
+        addBuff(sim, t, { kind: 'stun', id: 'sev_e', src: sev, ticks: sec(rv(stun.duration, ctx.rank)) });
+      } else {
+        const slow = effOf(ctx.ability.effects, 'slow') as Extract<Effect, { kind: 'slow' }>;
+        addBuff(sim, t, { kind: 'slow', id: 'sev_e', src: sev, pct: rv(slow.pct, ctx.rank), ticks: sec(rv(slow.duration, ctx.rank)) });
+      }
+      addBlick(sim, sev, t);
     },
-    sev_r_bann(sim, ctx) {
-      if (ctx.phase !== 'cast' || ctx.target < 0) return;
+    sev_r1_amaterasu(sim, ctx) {
+      if (ctx.phase !== 'cast' || ctx.target < 0 || !sim.c.Unit.alive[ctx.target]) return;
+      const t = ctx.target;
+      igniteFlames(sim, ctx.caster, t, effectAmount(sim, ctx, t).amount, sec(rv(ctx.ability.duration, ctx.rank) || 5), false, ctx.rank);
+      addBlick(sim, ctx.caster, t);
+    },
+    sev_r2_susanoo(sim, ctx) {
+      const sev = ctx.caster;
+      const s = st(sim, sev);
+      if (ctx.phase === 'cast') {
+        const dur = sec(rv(ctx.ability.duration, ctx.rank) || 6);
+        s.susanooUntil = sim.tick + dur;
+        s.susanooRank = ctx.rank;
+        removeBuffs(sim, sev, (b) => b.kind === 'slow');
+        openRecast(sim, sev, 3, sim.tick + 1, sim.tick + dur);
+      } else if (ctx.phase === 'recast' && s.susanooUntil > sim.tick) {
+        // sword thrust: the spectral blade stabs along the cast direction at once (line 1000 x 120, every enemy once).
+        // Instant on purpose: a projectile resolution would re-apply the generic self shield on every hit.
+        const { Pos } = sim.c;
+        const ax = Pos.x[sev]!;
+        const ay = Pos.y[sev]!;
+        const len = rv(ctx.ability.range, s.susanooRank);
+        const bx = ax + ctx.dx * len;
+        const by = ay + ctx.dy * len;
+        const rctx = ctxFor(sim, sev, 3, s.susanooRank, bx, by);
+        for (const t of enemiesOnSegment(sim, sev, ax, ay, bx, by, (ctx.ability.width ?? 120) / 2)) {
+          if (sim.c.Unit.kind[t] === Kind.Pet) continue;
+          const d = effectAmount(sim, rctx, t, 0);
+          dealDamage(sim, sev, t, d.amount * champMult(sim, t), d.type);
+          addBlick(sim, sev, t);
+        }
+        s.thrust = { ax, ay, bx, by, until: sim.tick + sec(0.35) };
+      }
+    },
+    sev_r3_tsukuyomi(sim, ctx) {
+      if (ctx.phase !== 'cast' || ctx.target < 0 || !sim.c.Unit.alive[ctx.target]) return;
       const t = ctx.target;
       const sev = ctx.caster;
       const ticks = sec(rv(ctx.ability.duration, ctx.rank) || 1.5);
-      if (!addBuff(sim, t, { kind: 'fear', id: FEAR, src: sev, ticks })) return; // unstoppable / immune
-      addBuff(sim, t, { kind: 'slow', id: FEAR, src: sev, pct: R_SLOW_PCT, ticks, uncleansable: true });
-      reveal(sim, sim.c.Unit.team[sev]!, t, ticks);
-      const fear = buffs(sim, t).find((b) => b.kind === 'fear' && b.id === FEAR && b.src === sev)!;
-      banns(sim).set(sev, { t, serial: sim.c.Unit.serial[t]!, rank: ctx.rank, start: sim.tick, end: fear.until, ember: isEmbered(sim, t) });
+      if (!addBuff(sim, t, { kind: 'suppress', id: 'sev_r3', src: sev, ticks })) return;
+      addBuff(sim, t, { kind: 'mark', id: MOON, src: sev, ticks }); // the target's own HUD: red-black tint
+      addBuff(sim, sev, { kind: 'root', id: 'sev_r3', src: sev, ticks });
+      st(sim, sev).moon = { t, serial: sim.c.Unit.serial[t]!, rank: ctx.rank, start: sim.tick, end: sim.tick + ticks };
     },
   },
 };
 
-/** Active ward (R) of this Sev: target and end tick (tests, bots). */
-export const sevBann = (sim: Sim, sev: number): { t: number; end: number } | undefined => peekState<Bann>(sim, 'sevBann')?.get(sev);
+/** Test helper: give a W clone more life (e.g. to observe substitution). */
+export function _extendClone(sim: Sim, sev: number, ticks: number): void {
+  const c = peek(sim, sev)?.clone;
+  if (c) (c.until += ticks), extendPet(sim, c.eid, c.until + 2);
+}
+export const sevPets = (sim: Sim, sev: number): number[] => petsOf(sim, sev, DECOY);
+export const sevBuffs = (sim: Sim, t: number) => buffs(sim, t);

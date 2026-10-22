@@ -187,13 +187,13 @@ Design-Prinzipien:
     - E Strömung: Verbündeter (700) +30 % Bewegung 2 s, entfernt Slows; sie +15 %. CD 13.
     - R Flut: Welle 1.000 × 500 in Zielrichtung: Gegner 300 zurückgedrängt, Verbündete heilen 150/250/350 (+50 % AP) und +40 % Bewegung 2 s. CD 110/90/70.
     - Spike 6. Combos: Q (Heal)→W, E→Q, R→W.
-27. **Sev Aschenblick** – Mid/Jungle, Trickser-Brandmagier (AP), Ranged 525. Training: Fake-Casts lesen, unlöschbaren Brand managen, Trugbild vom echten Ziel unterscheiden, lange Cooldowns tracken. Volle Spezifikation: `docs/champions/sev.md`.
-    - Passiv Nachbild: Fähigkeitstreffer markieren 3 s; Autos auf markierte Gegner +10–30 (+15 % AP) und laufende Schwarzglut +0,5 s.
-    - Q Glutblick: Linie 950, Breite 60, 70/110/150/190/230 (+60 % AP). Re-Cast in 0,4 s bricht ab (Fake, 2 s CD, Mana zurück). CD 7.
-    - W Schwarzglut: Ziel 650, 4 s 20/32/44/56/68 (+22 % AP)/s, schwere Wunden, unlöschbar, springt beim Tod einmal (300). Auf eigenes Trugbild: 50 % an Gegnern in 250. CD 14/13/12/11/10.
-    - E Trugbild: Blink 450, Trugbild mit falscher Lebensleiste 2,5 s an der Startposition. CD 18/17/16/15/14.
-    - R Augenbann: Ziel mit Nachbild (700), 0,5 s Blickkontakt, 1,5 s Furcht (enthüllt, Fähigkeiten/Beschwörerzauber gesperrt, 50 % Slow, flieht), am Ende 180/300/420 (+70 % AP), +50 % mit Schwarzglut. CD 110/90/70.
-    - Spike 6. Combos: W→Q→Auto, E→Q (Fake)→Q→W, W→R→Q→Auto.
+27. **Sev Aschenblick** – Mid/Jungle, Genjutsu-Magier (AP), Ranged 525. Training: Fake-Casts lesen, Blickkontakt meiden, Klon vom echten Ziel unterscheiden, Ult-Wahl des Gegners erkennen. Volle Spezifikation: `docs/champions/sev.md` (Fassung 3).
+    - Passiv Rabenblick: Fähigkeitstreffer auf Champions geben Blick-Stacks (max. 3, 6 s); bei 3 Genjutsu-Betäubung 0,75 s (pro Ziel alle 12 s).
+    - Q Feuerball: Linie 900, nach 0,4 s; Explosion Radius 300: 80/125/170/215/260 (+70 % AP), 2 s brennender Boden 25/40/55/70/85 (+15 % AP)/s. Re-Cast im Wind-up = Fake. CD 9–7.
+    - W Krähendoppel: Blink 400 (auch gewurzelt), Krähen-Klon mit falscher Lebensleiste, zieht Projektile auf sich; Krähensturm Radius 350: 70/110/150/190/230 (+60 % AP), 35 % Slow. CD 16–12.
+    - E Bannblick: Ziel 650, 0,4 s Blickkontakt: Betäubung 1,25 s wenn das Ziel zu Sev schaut, sonst 40 % Slow. CD 15–11.
+    - R (Wahl ab Level 6, dauerhaft): Amaterasu (unlöschbare schwarze Flammen, schwere Wunden, springt beim Tod) / Susanoo (6 s Schild, Schwerthiebe, Schwertstoß-Re-Cast) / Tsukuyomi (1,5 s Unterdrückung, Schaden nach fehlendem Leben).
+    - Spike 6. Combos: E→Q→Auto, Q→W→E, E→R→Q→Auto.
 
 ## Rollen (Primär; Sekundär in Klammern)
 - Top: Brom, Sister Oleth (Jungle), Old Harrow, Seraphyne (Mid), Isolde, Dagny

@@ -1,5 +1,6 @@
 // Display names for champions, abilities, summoner spells and unit kinds (localized).
 import { CHAMPION_DATA } from '../sim/champions';
+import { abilityForSlot } from '../data/champions';
 import summoners from '../data/summoners.json';
 import { settings } from '../settings';
 import { Kind } from '../sim/types';
@@ -14,7 +15,7 @@ export function champName(id: string | null): string {
 }
 
 export function abilityInfo(champ: string, slot: number, fallbackId: string): { name: string; desc: string } {
-  const a = CHAMPION_DATA[champ]?.abilities[slot];
+  const a = abilityForSlot(champ, slot); // 4..6 = R choices (Sev)
   return { name: loc(a?.name, fallbackId), desc: loc(a?.desc, '') };
 }
 

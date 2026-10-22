@@ -84,7 +84,7 @@ export interface AbilityData {
    *  (then up to the cursor). */
   distance?: number;
   /** mobility: a non-dash/blink ability whose hook relocates the caster (leap); like dashes it is blocked by roots. */
-  flags?: ('blocked_by_minions' | 'pierce' | 'unstoppable' | 'recast' | 'ground_target' | 'ally_target' | 'auto_reset' | 'channel' | 'mobility' | 'stealth')[];
+  flags?: ('blocked_by_minions' | 'pierce' | 'unstoppable' | 'recast' | 'ground_target' | 'ally_target' | 'auto_reset' | 'channel' | 'mobility' | 'stealth' | 'root_ok')[];
   effects: Effect[];
 }
 
@@ -142,4 +142,12 @@ export interface ChampionData {
    * Bot code only; the sim never reads it.
    */
   botBias?: Partial<Record<import('../../ai/contract').PlaystyleAxis, number>>;
+  /**
+   * R choice (Sev): three alternative ultimates; the champion picks one per match, permanently (command 'ultChoice'
+   * or, for bots that learn R without choosing, a deterministic pick weighted by botUltChoice). abilities[3] is the
+   * placeholder shown until then (not castable).
+   */
+  ultChoices?: [AbilityData, AbilityData, AbilityData];
+  /** Bot pick weights for ultChoices (same order). */
+  botUltChoice?: number[];
 }

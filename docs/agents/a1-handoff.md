@@ -24,11 +24,14 @@ docs/agents/plan-api.md (contract + "Changes" 1-12), docs/agents/a1.md (numbers,
    push state now - check the push conditions after a crash.
 3. Open items in a1.md.
 
-## How to measure (scratch scripts, not committed; recreate if needed)
+## How to measure
 
 - `npx tsx tools/botSim.ts --scenario=laneAlone --rank=<r> --games=3 --report=<file>` (lane alone).
-- `npx tsx tools/botSim.ts --rank=gold --games=4 --minutes=12 --variance=0 --seed=1 [--reflex=true] --out=x.csv
-  --report=x.md` twice (on/off) and compare the per-cause shares (the report and the CSV columns `loss15_*`).
+- `npx tsx tools/botSim.ts --rank=gold --games=4 --minutes=14 --variance=0 --seed=1 --brain=new --out=x.csv
+  --report=x.md` (new brain = reflex + utility; `--reflex=true` / `--utility=true` alone). Games run in parallel
+  (`--jobs`, default cores - 2): 4 x 14 min in ~2 min wall. Compare per-cause shares (CSV `loss15_*`).
+- Phase 2 levers in code: `harassTarget` / `stanceTarget` / `standPoint` (src/ai/reflex/reflex.ts), wave states
+  (src/ai/reflex/wave.ts), trade opportunity (src/ai/utility/value.ts `tradeValue`, values.json weights).
 
 ## Traps
 

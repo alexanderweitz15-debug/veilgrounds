@@ -29,7 +29,7 @@ const GENJUTSU_CD = sec(12);
 const FIRE_TICK = sec(0.5);
 const GRIEVOUS_PCT = 40;
 const SWEEP_RADIUS = 300;
-const BURST_SHOW = sec(0.4);
+const BURST_SHOW = sec(0.6);
 
 // ------------------------------------------------------------------ state
 
@@ -77,7 +77,7 @@ interface SevState {
   blick: Blick[];
   grounds: Ground[];
   clone: Clone | null;
-  bursts: { x: number; y: number; until: number }[];
+  bursts: { x: number; y: number; r: number; until: number }[];
   flames: Flame[];
   susanooUntil: number;
   susanooRank: number;
@@ -126,7 +126,7 @@ export function addBlick(sim: Sim, sev: number, t: number): void {
 
 function explode(sim: Sim, ctx: EffectCtx, x: number, y: number): void {
   const sev = ctx.caster;
-  const r = ctx.ability.radius ?? 220;
+  const r = ctx.ability.radius ?? 300;
   for (const t of enemiesInRadius(sim, sev, x, y, r)) {
     if (sim.c.Unit.kind[t] === Kind.Pet) continue;
     const d = effectAmount(sim, ctx, t, 0);
@@ -196,14 +196,14 @@ function burst(sim: Sim, sev: number, s: SevState): void {
   removePet(sim, c.eid);
   const ctx = ctxFor(sim, sev, 1, c.rank, x, y);
   const slow = effOf(ctx.ability.effects, 'slow') as Extract<Effect, { kind: 'slow' }> | undefined;
-  for (const t of enemiesInRadius(sim, sev, x, y, ctx.ability.radius ?? 250)) {
+  for (const t of enemiesInRadius(sim, sev, x, y, ctx.ability.radius ?? 350)) {
     if (Unit.kind[t] === Kind.Pet) continue;
     const d = effectAmount(sim, ctx, t, 0);
     dealDamage(sim, sev, t, d.amount * champMult(sim, t), d.type);
     if (slow) addBuff(sim, t, { kind: 'slow', id: 'sev_w', src: sev, pct: rv(slow.pct, c.rank), ticks: sec(rv(slow.duration, c.rank)) });
     addBlick(sim, sev, t);
   }
-  s.bursts.push({ x, y, until: sim.tick + BURST_SHOW });
+  s.bursts.push({ x, y, r: ctx.ability.radius ?? 350, until: sim.tick + BURST_SHOW });
 }
 
 function tickClone(sim: Sim, sev: number, s: SevState): void {
@@ -328,7 +328,7 @@ function sevVisuals(sim: Sim, eid: number): ChampionVisuals {
   for (const g of s?.grounds ?? []) {
     if (g.until > sim.tick) objects.push({ key: `${eid}:q${g.start}:${g.x | 0}`, tag: 'sev_q_fire', x: g.x, y: g.y, r: g.r, shape: 'disc', left: g.until - sim.tick, total: g.until - g.start, hue: 22 });
   }
-  for (const b of s?.bursts ?? []) objects.push({ key: `${eid}:w${b.until}`, tag: 'sev_w_crows', x: b.x, y: b.y, r: 250, shape: 'ring', left: b.until - sim.tick, total: BURST_SHOW, hue: 270 });
+  for (const b of s?.bursts ?? []) objects.push({ key: `${eid}:w${b.until}`, tag: 'sev_w_crows', x: b.x, y: b.y, r: b.r, shape: 'ring', left: b.until - sim.tick, total: BURST_SHOW, hue: 270 });
   for (const f of s?.flames ?? []) {
     if (f.until <= sim.tick) continue;
     objects.push({ key: `${eid}:r1:${f.t}`, tag: 'sev_r1_flames', x: f.x, y: f.y, r: 110, shape: 'disc', left: f.until - sim.tick, total: f.until - f.start, hue: 350 });

@@ -56,6 +56,7 @@ describe('Passive Rabenblick', () => {
   it('3 ability hits stun for 0.75 s (genjutsu), then 12 s per-target cooldown', () => {
     const { sim, s, foes } = setup([1, 0, 1, 0], [[450, 0]]);
     const f = foes[0]!;
+    addBuff(sim, f, { kind: 'stat', stat: 'dmgReduction', id: 'test', src: f, pct: 90, ticks: sec(30) }); // survives five fireballs
     for (let i = 0; i < 2; i++) {
       refreshCooldowns(sim, s);
       cmd(sim, cast(0, CX + 450, CY));
@@ -81,7 +82,7 @@ describe('Passive Rabenblick', () => {
 });
 
 describe('Q Feuerball', () => {
-  it('explodes on the first unit hit (AoE 220) and leaves burning ground', () => {
+  it('explodes on the first unit hit (AoE 300) and leaves burning ground', () => {
     const { sim, s } = setup([1, 0, 0, 0]);
     const a = spawnDummy(sim, CX + 500, CY, 1);
     const b = spawnDummy(sim, CX + 600, CY + 150, 1); // off the line, inside the blast

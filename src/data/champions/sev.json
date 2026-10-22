@@ -47,24 +47,24 @@
       "id": "sev_q",
       "name": { "de": "Feuerball", "en": "Great Fireball" },
       "desc": {
-        "de": "Nach 0,4 s ein großer Feuerball (900): explodiert am ersten Ziel oder am Ende (Radius 220): 75/120/165/210/255 (+70 % AP) magisch, dann 1,5 s brennender Boden (20/30/40/50/60 (+10 % AP)/s). Re-Cast in den 0,4 s bricht ab (Fake): Mana zurück, 2 s Abklingzeit.",
-        "en": "After 0.4 s a great fireball (900): explodes on the first unit or at the end (radius 220): 75/120/165/210/255 (+70% AP) magic, then 1.5 s of burning ground (20/30/40/50/60 (+10% AP)/s). Recast within the 0.4 s cancels it (fake): mana refunded, 2 s cooldown."
+        "de": "Nach 0,4 s ein großer Feuerball (900): explodiert am ersten Ziel oder am Ende in einem Flammenring (Radius 300): 80/125/170/215/260 (+70 % AP) magisch, dann 2 s brennender Boden (25/40/55/70/85 (+15 % AP)/s). Re-Cast in den 0,4 s bricht ab (Fake): Mana zurück, 2 s Abklingzeit.",
+        "en": "After 0.4 s a great fireball (900): explodes on the first unit or at the end in a ring of flame (radius 300): 80/125/170/215/260 (+70% AP) magic, then 2 s of burning ground (25/40/55/70/85 (+15% AP)/s). Recast within the 0.4 s cancels it (fake): mana refunded, 2 s cooldown."
       },
       "type": "skillshot_line",
       "castTime": 0.4,
       "movesWhileCasting": false,
       "range": 900,
-      "cooldown": [8, 7.5, 7, 6.5, 6],
-      "cost": [55, 60, 65, 70, 75],
+      "cooldown": [9, 8.5, 8, 7.5, 7],
+      "cost": [60, 65, 70, 75, 80],
       "costType": "mana",
       "width": 90,
       "speed": 1300,
-      "radius": 220,
-      "duration": 1.5,
+      "radius": 300,
+      "duration": 2,
       "flags": ["blocked_by_minions", "recast"],
       "effects": [
-        { "kind": "damage", "type": "magic", "amount": { "base": [75, 120, 165, 210, 255], "ap": 0.7 } },
-        { "kind": "damage", "type": "magic", "amount": { "base": [20, 30, 40, 50, 60], "ap": 0.1 } },
+        { "kind": "damage", "type": "magic", "amount": { "base": [80, 125, 170, 215, 260], "ap": 0.7 } },
+        { "kind": "damage", "type": "magic", "amount": { "base": [25, 40, 55, 70, 85], "ap": 0.15 } },
         { "kind": "hook", "id": "sev_q_fireball" },
         { "kind": "hook", "id": "sev_q_fake_cancel" }
       ]
@@ -73,8 +73,8 @@
       "id": "sev_w",
       "name": { "de": "Krähendoppel", "en": "Crow Double" },
       "desc": {
-        "de": "Blink 400, auch gewurzelt. An der alten Stelle bleibt ein Krähen-Klon mit Sevs Aussehen und falscher Lebensleiste; Projektile auf Sev wechseln auf ihn. Wird er getroffen oder nach 1,5 s zerplatzt er in Krähen (Radius 250): 60/95/130/165/200 (+50 % AP) magisch, 35 % Slow 1,5 s, Blick-Stack.",
-        "en": "Blink 400, also while rooted. A crow clone with Sev's look and a fake health bar stays at the old spot; projectiles flying at Sev switch to it. When hit, or after 1.5 s, it bursts into crows (radius 250): 60/95/130/165/200 (+50% AP) magic, 35% slow for 1.5 s, Gaze stack."
+        "de": "Blink 400, auch gewurzelt. An der alten Stelle bleibt ein Krähen-Klon mit Sevs Aussehen und falscher Lebensleiste; Projektile auf Sev wechseln auf ihn. Wird er getroffen oder nach 1,5 s bricht ein Krähensturm los (Radius 350): 70/110/150/190/230 (+60 % AP) magisch, 35 % Slow 1,5 s, Blick-Stack.",
+        "en": "Blink 400, also while rooted. A crow clone with Sev's look and a fake health bar stays at the old spot; projectiles flying at Sev switch to it. When hit, or after 1.5 s, it bursts into a crow storm (radius 350): 70/110/150/190/230 (+60% AP) magic, 35% slow for 1.5 s, Gaze stack."
       },
       "type": "blink",
       "castTime": 0,
@@ -83,11 +83,11 @@
       "cooldown": [16, 15, 14, 13, 12],
       "cost": 60,
       "costType": "mana",
-      "radius": 250,
+      "radius": 350,
       "duration": 1.5,
       "flags": ["root_ok"],
       "effects": [
-        { "kind": "damage", "type": "magic", "amount": { "base": [60, 95, 130, 165, 200], "ap": 0.5 } },
+        { "kind": "damage", "type": "magic", "amount": { "base": [70, 110, 150, 190, 230], "ap": 0.6 } },
         { "kind": "slow", "pct": 35, "duration": 1.5 },
         { "kind": "hook", "id": "sev_w_crow_clone" }
       ]

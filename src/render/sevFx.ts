@@ -41,6 +41,14 @@ export function drawSevObject(o: SnapObject, now: number, g: SevFxApi): boolean 
         const rr = o.r * (0.3 + 0.5 * flick(now, i, 130));
         circle(g.disc, 18 + 10 * flick(now, i + 3, 70), '#ffb030', 0.7 * life, 6, o.x + Math.cos(a) * rr, o.y + Math.sin(a) * rr);
       }
+      // ring of flames on the edge (the readable AoE border)
+      for (let i = 0; i < 14; i++) {
+        const a = (i / 14) * Math.PI * 2 + now / 900;
+        circle(g.disc, 20 + 14 * flick(now, i * 2, 55), i % 2 ? '#ff7a1a' : '#ffcf4a', 0.85 * (0.5 + 0.5 * life), 7, o.x + Math.cos(a) * o.r, o.y + Math.sin(a) * o.r);
+      }
+      // explosion flash in the first moments
+      const age = 1 - life;
+      if (age < 0.15) circle(g.disc, o.r * (0.6 + age * 3), '#fff0b0', 0.8 * (1 - age / 0.15), 8);
       return true;
     }
     case 'sev_w_crows': {
@@ -48,11 +56,13 @@ export function drawSevObject(o: SnapObject, now: number, g: SevFxApi): boolean 
       const t = 1 - life;
       circle(g.thin, o.r * (0.4 + 0.8 * t), '#1a1420', 0.85 * life, 5);
       circle(g.disc, o.r * (0.3 + 0.5 * t), '#3a1a3a', 0.35 * life, 3);
-      for (let i = 0; i < 9; i++) {
-        const a = i * 0.7 + (i % 2) * 0.3;
-        const rr = o.r * (0.2 + 1.1 * t);
-        circle(g.disc, 14, '#0e0a12', 0.95 * life, 30 + i * 3, o.x + Math.cos(a) * rr, o.y + Math.sin(a) * rr);
+      // crow storm: crows spiral outward to the edge and beyond
+      for (let i = 0; i < 18; i++) {
+        const a = (i / 18) * Math.PI * 2 + t * 2.2 + (i % 3) * 0.2;
+        const rr = o.r * (0.15 + (0.75 + (i % 4) * 0.12) * t);
+        circle(g.disc, 12 + (i % 3) * 4, '#0e0a12', 0.95 * Math.min(1, life * 2), 30 + (i % 5) * 6, o.x + Math.cos(a) * rr, o.y + Math.sin(a) * rr);
       }
+      circle(g.ring, o.r, '#6a2a7a', 0.6 * life, 4);
       return true;
     }
     case 'sev_e_gaze': {

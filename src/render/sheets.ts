@@ -1,49 +1,31 @@
 // Cached sprite atlas builds for the game (baked in a worker pool, main-thread fallback).
-// B7 load time: baked cells persist per sprite id in Cache Storage (PNG strips), so a warm start only decodes them.
-// The cache name carries a version derived from this module's built URL (content-hashed chunk: any art change in the
-// bundle invalidates it); the dev server bakes every time.
-import { buildChampionAtlasAsync, BIG_MONSTER_IDS, CAMP_MONSTER_IDS, CHAMPION_IDS, MINION_IDS, stripKey, type AnyCanvas, type AtlasCellCache, type ChampionAtlas } from './champions';
+// B7 load time: baked cells persist per sprite id in IndexedDB (PNG strips, src/render/atlasStore.ts), so a warm start
+// only decodes them. Records carry a version derived from this module's built URL (content-hashed chunk: any art change
+// in the bundle invalidates them); the dev server bakes every time. Not Cache Storage: the PWA service worker deletes
+// every cache but its own on activate.
+import { buildChampionAtlasAsync, BIG_MONSTER_IDS, CAMP_MONSTER_IDS, CHAMPION_IDS, MINION_IDS, STRIP_COLS, stripKey, type AnyCanvas, type AtlasCellCache, type ChampionAtlas } from './champions';
+import { atlasStoreAvailable, buildVersion, loadStrip, saveStrip } from './atlasStore';
 
 const cache = new Map<string, Promise<ChampionAtlas>>();
 const makeWorker = (): Worker => new Worker(new URL('./spriteWorker.ts', import.meta.url), { type: 'module' });
 
-const CACHE_PREFIX = 'vg-atlas-';
-/** Short hash of the built chunk URL (contains Vite's content hash). */
-function versionOf(s: string): string {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-  return (h >>> 0).toString(36);
-}
-const CACHE_NAME = CACHE_PREFIX + versionOf(import.meta.url);
+const ATLAS_VER = buildVersion(import.meta.url);
 
 let cellCache: AtlasCellCache | undefined | null = null;
-/** Cache Storage backed strip cache; undefined in dev, without Cache Storage or when it fails. */
+/** IndexedDB backed strip cache; undefined in dev or without IndexedDB / createImageBitmap. */
 function cellStore(): AtlasCellCache | undefined {
   if (cellCache !== null) return cellCache;
-  if (import.meta.env.DEV || typeof caches === 'undefined' || typeof createImageBitmap === 'undefined') return (cellCache = undefined);
-  const url = (key: string): string => new URL(`atlas-cache/${encodeURIComponent(key)}.png`, location.href).href;
-  // drop strips of older builds once per session
-  void caches
-    .keys()
-    .then((names) => Promise.all(names.filter((n) => n.startsWith(CACHE_PREFIX) && n !== CACHE_NAME).map((n) => caches.delete(n))))
-    .catch(() => undefined);
+  if (import.meta.env.DEV || !atlasStoreAvailable() || typeof createImageBitmap === 'undefined') return (cellCache = undefined);
   const toBlob = (c: AnyCanvas): Promise<Blob | null> =>
     'convertToBlob' in c ? c.convertToBlob({ type: 'image/png' }) : new Promise((resolve) => (c as HTMLCanvasElement).toBlob(resolve, 'image/png'));
   return (cellCache = {
     async get(key) {
-      const store = await caches.open(CACHE_NAME);
-      const res = await store.match(url(key));
-      if (!res) return null;
-      const top = Number(res.headers.get('x-top') ?? '0.2');
-      return { bmp: await createImageBitmap(await res.blob()), top: Number.isFinite(top) ? top : 0.2 };
+      const r = await loadStrip(key, ATLAS_VER);
+      return r ? { bmp: await createImageBitmap(r.blob), top: Number.isFinite(r.top) ? r.top : 0.2 } : null;
     },
     put(key, strip, top) {
       void toBlob(strip)
-        .then(async (blob) => {
-          if (!blob) return;
-          const store = await caches.open(CACHE_NAME);
-          await store.put(url(key), new Response(blob, { headers: { 'content-type': 'image/png', 'x-top': String(top) } }));
-        })
+        .then((blob) => (blob ? saveStrip(key, ATLAS_VER, blob, top) : undefined))
         .catch(() => undefined); // quota / private mode: the next start just bakes again
     },
   });
@@ -57,7 +39,7 @@ export function getChampionAtlas(ids: string[], onProgress?: (done: number, tota
   let p = cache.get(key);
   if (!p) {
     const t0 = performance.now();
-    p = buildChampionAtlasAsync(list, { master: CHAMP_MASTER, frame: CHAMP_FRAME, autoHark: true, worker: makeWorker, cache: cellStore(), onProgress }).then((a) => {
+    p = buildChampionAtlasAsync(list, { master: CHAMP_MASTER, frame: CHAMP_FRAME, maxSize: ATLAS_MAX, autoHark: true, worker: makeWorker, cache: cellStore(), onProgress }).then((a) => {
       console.info(`champion atlas: ${list.length} champions, ${a.canvas.width}x${a.canvas.height} @${a.frameSize}px in ${Math.round(performance.now() - t0)} ms`);
       return a;
     });
@@ -70,8 +52,20 @@ export function getChampionAtlas(ids: string[], onProgress?: (done: number, tota
   return p;
 }
 
-const CHAMP_MASTER = 192;
-const CHAMP_FRAME = 128;
+// Champion frames ~1:1 with their on-screen size (a 260-unit sprite is ~160 px tall at 1080p, max zoom-out): the
+// old 128 px frames (shrunk to ~112 px when ten champions had to fit 4096x4096) were upscaled and looked blurry
+// next to the native-resolution world. The atlas may grow to 8192 wide when the GPU allows it.
+const CHAMP_MASTER = 240;
+const CHAMP_FRAME = 152;
+/** Largest atlas side this GPU takes (capped at 8192; 4096 without WebGL info, e.g. in tests). */
+const ATLAS_MAX = ((): number => {
+  try {
+    const gl = typeof document !== 'undefined' ? document.createElement('canvas').getContext('webgl2') : null;
+    return gl ? Math.min(8192, gl.getParameter(gl.MAX_TEXTURE_SIZE) as number) : 4096;
+  } catch {
+    return 4096;
+  }
+})();
 let gameRequested = false;
 let precaching = false;
 
@@ -91,8 +85,10 @@ async function precacheRoster(): Promise<void> {
       if (gameRequested) break;
       const hit = await store.get(stripKey(id, CHAMP_MASTER, CHAMP_FRAME, true)).catch(() => null);
       if (hit) {
+        // a strip stored by a crowded 10-champion atlas has smaller cells: bake it again at full size
+        const full = hit.bmp.width / STRIP_COLS >= CHAMP_FRAME;
         hit.bmp.close();
-        continue;
+        if (full) continue;
       }
       await buildChampionAtlasAsync([id], { master: CHAMP_MASTER, frame: CHAMP_FRAME, autoHark: false, worker: makeWorker, workers: 2, cache: store });
       baked++;

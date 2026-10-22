@@ -17,6 +17,7 @@ import { MAP_SIZE, mulberry, simToCanvas } from './coords';
 import { detailUniform, gouache, outlineMaterial, outlineMesh, paint, withFog } from './materials';
 import { edgeDist, offsetOutline, organicOutline, pointInPoly } from './organic';
 import { BASE_LOOK } from './palette';
+import { atlasStoreAvailable, buildVersion, loadStrip, saveStrip } from './atlasStore';
 
 const S = MAP_SIZE;
 
@@ -304,9 +305,7 @@ export function buildTerrain(map: MapData, anisotropy: number, quality: string =
 
   // ---------------------------------------------------------------- ground + detail
   detailUniform.value = detailTexture();
-  const t0 = performance.now();
-  const tex = new THREE.CanvasTexture(paintGround(cx, low ? 2048 : 4096));
-  console.info(`terrain: ground painted in ${Math.round(performance.now() - t0)} ms`);
+  const tex = groundTexture(cx, low ? 2048 : 4096);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = anisotropy;
   const groundGeo = new THREE.PlaneGeometry(S, S);
@@ -854,6 +853,58 @@ function detailTexture(): THREE.CanvasTexture {
   t.colorSpace = THREE.NoColorSpace;
   t.anisotropy = 4;
   return t;
+}
+
+/**
+ * B7: the painted ground is the same for every match. Painted once per session (menu backdrop and game share it) and,
+ * in builds, kept in IndexedDB as PNG (src/render/atlasStore.ts) so a warm start only decodes it. Until the stored or
+ * freshly painted image is ready the texture shows a flat ground colour (under the loading cover).
+ */
+let groundImg: { n: number; canvas: HTMLCanvasElement } | null = null;
+const GROUND_VER = buildVersion(import.meta.url);
+function groundTexture(cx: Ctx, N: number): THREE.CanvasTexture {
+  if (groundImg?.n === N) return new THREE.CanvasTexture(groundImg.canvas);
+  const paint = (): HTMLCanvasElement => {
+    const t0 = performance.now();
+    const c = paintGround(cx, N);
+    console.info(`terrain: ground painted in ${Math.round(performance.now() - t0)} ms`);
+    groundImg = { n: N, canvas: c };
+    return c;
+  };
+  if (import.meta.env.DEV || !atlasStoreAvailable() || typeof createImageBitmap === 'undefined') return new THREE.CanvasTexture(paint());
+  const flat = document.createElement('canvas');
+  flat.width = flat.height = 4;
+  const fctx = flat.getContext('2d')!;
+  fctx.fillStyle = C.floor;
+  fctx.fillRect(0, 0, 4, 4);
+  const tex = new THREE.CanvasTexture(flat);
+  const key = `ground-${N}`;
+  const use = (c: HTMLCanvasElement): void => {
+    // the GPU storage of the 4 px placeholder is immutable: free it so the full image is allocated anew
+    tex.dispose();
+    tex.image = c;
+    tex.needsUpdate = true;
+  };
+  void loadStrip(key, GROUND_VER)
+    .then(async (hit) => {
+      if (groundImg?.n === N) return use(groundImg.canvas);
+      if (hit) {
+        const t0 = performance.now();
+        const bmp = await createImageBitmap(hit.blob);
+        const c = document.createElement('canvas');
+        c.width = c.height = N;
+        c.getContext('2d')!.drawImage(bmp, 0, 0);
+        bmp.close();
+        groundImg = { n: N, canvas: c };
+        console.info(`terrain: ground loaded in ${Math.round(performance.now() - t0)} ms`);
+        return use(c);
+      }
+      const c = paint();
+      use(c);
+      c.toBlob((blob) => blob && void saveStrip(key, GROUND_VER, blob, 0), 'image/png');
+    })
+    .catch(() => use(paint()));
+  return tex;
 }
 
 /** Painted ground (sim map -> canvas y-down via simToCanvas). */

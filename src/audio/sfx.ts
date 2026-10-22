@@ -207,6 +207,14 @@ export function playAnnounce(kind: AnnounceTone): void {
   if (kind === 'epic' || kind === 'victory') noise(v, 0.5, 300, 0.7, 0.18, 'lowpass');
 }
 
+/** Fake cast cancelled during its wind-up (Gorvam Q, Sev Q): a short falling fizzle instead of a second cast cue. */
+export function playFizzle(x?: number, y?: number): void {
+  const v = voice(x, y, 0.7);
+  if (!v) return;
+  tone(v, 'triangle', 520, 140, 0.16, 0.12);
+  noise(v, 0.12, 900, 1.5, 0.06, 'lowpass');
+}
+
 /** Distinct cast cue per ability id; shape follows the ability type (line = rising whoosh, circle = drop, ...). */
 export function playCast(abilityId: string, type: string, x?: number, y?: number, ultimate = false): void {
   const v = voice(x, y, ultimate ? 1 : 0.85);

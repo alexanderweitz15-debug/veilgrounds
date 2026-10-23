@@ -101,6 +101,7 @@
     "homeRange": 3000,
     "minionClearMargin": 40,
     "shoveMaxS": 20,
+    "minionAvoidRange": 1400,
     "shoveGapTicks": 90
   },
 

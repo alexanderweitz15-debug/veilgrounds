@@ -9,8 +9,8 @@ import type { NodeCtx } from '../bt/types';
 import type { SnapEntity } from '../bot/types';
 import { dst, laneProgress } from '../bot/geo';
 import { hpPct, ready, slotReach } from '../bot/combat';
-import { near } from '../bot/perception';
-import { allInWanted, closestEnemy, comboReach } from '../bot/trade';
+import { near, towerCovering } from '../bot/perception';
+import { allInWanted, closestEnemy, comboReach, lethalDive } from '../bot/trade';
 import { teamfightNear } from '../bot/teamfight';
 import { wardDue } from '../bot/macro';
 import { teleportSlot } from '../bot/spells';
@@ -124,6 +124,10 @@ export function tradeValue(w: World): CandidateValue | null {
   const k = n.p.knobs;
   const ex = estimateExchange(v, n.ctx, t, H.trade, n.rng, { orbwalk: 0.7 + 0.3 * k.orbwalkChance });
   const exK = estimateExchange(v, n.ctx, t, H.allin, n.rng, { orbwalk: 0.7 + 0.3 * k.orbwalkChance });
+  // no new trade on a target under its tower unless the dive is allowed (the trade leaf's own rule: aggression
+  // knob + tolerance, or a lethal dive) - otherwise the trade ends at once and is re-chosen next decision (tower deaths)
+  const tol = n.ctx.profile.behavior.diveHpTolerancePct + k.diveTolerancePctShift;
+  if (!running && towerCovering(v, t) && !(k.towerDive && hpPct(t) * 100 <= tol) && !lethalDive(n, t, exK)) return null;
   const allin = running ? running.kind === 'allin' : allInWanted(n, exK);
   const e = allin ? exK : ex;
   const h = allin ? H.allin : H.trade;

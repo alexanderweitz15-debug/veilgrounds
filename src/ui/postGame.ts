@@ -6,6 +6,8 @@ import { champName } from './names';
 import { t } from '../i18n';
 import { clock, formatStat } from './trainerHud';
 import { renderGhostReview } from './ghostReview';
+import { recordFromSummary } from '../stats/history';
+import { calibrateMatch, CATEGORY_IDS } from '../stats/rankCalibration';
 
 const NS = 'http://www.w3.org/2000/svg';
 const COL = { line: '#c8aa6e', line2: '#7fb2d9', death: '#e0604a', kill: '#7dcf8a', grid: 'rgba(255,255,255,0.08)', axis: '#a09b8c', own: '#e3c26a', enemy: '#d0584a' };
@@ -152,6 +154,21 @@ export function renderPostGame(root: HTMLElement, d: MatchSummary, onBack: () =>
   tile(t('post.deaths'), String(d.deaths.length));
   tile(t('post.dealt'), String(Math.round(sum(d.dealtChamp))));
   tile(t('post.taken'), String(Math.round(sum(d.taken))));
+
+  // rank calibration per category (Table A targets): which rank this match plays like - classic / lane games only
+  if ((d.mode === 'classic' || d.mode === 'laneOnly') && d.duration >= 300) {
+    const cal = calibrateMatch(recordFromSummary(d, Date.now()));
+    el('h3', 'pg-h3', panel, t('post.rankCalib'));
+    const rt = el('div', 'pg-tiles', panel);
+    for (const cat of CATEGORY_IDS) {
+      const c = cal[cat];
+      if (!c) continue;
+      const b = el('div', 'pg-tile', rt);
+      el('div', 'v', b, t(`rank.${c.rank}`));
+      el('div', 'k', b, t(`plan.cat.${cat}`));
+      if (c.next !== undefined) el('div', 'k', b, t('post.rankNext', { v: c.next.toFixed(1) }));
+    }
+  }
 
   // scenarios are seconds long and start at a set match time: curves over the whole clock say nothing there
   const charts = el('div', 'pg-charts', d.mode === 'scenario' ? document.createElement('div') : panel);

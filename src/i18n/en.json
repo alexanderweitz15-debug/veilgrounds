@@ -653,6 +653,8 @@
   "plan.minutes": "{m} min",
   "plan.start": "Start",
   "plan.standings": "Rank per category",
+  "post.rankCalib": "Rank estimate for this match (Table A targets)",
+  "post.rankNext": "next rank from {v}",
   "plan.cat.farming": "Farming",
   "plan.cat.economy": "Gold",
   "plan.cat.survival": "Survival",

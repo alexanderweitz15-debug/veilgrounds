@@ -35,6 +35,8 @@ export interface Replay {
   markers?: ReplayMarker[];
   /** Slot of the human player (the pattern list belongs to this player). */
   humanSlot?: number;
+  /** Winning team of a decided match (null: trainer run / not decided). */
+  winner?: number | null;
   /** The player's mistake patterns (src/stats/playerPatterns.ts), detected live from the full sim. */
   player?: PatternEvent[];
 }
@@ -89,6 +91,7 @@ export class Recorder {
       hash: stateHash(sim),
       ...(slim ? { botLog: slim } : {}),
       markers: this.markers,
+      winner: typeof sim.state.winner === 'number' ? sim.state.winner : null,
       ...(this.humanSlot >= 0 ? { humanSlot: this.humanSlot } : {}),
       ...(this.detector ? { player: this.detector.finish(sim) } : {}),
     };

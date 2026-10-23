@@ -18,6 +18,8 @@ export interface SimLink {
   onError?: ((message: string) => void) | null;
   /** Challenger-Geist moments (worker link only). */
   onGhost?: ((moments: import('../ai/ghost').GhostMoment[]) => void) | null;
+  /** Worker link only: the recorded replay so far (S2: stored after a finished game). */
+  requestReplay?(): Promise<import('../replay/replay').Replay>;
 }
 
 export function workerLink(config: SimConfig, slot: number): SimLink {
@@ -31,9 +33,16 @@ export function workerLink(config: SimConfig, slot: number): SimLink {
     requestBotDebug: () => post({ type: 'getBotDebug' }),
     onBotDebug: null,
     onError: null,
+    requestReplay: () =>
+      new Promise((resolve) => {
+        replayWaiters.push(resolve);
+        post({ type: 'getReplay' });
+      }),
   };
+  const replayWaiters: ((r: import('../replay/replay').Replay) => void)[] = [];
   worker.onmessage = (ev: MessageEvent<FromWorker>) => {
     if (ev.data.type === 'snap') link.onSnap?.(ev.data.snap);
+    else if (ev.data.type === 'replay') for (const w of replayWaiters.splice(0)) w(ev.data.replay);
     else if (ev.data.type === 'botDebug') link.onBotDebug?.(ev.data.rows, ev.data.tick);
     else if (ev.data.type === 'ghost') link.onGhost?.(ev.data.moments);
   };

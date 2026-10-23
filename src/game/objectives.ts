@@ -90,6 +90,14 @@ export class ObjectiveTracker {
     return out;
   }
 
+  /** Replay seek: rebuild the epic respawn clocks from the last Leviathan / Schleierwaechter kill ticks before the new position. */
+  restoreEpicKills(k: { leviathan?: number; schleier?: number }): void {
+    this.epicKill.leviathan = k.leviathan ?? -1;
+    this.epicKill.schleier = k.schleier ?? -1;
+    this.grubDeaths = 0;
+    this.grubRespawnAt = -1; // ponytail: Kesselbrut wave state is not restored after a seek (timer shows the first spawn)
+  }
+
   /** Feed every snapshot (several per frame are possible; events must not be skipped). */
   ingest(s: Snapshot, unit: (eid: number) => Unit | undefined = () => undefined): void {
     this.snap = s;

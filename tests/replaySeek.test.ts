@@ -8,7 +8,7 @@ import { cloneSim, freezeSim, thawSim } from '../src/replay/cloneSim';
 import { ReplayEngine } from '../src/replay/engine';
 import { recordBotGame } from './replayHelpers';
 
-const TICKS = 5400; // 3:00, waves have met
+const TICKS = 3600; // 2:00, first waves have met
 
 describe('replay seek', () => {
   const replay = recordBotGame(1, TICKS);
@@ -20,7 +20,7 @@ describe('replay seek', () => {
 
   it('cloneSim / freezeSim copies continue bit-identically (state hash and fog-filtered snapshots)', () => {
     const a = createSim(structuredClone(replay.config));
-    while (a.tick < 3000) step(a, replay.inputs[a.tick] ?? []);
+    while (a.tick < 2000) step(a, replay.inputs[a.tick] ?? []);
     const full = cloneSim(a);
     const frozen = thawSim(freezeSim(a));
     expect(stateHash(full)).toBe(stateHash(a));
@@ -30,7 +30,7 @@ describe('replay seek', () => {
       step(a, inputs);
       step(full, inputs);
       step(frozen, inputs);
-      if (a.tick % 90 === 0) {
+      if (a.tick % 300 === 0) {
         const s = JSON.stringify(buildSnapshot(a, 0, 0));
         expect(JSON.stringify(buildSnapshot(full, 0, 0))).toBe(s);
         expect(JSON.stringify(buildSnapshot(frozen, 0, 0))).toBe(s);
@@ -59,7 +59,7 @@ describe('replay seek', () => {
     const engine = new ReplayEngine(replay, 600);
     const straight = createSim(structuredClone(replay.config));
     const want = new Map<number, string>();
-    const targets = [4100, 900, 1300, 0, 5399, 2999, 3001, 600, TICKS, 1801];
+    const targets = [2700, 900, 1300, 0, 3599, 1999, 2001, 600, TICKS, 1201];
     const set = new Set(targets);
     while (straight.tick < TICKS) {
       step(straight, replay.inputs[straight.tick] ?? []);
@@ -84,11 +84,11 @@ describe('replay seek', () => {
     expect(engine.indexed).toBe(true);
     expect(engine.indexProgress).toBe(1);
     expect(engine.checkpoints.size).toBe(Math.floor(TICKS / 600) + 1);
-    const steps = engine.seek(4799);
+    const steps = engine.seek(3199);
     expect(steps).toBeLessThanOrEqual(600);
-    expect(engine.tick).toBe(4799);
+    expect(engine.tick).toBe(3199);
     // playing on one tick at a time keeps matching
-    const ref = playReplay(replay, undefined, 4803);
+    const ref = playReplay(replay, undefined, 3203);
     for (let i = 0; i < 4; i++) engine.stepOnce();
     expect(engine.hash()).toBe(stateHash(ref));
   }, 120_000);

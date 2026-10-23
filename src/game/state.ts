@@ -66,6 +66,22 @@ export class ClientState {
   /** Respawn timers, Leviathan/Kesselbrut/Schleierwaechter, inhibitor respawns of both teams (scoreboard, C2). */
   readonly objectives = new ObjectiveTracker();
 
+  /** Replay seek: forget everything derived from earlier snapshots (the next snapshot is not a successor of the last). */
+  resetForSeek(): void {
+    this.snap = null;
+    this.byId.clear();
+    this.prev2.clear();
+    this.phase.clear();
+    this.fired.length = 0;
+    this.known.clear();
+    this.seenAt.clear();
+    this.pings.length = 0;
+    this.kills = [0, 0];
+    this.towers = [0, 0];
+    this.winner = null;
+    this.base = Number.NaN;
+  }
+
   /** Ingest one snapshot; returns its events for the fx/HUD dispatch. */
   ingest(s: Snapshot, now: number): SimEvent[] {
     // positions two ticks back (= previous snapshot's px) for the interpolation buffer

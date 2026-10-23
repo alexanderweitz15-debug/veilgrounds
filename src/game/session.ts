@@ -14,9 +14,11 @@ export interface SessionResult {
   retry?: boolean;
   /** Player asked for the post-game analysis. */
   analysis?: boolean;
+  /** Recorded replay of a finished game (S2: stored for the replay browser, source of the post-game error list). */
+  replay?: import('../replay/replay').Replay;
 }
 
-export type ExitOpts = Omit<SessionResult, 'summary'>;
+export type ExitOpts = Omit<SessionResult, 'summary' | 'replay'>;
 
 const TRAINER_MODES = new Set(['lastHit', 'dodge', 'kite', 'laneDuel', 'jungleDuel', 'arena', 'scenario']);
 export const isTrainerMode = (mode: string | undefined): boolean => !!mode && TRAINER_MODES.has(mode);

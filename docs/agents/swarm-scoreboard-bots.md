@@ -22,3 +22,4 @@
 - The displayed playstyle uses `resolvePlaystyle(setup)` with configSeed 0 (as the existing name tooltip did): correct
   when the setup carries a personalitySeed (runner sets it on its own copy, src/ai/runner.ts:475); otherwise rolled
   styles may differ from the worker's.
+- Follow-up champion task (Eulalia, owl seer) dropped by lead: nothing built, no files touched.

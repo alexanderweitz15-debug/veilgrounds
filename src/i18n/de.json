@@ -328,14 +328,14 @@
   "ping.myBad": "Mein Fehler",
   "set.newBrain": "Neues Bot-Gehirn (Beta: Reflex-Schicht + Nutzenmodell)",
   "set.botToxicity": "Toxische Bots (Flame-Chat, „?“-Pings)",
-  "chat.placeholder": "Nachricht an dein Team (Enter senden, Esc abbrechen)",
+  "chat.placeholder": "Nachricht an dein Team (Enter senden, Umschalt+Enter an alle, Esc abbrechen)",
   "chat.you": "Du",
-  "chat.help": "Befehle: /mute Name|alle · /unmute Name|alle · /ff · /all Text · /help. Klick auf Objective-Timer oder gegnerischen Zauber (Tab) schreibt die Zeit ins Team; Alt+Klick auf ein Item pingt es.",
+  "chat.help": "Befehle: /mute Name|alle · /unmute Name|alle · /ff · /all Text (oder Umschalt+Enter) · /help. Klick auf Objective-Timer oder gegnerischen Zauber (Tab) schreibt die Zeit ins Team; Alt+Klick auf ein Item pingt es.",
   "chat.noPlayer": "Kein Spieler „{name}“ gefunden.",
   "chat.muted": "Stummgeschaltet (Chat und Pings): {names}",
   "chat.unmuted": "Wieder hörbar: {names}",
   "chat.ffNo": "Aufgeben ist gegen Bots noch nicht möglich (Abstimmung mit Bot-Stimmen folgt).",
-  "chat.allNo": "Allgemeiner Chat an das gegnerische Team ist noch nicht verfügbar; die Nachricht wurde nicht gesendet.",
+  "chat.allNo": "Allgemeiner Chat: „/all Text“ oder Umschalt+Enter sendet an beide Teams.",
   "chat.unknownCmd": "Unbekannter Befehl /{cmd} – /help zeigt alle Befehle.",
   "chat.itemPing": "Ich habe {item}.",
   "chat.itemBuying": "Ich kaufe {item}.",
@@ -709,5 +709,6 @@
   "profile.mode.sandbox": "Sandbox",
   "profile.mode.lastHit": "Last-Hit-Trainer",
   "profile.mode.classic": "Klassisch",
-  "profile.mode.mock": "Test"
+  "profile.mode.mock": "Test",
+  "chat.allTag": "[Alle]"
 }

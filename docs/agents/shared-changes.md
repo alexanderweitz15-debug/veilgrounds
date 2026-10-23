@@ -428,3 +428,14 @@ Measure: console lines `champion atlas: ... in N ms` (sheets.ts) cold vs warm, 1
   tradePunishS seconds (on cooldown). New triggers `cs_window` / `punish` in the log; term `opportunity`.
 - values.json weights: `tradeCsWindowBonus` 1.0, `tradePunishBonus` 0.8, `tradePunishS` 3.
 - Reason: user feedback "trade when the enemy misses a cast or last-hits"; only active with the utility flag.
+
+## 2026-10-23 · S1 · all chat + surrender vote: shared-file edits · on ui/s1-features
+
+| File | Owner | Change | Row |
+|---|---|---|---|
+| src/sim/types.ts | B | `Command` chat gets `all?: boolean`; `SimEvent` chat gets `all?: boolean` (additive) | 2.8 |
+| src/sim/systems/input.ts | B | `chat()` copies `all` onto the event | 2.8 |
+| src/sim/snapshot.ts | B | event filter `case 'chat'`: `ev.team === team \|\| !!ev.all` | 2.8 |
+| src/ai/bot/social.ts | A3 | `allChatReply(n)` called from `socialTick` (additive): an enemy bot may answer the human's all-chat line; uses the 45 s chat throttle, no new BotExt field | 2.8 |
+| src/data/bots/chat.json | A3 | 9 new lines, `cat: "allReply"` (low/mid/high, 2 toxic) | 2.8 |
+| src/data/bots/allchat.json (new) | A3 | reply chance per band, reaction delay | 2.8 |

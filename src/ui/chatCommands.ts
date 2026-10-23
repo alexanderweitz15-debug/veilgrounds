@@ -24,9 +24,10 @@ export function matchPlayers(name: string, players: readonly PlayerSetup[], mySl
   return others.filter((p) => norm(p.bot?.name ?? '').startsWith(n) || norm(champName(p.champion)).startsWith(n)).map((p) => p.slot);
 }
 
-export function parseChat(raw: string, players: readonly PlayerSetup[], mySlot: number): ChatAction {
+/** `allChat` = Shift+Enter: a plain line goes to both teams (S1, FEATURE-GAP 2.8); commands behave as usual. */
+export function parseChat(raw: string, players: readonly PlayerSetup[], mySlot: number, allChat = false): ChatAction {
   const text = raw.trim();
-  if (!text.startsWith('/')) return { kind: 'send', text };
+  if (!text.startsWith('/')) return allChat ? { kind: 'all', text } : { kind: 'send', text };
   const [cmd = '', ...rest] = text.slice(1).split(/\s+/);
   const arg = rest.join(' ');
   switch (cmd.toLowerCase()) {

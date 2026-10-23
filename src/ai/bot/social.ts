@@ -6,7 +6,8 @@ import type { PingKind } from '../../sim/types';
 import { Kind } from '../../sim/types';
 import type { NodeCtx, NodeResult } from '../bt/types';
 import type { SnapEntity } from './types';
-import { chatLine } from '../humanize/names';
+import { bandOf, chatLine } from '../humanize/names';
+import allchat from '../../data/bots/allchat.json';
 import { CHAMPION_DATA } from '../../sim/champions';
 import { dst, unit } from './geo';
 import { estimateExchange, rankIdx } from '../bt/deps';
@@ -181,6 +182,7 @@ export function socialTick(n: NodeCtx, killed: boolean, died: boolean): void {
   if (killed) say(n, ri >= DIAMOND ? 'plan' : 'kill', 'kill');
   if (died) say(n, ri <= SILVER ? 'flame' : 'death', 'died');
   ragePings(n);
+  allChatReply(n);
   const jg = n.ctx.players.find((p) => p.team !== n.ctx.team && p.role === 'jungle');
   const e: SnapEntity | undefined = jg ? n.v.enemies.find((x) => x.slot === jg.slot) : undefined;
   if (e && n.ctx.lane && ri >= SILVER) {
@@ -218,5 +220,26 @@ function ragePings(n: NodeCtx): void {
       const champ = (CHAMPION_DATA as Record<string, { name: string }>)[victim.champ ?? '']?.name ?? '';
       say(n, 'flamePlayer', 'human ally keeps dying', { champ, d: String(ext.rageDeaths.length) });
     }
+  }
+}
+
+/**
+ * All chat (S1, FEATURE-GAP 2.8): an enemy bot may answer the human's all-chat line (chance by rank band from
+ * src/data/bots/allchat.json, line from chat.json cat allReply). Shares the 45 s chat throttle; the answer is an
+ * all-chat line too, after a reaction delay.
+ */
+function allChatReply(n: NodeCtx): void {
+  const humans = humanSlots(n);
+  for (const ev of n.snap.events) {
+    if (ev.e !== 'chat' || !ev.all || ev.team === n.ctx.team || !humans.has(ev.slot)) continue;
+    if (n.v.tick - n.mem.ext.chatAt < 45 * 30) return;
+    if (!n.rng.chance(allchat.replyChance[bandOf(n.ctx.profile.rank)])) continue;
+    const text = chatLine(n.rng, 'allReply', n.ctx.profile.rank, n.ctx.toxic, {}, n.ctx.lang ?? 'de');
+    if (!text) continue;
+    n.mem.ext.chatAt = n.v.tick;
+    const ref = n.log('chat', 'allReply', 'answer to all chat', { text, from: ev.slot });
+    const [lo, hi] = allchat.delayTicks as [number, number];
+    n.out.push({ cmd: { t: 'chat', text, ref, all: true }, delay: lo + n.rng.int(Math.max(1, hi - lo)) });
+    return;
   }
 }

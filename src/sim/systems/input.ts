@@ -206,7 +206,7 @@ function chat(sim: Sim, eid: number, cmd: Extract<Command, { t: 'chat' }>): void
   recent.push(sim.tick);
   st.set(eid, recent);
   const { Unit } = sim.c;
-  sim.events.push({ e: 'chat', slot: Unit.slot[eid]!, team: Unit.team[eid]!, text: cmd.text.slice(0, 120), ...(cmd.ref !== undefined ? { ref: cmd.ref } : {}) });
+  sim.events.push({ e: 'chat', slot: Unit.slot[eid]!, team: Unit.team[eid]!, text: cmd.text.slice(0, 120), ...(cmd.ref !== undefined ? { ref: cmd.ref } : {}), ...(cmd.all ? { all: true } : {}) });
 }
 
 function ping(sim: Sim, eid: number, cmd: Extract<Command, { t: 'ping' }>): void {

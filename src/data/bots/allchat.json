@@ -1,0 +1,5 @@
+{
+  "note": "S1 (FEATURE-GAP 2.8): enemy bots answer all chat of the human. replyChance = chance per message by rank band (see chat.json cat allReply for the lines); delayTicks = [min, max] reaction delay; the bot's team-chat throttle (45 s) also applies.",
+  "replyChance": { "low": 0.45, "mid": 0.3, "high": 0.15 },
+  "delayTicks": [45, 150]
+}

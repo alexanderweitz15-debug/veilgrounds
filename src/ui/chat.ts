@@ -1,5 +1,6 @@
 // In-game team chat (bottom left): bot lines from the sim (spec-bots §9, incl. flame), own messages with Enter.
 // Chat commands (C4): /help, /mute, /unmute, /ff, /all (src/ui/chatCommands.ts); system lines are local only.
+// All chat (S1, 2.8): Shift+Enter or "/all text" goes to both teams; enemy lines show with an [All] tag.
 import './chat.css';
 import type { PlayerSetup, SimEvent } from '../sim/types';
 import { champName } from './names';
@@ -17,14 +18,14 @@ export class ChatBox {
     if (e.code !== 'Enter' && e.code !== 'NumpadEnter') return;
     if (this.typing || this.blocked()) return;
     e.preventDefault();
-    this.open();
+    this.open(e.shiftKey);
   };
 
   constructor(
     parent: HTMLElement,
     private readonly players: PlayerSetup[],
     private readonly mySlot: number,
-    private readonly send: (text: string) => void,
+    private readonly send: (text: string, all?: boolean) => void,
     private readonly blocked: () => boolean,
     /** Muted slots (shared with ClientState, which drops their pings). */
     private readonly muted: Set<number> = new Set(),
@@ -41,7 +42,7 @@ export class ChatBox {
       e.stopPropagation(); // typing must not cast abilities
       if (e.code === 'Enter' || e.code === 'NumpadEnter') {
         const text = this.input.value.trim();
-        if (text) this.submit(text);
+        if (text) this.submit(text, e.shiftKey);
         this.close();
       } else if (e.code === 'Escape') this.close();
     });
@@ -60,8 +61,8 @@ export class ChatBox {
     this.send(text);
   }
 
-  private submit(text: string): void {
-    const a = parseChat(text, this.players, this.mySlot);
+  private submit(text: string, shift = false): void {
+    const a = parseChat(text, this.players, this.mySlot, shift);
     switch (a.kind) {
       case 'send':
         return this.send(a.text);
@@ -74,7 +75,7 @@ export class ChatBox {
       case 'surrender':
         return this.system(t('chat.ffNo'));
       case 'all':
-        return this.system(t('chat.allNo'));
+        return a.text ? this.send(a.text, true) : this.system(t('chat.allNo'));
       default:
         return this.system(t('chat.unknownCmd', { cmd: a.cmd }));
     }
@@ -99,9 +100,10 @@ export class ChatBox {
     setTimeout(() => line.classList.add('old'), SHOW_MS);
   }
 
-  private open(): void {
+  /** `all` (Shift+Enter): starts with the "/all " prefix so the line is visibly an all-chat line. */
+  private open(all = false): void {
     this.root.classList.add('typing');
-    this.input.value = '';
+    this.input.value = all ? '/all ' : '';
     this.input.focus();
   }
 
@@ -115,12 +117,13 @@ export class ChatBox {
   onEvent(ev: SimEvent): void {
     if (ev.e !== 'chat' || this.muted.has(ev.slot)) return;
     const p = this.players.find((x) => x.slot === ev.slot);
+    const enemy = ev.team !== (this.players.find((x) => x.slot === this.mySlot)?.team ?? ev.team);
     const who = p ? (p.slot === this.mySlot ? t('chat.you') : (p.bot?.name ?? champName(p.champion))) : '?';
     const line = document.createElement('div');
-    line.className = 'chat-line' + (ev.slot === this.mySlot ? ' mine' : '');
+    line.className = 'chat-line' + (ev.slot === this.mySlot ? ' mine' : '') + (enemy ? ' enemy' : '') + (ev.all ? ' all' : '');
     const name = document.createElement('span');
     name.className = 'who';
-    name.textContent = `${who}${p ? ` (${champName(p.champion)})` : ''}: `;
+    name.textContent = `${ev.all ? `${t('chat.allTag')} ` : ''}${who}${p ? ` (${champName(p.champion)})` : ''}: `;
     line.append(name, document.createTextNode(ev.text));
     this.append(line);
   }

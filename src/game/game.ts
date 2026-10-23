@@ -166,7 +166,7 @@ export class Game {
       this.root,
       config?.players ?? [],
       config?.players.find((p) => p.isHuman)?.slot ?? 0,
-      (text) => this.link.send({ t: 'chat', text }),
+      (text, all) => this.link.send(all ? { t: 'chat', text, all: true } : { t: 'chat', text }),
       () => this.menu.classList.contains('open'),
       this.state.muted,
     );

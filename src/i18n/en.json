@@ -328,14 +328,14 @@
   "ping.myBad": "My bad",
   "set.newBrain": "New bot brain (beta: reflex layer + utility model)",
   "set.botToxicity": "Toxic bots (flame chat, \"?\" pings)",
-  "chat.placeholder": "Message your team (Enter to send, Esc to cancel)",
+  "chat.placeholder": "Message to your team (Enter to send, Shift+Enter to all, Esc to cancel)",
   "chat.you": "You",
-  "chat.help": "Commands: /mute name|all · /unmute name|all · /ff · /all text · /help. Click an objective timer or an enemy spell (Tab) to post the time to your team; Alt+click an item to ping it.",
+  "chat.help": "Commands: /mute name|all · /unmute name|all · /ff · /all text (or Shift+Enter) · /help. Clicking an objective timer or an enemy spell (Tab) writes the time to your team; Alt+click on an item pings it.",
   "chat.noPlayer": "No player \"{name}\" found.",
   "chat.muted": "Muted (chat and pings): {names}",
   "chat.unmuted": "Unmuted: {names}",
   "chat.ffNo": "Surrendering against bots is not available yet (vote with bot votes will follow).",
-  "chat.allNo": "All chat to the enemy team is not available yet; the message was not sent.",
+  "chat.allNo": "All chat: \"/all text\" or Shift+Enter sends to both teams.",
   "chat.unknownCmd": "Unknown command /{cmd} – /help lists all commands.",
   "chat.itemPing": "I have {item}.",
   "chat.itemBuying": "Buying {item}.",
@@ -709,5 +709,6 @@
   "profile.mode.sandbox": "Sandbox",
   "profile.mode.lastHit": "Last-hit trainer",
   "profile.mode.classic": "Classic",
-  "profile.mode.mock": "Test"
+  "profile.mode.mock": "Test",
+  "chat.allTag": "[All]"
 }

@@ -14,6 +14,8 @@ import { buildWorld } from '../src/ai/utility/world';
 import { farmValue, pushValue, recallValue, stayDeathProb } from '../src/ai/utility/value';
 import { INTENT_NODE, scoreCandidates, utilitySelect, utilityState } from '../src/ai/utility/select';
 import { utilityOn } from '../src/ai/utility/flag';
+import { gazeTurnAway, sevUltAllowed, sevUltChoice } from '../src/ai/utility/sev';
+import { championData } from '../src/sim/champions';
 import { MAP, PLAYERS, ScriptedBot, champEnt, hud, minion, paramsFor, rows, snapshot } from './botScenario';
 import { profileOf } from '../src/ai/profiles';
 import type { SnapEntity } from '../src/sim/snapshot';
@@ -254,5 +256,58 @@ describe('team AI under the utility flag (§7.1 / §7.4)', () => {
     const e = bot.log.find((x) => x.node === 'convert');
     expect(e).toBeTruthy();
     expect(e!.chosen).toMatch(/^(tower|dragon|baron|kesselbrut|none\(.+\))$/);
+  });
+});
+
+describe('Sev rules (utility flag, docs/agents/issues.md Fassung 3)', () => {
+  const sevBot = (rank: Rank, seed = 1): ScriptedBot => {
+    const bot = midBot(rank, seed);
+    (bot.ctx as { champ: unknown }).champ = championData('sev');
+    return bot;
+  };
+
+  it('R choice by the enemy line-up: squishy carries -> Tsukuyomi, behind -> Susanoo', () => {
+    const a = sevBot('gold');
+    const n1 = a.node(snapshot({ tick: 9000, team: 0, entities: [champEnt(2, ...at(mid(0.4)))], me: hud(2, { level: 5 }) }));
+    expect(sevUltChoice(n1)).toBe(VALUES.sev.choice.tsukuyomi);
+    expect(n1.out.some((x) => x.cmd.t === 'ultChoice')).toBe(true);
+    expect(sevUltChoice(a.node(snapshot({ tick: 9100, team: 0, entities: [champEnt(2, ...at(mid(0.4)))], me: hud(2, { level: 6 }) })))).toBeNull(); // sent once
+    const b = sevBot('gold');
+    const n2 = b.node(snapshot({ tick: 9000, team: 0, entities: [champEnt(2, ...at(mid(0.4)))], me: hud(2, { level: 5 }), players: rows({ 2: { deaths: 3 } }) }));
+    expect(sevUltChoice(n2)).toBe(VALUES.sev.choice.susanoo);
+  });
+
+  it('Tsukuyomi only with an ally near the target or on a low target', () => {
+    const p = mid(0.45);
+    const self = champEnt(2, ...at(p), { ult: VALUES.sev.choice.tsukuyomi });
+    const foe = champEnt(7, ...at(p, 400, 400));
+    const bot = sevBot('gold');
+    const n = bot.node(snapshot({ tick: 9000, team: 0, entities: [self, foe], me: hud(2) }));
+    expect(sevUltAllowed(n.v, n.ctx, foe)).toBe(false);
+    expect(sevUltAllowed(n.v, n.ctx, { ...foe, hp: foe.maxHp * 0.3 })).toBe(true);
+    const bot2 = sevBot('gold');
+    const n2 = bot2.node(snapshot({ tick: 9000, team: 0, entities: [self, foe, champEnt(3, ...at(p, 500, 300))], me: hud(2) }));
+    expect(sevUltAllowed(n2.v, n2.ctx, foe)).toBe(true);
+  });
+
+  it('enemy Bannblick eye contact: Challenger bots look away (move away from Sev), Iron rarely', () => {
+    const turns = (rank: Rank): number => {
+      let k = 0;
+      for (let seed = 1; seed <= 40; seed++) {
+        const bot = midBot(rank, seed);
+        const me = champEnt(2, ...at(mid(0.45)));
+        const snap = snapshot({ tick: 9000, team: 0, entities: [me], me: hud(2) });
+        snap.objects.push({ id: -1, key: 'x:e', tag: VALUES.sev.gazeTag, team: 1, x: me.x + 500, y: me.y + 500, r: 12, follow: me.id, shape: 'line' });
+        const n = bot.node(snap);
+        if (gazeTurnAway(n)) {
+          const mv = n.out.find((a) => a.cmd.t === 'move')!.cmd as { x: number; y: number };
+          expect(mv.x).toBeLessThan(me.x);
+          k++;
+        }
+      }
+      return k;
+    };
+    expect(turns('challenger')).toBeGreaterThan(32);
+    expect(turns('iron')).toBeLessThan(16);
   });
 });

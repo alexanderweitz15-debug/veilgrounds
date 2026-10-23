@@ -19,6 +19,8 @@ import { startGank, type GankEval } from '../ganks/jungle';
 import type { IntentData, IntentId } from './types';
 
 const current = new WeakMap<object, IntentData | undefined>();
+/** Shove-before-recall episode per bot: first and latest tick the recall intent shoved. */
+const shoving = new WeakMap<object, { from: number; last: number }>();
 const dataOf = (n: NodeCtx): IntentData => current.get(n.mem) ?? {};
 
 /** Keep the wave state on crash while an intent pushes (chooseWave keeps a state for 3 s; refreshed each decision). */
@@ -66,7 +68,15 @@ function uRecall(n: NodeCtx): NodeResult {
     if (n.mem.mode === 'recall' || n.mem.mode === 'home') n.mem.mode = 'lane';
     return 'failure';
   }
-  if (d.shoveFirst) {
+  // shove-first is capped (§4.6: the wave should crash "in the next 20 s"): after recall.shoveMaxS of shoving the
+  // bot recalls on the wave it has (a wave that does not crash would otherwise keep it in lane forever)
+  const sh = shoving.get(n.mem);
+  const t = n.v.tick;
+  if (!sh || t - sh.last > VALUES.recall.shoveGapTicks) shoving.set(n.mem, { from: t, last: t });
+  else sh.last = t;
+  const shovedS = (t - shoving.get(n.mem)!.from) / 30;
+  if (d.shoveFirst && shovedS > VALUES.recall.shoveMaxS) n.log('recall', 'shove_timeout', 'wave did not crash in time: recall now', { shovedS: Math.round(shovedS) });
+  if (d.shoveFirst && shovedS <= VALUES.recall.shoveMaxS) {
     crashWave(n, 'utility: shove before recall');
     let r = laneLeaf(n);
     if (r === 'failure' && n.v.self.atkPhase === 0) {

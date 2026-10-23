@@ -1,4 +1,5 @@
-// Test 8 in full-game form (docs/BRAIN-REWORK.md §10): Diamond laners with the utility flag recall for items only
+// Test 8 in full-game form (docs/BRAIN-REWORK.md §10), 15 min (with the §9 attention model the first item recalls
+// come after 11 min): Diamond laners with the utility flag recall for items only
 // after the wave crashed - the enemy lane minions left alive near the bot when it recalls are the minions its own
 // tower / wave loses meanwhile (absence loss), <= 2 on average.
 import { describe, expect, it } from 'vitest';
@@ -12,7 +13,7 @@ describe('test 8 (full game): shove-and-recall, Diamond', () => {
   it('item recalls of laners leave <= 2 enemy minions near the bot on average', () => {
     const cfg = botGameConfig(2, 'diamond');
     const recalls: { tick: number; slot: number; foes: number }[] = [];
-    const g = runUtilityGame(cfg, 12 * 1800, (sim, inputs) => {
+    const g = runUtilityGame(cfg, 15 * 1800, (sim, inputs) => {
       const { Unit, Pos } = sim.c;
       for (const i of inputs) {
         if (i.cmd.t !== 'recall') continue;

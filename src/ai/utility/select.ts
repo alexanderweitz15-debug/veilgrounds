@@ -20,6 +20,7 @@ import { lv } from '../ganks/common';
 import { errorActive, rollErrorEpisode } from '../errors';
 import { CANDIDATES, noteRunningGank } from './value';
 import { runIntent } from './intents';
+import { gazeTurnAway, sevQFake, sevUltChoice } from './sev';
 import type { IntentId, Scored, UtilityState } from './types';
 
 const C = VALUES.combat;
@@ -92,6 +93,15 @@ function enter(n: NodeCtx, st: UtilityState, id: IntentId | 'none', horizonS: nu
 /** Tree leaf (flag-gated by the caller): one utility decision. Never 'failure' (idle is a logged choice). */
 export function utilitySelect(n: NodeCtx): NodeResult {
   const st = utilityState(n.mem);
+  // Sev rules (values.json sev): R choice by enemy comp; look away from an enemy Sev's Bannblick
+  sevUltChoice(n);
+  if (gazeTurnAway(n)) return 'running';
+  const r = decide(n, st);
+  sevQFake(n);
+  return r;
+}
+
+function decide(n: NodeCtx, st: UtilityState): NodeResult {
   // lane-shaped team desires are weights now (§7.6): the group / catch-lane intents set the override when chosen
   n.mem.ext.laneOverride = null;
   n.mem.ext.splitting = false;

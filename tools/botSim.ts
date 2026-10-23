@@ -320,6 +320,8 @@ function buildReport(): string {
   const ganks = all.reduce((a, x) => a + x.s.gankDeaths, 0);
   const fw = results.reduce((a, r) => a + r.res.fightsWon[0] + r.res.fightsWon[1], 0);
   const fc = results.reduce((a, r) => a + r.res.fightsConverted[0] + r.res.fightsConverted[1], 0);
+  const ff = results.reduce((a, r) => a + r.res.fightsFeasible[0] + r.res.fightsFeasible[1], 0);
+  const ffc = results.reduce((a, r) => a + r.res.fightsConvertedFeasible[0] + r.res.fightsConvertedFeasible[1], 0);
   const cost = results.reduce((a, r) => ({ t: a.t + r.res.cost.thinkMs, tn: a.tn + r.res.cost.thinks, r: a.r + r.res.cost.reflexMs, rn: a.rn + r.res.cost.reflexCalls }), { t: 0, tn: 0, r: 0, rn: 0 });
   const roamers = all.filter((x) => x.s.role === 'mid' || x.s.role === 'support');
   const rows: [string, string][] = [
@@ -329,7 +331,8 @@ function buildReport(): string {
     ['Kills from harass window (per game)', r2(all.reduce((a, x) => a + x.s.killsFromHarass, 0) / Math.max(1, games))],
     ['Plates per team before 14:00', r2(values.platesPerTeam14!)],
     ['First tower (min), games with a tower', `${r2(values.firstTowerMin!)}, ${pacing.filter((p) => p.ft !== undefined).length}/${games}`],
-    ['Objective conversion after won fights', `${fc}/${fw} (${fw ? r1((100 * fc) / fw) : '-'} %)`],
+    ['Objective conversion after won fights (structure / epic / plate in 30 s)', `${fc}/${fw} (${fw ? r1((100 * fc) / fw) : '-'} %)`],
+    ['Conversion of feasible won fights (winner near a live enemy tower / epic)', `${ffc}/${ff} (${ff ? r1((100 * ffc) / ff) : '-'} %)`],
     ['Gank deaths / avoidable (jungler seen 5-20 s before)', `${ganks} / ${all.reduce((a, x) => a + x.s.avoidableGankDeaths, 0)}`],
     ['Laner recalls with the enemy wave at the own tower', `${sumL((s) => s.recallsWaveAtTower)}/${recalls}`],
     ['Roams per 10 min (mid + support)', r2(roamers.reduce((a, x) => a + (10 * x.s.roams) / x.min, 0) / Math.max(1, roamers.length))],

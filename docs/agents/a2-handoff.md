@@ -1,6 +1,6 @@
 # A2 handoff
 
-- Branch: `brain/a2-utility`, pushed. Last code commits 66d5219 + the shove-to-plate commit (22 Oct; main 9ed4070 merged).
+- Branch: `brain/a2-utility`, pushed. Last code commit 455e29c (23 Oct; main b3150ef merged).
 - Worktree had a node_modules junction (deleted at stop). Untracked scratch tools in tools/scratch/ (hash.ts,
   prof.ts, cmds.ts, trace.ts, idle.ts, recalls.ts) were not committed; recreate as needed.
 - Flag: `BOT_UTILITY=1 npm run bot-sim ...` or `SimConfig.botUtility = true`; tree node `utilitySelect` (after `arena`).
@@ -81,3 +81,19 @@ Next steps, in order:
    slow, move it behind an env switch or shorten to 10 min after checking an item recall still occurs.
 7. Phase 3 gate only after A1's scheduler drives the farm intent (lead decision); §6 combat stays flag-gated until
    the Phase 4 gate.
+
+## 23 Oct: state
+
+Done: safer plate push (plates 3.13 vs main 3.50, deaths without a champion 3.2 %), Sev Fassung 3 rules 1/2/3/6,
+conversion feasibility metric, CI fixes for tests 7/8 (harness flag via SimConfig, attention windows, shove cap,
+recall back-off from minions), trade dive rule.
+
+Next steps:
+1. Re-measure on main b3150ef+ (A1 reflex + wave states now on together with the flag): CS dropped to 3.09 (off
+   3.31) and kills 13 vs 16.5 in the pre-merge run - check whether the farm intent still loses to poke/recall.
+2. Sev items not done: 4 (decoys - bots never target pets, so only the "below Gold 40 %" waste is missing), 5
+   (Amaterasu burn in ExchangeEstimate: needs the dot remaining damage in the snapshot), 7 (combos: champion json,
+   E's file). Q fake needs reflex-precise timing at low decision rates (it is rank-gated Platinum+ anyway).
+3. Conversion: TeamAI.convert sends a push_lane to the next structure; for lane fights consider a plate / tower
+   desire only when the harness-style feasibility holds, and log `convert:` with the feasibility inputs.
+4. Test 8 runs 15 min (~1 min wall); test 7 strict form still it.fails until A1's scheduler fills the farm intent.

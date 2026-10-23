@@ -15,9 +15,10 @@ import { teleporting } from '../src/sim/summoners';
 import { trinketHud } from '../src/sim/wards';
 import { buyItem, quote } from '../src/sim/items/inventory';
 import { grantGold } from '../src/sim/systems/economy';
+import { MAP_SIZE } from '../src/sim/map';
 import { CX, CY, NO_RUNES, cmd, makeSim, mira, place, steps } from './combat-helpers';
 
-const inMap = (p: { x: number; y: number }): boolean => Number.isFinite(p.x) && Number.isFinite(p.y) && p.x >= 0 && p.y >= 0 && p.x < 16000 && p.y < 16000;
+const inMap = (p: { x: number; y: number }): boolean => Number.isFinite(p.x) && Number.isFinite(p.y) && p.x >= 0 && p.y >= 0 && p.x < MAP_SIZE && p.y < MAP_SIZE;
 
 describe('H1: commands far outside the map / NaN must not freeze the worker', () => {
   it('nearestWalkable clamps out-of-map and NaN points onto a walkable in-map cell', () => {
@@ -28,7 +29,7 @@ describe('H1: commands far outside the map / NaN must not freeze the worker', ()
       [8000, -3000],
       [20000, 8000],
       [-50, 8000],
-      [16000, 16000],
+      [MAP_SIZE, MAP_SIZE],
       [NaN, NaN],
       [NaN, 8000],
       [Infinity, -Infinity],
@@ -45,7 +46,7 @@ describe('H1: commands far outside the map / NaN must not freeze the worker', ()
     expect(sanitize(sim, { t: 'cast', slot: 0, x: 100, y: Infinity })).toBeNull();
     expect(sanitize(sim, { t: 'spell', slot: 0, x: NaN, y: NaN })).toBeNull();
     expect(sanitize(sim, { t: 'ward', x: NaN, y: 1 })).toBeNull();
-    expect(sanitize(sim, { t: 'move', x: 8000, y: 20000 })).toEqual({ t: 'move', x: 8000, y: 16000 });
+    expect(sanitize(sim, { t: 'move', x: 8000, y: 20000 })).toEqual({ t: 'move', x: 8000, y: MAP_SIZE });
     expect(sanitize(sim, { t: 'attackMove', x: -5, y: 3 })).toEqual({ t: 'attackMove', x: 0, y: 3 });
     expect(sanitize(sim, { t: 'stop' })).toEqual({ t: 'stop' });
     expect(sanitize(sim, { t: 'item', slot: 0 })).toEqual({ t: 'item', slot: 0 });
@@ -65,7 +66,7 @@ describe('H1: commands far outside the map / NaN must not freeze the worker', ()
 
   it('findPath to a point beyond the map edge terminates with in-map waypoints', () => {
     const sim = makeSim();
-    const path = findPath(sim.map.nav, CX, CY, 16000 + 5 * CELL, CY);
+    const path = findPath(sim.map.nav, CX, CY, MAP_SIZE + 5 * CELL, CY);
     expect(path.length).toBeGreaterThan(0);
     for (const p of path) expect(inMap(p)).toBe(true);
   });
@@ -319,7 +320,7 @@ describe('M4: separation never pushes minions into walls or off the map', () => 
     const sim = makeSim();
     const nav = sim.map.nav;
     let bx = CX;
-    while (bx < 16000 && walkable(nav, bx + 1, CY)) bx++;
+    while (bx < MAP_SIZE && walkable(nav, bx + 1, CY)) bx++;
     const a = enemyMinion(sim, bx - 3, CY);
     const b = enemyMinion(sim, bx - 13, CY);
     expect(walkable(nav, sim.c.Pos.x[a]!, CY)).toBe(true);

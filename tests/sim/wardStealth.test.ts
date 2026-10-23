@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { step, type Sim } from '../../src/sim/sim';
 import { Kind, sec, type Command, type PlayerSetup } from '../../src/sim/types';
 import { buildSnapshot, teamEvents } from '../../src/sim/snapshot';
+import { MAP_SIZE } from '../../src/sim/map';
 import { isRevealed } from '../../src/sim/buffs';
 import { sees } from '../../src/sim/vision';
 import { inventory } from '../../src/sim/items/inventory';
@@ -87,7 +88,7 @@ describe('B1 ward stealth', () => {
   it('Spaehfrucht reveals enemy wards in its cone for 3 s, then they are hidden again', () => {
     const { sim, a, b } = duel();
     steps(sim, sec(90) + 1); // plants grow at 1:30
-    const p = plantState(sim).plants.find((q) => q.type === 'spaehfrucht' && q.x + q.y < 16000)!;
+    const p = plantState(sim).plants.find((q) => q.type === 'spaehfrucht' && q.x + q.y < MAP_SIZE)!;
     // ward spot: the middle cone point (900 ahead, radius 480) when popping from the west
     let spot: { x: number; y: number } | null = null;
     for (const [ox, oy] of [[900, 0], [900, 150], [900, -150], [700, 0], [1100, 0]] as const) {

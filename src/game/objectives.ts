@@ -7,9 +7,9 @@
 import type { ScoreRow, Snapshot } from '../sim/snapshot';
 import { Kind, type SimEvent } from '../sim/types';
 import { CAMPS, LEVIATHAN_MAX_STACKS } from '../sim/systems/jungle';
-import raw from '../data/map.json';
+import { MAP_OBJECTIVES } from '../sim/map';
 
-const OBJ = raw.neutral.objectives;
+const OBJ = MAP_OBJECTIVES;
 const TICK_HZ = 30;
 const SCHLEIER_R = 150;
 

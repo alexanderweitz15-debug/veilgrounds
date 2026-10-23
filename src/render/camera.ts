@@ -12,8 +12,8 @@ const MAX_DIST = 2500;
 export class CameraRig {
   readonly camera: THREE.PerspectiveCamera;
   /** Focus point on the ground (sim coordinates). */
-  tx = 8000;
-  ty = 8000;
+  tx = MAP_SIZE / 2;
+  ty = MAP_SIZE / 2;
   dist = MAX_DIST;
   private readonly ray = new THREE.Raycaster();
   private readonly plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);

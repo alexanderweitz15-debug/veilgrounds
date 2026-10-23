@@ -8,7 +8,7 @@ import { playAnnounce, type AnnounceTone } from '../audio/sfx';
 import { t } from '../i18n';
 import { champName } from './names';
 import { binds, keyLabel } from '../input/keybinds';
-import raw from '../data/map.json';
+import { MAP_OBJECTIVES } from '../sim/map';
 import { CAMPS, KESSELBRUT_MAX_STACKS } from '../sim/systems/jungle';
 
 interface Item {
@@ -25,7 +25,7 @@ const PENTA_S = 30;
 const MULTI_KEYS = ['', '', 'ann.double', 'ann.triple', 'ann.quadra', 'ann.penta'];
 /** Modes with the regular minion schedule (first wave at FIRST_WAVE_TICK). */
 const WAVE_MODES = new Set(['classic', 'laneOnly']);
-const OBJ = raw.neutral.objectives;
+const OBJ = MAP_OBJECTIVES;
 /** Grubs die within seconds of each other: one banner once the own stack count settled for this long. */
 const KESSEL_SETTLE_MS = 2500;
 

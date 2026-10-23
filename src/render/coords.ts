@@ -2,7 +2,9 @@
 // Canvas textures (ground, fog, minimap) are y-down: ALWAYS use simToCanvas so nothing ends up mirrored.
 import { Kind } from '../sim/types';
 
-export const MAP_SIZE = 16000;
+// Playable edge (src/data/map.json "size"); every render size derives from it.
+export { MAP_SIZE } from '../sim/map';
+import { MAP_SIZE } from '../sim/map';
 
 /** Sim point -> pixel on a square canvas of `px` pixels covering the whole map. */
 export function simToCanvas(x: number, y: number, px: number): [number, number] {

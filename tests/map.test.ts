@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findPath, lineWalkable, loadMap, walkable } from '../src/sim/map';
+import { MAP_SCALE, MAP_SIZE, findPath, lineWalkable, loadMap, scalePt, walkable } from '../src/sim/map';
 import { cosDeg, sinRad } from '../src/sim/vec';
 
 const map = loadMap();
@@ -7,18 +7,24 @@ const map = loadMap();
 describe('map', () => {
   it('is point symmetric', () => {
     const [b, r] = map.sides;
-    expect(r.nexus).toEqual({ x: 16000 - b.nexus.x, y: 16000 - b.nexus.y });
+    expect(r.nexus).toEqual({ x: MAP_SIZE - b.nexus.x, y: MAP_SIZE - b.nexus.y });
     // red top lane is the physical top lane (y high) and mirrors blue's bot lane
-    expect(r.towers.top[0]!.y).toBeGreaterThan(14000);
+    expect(r.towers.top[0]!.y).toBeGreaterThan(MAP_SIZE - 2000);
     expect(b.towers.top[0]!.x).toBeLessThan(2000);
     expect(map.bushes.length).toBe(26);
   });
 
-  it('nexus-to-nexus distance along mid is about 17000', () => {
+  it('map edge is a whole number of nav cells and the scale matches map.json', () => {
+    expect(MAP_SIZE % 50).toBe(0);
+    expect(map.size).toBe(MAP_SIZE);
+    expect(MAP_SCALE).toBeLessThan(1);
+  });
+
+  it('nexus-to-nexus distance along mid is the design distance (17536) times the map scale', () => {
     const [b, r] = map.sides;
     const d = Math.hypot(r.nexus.x - b.nexus.x, r.nexus.y - b.nexus.y);
-    expect(d).toBeGreaterThan(16500);
-    expect(d).toBeLessThan(18000);
+    expect(d).toBeGreaterThan(17536 * MAP_SCALE - 40);
+    expect(d).toBeLessThan(17536 * MAP_SCALE + 40);
   });
 
   it('lanes, structures and camps are walkable / reachable', () => {
@@ -85,11 +91,13 @@ describe('wall corners', () => {
     const { createSim, step } = await import('../src/sim/sim');
     const sim = createSim({ seed: 3, mode: 'sandbox', minionsEnabled: false, players: [{ slot: 0, team: 0, champion: 'mira', role: 'jungle', summoners: ['sprung', 'heilen'], isHuman: true }] });
     const me = sim.slots[0]!;
-    step(sim, [{ slot: 0, cmd: { t: 'cheat', op: 'teleport', x: 3846, y: 2742 } }]);
-    step(sim, [{ slot: 0, cmd: { t: 'move', x: 8800, y: 2900 } }]);
+    const from = scalePt({ x: 3846, y: 2742 });
+    const hohl = map.sides[0].camps.find((c) => c.id === 'hohlkaefer')!;
+    step(sim, [{ slot: 0, cmd: { t: 'cheat', op: 'teleport', x: from.x, y: from.y } }]);
+    step(sim, [{ slot: 0, cmd: { t: 'move', x: hohl.x, y: hohl.y } }]);
     for (let i = 0; i < 30 * 25; i++) step(sim);
-    expect(Math.hypot(sim.c.Pos.x[me]! - 8800, sim.c.Pos.y[me]! - 2900)).toBeLessThan(120);
-  });
+    expect(Math.hypot(sim.c.Pos.x[me]! - hohl.x, sim.c.Pos.y[me]! - hohl.y)).toBeLessThan(120);
+  }, 20_000);
 
   it('lineWalkable rejects segments that clip a blocked cell corner', () => {
     // find a blocked cell with free diagonal neighbours and test the diagonal through its corner region

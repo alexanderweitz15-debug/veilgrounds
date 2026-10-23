@@ -166,6 +166,8 @@ interface LanerTrack {
   idle: string | null;
   /** Last tick the §9 attention probe reported the bot distracted. */
   distractedAt: number;
+  /** Tick the laner came back to its lane after a trip (recall, heal, death, roam). */
+  backAt: number;
 }
 
 interface PendingLoss {
@@ -262,7 +264,7 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
   // ---- rework metric state
   const laners: LanerTrack[] = stats
     .filter((s) => LANER_LANE[s.role] !== undefined && botBySlot.has(s.slot))
-    .map((s) => ({ s, lane: LANER_LANE[s.role]!, trip: null, atkOn: new Map(), dmgOn: new Map(), lh: [], idle: null, distractedAt: -1e9 }));
+    .map((s) => ({ s, lane: LANER_LANE[s.role]!, trip: null, atkOn: new Map(), dmgOn: new Map(), lh: [], idle: null, distractedAt: -1e9, backAt: -1e9 }));
   const lanerBySlot = new Map(laners.map((l) => [l.s.slot, l]));
   const pending: PendingLoss[] = [];
   const lastCmd = new Map<number, number>();
@@ -446,8 +448,13 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
       if (!alive) l.trip = 'dead';
       else if (Champ.recallAt[me]! > 0 && l.trip !== 'dead' && l.trip !== 'heal') l.trip = 'recall'; // recalling = leaving, even next to the wave
       else if (T % 15 === 0) {
-        const nearLane = units.some((u) => isMinion(Unit.kind[u]!) && Unit.lane[u] === l.lane && Math.hypot(Pos.x[u]! - Pos.x[me]!, Pos.y[u]! - Pos.y[me]!) < ABSENT_R);
-        if (nearLane && IN_LANE_MODES.has(b.mem.mode)) l.trip = null;
+        // back on the lane = near an enemy minion of the lane (meeting the own next wave on the way back is still the
+        // trip: the enemy minions dying at the front meanwhile are absence losses, not in_range_no_attack)
+        const nearLane = units.some((u) => isMinion(Unit.kind[u]!) && Unit.lane[u] === l.lane && Unit.team[u] !== l.s.team && Math.hypot(Pos.x[u]! - Pos.x[me]!, Pos.y[u]! - Pos.y[me]!) < ABSENT_R);
+        if (nearLane && IN_LANE_MODES.has(b.mem.mode)) {
+          if (l.trip !== null) l.backAt = T;
+          l.trip = null;
+        }
         else if (!nearLane && l.trip === null && (Champ.recallAt[me]! > 0 || !IN_LANE_MODES.has(b.mem.mode))) l.trip = Champ.recallAt[me]! > 0 ? 'recall' : tripOfMode(b.mem.mode);
       }
       if (!alive || T < UTIL_FROM || T >= UTIL_TO || Champ.recallAt[me]! > 0) {
@@ -507,7 +514,8 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
     const intent = it ? (it.farm ? it.wave : 'nofarm') : 'none';
     const tgt = Atk.target[me]!;
     const atk = Atk.phase[me] === 0 ? 'free' : tgt >= 0 && Unit.kind[tgt] === Kind.Champion ? 'atkChamp' : 'atk';
-    return `${b.mem.mode}|${intent}|${db}|${atk}`;
+    const back = sim.tick - l.backAt < 20 * 30 ? '|back<20s' : '';
+    return `${b.mem.mode}|${intent}|${db}|${atk}${back}`;
   }
 
   /** Cause known at the death tick (null: decided 40 ticks later, window collision vs no attack). */

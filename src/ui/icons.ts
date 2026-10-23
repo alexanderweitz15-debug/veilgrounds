@@ -690,6 +690,8 @@ export function summonerIcon(id: string): string | null {
 
 // ------------------------------------------------------------------------------------------------ passive / runes / roles / stats
 /** Champion passive: champion palette, gem glyph, round silver frame. */
+const PASSIVE_MOTIF: Record<string, readonly [RegExp, string, number]> = { sev: [/./, 'eye', 0] };
+
 export function passiveIcon(champ: string): string | null {
   if (!championData(champ)) return null;
   return cached(`pas:${champ}`, (g) => {
@@ -698,7 +700,8 @@ export function passiveIcon(champ: string): string | null {
     backdrop(g, hsl(h, Math.min(60, s + 10), 30), hsl(h, s, 8));
     const p = championData(champ)!.passive;
     const text = `${p.name.en} ${p.desc.en}`.toLowerCase();
-    const rule = MOTIF_RULES.find(([re]) => re.test(text));
+    // per-champion override where the keyword scan picks the wrong motif (Sev: Rabenblick is an eye, not a flame)
+    const rule = PASSIVE_MOTIF[champ] ?? MOTIF_RULES.find(([re]) => re.test(text));
     const [ah, as] = hexToHsl(accent);
     if (rule) (MOTIF[rule[1]] ?? GLYPHS[rule[1]])!(g, hsl(rule[2], 70, 64));
     else GLYPHS.gem!(g, hsl(ah, Math.max(55, as), 68));

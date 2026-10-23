@@ -138,6 +138,8 @@ const UTIL_FROM = 120 * 30;
 const UTIL_TO = 14 * 1800;
 /** A bot further than this from a dying minion of its lane is absent. */
 const ABSENT_R = 1400;
+/** Loss counted as "distracted" up to this many ticks after the attention window ended. */
+const DISTRACTED_TAIL = 60;
 const LANER_LANE: Partial<Record<string, number>> = { top: Lane.Top, mid: Lane.Mid, adc: Lane.Bot };
 const LANE_NAME = ['top', 'mid', 'bot'] as const;
 
@@ -160,6 +162,8 @@ interface LanerTrack {
   /** Ticks of the bot's own lane last hits (window collision). */
   lh: number[];
   idle: string | null;
+  /** Last tick the §9 attention probe reported the bot distracted. */
+  distractedAt: number;
 }
 
 interface PendingLoss {
@@ -253,7 +257,7 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
   // ---- rework metric state
   const laners: LanerTrack[] = stats
     .filter((s) => LANER_LANE[s.role] !== undefined && botBySlot.has(s.slot))
-    .map((s) => ({ s, lane: LANER_LANE[s.role]!, trip: null, atkOn: new Map(), dmgOn: new Map(), lh: [], idle: null }));
+    .map((s) => ({ s, lane: LANER_LANE[s.role]!, trip: null, atkOn: new Map(), dmgOn: new Map(), lh: [], idle: null, distractedAt: -1e9 }));
   const lanerBySlot = new Map(laners.map((l) => [l.s.slot, l]));
   const pending: PendingLoss[] = [];
   const lastCmd = new Map<number, number>();
@@ -431,6 +435,7 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
       const me = sim.slots[l.s.slot]!;
       const b = botBySlot.get(l.s.slot)!;
       const alive = !!Unit.alive[me];
+      if (reflexState(b.mem).attention?.(T)?.distracted) l.distractedAt = T;
       if (!alive) l.trip = 'dead';
       else if (Champ.recallAt[me]! > 0 && l.trip !== 'dead' && l.trip !== 'heal') l.trip = 'recall'; // recalling = leaving, even next to the wave
       else if (T % 15 === 0) {
@@ -500,8 +505,8 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
     if (killerKind === Kind.Champion) return 'ally_took';
     if ((l.atkOn.get(m) ?? -1e9) >= T - 45 || (l.dmgOn.get(m) ?? -1e9) >= T - 90) return 'timing_miss';
     const b = botBySlot.get(l.s.slot)!;
-    const att = reflexState(b.mem).attention?.(T);
-    if (att?.distracted || b.mem.ext.lh.roll.get(m)?.skip) return 'distracted';
+    // a minion that dies within 2 s after an attention window: its last-hit plan was dropped while distracted (§9)
+    if (T - l.distractedAt <= DISTRACTED_TAIL || b.mem.ext.lh.roll.get(m)?.skip) return 'distracted';
     const reach = Stats.range[me]! + Unit.radius[me]! + 250;
     if (d > reach) {
       for (const s of stats) {

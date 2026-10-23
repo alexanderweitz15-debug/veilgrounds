@@ -88,6 +88,8 @@ describe('reflex layer: harass without CS loss (test 5)', () => {
     const { Pos, Atk, Stats } = sim.c;
     let harass = 0;
     let lostWhileHarassing = 0;
+    let lostDistracted = 0;
+    let lastDistracted = -1e9;
     const tried = new Map<number, number>(); // minion -> last own auto on it
     const ownLh: number[] = [];
     while (sim.tick < 280 * 30) {
@@ -102,6 +104,7 @@ describe('reflex layer: harass without CS loss (test 5)', () => {
       step(sim, inputs);
       // the dummy does not die (the bot's decision may also start trades on it; a dead dummy leaves nothing to harass)
       if (sim.c.Unit.alive[foe]) sim.c.Hp.cur[foe] = sim.c.Hp.max[foe]!;
+      if (reflexState(bots.bots[0]!.mem).attention?.(sim.tick)?.distracted) lastDistracted = sim.tick;
       if (sim.tick < 100 * 30) continue;
       for (const ev of sim.events) if (ev.e === 'attack' && ev.src === me && ev.dst !== foe) tried.set(ev.dst, sim.tick);
       for (const ev of sim.events) {
@@ -116,11 +119,15 @@ describe('reflex layer: harass without CS loss (test 5)', () => {
           // harass of the reflex layer (lane intent, champion filler); a trade started by the decision (combat leaf) is a
           // trade, its farm cost is the utility model's business (A2)
           const rs = reflexState(bots.bots[0]!.mem);
-          if (d <= Stats.range[me]! + 200 && Atk.target[me] === foe && rs.intent && rs.fillerChamp) lostWhileHarassing++;
+          if (d <= Stats.range[me]! + 200 && Atk.target[me] === foe && rs.intent && rs.fillerChamp) {
+            // §9: the last-hit plan was dropped in an attention window that ended <= 2 s ago -> harness cause "distracted"
+            if (sim.tick - lastDistracted <= 60) lostDistracted++;
+            else lostWhileHarassing++;
+          }
         }
       }
     }
-    console.log(`harass autos 1:40-4:40: ${harass}, lane minions lost while harassing: ${lostWhileHarassing}`);
+    console.log(`harass autos 1:40-4:40: ${harass}, lane minions lost while harassing: ${lostWhileHarassing} (+ ${lostDistracted} inside an attention window)`);
     expect(harass).toBeGreaterThanOrEqual(12);
     expect(lostWhileHarassing).toBe(0);
   }, 300_000);

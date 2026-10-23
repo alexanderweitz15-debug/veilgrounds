@@ -14,6 +14,8 @@ import { shopLayoutKey } from './shopLayout';
 import './icons.css';
 import { setTip } from './tooltip';
 import { goldEfficiency } from './goldEfficiency';
+import { recommendedPlan, type RecPlan } from './shopRecommend';
+import { formatClock, itemMatches } from './shopSearch';
 
 const TIERS: ItemTier[] = ['starter', 'boots', 'basic', 'component', 'legendary', 'consumable'];
 const PCT: ReadonlySet<ItemStat> = new Set(['asPct', 'critPct', 'lifestealPct', 'msPct', 'hpRegenPct', 'manaRegenPct', 'healShieldPowerPct', 'magicPenPct', 'armorPenPct', 'tenacity']);
@@ -99,7 +101,14 @@ export interface ShopHooks {
 
 export class ShopPanel {
   private selected: string | null = null;
-  private cat: Cat = 'all';
+  /** G/B2: the recommended view is the default; falls back to 'all' for champions without a bot build. */
+  private cat: Cat = 'rec';
+  /** Inventory slot elements (consumed-component highlight on card hover, G/B6). */
+  private slotEls: HTMLElement[] = [];
+  /** Game time (s) of the latest update: gold-rate estimate for 'missing gold' (G/B7). */
+  private time = 0;
+  /** Focus the search box on the next render (shop just opened, G/B4). */
+  private focusNext = false;
   private query = '';
   private key = '';
   private gold = -1;
@@ -116,6 +125,13 @@ export class ShopPanel {
     root.classList.add('sp-root');
     // clicks inside the panel must not turn into move commands on the canvas
     for (const ev of ['mousedown', 'contextmenu', 'wheel'] as const) root.addEventListener(ev, (e) => e.stopPropagation());
+    // opening the shop focuses the search box (LoL: typing filters right away, G/B4)
+    new MutationObserver(() => {
+      if (!root.classList.contains('open')) return;
+      const s = root.querySelector<HTMLInputElement>('.sp-search');
+      if (s) s.focus();
+      else this.focusNext = true;
+    }).observe(root, { attributes: true, attributeFilter: ['class'] });
     // Ctrl+Z / Cmd+Z while the shop is open: undo the last buy/sell (G/B1)
     window.addEventListener('keydown', (e) => {
       if (!root.classList.contains('open') || e.code !== 'KeyZ' || !(e.ctrlKey || e.metaKey)) return;
@@ -124,9 +140,10 @@ export class ShopPanel {
     });
   }
 
-  update(me: PlayerHud | null): void {
+  update(me: PlayerHud | null, time = 0): void {
     if (!me) return;
     this.me = me;
+    this.time = time;
     const key = `${shopLayoutKey(me, this.selected, settings.lang)}|${this.cat}|${this.query}`;
     if (key !== this.key) {
       this.key = key;
@@ -149,7 +166,10 @@ export class ShopPanel {
   }
 
   private canBuy(me: PlayerHud, it: ItemData): { ok: boolean; price: number; why?: string } {
-    const { price, consumes } = recipePrice(me.items, it);
+    const r = recipePrice(me.items, it);
+    const consumes = r.consumes;
+    // Inspiration boots discount (G/B9): the sim quotes it, the HUD mirrors it
+    const price = it.tier === 'boots' && me.bootsMult ? Math.round(r.price * me.bootsMult) : r.price;
     if (!me.inFountain && !me.dead) return { ok: false, price, why: t('shop.notInShop') };
     if (it.unique && me.items.some((x, i) => x && !consumes.includes(i) && itemById(x)?.unique === it.unique)) return { ok: false, price, why: t('shop.unique') };
     if (it.tier === 'legendary' && me.items.some((x, i) => x === it.id && !consumes.includes(i))) return { ok: false, price, why: t('shop.unique') };
@@ -193,7 +213,17 @@ export class ShopPanel {
     const search = el('input', 'sp-search', head);
     search.placeholder = t('shop.search');
     search.value = this.query;
-    search.addEventListener('keydown', (e) => e.stopPropagation()); // typing must not cast abilities
+    search.addEventListener('keydown', (e) => {
+      e.stopPropagation(); // typing must not cast abilities
+      if (e.code === 'Escape') {
+        search.blur();
+        r.classList.remove('open');
+      } else if (e.code === 'Enter') {
+        // Enter buys the first listed item you can afford (LoL quick buy from the search, G/B4)
+        const first = this.cards.find((c) => c.el.closest('.sp-list') && this.canBuy(this.me ?? me, c.it).ok);
+        if (first) this.hooks.buy(first.it.id);
+      }
+    });
     search.addEventListener('input', () => {
       this.query = search.value.trim().toLowerCase();
       if (this.me) this.update(this.me);
@@ -203,9 +233,10 @@ export class ShopPanel {
     const body = el('div', 'sp-body', r);
     // ---- categories
     const nav = el('div', 'sp-nav', body);
+    const cat0: Cat = this.cat === 'rec' && !build ? 'all' : this.cat;
     for (const [cat, icon] of CATS) {
       if (cat === 'rec' && !rec.size) continue;
-      const b = el('button', `sp-cat${this.cat === cat ? ' on' : ''}`, nav);
+      const b = el('button', `sp-cat${cat0 === cat ? ' on' : ''}`, nav);
       const ic = el('span', 'sp-cat-icon', b);
       const url = icon ? statIcon(icon) : cat === 'jungle' ? itemIcon(ITEMS.find((i) => i.tags.includes('jungle'))?.id ?? '') : cat === 'consumable' ? itemIcon('trank') : null;
       if (url) setIcon(ic, url);
@@ -221,8 +252,14 @@ export class ShopPanel {
     const list = el('div', 'sp-list', body);
     const q = this.query;
     let shown = 0;
-    for (const tier of TIERS) {
-      const items = ITEMS.filter((i) => i.tier === tier && inCat(i, this.cat, rec) && (!q || i.name[settings.lang].toLowerCase().includes(q))).sort((a, b) => a.cost - b.cost);
+    if (cat0 === 'rec' && build && !q) {
+      // G/B2: LoL-like recommended view (start / boots / core in order / situational) with the next step
+      this.recView(me, list, recommendedPlan(build, me.items, me.gold, itemById));
+      shown = 1;
+    }
+    for (const tier of shown ? [] : TIERS) {
+      // a search looks through everything (name, stats, passive, tags: G/B5), the categories otherwise
+      const items = ITEMS.filter((i) => i.tier === tier && (q ? itemMatches(i, q, settings.lang) : inCat(i, cat0 === 'rec' ? 'all' : cat0, rec))).sort((a, b) => a.cost - b.cost);
       if (!items.length) continue;
       el('div', 'sp-tier', list, t(`shop.tier.${tier}`));
       const grid = el('div', 'sp-grid', list);
@@ -251,6 +288,13 @@ export class ShopPanel {
       el('span', 'sp-coin', cost);
       cost.append(String(qb.price));
       if (qb.price !== sel.cost) el('span', 'sp-full', cost, String(sel.cost));
+      el('div', 'sp-sellfor', nm, t('shop.sellFor', { gold: sellValue(sel.id) }));
+      // G/B7: how much gold is missing, and roughly when it is there at the current income
+      const missing = Math.ceil(qb.price - me.gold);
+      if (missing > 0) {
+        const rate = this.time > 60 && me.totalGold ? me.totalGold / this.time : 0; // gold per second
+        el('div', 'sp-missing', det, rate > 0 ? t('shop.missingEta', { gold: missing, time: formatClock(missing / rate) }) : t('shop.missing', { gold: missing }));
+      }
       const stats = el('div', 'sp-stats', det);
       for (const [k, v] of Object.entries(sel.stats) as [ItemStat, number][]) {
         const s = el('div', 'sp-stat', stats);
@@ -287,8 +331,10 @@ export class ShopPanel {
     // ---- inventory
     const inv = el('div', 'sp-inv', r);
     el('span', 'sp-sub', inv, t('shop.inventory'));
+    this.slotEls = [];
     me.items.slice(0, ITEM_SLOTS).forEach((id, slot) => {
       const s = el('div', `sp-slot${id ? '' : ' empty'}`, inv);
+      this.slotEls[slot] = s;
       if (!id) return;
       iconEl(s, id);
       setTip(s, `item:${id}`);
@@ -301,10 +347,60 @@ export class ShopPanel {
 
     // a rebuild (inventory / selection / filter changed) keeps scroll position and search focus
     [...r.querySelectorAll<HTMLElement>('.sp-list, .sp-detail')].forEach((e, i) => (e.scrollTop = scroll[i] ?? 0));
-    if (searchFocused) {
+    if (searchFocused || this.focusNext) {
+      this.focusNext = false;
       search.focus();
       search.setSelectionRange(search.value.length, search.value.length);
     }
+  }
+
+  /** G/B2: recommended view. Rows start / boots / core (numbered, next step highlighted) / situational + quick buy. */
+  private recView(me: PlayerHud, parent: HTMLElement, plan: RecPlan): void {
+    const row = (label: string): HTMLElement => {
+      el('div', 'sp-tier', parent, label);
+      return el('div', 'sp-grid sp-recrow', parent);
+    };
+    const tag = (card: HTMLElement, text: string, cls = 'sp-tag'): void => void el('span', cls, card, text);
+    // next step: the core item + the piece to buy right now
+    const nextIt = plan.nextBuy ? itemById(plan.nextBuy) : undefined;
+    const box = el('div', 'sp-next', parent);
+    if (plan.target) {
+      el('div', 'sp-next-label', box, t('shop.rec.next'));
+      const nb = el('button', 'sp-buy sp-quick', box, nextIt ? t('shop.rec.quickBuy', { item: nextIt.name[settings.lang], price: this.canBuy(me, nextIt).price }) : t('shop.rec.save', { item: itemName(plan.target) }));
+      nb.disabled = !nextIt || !this.canBuy(me, nextIt).ok;
+      if (nextIt) nb.addEventListener('click', () => this.hooks.buy(nextIt.id));
+    } else el('div', 'sp-next-label', box, t('shop.rec.done'));
+    const starter = row(t('shop.rec.start'));
+    for (const id of plan.starter) this.card(me, id, starter, true);
+    const boots = row(t('shop.rec.boots'));
+    for (const b of plan.boots) {
+      const c = this.card(me, b.id, boots, true);
+      if (c && b.vs) tag(c, t(`shop.rec.vs${b.vs.toUpperCase()}`));
+    }
+    const core = row(t('shop.rec.core'));
+    plan.core.forEach((c, i) => {
+      const card = this.card(me, c.id, core, true);
+      if (!card) return;
+      tag(card, String(i + 1), 'sp-num');
+      if (c.next) card.classList.add('next');
+    });
+    if (plan.target) {
+      // components of the next core item: owned ones ticked, the quick-buy piece highlighted
+      const tgt = itemById(plan.target);
+      if (tgt?.from.length) {
+        const comps = row(t('shop.rec.for', { item: tgt.name[settings.lang] }));
+        comps.className = 'sp-tree sp-recrow';
+        this.tree(me, tgt, comps, 0, [...me.items]);
+      }
+    }
+    if (plan.situational.length) {
+      const sit = row(t('shop.rec.situational'));
+      for (const s of plan.situational) {
+        const c = this.card(me, s.id, sit, false);
+        if (c) tag(c, t(`shop.rec.vs${s.vs.toUpperCase()}`));
+      }
+    }
+    for (const c of this.cards) if (nextIt && c.it.id === nextIt.id && c.el.closest('.sp-recrow')) c.el.classList.add('step');
   }
 
   private effect(parent: HTMLElement, kind: string, name: string, desc: string): void {
@@ -347,9 +443,9 @@ export class ShopPanel {
     this.hooks.say(missing > 0 ? t('chat.itemBuyingMissing', { item: name, gold: missing }) : t('chat.itemBuying', { item: name }));
   }
 
-  private card(me: PlayerHud, id: string, parent: HTMLElement, rec: boolean): void {
+  private card(me: PlayerHud, id: string, parent: HTMLElement, rec: boolean): HTMLElement | null {
     const it = itemById(id);
-    if (!it) return;
+    if (!it) return null;
     const q = this.canBuy(me, it);
     const owned = me.items.includes(id);
     const c = el('button', `sp-item tier-${it.tier}${rec ? ' rec' : ''}${q.ok ? ' afford' : ''}${this.selected === id ? ' sel' : ''}${owned ? ' owned' : ''}`, parent);
@@ -368,5 +464,17 @@ export class ShopPanel {
       e.preventDefault();
       if (this.canBuy(this.me ?? me, it).ok) this.hooks.buy(id);
     });
+    // LoL: double click buys as well
+    c.addEventListener('dblclick', () => {
+      if (this.canBuy(this.me ?? me, it).ok) this.hooks.buy(id);
+    });
+    // G/B6: hovering an item lights up the inventory pieces a purchase would consume
+    c.addEventListener('mouseenter', () => {
+      for (const k of recipePrice((this.me ?? me).items, it).consumes) this.slotEls[k]?.classList.add('consumed');
+    });
+    c.addEventListener('mouseleave', () => {
+      for (const s of this.slotEls) s?.classList.remove('consumed');
+    });
+    return c;
   }
 }

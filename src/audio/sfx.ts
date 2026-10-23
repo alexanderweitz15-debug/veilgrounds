@@ -17,7 +17,10 @@ export type Cue =
   | 'recall'
   | 'ping'
   | 'plate'
-  | 'ui';
+  | 'ui'
+  /** Shop (G/B8): purchase clink / sale */
+  | 'buy'
+  | 'sell';
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -121,6 +124,15 @@ export function play(cue: Cue, x?: number, y?: number): void {
     case 'gold':
       tone(v, 'triangle', 1568, 1568, 0.12, 0.12);
       tone(v, 'triangle', 2093, 2093, 0.18, 0.08, 0.04);
+      break;
+    case 'buy': // coin clink + short confirm chime
+      noise(v, 0.03, 5200, 2, 0.35);
+      tone(v, 'sine', 2349, 2349, 0.1, 0.1, 0.01);
+      tone(v, 'sine', 3136, 3136, 0.16, 0.07, 0.06);
+      break;
+    case 'sell': // coins dropped, falling
+      noise(v, 0.05, 2600, 2, 0.3);
+      tone(v, 'triangle', 1760, 1175, 0.14, 0.09, 0.02);
       break;
     case 'auto':
       noise(v, 0.06, 1800, 3, 0.18);

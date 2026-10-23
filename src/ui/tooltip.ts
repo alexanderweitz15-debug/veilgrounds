@@ -5,7 +5,7 @@ import './tooltip.css';
 import type { Effect, Ranked, Scaling } from '../sim/champions/schema';
 import { CHAMPION_DATA } from '../sim/champions';
 import { abilityForSlot } from '../data/champions';
-import { itemById } from '../sim/items/inventory';
+import { itemById, sellValue } from '../sim/items/inventory';
 import { RUNES } from '../sim/items/runes';
 import { summonerDef } from '../sim/summoners';
 import { settings } from '../settings';
@@ -104,7 +104,7 @@ function itemTip(id: string): Tip | null {
     icon: itemIcon(id),
     title: it.name[settings.lang],
     sub: t(`shop.tier.${it.tier}`) !== `shop.tier.${it.tier}` ? t(`shop.tier.${it.tier}`) : undefined,
-    meta: [`◉ ${it.cost}`],
+    meta: [`◉ ${it.cost}`, t('shop.sellFor', { gold: sellValue(id) })],
     chips: statLines(it).map((s) => ({ text: s, cls: 'stat' })),
     body,
     ...(from.length ? { foot: `${L('Aus', 'Built from')}: ${from.join(' + ')}` } : {}),

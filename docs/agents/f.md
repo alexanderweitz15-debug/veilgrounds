@@ -94,14 +94,78 @@ Averages: walk 2.2, idle 2.0, attack 2.8. 96 of 108 abilities have no look of th
   (Glutwächter: ~1.4x Brom's height, not the 2x the drawer comments assume; the camp circle is a flat ring),
   `f-before-drake.jpg` (Leviathan ~2.3x Brom; serpent reads, pit is a bare ring on the water).
 
-## 2. Plan (in order of impact; see f-handoff.md for the state)
+## 2. Plan (in order of impact)
 
-1. Runtime dynamics layer (`src/render/spriteDynamics.ts`, pure): squash/stretch + lean per instance on anim
-   changes, hit, attack strike, cast release; run phase carried over instead of restarting. Hits champions, minions
-   and monsters at once.
-2. Per-kit motion data (`src/render/champions/motion.ts`, canvas-free): gait + idle spec per champion, run cadence
-   per champion (`atlas.rate`).
-3. Attack styles split (hammer, sling, chain, spindle, ladle, palm, cane, lantern, snap-bow, hip-harpoon).
-4. Cast poses per ability: 2 families per kit (6 cast frames), slot -> family.
-5. Effects: motif-shaped missiles, hook ground objects drawn per tag (`abilityFx.ts`).
-6. Monsters: scale factor, epic attack/idle frames, camp glow palette; camp sites.
+1. Runtime dynamics layer, 2. per-kit motion data, 3. attack styles split, 4. cast poses per ability,
+5. effects (motif-shaped missiles, hook objects per tag), 6. monsters (scale, epic frames, glows), 7. camp sites.
+1-6 done, 7 open (see f-handoff.md).
+
+## 3. Done (commits on art/f-identity)
+
+### 3.1 Motion: gaits, idles, cadence, springs (0c618b1)
+
+- `src/render/champions/motion.ts`: GaitSpec + IdleSpec per champion (11 gait styles: stride, sprint, march, stomp,
+  shuffle, waddle, stalk, skip, swagger, glide, hover; 11 idle styles: breathe, heave, bounce, rock, scan, poise,
+  still, hover, preen, tick, sway). `anim.ts` reads them for every run/idle pose; `atlas.rateOf` carries the run
+  cadence and the idle tempo per id (`cadence = MS / (2 x stride x 1.78) x 4`, clamped 9..22 fps: Gorvam 14.5,
+  Grimald 15.9, Kaelen 16.2, Brom 17.4, Thessaly 17.1, Lio / Dagny / Hagen / Oda 22 - small bodies take quick
+  steps, big ones long slow ones). Before: 14 fps and one sinusoid for all 27.
+- `src/render/spriteDynamics.ts`: two damped springs per instance (vertical squash/stretch, volume-preserving, and
+  a roll around the view axis), kicked on run start (stretch + lean into the direction), run stop (settle squash),
+  melee strike (squash + lean to the target), ranged release (recoil), cast release (pop), hits (squash away from
+  the source) and about-faces; clamped to 22 % / 0.3 rad so bars and picking stay put; shadow quad unscaled;
+  reduce-motion x0.3; monsters x0.6. The run cycle keeps its phase across stops (`runOff`) instead of restarting
+  at the contact frame. Cost: one spring step per drawn instance (< 0.05 ms for 24 champions).
+- Evidence: `docs/ist/f-before-run.jpg` vs `f-after-run.jpg` (all 27, SE), `f-after-run-closeup.jpg` (E, 160 px:
+  Kaelen's crouched sprint, Lio's skip, Gorvam's stomp, Hagen's waddle, Vessa's stalk, Nyx's glide, Aurel's shuffle,
+  Oda's hop), `f-before-idle.jpg` vs `f-after-idle.jpg`, `f-after-strip.jpg` (built game, Oleth run -> stop ->
+  wind-up, 75-110 ms apart).
+
+### 3.2 Attack styles (bbfb19c)
+
+- 15 new `AttackStyle`s so the shared pools are gone: hammer (Dagny), sling (Lio), chain (Gorvam), flick (Kiran),
+  ladle (Oda), palm (Sev), cane (Aurel), lantern (Ferris), snap (Wren), longbow (Mira), harpoon (Tobin), spear
+  (Seraphyne), lance (Thessaly), heave (Grimald), pounce (Vessa). Remaining shared: bow (Ottilie), thrust (Oleth,
+  Isolde), slash (Renn), swipe (Kaelen), bash (Harrow), staff (Ilvane), throw (Nyx) - each now the only user of
+  its hold + style combination. Smear table extended (hammer, heave, pounce arcs; cane, lance, spear stabs).
+- Evidence: `f-before-attack.jpg` vs `f-after-attack.jpg`, `f-after-attack-new.jpg` (the 15 at 120 px).
+
+### 3.3 Cast poses per ability (bbfb19c)
+
+- `src/render/champions/casts.ts`: two cast families per champion, A (gather, release, follow) and B (gather,
+  release) + the shared flex = 6 cast frames (was 4, +10 cells per champion). Slot -> family from the ability type
+  (skillshots draw / push, ground circles lob, cones sweep, self AoEs stomp, dashes lunge, targeted spells point;
+  6 new cast styles). `ChampionSprites.onCast` takes the slot (world.ts), `castFrame` picks the family; self
+  abilities play their family's release when it is a self pose, else the flex.
+- Evidence: `f-before-cast.jpg` (one pose per champion) vs `f-after-cast.jpg` (A | B | flex).
+
+### 3.4 Effects (53dbe53)
+
+- `src/render/missileStyles.ts`: shape per motif (length, thickness, width, height, halo, spin, tumble) applied in
+  `fx.ts`: arrows long and thin, bolts crackle (roll), waves wide and flat near the ground, kegs / bells / hooks
+  tumble, blades spin flat, webs and whorls are spinning discs, fire and light fat with a big halo.
+- `src/render/abilityFx.ts`: 18 hook tags with their own drawer (Oleth stone slabs standing on the line, Dagny
+  kettle wall with a hot seam + steam, Isolde glass cage + copper wire with running sparks, Tobin knotted rope,
+  Wren smoke puffs / firestorm columns, Lio spark rain, Hagen bell ripples, Grimald claw aura, Nyx veil wisps +
+  shadow seeds, Corvin keg barrel + fuse, Kiran yarn, Aurel backwards clock, Ottilie paw print, Oda ripples).
+  Not done: a module per champion like sevFx.ts for the 70+ abilities whose whole visual is telegraph + missile +
+  particles; they now differ by missile shape, particle kind, hue, cast pose and cast burst, not by bespoke art.
+- Evidence: `f-before-lane.jpg` (Brom Q: disc + motes) vs `f-after-lane.jpg` (Oleth R: standing wall slabs).
+
+### 3.5 Monsters (74fe701)
+
+- `units.ts`: monsters drawn x1.3 like the champions (camps 1.2-1.7x, buffs 2.7x a champion again), Leviathan 1.2,
+  Schleierwächter 1.15. Epics: 4 idle frames (sway, breath, jaw) and 4 attack frames (rear up, coil, STRIKE on
+  frame 2, recover; the Leviathan's head now drives forward instead of folding down into the coils). Beetle and
+  crab glows one gouache step calmer.
+- Evidence: `f-before-camp.jpg` / `f-after-camp.jpg` (Glutwächter 1.4x -> 2x Oleth), `f-before-drake.jpg` /
+  `f-after-drake.jpg`, `f-after-epics-closeup.jpg`.
+
+### 3.6 Numbers
+
+- Bake (built game, cold, other agents on the CPU): champion atlas 1 champion 1153 ms (before 5259 ms - the before
+  number was taken under heavier load; cells per champion 120 -> 130, +8 %), minion atlas 4422 ms (before 7645),
+  monster atlases 12665 ms (before 7033: +8 epic cells x 5 dirs at 200 px, and load). Atlas 8192x512 @152 px for one
+  champion; ten champions at 152 px = 1300 cells = 8192x4096 (fits on an 8192 GPU; 4096 GPUs drop to 112 px as before).
+- Frame time with the springs, 1280x720, sandbox: 4.28 ms/frame (`__vg.frame` x120) -> 60 FPS holds.
+- Tests: tests/motion.test.ts (6), casts.test.ts (4), abilityFx.test.ts (3); full suite 963 passed, 82 files.

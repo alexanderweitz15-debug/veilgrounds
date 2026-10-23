@@ -16,11 +16,12 @@ import { setTip } from './tooltip';
 import { goldEfficiency } from './goldEfficiency';
 
 const TIERS: ItemTier[] = ['starter', 'boots', 'basic', 'component', 'legendary', 'consumable'];
-const PCT: ReadonlySet<ItemStat> = new Set(['asPct', 'critPct', 'lifestealPct', 'msPct', 'hpRegenPct', 'manaRegenPct', 'healShieldPowerPct']);
+const PCT: ReadonlySet<ItemStat> = new Set(['asPct', 'critPct', 'lifestealPct', 'msPct', 'hpRegenPct', 'manaRegenPct', 'healShieldPowerPct', 'magicPenPct', 'armorPenPct', 'tenacity']);
 /** Stat -> icon key of statIcon (src/ui/icons.ts) for the stat chips. */
 const STAT_ICON: Partial<Record<ItemStat, string>> = {
   ad: 'ad', lethality: 'ad', ap: 'ap', armor: 'armor', mr: 'mr', hp: 'hp', mana: 'mana', asPct: 'as', critPct: 'crit',
   msFlat: 'ms', msPct: 'ms', haste: 'haste', lifestealPct: 'hp', hpRegenPct: 'hp', manaRegenPct: 'mana', healShieldPowerPct: 'hp',
+  magicPen: 'ap', magicPenPct: 'ap', armorPenPct: 'ad', tenacity: 'armor',
 };
 
 type Cat = 'all' | 'rec' | 'ad' | 'ap' | 'def' | 'as' | 'boots' | 'support' | 'jungle' | 'consumable';

@@ -19,7 +19,12 @@ export type ItemStat =
   | 'lethality'
   | 'hpRegenPct'
   | 'manaRegenPct'
-  | 'healShieldPowerPct';
+  | 'healShieldPowerPct'
+  // G/V1: penetration and tenacity as item stats (Stats fields existed, damage.ts applied them, no item could give them)
+  | 'magicPen'
+  | 'magicPenPct'
+  | 'armorPenPct'
+  | 'tenacity';
 
 export type ItemTier = 'starter' | 'basic' | 'component' | 'legendary' | 'boots' | 'consumable';
 

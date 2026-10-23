@@ -81,7 +81,7 @@ export function effectiveResist(sim: Sim, src: number, dst: number, type: Damage
   }
   if (type === 'magic') {
     let m = Stats.mr[dst]!;
-    if (src >= 0 && m > 0) m = Math.max(0, m - Stats.magicPen[src]!);
+    if (src >= 0 && m > 0) m = Math.max(0, m * (1 - Stats.magicPenPct[src]!) - Stats.magicPen[src]!); // % pen, then flat (LoL order)
     return m;
   }
   return 0;

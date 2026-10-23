@@ -47,6 +47,8 @@ export function createComponents() {
       lethality: f64(),
       armorPenPct: f64(),
       magicPen: f64(),
+      /** Percent magic penetration (0..1), applied before flat magicPen (G/V1, items). */
+      magicPenPct: f64(),
       lifesteal: f64(),
       haste: f64(),
       /** Wind-up as fraction of attack time (champion data). */

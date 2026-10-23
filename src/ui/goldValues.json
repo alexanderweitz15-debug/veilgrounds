@@ -7,6 +7,10 @@
     "haste": 50,
     "msPct": 39.5,
     "healShieldPowerPct": 55,
-    "manaRegenPct": 4
+    "manaRegenPct": 4,
+    "magicPen": 30,
+    "magicPenPct": 45,
+    "armorPenPct": 42,
+    "tenacity": 25
   }
 }

@@ -97,3 +97,15 @@ Next steps:
 3. Conversion: TeamAI.convert sends a push_lane to the next structure; for lane fights consider a plate / tower
    desire only when the harness-style feasibility holds, and log `convert:` with the feasibility inputs.
 4. Test 8 runs 15 min (~1 min wall); test 7 strict form still it.fails until A1's scheduler fills the farm intent.
+
+## 23 Oct (later): Phase 3 gate measured - not reached (a2.md); main bfa15f2 merged
+
+Next steps:
+1. Absence: about 40 % of laner recalls come from the retreat leaf below the retreat line (tools/scratch/recallsrc.ts).
+   Under the flag the retreat could walk to the own tower and farm there while stay-death <= 0.3 (§4.6 heal path),
+   recalling only from there; shove-before-recall only when the wave can crash within 20 s.
+2. First tower / plates: both reflex variants take ~2 plates vs classic 3.5 - check with A1 whether the reflex wave
+   state 'push' hits the structure (hitStructures intent flag) when >= 2 minions tank.
+3. Conversion: local conversion is in (TeamAI.convert); 1/8 feasible fights converted - next: keep the convert desire
+   until the structure / epic is taken or 30 s pass, and let the group candidate weight it higher.
+4. Sev items 4/5 not started.

@@ -29,7 +29,7 @@
     "csShare": { "iron": 0.62, "silver": 0.74, "gold": 0.82, "diamond": 0.9, "challenger": 0.96 },
     "farmRadius": 1400,
     "laneWidth": 900,
-    "absenceLossFrac": { "crashed": 0.5, "neutral": 0.9, "atOwnTower": 1.0 },
+    "absenceLossFrac": { "crashed": 0.35, "neutral": 0.9, "atOwnTower": 1.0 },
     "crashSoonS": 20,
     "supportPresenceGoldPerS": 3.0
   },

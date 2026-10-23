@@ -20,6 +20,7 @@
   "set.hpBar.thousands": "Nur alle 1000 Leben",
   "set.hpBar.plain": "Keine",
   "set.enemySkillshotOutline": "Gegnerische Skillshots stärker umranden",
+  "set.lolTelegraphs": "LoL-Telegraphe: gegnerische Skillshots nur als Geschoss mit dünnem Umriss",
   "set.minimapScale": "Minimap-Größe",
   "set.minimapLeft": "Minimap links",
   "set.ioTitle": "Einstellungen sichern",

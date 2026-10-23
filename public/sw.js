@@ -15,6 +15,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   const font = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
   if (url.origin !== location.origin && !font) return;
+  if (url.pathname.includes('/atlas/')) return; // pre-baked sprite strips (~20 MB): kept in IndexedDB by the game, not here
   const put = (res) => {
     if (res.ok || res.type === 'opaque') {
       const copy = res.clone();

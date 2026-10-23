@@ -51,6 +51,8 @@ export interface Settings {
   attackMoveNearCursor: boolean;
   /** Outline enemy skillshots more strongly (C7 data; drawn by the render telegraphs, agent D). */
   enemySkillshotOutline: boolean;
+  /** S3 "LoL telegraphs": enemy skillshots show only the projectile plus a thin outline, no ground strip / fill (own unchanged). */
+  lolTelegraphs: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -78,6 +80,7 @@ const DEFAULTS: Settings = {
   castModes: {},
   hpBarStyle: 'segmented',
   enemySkillshotOutline: false,
+  lolTelegraphs: false,
   attackMoveNearCursor: true,
 };
 

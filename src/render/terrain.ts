@@ -18,6 +18,7 @@ import { detailUniform, gouache, outlineMaterial, outlineMesh, paint, withFog } 
 import { edgeDist, offsetOutline, organicOutline, pointInPoly } from './organic';
 import { BASE_LOOK } from './palette';
 import { atlasStoreAvailable, buildVersion, loadStrip, saveStrip } from './atlasStore';
+import { GROUND_ART_VER, staticStrip } from './staticAtlas';
 
 const S = MAP_SIZE;
 
@@ -888,9 +889,14 @@ function groundTexture(cx: Ctx, N: number): THREE.CanvasTexture {
   void loadStrip(key, GROUND_VER)
     .then(async (hit) => {
       if (groundImg?.n === N) return use(groundImg.canvas);
-      if (hit) {
+      // S3: the build ships the painted ground (tools/bakeSprites.mjs); copy it into IndexedDB like the sprite strips
+      const shipped = hit ? null : await staticStrip(key, GROUND_ART_VER);
+      if (shipped) void saveStrip(key, GROUND_VER, shipped.blob, 0);
+      const stored = hit ?? shipped;
+      if (groundImg?.n === N) return use(groundImg.canvas);
+      if (stored) {
         const t0 = performance.now();
-        const bmp = await createImageBitmap(hit.blob);
+        const bmp = await createImageBitmap(stored.blob);
         const c = document.createElement('canvas');
         c.width = c.height = N;
         c.getContext('2d')!.drawImage(bmp, 0, 0);
@@ -906,6 +912,9 @@ function groundTexture(cx: Ctx, N: number): THREE.CanvasTexture {
     .catch(() => use(paint()));
   return tex;
 }
+
+/** The painted ground of a map at N² (build-time bake: src/render/bakeEntry.ts). */
+export const paintGroundFor = (map: MapData, N: number): HTMLCanvasElement => paintGround(context(map), N);
 
 /** Painted ground (sim map -> canvas y-down via simToCanvas). */
 function paintGround(cx: Ctx, N: number): HTMLCanvasElement {

@@ -8,6 +8,7 @@ import type { NodeCtx, NodeResult } from '../bt/types';
 import type { SnapEntity } from './types';
 import { bandOf, chatLine } from '../humanize/names';
 import allchat from '../../data/bots/allchat.json';
+import surrender from '../../data/surrender.json';
 import { CHAMPION_DATA } from '../../sim/champions';
 import { dst, unit } from './geo';
 import { estimateExchange, rankIdx } from '../bt/deps';
@@ -183,6 +184,7 @@ export function socialTick(n: NodeCtx, killed: boolean, died: boolean): void {
   if (died) say(n, ri <= SILVER ? 'flame' : 'death', 'died');
   ragePings(n);
   allChatReply(n);
+  surrenderVote(n);
   const jg = n.ctx.players.find((p) => p.team !== n.ctx.team && p.role === 'jungle');
   const e: SnapEntity | undefined = jg ? n.v.enemies.find((x) => x.slot === jg.slot) : undefined;
   if (e && n.ctx.lane && ri >= SILVER) {
@@ -240,6 +242,44 @@ function allChatReply(n: NodeCtx): void {
     const ref = n.log('chat', 'allReply', 'answer to all chat', { text, from: ev.slot });
     const [lo, hi] = allchat.delayTicks as [number, number];
     n.out.push({ cmd: { t: 'chat', text, ref, all: true }, delay: lo + n.rng.int(Math.max(1, hi - lo)) });
+    return;
+  }
+}
+
+export interface FfFeatures {
+  /** Item value (public on the scoreboard) of the enemy team minus the own team. */
+  goldDeficit: number;
+  /** Enemy champion kills minus own. */
+  killDeficit: number;
+  /** Alive enemy towers minus alive own towers (positive = the bot's team lost more). */
+  towerDeficit: number;
+  tilt: number;
+}
+
+/** Surrender score (S1, 2.10): weighted deficits scaled to 0..1 plus a tilt bonus; data in src/data/surrender.json bot. */
+export function surrenderScore(f: FfFeatures): number {
+  const b = surrender.bot;
+  const d = (v: number, scale: number): number => Math.max(0, Math.min(1, v / scale));
+  return b.wGold * d(f.goldDeficit, b.goldScale) + b.wKill * d(f.killDeficit, b.killScale) + b.wTower * d(f.towerDeficit, b.towerScale) + b.tiltBonus * f.tilt;
+}
+
+/** Yes when the score reaches the threshold of the bot's rank band. */
+export const votesYes = (f: FfFeatures, rank: Parameters<typeof bandOf>[0]): boolean => surrenderScore(f) >= surrender.bot.threshold[bandOf(rank)];
+
+/** A surrender vote of the own team started: decide by the rule above, vote after a reaction delay and say it in chat. */
+function surrenderVote(n: NodeCtx): void {
+  for (const ev of n.snap.events) {
+    if (ev.e !== 'ff' || ev.phase !== 'start' || ev.team !== n.ctx.team || ev.yes.includes(n.ctx.slot)) continue;
+    const rows = n.snap.players;
+    const sum = (team: number, k: 'kills' | 'itemValue'): number => rows.filter((r) => r.team === team).reduce((a, r) => a + r[k], 0);
+    const enemy = n.ctx.team === 0 ? 1 : 0;
+    const towers = (team: number): number => n.snap.entities.filter((e) => e.kind === Kind.Tower && e.team === team && e.alive).length;
+    const f: FfFeatures = { goldDeficit: sum(enemy, 'itemValue') - sum(n.ctx.team, 'itemValue'), killDeficit: sum(enemy, 'kills') - sum(n.ctx.team, 'kills'), towerDeficit: towers(enemy) - towers(n.ctx.team), tilt: n.mem.ext.tilt };
+    const yes = votesYes(f, n.ctx.profile.rank);
+    n.log('surrender', yes ? 'yes' : 'no', 'vote started', { ...f }, { score: surrenderScore(f) });
+    const [lo, hi] = surrender.bot.delayS;
+    n.out.push({ cmd: { t: 'ffVote', yes }, delay: Math.round((lo + n.rng.next() * (hi - lo)) * 30) });
+    say(n, yes ? 'surrender_yes' : 'surrender_no', 'surrender vote');
     return;
   }
 }

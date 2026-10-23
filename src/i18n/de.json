@@ -334,7 +334,6 @@
   "chat.noPlayer": "Kein Spieler „{name}“ gefunden.",
   "chat.muted": "Stummgeschaltet (Chat und Pings): {names}",
   "chat.unmuted": "Wieder hörbar: {names}",
-  "chat.ffNo": "Aufgeben ist gegen Bots noch nicht möglich (Abstimmung mit Bot-Stimmen folgt).",
   "chat.allNo": "Allgemeiner Chat: „/all Text“ oder Umschalt+Enter sendet an beide Teams.",
   "chat.unknownCmd": "Unbekannter Befehl /{cmd} – /help zeigt alle Befehle.",
   "chat.itemPing": "Ich habe {item}.",
@@ -710,5 +709,19 @@
   "profile.mode.lastHit": "Last-Hit-Trainer",
   "profile.mode.classic": "Klassisch",
   "profile.mode.mock": "Test",
-  "chat.allTag": "[Alle]"
+  "chat.allTag": "[Alle]",
+  "ff.title": "Aufgeben?",
+  "ff.yes": "Ja (F5)",
+  "ff.no": "Nein (F6)",
+  "ff.tally": "Ja {yes} · Nein {no} · {need} von {total} nötig",
+  "ff.state.yes": "Ja",
+  "ff.state.no": "Nein",
+  "ff.state.open": "noch offen",
+  "ff.started": "{name} hat eine Abstimmung zum Aufgeben gestartet (F5 Ja, F6 Nein, 30 s).",
+  "ff.passed": "Abstimmung angenommen: Dein Team gibt auf.",
+  "ff.failed": "Abstimmung abgelehnt ({yes} Ja, {need} nötig).",
+  "ff.denied.early": "Aufgeben ist erst ab {min}:00 möglich.",
+  "ff.denied.active": "Es läuft bereits eine Abstimmung.",
+  "ff.denied.cooldown": "Nach einer abgelehnten Abstimmung {cd} Minuten Pause.",
+  "ff.denied.mode": "Aufgeben gibt es nur in klassischen 5v5-Partien."
 }

@@ -19,6 +19,7 @@ import { summonersSystem } from '../summoners';
 import { wardsSystem } from '../wards';
 import { trainerSystem } from '../trainer';
 import { seenItemsSystem } from '../seenItems';
+import { surrenderSystem } from '../surrender';
 
 export interface System {
   name: string;
@@ -49,4 +50,5 @@ export const systems = (): System[] =>
   wardsSystem, // ward expiry/kills, seal + sweep reveal/disable, trinket charges: right before vision (Agent J)
   { name: 'vision', update: computeVision },
   seenItemsSystem, // enemy items as last seen per team (scoreboard / target frame), after vision
+  surrenderSystem, // S1: surrender vote timeout / result (no-op until a vote exists)
 ]);

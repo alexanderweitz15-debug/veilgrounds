@@ -1,0 +1,19 @@
+{
+  "note": "S1 (FEATURE-GAP 2.10): surrender vote. Sim rules (src/sim/surrender.ts): minStartS = earliest vote start (15:00), voteS = vote length, unanimousUntilS = before this game time ALL voters must agree (LoL 15-20 min), afterwards ceil(voters * needShare) (4 of 5), cooldownS = pause after a failed vote. bot = voting rule of the bots (src/ai/bot/social.ts surrenderScore): score = wGold * gold deficit + wKill * kill deficit + wTower * tower deficit + tiltBonus * tilt stacks, each deficit scaled to 0..1 by its scale (gold = item value difference of the two teams, public like the scoreboard); a bot votes yes when score >= threshold of its rank band. delayS = [min, max] seconds until the bot votes.",
+  "minStartS": 900,
+  "voteS": 30,
+  "unanimousUntilS": 1200,
+  "needShare": 0.8,
+  "cooldownS": 180,
+  "bot": {
+    "goldScale": 8000,
+    "killScale": 15,
+    "towerScale": 6,
+    "wGold": 0.45,
+    "wKill": 0.2,
+    "wTower": 0.35,
+    "tiltBonus": 0.08,
+    "threshold": { "low": 0.3, "mid": 0.5, "high": 0.7 },
+    "delayS": [2, 12]
+  }
+}

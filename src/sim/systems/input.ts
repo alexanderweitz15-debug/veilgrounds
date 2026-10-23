@@ -14,6 +14,7 @@ import { useItem } from '../items/itemHooks';
 import { swapTrinket, useTrinket } from '../wards';
 import { scheduleNextWave } from './waves';
 import { raiseLevel } from '../trainer/common';
+import { castVote, startVote } from '../surrender';
 import { respawnCamps, toggleGodMode, toggleNoCooldowns } from '../trainer/sandbox';
 
 export const inputSystem: System = {
@@ -69,6 +70,8 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
   if (cmd.t === 'trinket') return void swapTrinket(sim, eid, cmd.id); // shop rule: also while dead
   if (cmd.t === 'ping') return ping(sim, eid, cmd); // pings also while dead
   if (cmd.t === 'chat') return chat(sim, eid, cmd);
+  if (cmd.t === 'ff') return startVote(sim, eid);
+  if (cmd.t === 'ffVote') return castVote(sim, eid, cmd.yes);
   if (cmd.t === 'ultChoice') return void chooseUlt(sim, eid, cmd.choice);
   if (!Unit.alive[eid]) return;
   switch (cmd.t) {

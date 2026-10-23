@@ -334,7 +334,6 @@
   "chat.noPlayer": "No player \"{name}\" found.",
   "chat.muted": "Muted (chat and pings): {names}",
   "chat.unmuted": "Unmuted: {names}",
-  "chat.ffNo": "Surrendering against bots is not available yet (vote with bot votes will follow).",
   "chat.allNo": "All chat: \"/all text\" or Shift+Enter sends to both teams.",
   "chat.unknownCmd": "Unknown command /{cmd} – /help lists all commands.",
   "chat.itemPing": "I have {item}.",
@@ -710,5 +709,19 @@
   "profile.mode.lastHit": "Last-hit trainer",
   "profile.mode.classic": "Classic",
   "profile.mode.mock": "Test",
-  "chat.allTag": "[All]"
+  "chat.allTag": "[All]",
+  "ff.title": "Surrender?",
+  "ff.yes": "Yes (F5)",
+  "ff.no": "No (F6)",
+  "ff.tally": "Yes {yes} · No {no} · {need} of {total} needed",
+  "ff.state.yes": "Yes",
+  "ff.state.no": "No",
+  "ff.state.open": "still open",
+  "ff.started": "{name} started a surrender vote (F5 yes, F6 no, 30 s).",
+  "ff.passed": "Vote passed: your team surrenders.",
+  "ff.failed": "Vote failed ({yes} yes, {need} needed).",
+  "ff.denied.early": "Surrender is only possible from {min}:00.",
+  "ff.denied.active": "A vote is already running.",
+  "ff.denied.cooldown": "{cd} minutes pause after a failed vote.",
+  "ff.denied.mode": "Surrender only exists in classic 5v5 games."
 }

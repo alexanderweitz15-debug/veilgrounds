@@ -1,0 +1,15 @@
+/* Surrender vote panel (S1, FEATURE-GAP 2.10): src/ui/surrenderPanel.ts. */
+.ff-panel { display: none; position: absolute; top: calc(96px * var(--ui, 1)); left: 50%; transform: translateX(-50%) scale(var(--ui, 1)); transform-origin: top center; z-index: 35; min-width: 280px; padding: 10px 14px 12px; background: rgba(14, 12, 18, 0.9); border: 1px solid rgba(201, 162, 78, 0.55); border-radius: 4px; font: 600 14px 'Barlow', sans-serif; color: #e8e2d4; text-align: center; pointer-events: auto; }
+.ff-panel.open { display: block; }
+.ff-title { font: 700 16px 'Barlow Condensed', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: #f3d98c; margin-bottom: 6px; }
+.ff-chips { display: flex; justify-content: center; gap: 6px; margin-bottom: 6px; }
+.ff-chip { width: 26px; height: 26px; line-height: 24px; border-radius: 50%; border: 2px solid #55504a; background: #26232a; font-size: 12px; }
+.ff-chip.yes { border-color: #6fbf5a; background: #2c4a26; }
+.ff-chip.no { border-color: #d9614c; background: #4a2a26; }
+.ff-tally { font-size: 13px; color: #cfc6ad; margin-bottom: 6px; }
+.ff-bar-track { height: 4px; background: #26232a; border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+.ff-bar { height: 100%; background: #c8aa6e; }
+.ff-buttons { display: flex; justify-content: center; gap: 10px; }
+.ff-buttons button { padding: 4px 16px; border: 1px solid #8a7550; background: rgba(200, 170, 110, 0.12); color: #f2ead8; font: inherit; cursor: pointer; border-radius: 3px; }
+.ff-buttons button:hover:not(:disabled) { background: rgba(200, 170, 110, 0.3); }
+.ff-buttons button:disabled { opacity: 0.4; cursor: default; }

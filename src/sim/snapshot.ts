@@ -618,6 +618,8 @@ export function teamEvents(sim: Sim, team: number): { events: SimEvent[]; audio:
         return ev.team === team; // pings are team-only
       case 'chat':
         return ev.team === team || !!ev.all; // all chat (S1, 2.8) reaches both teams
+      case 'ff':
+        return ev.team === team; // surrender votes are team-private (S1, 2.10)
       case 'castFail':
         return Unit.team[ev.src] === team; // team-private (buildSnapshot narrows it to the own champion)
       case 'zone':

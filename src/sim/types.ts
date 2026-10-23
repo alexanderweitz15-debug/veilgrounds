@@ -82,6 +82,9 @@ export type Command =
   | { t: 'ping'; kind: PingKind; x: number; y: number; target?: number }
   /** Team chat line (bots: spec §9; ref = decision log tick the line refers to). Team-only, like pings. */
   | { t: 'chat'; text: string; ref?: number; /** All chat (S1, 2.8): delivered to both teams. */ all?: boolean }
+  /** Surrender vote (S1, 2.10; classic only): start a vote for the own team / cast the own vote (also while dead). */
+  | { t: 'ff' }
+  | { t: 'ffVote'; yes: boolean }
   | { t: 'buy'; item: string }
   | { t: 'sell'; slot: number }
   /** Use the item in inventory slot 0..5 (actives, consumables; src/sim/items/itemHooks.ts). */
@@ -158,6 +161,8 @@ export type SimEvent =
   | { e: 'ping'; slot: number; team: number; kind: PingKind; x: number; y: number; target: number }
   /** Team chat line (only delivered to the sender's team); `all` lines (S1, 2.8) go to both teams. */
   | { e: 'chat'; slot: number; team: number; text: string; ref?: number; all?: boolean }
+  /** Surrender vote of `team` (S1, 2.10; team-only). Every phase carries the full tally. `denied`: the start was refused (`reason`). */
+  | { e: 'ff'; team: number; phase: 'start' | 'vote' | 'pass' | 'fail' | 'denied'; slot: number; yes: number[]; no: number[]; voters: number[]; need: number; until: number; reason?: 'early' | 'active' | 'cooldown' | 'mode' }
   /** Ground telegraph: AoE that resolves at tick `at` (render shows radius + fill). */
   | {
       e: 'zone'; src: number; team: number; x: number; y: number; r: number; start: number; at: number;

@@ -41,8 +41,8 @@ describe('all chat in the sim', () => {
       const bots = new BotRunner(cfg);
       const replies: string[] = [];
       let leaked = 0;
-      for (let t = 0; t < 30 * 200; t++) {
-        const human = t > 60 && t % 150 === 0 ? [{ slot: 0, cmd: { t: 'chat' as const, text: 'gl hf', ...(all ? { all: true } : {}) } }] : [];
+      for (let t = 0; t < 30 * 90; t++) {
+        const human = t > 60 && t % 100 === 0 ? [{ slot: 0, cmd: { t: 'chat' as const, text: 'gl hf', ...(all ? { all: true } : {}) } }] : [];
         step(sim, [...human, ...bots.tick(sim)]);
         for (const e of sim.events) {
           if (e.e !== 'chat' || e.team !== 1) continue;

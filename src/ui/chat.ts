@@ -5,6 +5,7 @@ import './chat.css';
 import type { PlayerSetup, SimEvent } from '../sim/types';
 import { champName } from './names';
 import { parseChat } from './chatCommands';
+import { SURRENDER } from '../sim/surrender';
 import { t } from '../i18n';
 
 const SHOW_MS = 12000;
@@ -29,6 +30,8 @@ export class ChatBox {
     private readonly blocked: () => boolean,
     /** Muted slots (shared with ClientState, which drops their pings). */
     private readonly muted: Set<number> = new Set(),
+    /** /ff: ask the sim for a surrender vote (S1, 2.10). */
+    private readonly ff: () => void = () => {},
   ) {
     this.root = document.createElement('div');
     this.root.className = 'chat-box';
@@ -73,7 +76,7 @@ export class ChatBox {
         for (const s of a.slots) (a.on ? this.muted.add(s) : this.muted.delete(s));
         return this.system(t(a.on ? 'chat.muted' : 'chat.unmuted', { names: a.slots.map((s) => this.nameOf(s)).join(', ') }));
       case 'surrender':
-        return this.system(t('chat.ffNo'));
+        return this.ff();
       case 'all':
         return a.text ? this.send(a.text, true) : this.system(t('chat.allNo'));
       default:
@@ -115,6 +118,7 @@ export class ChatBox {
 
   /** Chat events of the own team (the snapshot already filters to it). */
   onEvent(ev: SimEvent): void {
+    if (ev.e === 'ff') return this.ffLine(ev);
     if (ev.e !== 'chat' || this.muted.has(ev.slot)) return;
     const p = this.players.find((x) => x.slot === ev.slot);
     const enemy = ev.team !== (this.players.find((x) => x.slot === this.mySlot)?.team ?? ev.team);
@@ -126,6 +130,20 @@ export class ChatBox {
     name.textContent = `${ev.all ? `${t('chat.allTag')} ` : ''}${who}${p ? ` (${champName(p.champion)})` : ''}: `;
     line.append(name, document.createTextNode(ev.text));
     this.append(line);
+  }
+
+  /** Local system lines for the surrender vote (the vote panel shows the tally). */
+  private ffLine(ev: Extract<SimEvent, { e: 'ff' }>): void {
+    switch (ev.phase) {
+      case 'start':
+        return this.system(t('ff.started', { name: this.nameOf(ev.slot) }));
+      case 'pass':
+        return this.system(t('ff.passed'));
+      case 'fail':
+        return this.system(t('ff.failed', { yes: ev.yes.length, need: ev.need }));
+      case 'denied':
+        return this.system(t(`ff.denied.${ev.reason ?? 'mode'}`, { min: Math.round(SURRENDER.minStartS / 60), cd: Math.round(SURRENDER.cooldownS / 60) }));
+    }
   }
 
   dispose(): void {

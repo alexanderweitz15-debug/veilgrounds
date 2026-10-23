@@ -52,6 +52,7 @@ const MONSTER_BATCH: SpriteBatchOptions = {
   cap: 40,
   ghosts: 16,
   corpseMs: 2600,
+  dynAmp: 0.6,
   idFor: (e, atlas) => {
     const m = monsterSprite(e);
     return m && atlas.frames[m.id] ? m.id : null;

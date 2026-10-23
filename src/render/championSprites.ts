@@ -10,6 +10,8 @@ import { CAST_FLEX, CAST_RELEASE, dirFromAngle, type Anim, type ChampionAtlas, t
 import { champions } from '../data/champions';
 import { AFTER_MS, afterFrame } from './spriteTiming';
 import { turnToward } from './readability';
+import { dynIdle, KICKS, newDyn, stepDyn, type DynState } from './spriteDynamics';
+import { settings } from '../settings';
 
 /** How a cast plays: directed spells release forward, self buffs flex, dashes lunge. */
 export type CastKind = 'directed' | 'self' | 'dash';
@@ -45,6 +47,14 @@ export interface SpriteBatchOptions {
   idFor: (e: SnapEntity, atlas: ChampionAtlas) => string | null;
   /** size multiplier per entity (small camp members reuse their leader's frames), default 1 */
   scaleFor?: (e: SnapEntity) => number;
+  /** amplitude of the runtime squash / stretch / lean springs (spriteDynamics.ts), default 1; 0 disables */
+  dynAmp?: number;
+}
+
+/** Ranged attackers recoil on the release instead of lunging into the strike. */
+function rangedKind(e: SnapEntity): boolean {
+  if (e.kind === Kind.MinionCaster || e.kind === Kind.MinionSiege) return true;
+  return e.kind === Kind.Champion && !!e.champ && champions[e.champ]?.attackType === 'ranged';
 }
 
 /** Champions by champion id; Hark (Ottilie's wolf) for the big pet. Corvin's keg (hp 1) stays on the placeholder. */
@@ -87,12 +97,17 @@ interface AnimState {
   /** D2: displayed facing angle (radians, smoothed toward the sim facing) and its last update time; NaN = unset. */
   ang: number;
   angT: number;
+  /** F: squash / stretch / lean springs and the run-cycle phase carried across stops (ms into the cycle) */
+  dyn: DynState;
+  runOff: number;
 }
 interface CastState {
   t0: number;
   /** wind-up until the release (ms) */
   dur: number;
   kind: CastKind;
+  /** release pop already fired */
+  popped: boolean;
 }
 interface Ghost {
   scale: number;
@@ -138,7 +153,20 @@ export class ChampionSprites {
   private readonly p = new THREE.Vector3();
   private readonly s = new THREE.Vector3();
   private readonly tmp = new THREE.Color();
+  private readonly qLean = new THREE.Quaternion();
+  private readonly qOut = new THREE.Quaternion();
+  private static readonly Z = new THREE.Vector3(0, 0, 1);
   private n = 0;
+
+  /** Spring amplitude: batch option x reduce-motion setting. */
+  private amp(): number {
+    return (this.opts.dynAmp ?? 1) * (settings.reduceMotion ? 0.3 : 1);
+  }
+  /** Screen-x sign of a facing angle (E = +1, W = -1, N/S = 0): springs lean along it. */
+  private static dirX(ang: number): number {
+    const c = Number.isNaN(ang) ? 0 : Math.cos(ang);
+    return c > 0.3 ? 1 : c < -0.3 ? -1 : 0;
+  }
 
   constructor(
     readonly atlas: ChampionAtlas,
@@ -193,7 +221,7 @@ export class ChampionSprites {
 
   /** A cast started: `durMs` = wind-up until the release (sim cast time), `kind` from the ability type. */
   onCast(eid: number, now: number, durMs = 0, kind: CastKind = 'directed'): void {
-    this.castAt.set(eid, { t0: now, dur: Math.max(0, Math.min(1500, durMs)), kind });
+    this.castAt.set(eid, { t0: now, dur: Math.max(0, Math.min(1500, durMs)), kind, popped: false });
   }
 
   /** Took a hit from (sx, sy): short knock-back flinch (rate-limited so damage over time does not jitter). */
@@ -206,6 +234,8 @@ export class ChampionSprites {
     a.hitT = now;
     a.hx = dx / d;
     a.hy = dy / d;
+    // squash + tip away from the source (screen x: sim +x is screen-right)
+    KICKS.hit(a.dyn, dx > 20 ? -1 : dx < -20 ? 1 : 0, this.amp());
   }
 
   /** Cast frame and whether the cast is still playing. */
@@ -246,20 +276,26 @@ export class ChampionSprites {
     if (this.n >= this.opts.cap) return;
     let a = this.st.get(e.serial);
     if (!a) {
-      a = { scale: this.opts.scaleFor?.(e) ?? 1, serial: e.serial, seen: now, id, anim: 'idle', t0: now, dir: 'S', phase: 0, x, y, atk0: 0, atkHit: 0, wind: 0, hitT: -1e9, hx: 0, hy: 0, ang: NaN, angT: now };
+      a = { scale: this.opts.scaleFor?.(e) ?? 1, serial: e.serial, seen: now, id, anim: 'idle', t0: now, dir: 'S', phase: 0, x, y, atk0: 0, atkHit: 0, wind: 0, hitT: -1e9, hx: 0, hy: 0, ang: NaN, angT: now, dyn: newDyn(now), runOff: 0 };
       this.st.set(e.serial, a);
     }
     a.seen = now;
     this.byEid.set(e.id, a);
     a.x = x;
     a.y = y;
+    const amp = this.amp();
     if (e.fx || e.fy) {
       // D2: turn through the in-between directions (180 deg in ~80 ms) instead of flipping in one tick
       const target = Math.atan2(e.fy, e.fx);
+      const prevX = ChampionSprites.dirX(a.ang);
       a.ang = Number.isNaN(a.ang) ? target : turnToward(a.ang, target, now - a.angT);
       a.dir = dirFromAngle(a.ang);
+      // about-face while running: a little sway into the new direction
+      const dx = ChampionSprites.dirX(a.ang);
+      if (e.moving && prevX && dx && prevX !== dx) KICKS.turn(a.dyn, dx, amp);
     }
     a.angT = now;
+    const dirX = ChampionSprites.dirX(a.ang);
     const fr = this.atlas.frames[id]!;
     // attack state machine: the strike frame lands exactly on the sim's hit point (phase 1 -> 2)
     if (e.atkPhase === 1 && a.phase !== 1) {
@@ -268,6 +304,9 @@ export class ChampionSprites {
     } else if (e.atkPhase === 2 && a.phase !== 2) {
       if (a.phase === 1 && a.atk0) a.wind = Math.max(80, Math.min(1500, now - a.atk0));
       a.atkHit = now;
+      // the strike lands: melee squashes into the blow, ranged recoils
+      if (rangedKind(e)) KICKS.strikeRanged(a.dyn, dirX, amp);
+      else KICKS.strikeMelee(a.dyn, dirX, amp);
     } else if (e.atkPhase === 0 && a.phase === 1) a.atk0 = 0; // cancelled wind-up
     a.phase = e.atkPhase;
     const nA = fr.attack.S.length;
@@ -278,6 +317,10 @@ export class ChampionSprites {
     if (ca && now - ca.t0 < this.castLen(ca) && fr.cast.S.length) {
       anim = 'cast';
       frame = this.castFrame(ca, now - ca.t0, fr.cast.S.length);
+      if (!ca.popped && now - ca.t0 >= ca.dur) {
+        ca.popped = true;
+        KICKS.castRelease(a.dyn, amp);
+      }
     } else if (e.atkPhase === 1 && nA && a.atk0) {
       // anticipation spread over the (measured or estimated) wind-up
       anim = 'attack';
@@ -289,8 +332,14 @@ export class ChampionSprites {
       frame = hit + afterFrame(now - a.atkHit, nA - hit);
     }
     if (anim !== a.anim) {
+      // starts and stops get a spring impulse; the run cycle keeps its phase across a stop instead of restarting
+      if (a.anim === 'run') {
+        a.runOff = now - a.t0;
+        if (anim === 'idle') KICKS.runStop(a.dyn, dirX, amp);
+      }
+      if (anim === 'run' && a.anim === 'idle') KICKS.runStart(a.dyn, dirX, amp);
       a.anim = anim;
-      a.t0 = now;
+      a.t0 = anim === 'run' ? now - a.runOff : now;
     }
     if (frame < 0) frame = Math.floor(((now - a.t0 + e.id * 97) / 1000) * (this.atlas.rate[id]?.[anim] ?? this.atlas.fps[anim]));
     // hit flinch: a quick knock away from the source
@@ -300,11 +349,11 @@ export class ChampionSprites {
       x += a.hx * d;
       y += a.hy * d;
     }
-    this.draw(id, anim, a.dir, frame, x, y, c, a.scale, lift);
+    this.draw(id, anim, a.dir, frame, x, y, c, a.scale, lift, a.dyn, now);
   }
 
   /** `lift` = height above the ground (knock-up hop, dash arc); the shadow quad stays on the ground. */
-  private draw(id: string, anim: Anim, dir: Dir, k: number, x: number, y: number, c: number, scale = 1, lift = 0): void {
+  private draw(id: string, anim: Anim, dir: Dir, k: number, x: number, y: number, c: number, scale = 1, lift = 0, dyn?: DynState, now = 0): void {
     const list = this.atlas.frames[id]?.[anim]?.[dir];
     if (!list?.length) return;
     // frame index from timers can be negative (clock offsets) or NaN (missing rate): clamp, never index out of range
@@ -317,8 +366,18 @@ export class ChampionSprites {
     const size = this.atlas.worldSize[id]! * scale;
     const below = (1 - this.atlas.foot[id]!) * size; // cell bottom below the feet
     this.p.set(x, lift, -y).addScaledVector(this.up, -below);
-    this.s.set(size, size, 1);
-    this.m.compose(this.p, this.qVis, this.s);
+    // F: squash / stretch about the feet and a roll of the quad around the view axis (springs, spriteDynamics.ts);
+    // only the visible quad - the shadow caster keeps the plain frame
+    let q = this.qVis;
+    if (dyn && !dynIdle(dyn)) {
+      const d = stepDyn(dyn, now);
+      this.s.set(size * d.sx, size * d.sy, 1);
+      if (d.lean) q = this.qOut.copy(this.qVis).multiply(this.qLean.setFromAxisAngle(ChampionSprites.Z, -d.lean));
+    } else {
+      if (dyn) dyn.t = now;
+      this.s.set(size, size, 1);
+    }
+    this.m.compose(this.p, q, this.s);
     this.vis.setMatrixAt(i, this.m);
     this.p.set(x, -below, -y);
     this.s.set(size * 0.8, size, 1);

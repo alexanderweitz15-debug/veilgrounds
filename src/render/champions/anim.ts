@@ -10,6 +10,7 @@
 // The game stretches attack/cast frames over the actual wind-up (render/championSprites.ts).
 import { lerp3, norm, TAU, type V3 } from './core';
 import { bodyOf } from './humanoid';
+import { motionOf } from './motion';
 import type { Anim, Kit, Pose } from './types';
 
 export const FRAMES: Record<Anim, number> = { idle: 4, run: 8, attack: 5, cast: 4, death: 3 };
@@ -110,9 +111,9 @@ function hold(kit: Kit, swing: number, running: boolean): Hands {
   const b = bodyOf(kit);
   const A = b.H * 0.385;
   const S = b.shW;
-  const light = kit.gait === 'light';
-  // free arm: swings opposite to the leg, elbow bends more on the forward swing
-  const free = (side: number, ph: number): V3 => [side * (S + 3), -A * 0.86 + Math.max(0, ph) * (running ? 9 : 2) + Math.abs(ph) * 3, 3 + ph * A * (light ? 0.5 : 0.42)];
+  // free arm: swings opposite to the leg, elbow bends more on the forward swing; amplitude per champion (motion.ts)
+  const arm = motionOf(kit).gait.arm;
+  const free = (side: number, ph: number): V3 => [side * (S + 3), -A * 0.86 + Math.max(0, ph) * (running ? 9 * arm : 2) + Math.abs(ph) * 3 * arm, 3 + ph * A * 0.42 * arm];
   const sw = running ? swing : swing * 0.08;
   switch (kit.hold) {
     case 'bow':
@@ -378,47 +379,95 @@ export function poseFor(kit: Kit, anim: Anim, frame: number): Pose {
   const S = b.shW;
   switch (anim) {
     case 'idle': {
-      // frame 0 = neutral rest (sin 0); breathing in on 1, weight drifts onto the right leg and back
+      // frame 0 = neutral rest (sin 0 everywhere: portraits, head anchor, bar height); breathing in on 1, weight
+      // drifts onto the right leg and back. Amplitudes and the fidget style per champion (motion.ts).
       const t = (f / n) * TAU;
-      const bouncy = kit.hold === 'guard' || kit.hold === 'fists';
-      const heavy = gait === 'heavy';
-      p.breath = 0.5 - 0.5 * Math.cos(t);
-      p.bob = bouncy ? -Math.abs(Math.sin(t)) * 1.6 : -0.3 - Math.sin(t) * 0.35;
-      p.shift = -Math.sin(t) * (heavy ? 1.0 : 1.6);
-      p.roll = Math.sin(t) * (heavy ? 0.018 : 0.03);
-      p.headTilt = Math.sin(t + 1) * 0.035;
-      p.headYaw = Math.sin(t * 0.5 + 0.6) * 0.08 - 0.04;
-      p.sway = Math.sin(t - 0.8) * 0.14;
+      const I = motionOf(kit).idle;
+      const st = I.style;
+      p.breath = (0.5 - 0.5 * Math.cos(t)) * I.breath;
+      p.bob = -0.3 - Math.sin(t) * 0.35 - Math.abs(Math.sin(t)) * I.bob;
+      p.shift = -Math.sin(t) * I.shift;
+      p.roll = Math.sin(t) * I.roll;
+      p.headTilt = Math.sin(t + 1) * I.nod;
+      p.headYaw = Math.sin(t * 0.5 + 0.6) * I.scan - I.scan * 0.5;
+      p.sway = Math.sin(t - 0.8) * I.sway;
+      switch (st) {
+        case 'heave':
+          // shoulders rise with a deep breath, the chest opens
+          p.lean -= p.breath * 0.05;
+          p.twist = Math.sin(t) * 0.03;
+          break;
+        case 'rock':
+          // weight rolls from foot to foot, shoulders follow a beat later
+          p.twist = Math.sin(t) * 0.07;
+          p.headTilt = Math.sin(t) * I.nod * 0.5 - Math.sin(t) * I.roll * 0.6;
+          break;
+        case 'scan':
+          // looks left and right over the shoulder, head low and alert
+          p.headYaw = Math.sin(t) * I.scan;
+          p.headTilt = -I.nod * 0.5 + Math.abs(Math.sin(t)) * I.nod;
+          break;
+        case 'poise':
+          // chin up, almost still
+          p.headTilt -= 0.045;
+          break;
+        case 'preen':
+          // bird: quick head turns, one snap of the beak down on frame 2
+          p.headYaw = Math.sin(t) * I.scan;
+          p.headTilt = f === 2 ? I.nod * 2 : -I.nod * 0.4;
+          break;
+        case 'tick':
+          // clockwork: head twitches like a second hand
+          p.headTilt = (f % 2 ? 1 : -1) * I.nod * 0.5 + Math.sin(t) * I.nod * 0.3;
+          p.headYaw = (f % 2 ? 1 : -1) * I.scan * 0.5;
+          break;
+        case 'sway':
+          p.twist = Math.sin(t) * 0.09;
+          break;
+        case 'hover':
+          p.twist = Math.sin(t * 0.5) * 0.06;
+          p.lean += Math.sin(t) * 0.03;
+          break;
+        case 'bounce':
+        case 'still':
+        case 'breathe':
+          break;
+      }
       apply(p, hold(kit, Math.sin(t), false));
       const lift = p.breath * 1.3;
-      p.handL = [p.handL[0], p.handL[1] + lift * 0.6 + Math.sin(t) * 0.8, p.handL[2]];
-      p.handR = [p.handR[0], p.handR[1] + lift * 0.6 + Math.sin(t + 0.6) * 0.8, p.handR[2]];
+      const drift = I.hands;
+      const side = st === 'hover' || st === 'sway' ? Math.sin(t) * drift * 1.2 : 0;
+      p.handL = [p.handL[0] + side, p.handL[1] + lift * 0.6 + Math.sin(t) * drift, p.handL[2]];
+      p.handR = [p.handR[0] + side, p.handR[1] + lift * 0.6 + Math.sin(t + 0.6) * drift, p.handR[2]];
       break;
     }
     case 'run': {
-      // t = 0: right foot planted in front (contact); the body is lowest at contacts, highest mid-stride
+      // t = 0: right foot planted in front (contact); the body is lowest at contacts, highest mid-stride.
+      // Stride, lift, bounce, lean, hip sway, twist, head nod, crouch, hop and cloth trail per champion (motion.ts).
       const t = (f / n) * TAU;
-      const heavy = gait === 'heavy';
-      const light = gait === 'light';
-      const stride = heavy ? 13 : light ? 20 : 17;
-      const lift = heavy ? 8 : light ? 13 : 11;
+      const Gt = motionOf(kit).gait;
       const swingR = Math.max(0, -Math.sin(t));
       const swingL = Math.max(0, Math.sin(t));
-      // swing foot: knee lifts early, foot reaches forward before it lands
-      p.footR = [-b.stance * 0.75, lift * Math.pow(swingR, 0.7), stride * Math.cos(t) + swingR * 3];
-      p.footL = [b.stance * 0.75, lift * Math.pow(swingL, 0.7), -stride * Math.cos(t) + swingL * 3];
-      p.bob = (heavy ? 3.4 : 2.8) * Math.abs(Math.sin(t)) - 1.8;
-      p.lean += heavy ? 0.12 : light ? 0.26 : 0.2;
-      p.hipYaw = Math.cos(t) * 0.12;
-      p.twist = -Math.cos(t) * 0.24;
+      const air = Gt.hop * Math.max(0, Math.sin(2 * t)); // bounding: both feet off the ground mid-step
+      if (Gt.style !== 'hover') {
+        // swing foot: knee lifts early, foot reaches forward before it lands
+        p.footR = [-b.stance * 0.75, Gt.lift * Math.pow(swingR, 0.7) + air * Gt.lift * 0.45, Gt.stride * Math.cos(t) + swingR * 3];
+        p.footL = [b.stance * 0.75, Gt.lift * Math.pow(swingL, 0.7) + air * Gt.lift * 0.45, -Gt.stride * Math.cos(t) + swingL * 3];
+      }
+      p.bob = Gt.bob * Math.abs(Math.sin(t)) - Gt.bob * 0.64 + air * 3 - Gt.hop * 1.2;
+      p.lean += Gt.lean;
+      p.crouch = Math.max(p.crouch, Gt.crouch);
+      p.hipYaw = Math.cos(t) * 0.12 * (Gt.twist / 0.24);
+      p.twist = -Math.cos(t) * Gt.twist;
       // weight over the stance leg, hip drops on the swing side
-      p.shift = -Math.sin(t) * 1.4;
-      p.roll = Math.sin(t) * 0.035;
-      p.headTilt = -Math.abs(Math.sin(t)) * 0.03;
+      p.shift = -Math.sin(t) * Gt.hipSway;
+      p.roll = Math.sin(t) * Gt.roll;
+      p.headTilt = -Math.abs(Math.sin(t)) * Gt.headBob;
+      if (Gt.style === 'waddle' || Gt.style === 'swagger') p.headYaw = Math.sin(t) * 0.06;
       // cloth trails behind and flutters a beat after the body bounce
-      p.sway = 0.85 + 0.18 * Math.sin(2 * t - 1.2);
+      p.sway = (0.85 + 0.18 * Math.sin(2 * t - 1.2)) * Gt.sway;
       apply(p, hold(kit, Math.cos(t), true));
-      const jog = Math.sin(2 * t - 0.8) * 1.6;
+      const jog = Math.sin(2 * t - 0.8) * 1.6 * (Gt.bob / 2.8);
       p.handL = [p.handL[0], p.handL[1] + jog, p.handL[2]];
       p.handR = [p.handR[0], p.handR[1] + jog, p.handR[2]];
       break;

@@ -12,6 +12,7 @@ import { Painter, Stage, TAU, dirOf, len, lerp3, madd, norm, project, sub, type 
 import { ATTACK_HIT, CAST_FLEX, CAST_RELEASE, CHAMP_FPS, FPS, FRAMES, LOOP, poseFor } from './anim';
 import { bodyOf, drawHumanoid, solveRig } from './humanoid';
 import { KITS } from './kits';
+import { motionOf } from './motion';
 import { drawWolf, HARK } from './wolf';
 import { MINION_DRAWERS, MINION_KITS } from './minions';
 import { MONSTER_DRAWERS } from './monsters';
@@ -542,9 +543,13 @@ export function hitOf(id: string): number {
   if (d) return d.hit ?? Math.floor((n - 1) / 2);
   return n >= 5 ? ATTACK_HIT : 1;
 }
-/** Playback rates for an id: champions use the longer layout's rates, everything else the legacy ones. */
+/** Playback rates for an id: champions use the longer layout's rates with their own run cadence and idle tempo
+ *  (motion.ts), everything else the legacy ones. */
 export function rateOf(id: string): Record<Anim, number> {
-  return { ...(KITS[id] ? CHAMP_FPS : FPS) };
+  const kit = KITS[id];
+  if (!kit) return { ...FPS };
+  const mo = motionOf(kit);
+  return { ...CHAMP_FPS, run: mo.gait.cadence, idle: mo.idle.fps };
 }
 export function worldSizeOf(id: string): number {
   if (id === 'hark') return HARK.world;

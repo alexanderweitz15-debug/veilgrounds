@@ -25,7 +25,7 @@ export interface ArmKey {
 }
 export interface Key {
   at: number;
-  fk?: Record<string, V>;
+  fk?: Record<string, V | undefined>;
   L?: ArmKey;
   R?: ArmKey;
   /** hips offset */
@@ -741,3 +741,4 @@ export function solveArm(
   _qInv.copy(_qF).invert();
   outH.copy(_qInv).multiply(_qH);
 }
+

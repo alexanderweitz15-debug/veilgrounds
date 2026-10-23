@@ -139,6 +139,10 @@ body { font-family: var(--font-body); }
 
 /* sub-screens: neutral dark backdrop instead of the old violet radial, flat language toggle */
 .screen.menu.menu-screen { background: radial-gradient(ellipse at 50% 0%, #1a1d21 0%, #0b0d0f 60%, #08090a 100%); }
+/* main menu: map-toned placeholder until the live scene renders its first frame, then the canvas fades in (FEATURE-GAP 4.10) */
+.screen.menu.menu-screen.client { background: radial-gradient(ellipse at 62% 42%, #46603f 0%, #2b4034 38%, #16211c 72%, #0b100e 100%); }
+.menu-screen > canvas.menu-bg { opacity: 0; transition: opacity 0.7s ease-out; }
+.menu-screen > canvas.menu-bg.ready { opacity: 1; }
 .screen.menu .lang-toggle .btn { background: none; border: 1px solid #3c3c41; border-radius: 0; color: var(--text-dim); font-family: var(--font-label); letter-spacing: 0.1em; }
 .screen.menu .lang-toggle .btn.on { border-color: var(--gold); color: var(--gold-hi); }
 .ingame-menu .ingame-panel { max-height: calc(100vh - 48px); overflow-y: auto; }

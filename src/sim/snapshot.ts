@@ -105,6 +105,10 @@ export interface SnapEntity {
   emp?: boolean;
   /** Ability self-buffs / shields / unstoppable from champion abilities (buff ids like 'vessa_e'): aura ring. */
   auras?: string[];
+  /** Seconds left per aura id (only auras backed by a timed buff; hook-visual auras have no entry). */
+  auraLeft?: Record<string, number>;
+  /** Jungle / objective buffs on this champion (no champion prefix; not shown as marks), seconds left. */
+  buffs?: SnapMark[];
 }
 
 export interface SnapMark {
@@ -517,7 +521,7 @@ let champPrefixes: Set<string> | null = null;
 const SLOT_KEY = ['q', 'w', 'e', 'r', 'p'];
 
 /** Ability buffs worth an aura: positive stat buffs, shields, unstoppable, from a champion ability/passive id. */
-function auraIds(sim: Sim, e: number): string[] {
+function auraIds(sim: Sim, e: number, left?: Record<string, number>): string[] {
   champPrefixes ??= new Set(Object.keys(CHAMPION_DATA));
   let out: string[] | null = null;
   for (const b of buffs(sim, e)) {
@@ -525,6 +529,7 @@ function auraIds(sim: Sim, e: number): string[] {
     const ok = b.kind === 'shield' ? b.amount > 0 : b.kind === 'unstoppable' || (b.kind === 'stat' && b.stat !== 'invisible' && b.stat !== 'untargetable' && (b.pct > 0 || b.flat > 0));
     if (!ok || !champPrefixes.has(b.id.split('_')[0]!)) continue;
     if (!(out ??= []).includes(b.id)) out.push(b.id);
+    if (left) left[b.id] = Math.max(left[b.id] ?? 0, (b.until - sim.tick) / 30);
   }
   return out ?? [];
 }
@@ -560,10 +565,17 @@ function addVisuals(sim: Sim, team: number, me: number, entities: SnapEntity[]):
     if (!s.alive || s.kind === Kind.Tower || s.kind === Kind.Ward || isStructure(s.kind)) continue;
     if (s.kind === Kind.Champion && armedSlot(sim, s.id) >= 0) s.emp = true;
     for (const b of buffs(sim, s.id)) {
-      if (b.kind === 'mark' && b.until > sim.tick && champPrefixes!.has(b.id.split('_')[0]!)) (s.marks ??= []).push({ id: b.id, left: (b.until - sim.tick) / 30 });
+      if (b.kind !== 'mark' || b.until <= sim.tick) continue;
+      const mark = { id: b.id, left: (b.until - sim.tick) / 30 };
+      if (champPrefixes!.has(b.id.split('_')[0]!)) (s.marks ??= []).push(mark);
+      else if (s.kind === Kind.Champion) (s.buffs ??= []).push(mark);
     }
-    const a = auraIds(sim, s.id);
-    if (a.length) s.auras = s.auras ? [...new Set([...s.auras, ...a])] : a;
+    const left: Record<string, number> = {};
+    const a = auraIds(sim, s.id, left);
+    if (a.length) {
+      s.auras = s.auras ? [...new Set([...s.auras, ...a])] : a;
+      s.auraLeft = left;
+    }
   }
 }
 

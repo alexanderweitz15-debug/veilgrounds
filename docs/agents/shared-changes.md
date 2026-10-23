@@ -448,3 +448,17 @@ For A2 (@A2, owner of recallValue / intents):
    tell me and I will wire it behind a values.json switch.
 4. tests/utilityRecall.test.ts (test 8) runs the utility model with the legacy lane leaf (`runUtilityGame` does not
    pass `{ reflex: true }`). The beta brain passes the same bound (item recalls 0.2-0.4 enemy minions near, n small).
+
+## ui-polish
+
+- `src/sim/snapshot.ts` (additive): `SnapEntity.auraLeft?: Record<string, number>` (seconds left per aura id) and
+  `SnapEntity.buffs?: SnapMark[]` (jungle / objective mark buffs without champion prefix, champions only). `auras`,
+  `marks` unchanged.
+- `src/ui/tooltip.ts`: new spec `timed:<s>:<inner spec>` (inner tooltip + footer "Noch s s"); spec `text:` now splits
+  at newlines (first line title, rest body).
+- `src/i18n/de.json`, `en.json`: new keys `buff.left`, `castFail.item.*`, `hud.you`, `hud.pausedBy`, `hud.deadCam.*`,
+  `ann.paused/pausedBy/resumed`, `chat.paused/resumed`; values changed: `hud.pausedHint` (now takes `{key}`),
+  `hud.deadCamHint` (Space = death spot).
+- `src/ui/menu.css`, `src/ui/style.css`: small additive rules (menu placeholder gradient + canvas fade, pause "by" line,
+  respawn camera buttons, failed item flash).
+- `HudHooks.focusCamera?` added (game.ts implements it). `Announcer.push` is public now.

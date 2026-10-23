@@ -34,6 +34,7 @@ const MINION_KIND: Partial<Record<number, MinionKind>> = {
 /** Minion sprites: kind + team baked into the minion atlas; ~60 on screen plus corpses. */
 const MINION_BATCH: SpriteBatchOptions = {
   cap: 160,
+  scaleFor: () => 1.2, // keeps minions ~0.55-0.6x a (scaled) champion
   ghosts: 48,
   corpseMs: 1300,
   idFor: (e, atlas) => {

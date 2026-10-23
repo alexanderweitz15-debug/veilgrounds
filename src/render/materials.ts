@@ -145,6 +145,38 @@ export function gouache(params: THREE.MeshLambertMaterialParameters, o: { detail
   return m;
 }
 
+/**
+ * Painted sprites in the gouache world: the same light grade as the world (warm sun tint when lit, cool violet
+ * when in the shadow of a tower/tree/wall), so billboards stop looking pasted on. The sprite counts as flat ground
+ * (normal up, no rim) and samples the shadow map once at its feet, nudged toward the sun so its own cast shadow
+ * does not darken it. Composes with later onBeforeCompile patches (UV rects, feet depth).
+ */
+export function gouacheSprite(params: THREE.MeshLambertMaterialParameters): THREE.MeshLambertMaterial {
+  const m = new THREE.MeshLambertMaterial(params);
+  const sun = WORLD_LIGHT.sunDir;
+  const nudge = `vec3(${(sun.x * 70).toFixed(2)}, 18.0, ${(sun.z * 70).toFixed(2)})`;
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, GOUACHE_UNI);
+    sh.vertexShader = sh.vertexShader.replace(
+      '#include <worldpos_vertex>',
+      `#include <worldpos_vertex>
+      #if defined( USE_SHADOWMAP )
+        vec4 gFoot = vec4(0.0, 0.0, 0.0, 1.0);
+        #ifdef USE_INSTANCING
+          gFoot = instanceMatrix * gFoot;
+        #endif
+        worldPosition = vec4((modelMatrix * gFoot).xyz + ${nudge}, 1.0);
+      #endif`,
+    );
+    sh.fragmentShader = GOUACHE_HEAD.replace('varying vec2 vWorldXZ;', '') +
+      sh.fragmentShader
+        .replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\n  normal = normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz);')
+        .replace('#include <opaque_fragment>', GOUACHE_PAINT.replace('GOUACHE_RIM', '0.0'));
+  };
+  m.customProgramCacheKey = () => 'gouache-sprite';
+  return m;
+}
+
 const outlineMats = new Map<number, THREE.MeshBasicMaterial>();
 /** Inverted hull outline material: back faces pushed out along smooth normals. */
 export function outlineMaterial(thickness: number): THREE.MeshBasicMaterial {

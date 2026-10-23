@@ -2,6 +2,7 @@
 // UV rect (aUvRect) selects the frame. A second, colour-less upright quad facing the sun shares the geometry (so
 // the same frame) and only casts the shadow. Used twice: champions (+ Hark) and minions (separate atlas).
 import * as THREE from 'three';
+import { gouacheSprite } from './materials';
 import type { SnapEntity } from '../sim/snapshot';
 import { Kind } from '../sim/types';
 import { PITCH } from './camera';
@@ -47,8 +48,13 @@ export interface SpriteBatchOptions {
 }
 
 /** Champions by champion id; Hark (Ottilie's wolf) for the big pet. Corvin's keg (hp 1) stays on the placeholder. */
+/** Visual size of champion sprites relative to their baked world size (sim radius unchanged). */
+export const CHAMPION_SCALE = 1.3;
+
 export const CHAMPION_BATCH: SpriteBatchOptions = {
   cap: 24,
+  // champions ~11 % of the screen height like LoL (were ~8 % next to towers, trees and cliffs built at map scale)
+  scaleFor: () => CHAMPION_SCALE,
   ghosts: 12,
   corpseMs: 1800,
   idFor: (e, atlas) => {
@@ -100,7 +106,9 @@ interface Ghost {
 
 /** Selects the frame rect via the instanced `aUvRect` attribute (works for the colour and the depth material). */
 function patchUv(mat: THREE.Material, footDepth = false): void {
-  mat.onBeforeCompile = (s) => {
+  const prev = mat.onBeforeCompile.bind(mat);
+  mat.onBeforeCompile = (s, r) => {
+    prev(s, r);
     s.vertexShader = 'attribute vec4 aUvRect;\n' + s.vertexShader.replace('#include <uv_vertex>', '#include <uv_vertex>\n#ifdef USE_MAP\n\tvMapUv = mix(aUvRect.xy, aUvRect.zw, uv);\n#endif');
     // 2.5D sprites: the whole quad takes the depth of its feet, so a tilted billboard no longer cuts into walls,
     // cliffs and tower bases standing next to it (it is in front of or behind them as a whole, like LoL's units)
@@ -110,7 +118,8 @@ function patchUv(mat: THREE.Material, footDepth = false): void {
         '#include <project_vertex>\nvec4 footPos = vec4(0.0, 0.0, 0.0, 1.0);\n#ifdef USE_INSTANCING\nfootPos = instanceMatrix * footPos;\n#endif\nvec4 footClip = projectionMatrix * modelViewMatrix * footPos;\ngl_Position.z = (footClip.z / footClip.w - 0.0004) * gl_Position.w;',
       );
   };
-  mat.customProgramCacheKey = () => (footDepth ? 'aUvRect-foot' : 'aUvRect');
+  const prevKey = mat.customProgramCacheKey.bind(mat);
+  mat.customProgramCacheKey = () => `${prevKey()}-${footDepth ? 'aUvRect-foot' : 'aUvRect'}`;
 }
 
 export class ChampionSprites {
@@ -150,7 +159,8 @@ export class ChampionSprites {
     this.uv.setUsage(THREE.DynamicDrawUsage);
     geo.setAttribute('aUvRect', this.uv);
     // alphaToCoverage: soft, antialiased sprite edges under MSAA instead of hard alpha-test stair steps
-    const mat = new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5, alphaToCoverage: true, side: THREE.DoubleSide });
+    // lit like the gouache world (warm sun / violet shadow, tower and tree shadows), see materials.ts gouacheSprite
+    const mat = gouacheSprite({ map: tex, alphaTest: 0.5, alphaToCoverage: true, side: THREE.DoubleSide });
     patchUv(mat, true);
     const castMat = new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5, colorWrite: false, depthWrite: false, side: THREE.DoubleSide });
     patchUv(castMat);
@@ -160,6 +170,7 @@ export class ChampionSprites {
     this.vis.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.vis.setColorAt(0, new THREE.Color(1, 1, 1));
     this.vis.frustumCulled = false;
+    this.vis.receiveShadow = true;
     this.vis.count = 0;
     this.cast = new THREE.InstancedMesh(geo, castMat, CAP);
     this.cast.instanceMatrix.setUsage(THREE.DynamicDrawUsage);

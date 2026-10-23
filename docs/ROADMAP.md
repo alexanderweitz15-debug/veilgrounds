@@ -1,15 +1,16 @@
-# Masterplan (Stand 2026-10-16, Abend)
+# Masterplan (Stand 2026-10-23)
 
 Checkliste aller Phasen. `[x]` = fertig und gepusht, `[~]` = teilweise / läuft, `[ ]` = offen.
 Zahlen und Begründungen: [docs/DECISIONS.md](DECISIONS.md) · Bot-Spezifikation: [docs/spec-bots.md](spec-bots.md) ·
 Ist-Zustand mit Screenshots: [docs/IST-ZUSTAND.md](IST-ZUSTAND.md) · Bot-Gehirn: [docs/BRAIN-IST.md](BRAIN-IST.md) · Live: https://alexanderweitz15-debug.github.io/veilgrounds/
 
-## Jetzt in Arbeit
+## Jetzt in Arbeit (max. 3 Agents, Nutzerentscheidung 22.10.)
 | Agent | Aufgabe |
 |---|---|
-| Balance | Seiten-Ungleichgewicht (Blau gewinnt 20/24), Siegquoten je Rang, Lanes auf LoL-Länge kürzen, mehr Terrain an Top-/Botlane, Minions jagen zu lange, Champions gleiten nicht um stehende Verbündete |
-| Sprite-Revision | Analyse anderer Spiele (LoL, Hades, Darkest Dungeon, Dota-2-Art-Guide …) → Überarbeitung aller Champion-, Minion- und Monster-Sprites |
-| Fähigkeiten-Audit | Jede Fähigkeit/Passive aller 26 Champions sichtbar und lesbar: Recast-Anzeige (Isolde Q/E …), Kreise für Renns Klingen, Isoldes Draht, Fallen/Banner/Glocken, Passiv-Symbol + Stapel im HUD |
+| A1 (Opus) | Bot-Gehirn Phase 2: Lane-Verhalten (Harass, Poke, Begegnungen auf Reichweite), Shove vor Recall, dann gemeinsamer CS-Durchgang mit Phase 3 |
+| F (Fable) | Champion-Identität: eigene Lauf-/Idle-/Angriffsanimationen, Cast-Posen und Effekte je Fähigkeit, mehr Dynamik; epische Monster und Camps passend zur Welt |
+| G (Fable) | Spielgefühl + Shop nach docs/IDEAS-FEEL-SHOP.md: Feel-Fixes P1, Item-Schema, Rückgängig, Empfohlen-Ansicht, neue Icons, 40 neue Items, Prägungen Stufe 1 |
+| Lead | Masterplan, Merges, Sprite-Licht/-Größe (erledigt 23.10.), Abnahmen |
 
 ## Offen (Nutzer-Feedback und Messungen)
 - [x] Seiten-Ungleichgewicht: Sim jetzt spiegelsymmetrisch (Test), Bot-Seitenfehler behoben (Ward-Spots, Jungle-Start, Spawn); Seitentausch-Messung Blau 12/24 (DECISIONS „Seiten-Fairness“)
@@ -24,7 +25,7 @@ Ist-Zustand mit Screenshots: [docs/IST-ZUSTAND.md](IST-ZUSTAND.md) · Bot-Gehirn
 - [~] Alle Champions mit sichtbarer, funktionierender Passive → Fähigkeiten-Audit
 - [~] Kills ~34 statt 40–60, erster Turm ~18 min statt 12–16
 - [~] CS der Bots ~40 % von Tabelle A in Partien (allein auf der Lane 5,6–7,8 CS/min; Verluste durch Abwesenheit)
-- [ ] Trainingsplan + Verlauf über mehrere Matches (Phase 5)
+- [x] Trainingsplan + Verlauf über mehrere Matches (Phase 5): Plan im Trainer-Menü, jede Partie ab 1 min im Verlauf (IndexedDB); Kalibrierung noch lokaler Adapter bis A3-API
 - [~] Großes Bot-Gehirn-Rework (docs/BRAIN-REWORK.md; Stand 2026-10-23, main 983e289). Alles auf main; im Spiel nur über den Beta-Schalter „Neues Bot-Gehirn" (Einstellungen, Standard aus): Reflex-Schicht + Nutzenmodell + Aufmerksamkeitsmodell zusammen; Standard-Spiel bit-identisch zum alten Gehirn:
   - [x] Phase 0 Messbasis (A1): bot-sim `--report`, csLossByCause, `--variance=0`, `--scenario=laneAlone`, `--jobs=N` (parallel, ~3-4x schneller), `--brain=new`
   - [x] Phase 1 Reflex-Schicht + Angriffs-Scheduler (A1): nach Nachkalibrierung für Hitbox 65 alle Seeds über dem Gate (Lane allein Iron 79,7 / Gold 95,7 / Challenger 101,3; Ziel 70/88/100), Tests 1-4/11/12 grün; offen: Reflex-Kosten unter Last 0,15 ms (allein 0,04; Ziel 0,05), Test 3 nur vereinfacht
@@ -45,7 +46,7 @@ Ist-Zustand mit Screenshots: [docs/IST-ZUSTAND.md](IST-ZUSTAND.md) · Bot-Gehirn
 - [~] Agent B: B1–B6 + Hitbox auf main; offen: B5-Reste laut b.md (Dash-Flag `dashing` für D), B7 Ladezeit (gebackene Atlanten) → an D übergeben (Lead 19.10.); S-Messung: Spielstart 10,4 s kalt / 7,0 s warm (Ziel < 5 s warm)
 - [ ] Agent C offen: C5 Lobby (Prägungen-Editor, Bann-Phase, Rollentausch, Bot-Konfiguration prüfen), C7 Einstellungen (braucht Entscheidung zu src/settings.ts), Shop-Rückgängig (Sim-Befehl, B), „Nochmal" nach Classic (issues.md), Post-Game-Fehlerliste + Spielstil-Skalen (nach A3)
 - [ ] Agent D offen: D1 Fähigkeiten-Anzeige-Audit der 23 Champions (nur Motiv-JSON begonnen, ungetestet), D2 Kampf-Lesbarkeit, D3 Maßstab/Karte, D4 Sprite-Revision (lokaler Stand docs/style/revision pushen), D5 Trainer-Reste (Trainingsplan, Verlauf), D6 Tooltips/Texte; Portrait-Ausschnitte (issues.md)
-- [~] Agent E: Champion „Sev Aschenblick" auf main (Daten, Hooks Nachbild/Q-Finte/Schwarzglut/Trugbild/Augenbann, Fear-CC + `uncleansable`, Trugbild-Pet mit Champion-Look, Sprite-Kit, tests/sev.test.ts, Roster #27); offen: Balance des Glut-Sprungs (sevCasts.ts-Lauf), schwarze Flammen-Optik + Augenbann-Phantome (D), Fear-Symbol, Sounds, Bot-Regeln (issues.md: Finten, Trugbild, Glut im ExchangeEstimate, Fear im Escape-Knoten), Trainer-Pools
+- [x] Agent E: Sev Fassung 3 (Itachi-Look, Feuerball/Krähensturm-AoE, Bannblick, R-Wahl Amaterasu/Susanoo/Tsukuyomi) auf main; Bot-Regeln von A2 umgesetzt (Ult-Wahl, Q-Finte ab Platin, Wegschauen); offen: Bots werfen Fähigkeiten auf Trugbilder (unter Gold), Amaterasu-Brand im ExchangeEstimate, Susanoo als volle Geistfigur (F). Vorgeschichte: Champion „Sev Aschenblick" auf main (Daten, Hooks Nachbild/Q-Finte/Schwarzglut/Trugbild/Augenbann, Fear-CC + `uncleansable`, Trugbild-Pet mit Champion-Look, Sprite-Kit, tests/sev.test.ts, Roster #27); offen: Balance des Glut-Sprungs (sevCasts.ts-Lauf), schwarze Flammen-Optik + Augenbann-Phantome (D), Fear-Symbol, Sounds, Bot-Regeln (issues.md: Finten, Trugbild, Glut im ExchangeEstimate, Fear im Escape-Knoten), Trainer-Pools
 - [x] 5-Minuten-Browserprüfung nach den C-Merges (S, review-2026-10-19.md: 0 Konsolenfehler, 3 kleine Befunde – von C in 6348bef behoben); Beta-Schalter-Prüfung 22.10. (F9 zeigt Intent/Pläne/Auslastung, 0 Konsolenfehler); offen: Screenshot-Abnahme der D-Änderungen durch S im gebauten Spiel
 
 ---

@@ -1,7 +1,7 @@
-// Procedural animation for the 3D humanoids. A pose = FK Euler angles for body/leg/cloth bones + two-bone IK
+﻿// Procedural animation for the 3D humanoids. A pose = FK Euler angles for body/leg/cloth bones + two-bone IK
 // targets for the arms (wrist position authored in bind model space, elbow pole, optional prop aim). Layers:
-// hold (how the champion carries its gear) → locomotion (idle breathing / weight shift, run cycle with arm swing and
-// cloth lag) → action key poses (attack / cast / death / recall, eased between keys). The result is written as local
+// hold (how the champion carries its gear) â†’ locomotion (idle breathing / weight shift, run cycle with arm swing and
+// cloth lag) â†’ action key poses (attack / cast / death / recall, eased between keys). The result is written as local
 // quaternions into the bones; clip switches cross-fade with slerp. Everything runs on preallocated buffers.
 import * as THREE from 'three';
 import type { AttackStyle, CastStyle, Hold } from '../champions/types';
@@ -159,6 +159,13 @@ const HOLDS: Record<Hold, HoldDef> = {
     L: hang(1, 6, 4),
     swing: [0.9, 0.5],
   },
+    cane: { L: hang(1), R: hang(-1), swing: [0.4, 0.6] },
+    port: { L: hang(1), R: hang(-1), swing: [0.5, 0.5] },
+    overhead: { L: hang(1), R: hang(-1), swing: [0.2, 0.2] },
+    jug: { L: hang(1), R: hang(-1), swing: [0.3, 0.5] },
+    palm: { L: hang(1), R: hang(-1), swing: [0.3, 0.3] },
+
+
   fists: {
     L: { t: (L) => [L.shX - 1, L.waist + 3, 18], pole: [0.7, -0.5, -0.8], aim: [0, 0, 1] },
     R: { t: (L) => [-(L.shX - 1), L.waist + 3, 18], pole: [-0.7, -0.5, -0.8], aim: [0, 0, 1] },
@@ -741,4 +748,9 @@ export function solveArm(
   _qInv.copy(_qF).invert();
   outH.copy(_qInv).multiply(_qH);
 }
+
+
+
+
+
 

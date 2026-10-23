@@ -1,0 +1,44 @@
+/* Profile screen (S1, FEATURE-GAP 4.8): src/ui/profileScreen.ts. Same palette as the trainer hub / training plan. */
+.pf { max-height: calc(100vh - 56px); overflow-y: auto; scrollbar-width: thin; }
+.pf-sec { margin: 0 0 16px; padding: 12px 14px; border: 1px solid #2c2c31; background: rgba(255, 255, 255, 0.025); }
+.pf-h { margin: 0 0 8px; font-family: var(--font-label, sans-serif); font-size: 16px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold-hi, #f0e6d2); }
+.pf-empty { color: var(--text-dim, #a09b8c); font-size: 13px; }
+.pf-empty.big { padding: 24px 4px; font-size: 15px; }
+.pf-stats { display: flex; flex-wrap: wrap; gap: 10px 26px; }
+.pf-stat-v { font-family: var(--font-display, Georgia); font-size: 26px; color: var(--gold-hi, #f0e6d2); line-height: 1.1; }
+.pf-stat.good .pf-stat-v, td.good { color: #8fd07a; }
+.pf-stat-l { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim, #a09b8c); }
+.pf-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.pf-chip { padding: 2px 8px; border: 1px solid #3a352a; border-radius: 10px; font-size: 12px; color: #e8dcc0; }
+.pf-est { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.pf-est-rank { font-family: var(--font-display, Georgia); font-size: 26px; color: var(--gold-hi, #f0e6d2); }
+.pf-est-delta { font-size: 14px; color: var(--text-dim, #a09b8c); }
+.pf-est-delta.up { color: #8fd07a; }
+.pf-est-delta.down { color: #d9614c; }
+.pf-est-note { font-size: 12px; color: var(--text-dim, #a09b8c); }
+.pf-trends { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.pf-trend { padding: 8px 10px; border: 1px solid #2c2c31; border-left: 3px solid var(--gold, #c8aa6e); background: rgba(0, 0, 0, 0.2); }
+.pf-trend.cat-farming { border-left-color: #7fbf5a; }
+.pf-trend.cat-economy { border-left-color: #e2c15a; }
+.pf-trend.cat-survival { border-left-color: #d9614c; }
+.pf-trend.cat-fighting { border-left-color: #c77dde; }
+.pf-trend-h { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+.pf-trend-l { color: var(--text-dim, #a09b8c); }
+.pf-trend-r { color: var(--gold-hi, #f0e6d2); }
+.pf-spark { display: block; }
+.pf-grid { stroke: #2c2c31; stroke-width: 1; }
+.pf-spark-line { fill: none; stroke: var(--gold, #c8aa6e); stroke-width: 1.6; }
+.pf-spark-dot { fill: var(--gold-hi, #f0e6d2); }
+.pf-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pf-table th { text-align: right; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim, #a09b8c); padding: 3px 8px; border-bottom: 1px solid #2c2c31; white-space: nowrap; }
+.pf-table td { text-align: right; padding: 4px 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pf-table th.l, .pf-table td.l { text-align: left; }
+.pf-champ { display: flex; align-items: center; gap: 8px; }
+.pf-portrait { display: inline-block; width: 26px; height: 26px; flex: none; border: 1px solid #3a352a; background: #1d1c20 center / cover no-repeat; text-align: center; line-height: 24px; font-size: 12px; color: var(--text-dim, #a09b8c); }
+.pf-mode { font-size: 11px; color: var(--text-dim, #a09b8c); border: 1px solid #3a352a; padding: 0 5px; border-radius: 8px; }
+.pf-date { color: var(--text-dim, #a09b8c); }
+.pf-result.win { color: #8fd07a; font-weight: 600; }
+.pf-result.loss { color: #d9614c; font-weight: 600; }
+.pf-rank { color: var(--gold-hi, #f0e6d2); }
+.pf-matches tbody tr:hover { background: rgba(200, 170, 110, 0.07); }
+@media (max-width: 700px) { .pf-table { font-size: 12px; } .pf-table th, .pf-table td { padding: 3px 4px; } }

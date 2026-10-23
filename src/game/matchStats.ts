@@ -34,6 +34,8 @@ export interface MatchSummary {
   samples: StatSample[];
   deaths: number[];
   kills: number[];
+  /** Own assists at the end (scoreboard row of the own champion; S1 profile). */
+  assists?: number;
   /** Per minute (index = minute): damage dealt to champions, to everything, taken. */
   dealtChamp: number[];
   dealtAll: number[];
@@ -93,6 +95,7 @@ export class MatchStats {
     let lead = 0;
     for (const p of snap.players) lead += p.team === snap.team ? p.itemValue : -p.itemValue;
     const wards = snap.entities.filter((e) => e.kind === Kind.Ward && e.ward && e.alive && e.team === snap.team).length;
+    s.assists = snap.players.find((p) => p.team === snap.team && p.champ === me.champ)?.assists ?? s.assists;
     this.latest = { t: snap.time, cs: me.cs, gold: me.totalGold ?? me.gold, level: me.level, xp: me.xp, lead, wards };
     if (snap.time >= this.nextSample) {
       s.samples.push(this.latest);

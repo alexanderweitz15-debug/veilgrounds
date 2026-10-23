@@ -81,7 +81,7 @@ Stand: 16.10.2026, Agent C (Audit des Codes auf `main` @ `0bbc3d0`). Quelle der 
 | 4.5 | Porträt-Ausschnitte | Kopf im Kachelausschnitt | teilweise | 1 | S | C (+D Sprites) | IST-ZUSTAND §2: Ilvane/Seraphyne angeschnitten. → C5 |
 | 4.6 | Ladebildschirm-Tipps / Lore | Tipps unter den Karten | da | 2 | S | C (Texte D6) | C7 `d8bddf9`: 12 Trainings-Tipps (de/en), wechseln alle 7 s; docs/ist/c7-loading-after.jpg; Test (Tipp-Schlüssel lückenlos). Lore-Texte fehlen (D6). |
 | 4.7 | Spielende-Bildschirm mit Statistik und „Nochmal“ | Sieg/Niederlage → Statistik → Nochmal | da | 3 | S | C | Overlay mit Sieg/Niederlage → Auswertung (Classic ≥ 60 s) mit „Nochmal“ (Lead `fcbf223`); docs/ist/c6-postgame-after-charts.jpg. |
-| 4.8 | Profil mit Verlauf | Match-Historie, Statistik pro Champion | fehlt | 3 | M | C (+D Verlauf) | Treffer für „profile“ sind nur Bot-Profile. D5 baut den Verlauf (IndexedDB); C die Ansicht. |
+| 4.8 | Profil mit Verlauf | Match-Historie, Statistik pro Champion | da | 3 | M | C (+D Verlauf) | S1: Hauptmenü „Profil“ (`src/ui/profileScreen.ts`, Aggregation `src/game/profile.ts`): Überblick mit Siegquote/KDA/Serien, Rang-Einschätzung im Verlauf (Mittel der letzten 5 Partien, Linie je Kategorie über `calibrateMatch` pro Eintrag), Tabelle pro Champion (Partien, Siegquote, KDA, CS/min, Gold/min), Liste der letzten 40 Partien. Assists neu im Verlauf (`MatchRecord.assists`). Test tests/profile.test.ts; Screenshots docs/ist/s1-profile-before.jpg, s1-profile-1.jpg, s1-profile-2.jpg. |
 | 4.9 | Enzyklopädie | (Collection) | da | 2 | – | C | `encyclopedia.ts`; Screenshot `docs/ist/12-enzyklopaedie.jpg`. |
 | 4.10 | Hauptmenü erster Frame | Kein dunkler Frame | teilweise | 1 | S | B (B7) | IST-ZUSTAND §1. |
 

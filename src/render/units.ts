@@ -48,6 +48,7 @@ const MINION_BATCH: SpriteBatchOptions = {
 /** Jungle monsters and plants: one painted sprite per type (small camp members reuse their leader, scaled). */
 const monsterSprite = (e: SnapEntity): { id: string; scale: number } | null =>
   (e.kind === Kind.Monster || e.kind === Kind.Plant) && e.variant ? (MONSTER_SPRITE[e.variant] ?? { id: e.variant, scale: 1 }) : null;
+const EPIC_SCALE: Record<string, number> = { leviathan: 1.2, schleierwaechter: 1.15 };
 const MONSTER_BATCH: SpriteBatchOptions = {
   cap: 40,
   ghosts: 16,
@@ -57,7 +58,12 @@ const MONSTER_BATCH: SpriteBatchOptions = {
     const m = monsterSprite(e);
     return m && atlas.frames[m.id] ? m.id : null;
   },
-  scaleFor: (e) => monsterSprite(e)?.scale ?? 1,
+  // F: drawn 1.3x like the champions (CHAMPION_SCALE), so the authored ratios in monsters.ts hold again (camps
+  // 1.2-1.7x, buffs 2.7x a champion); the epics a little less so the pits still frame them. Sim radius unchanged.
+  scaleFor: (e) => {
+    const m = monsterSprite(e);
+    return (m?.scale ?? 1) * (m && EPIC_SCALE[m.id] !== undefined ? EPIC_SCALE[m.id]! : 1.3);
+  },
 };
 
 /** Ranged attackers recoil at the hit point instead of lunging. */

@@ -58,7 +58,7 @@ h2, h3 { margin: 4px 0; color: #f3d98c; }
 .settings select { background: #2a241e; color: var(--ivory); border: 1px solid var(--brass-dim); padding: 3px; }
 .settings .slider { display: flex; align-items: center; gap: 8px; }
 .settings .slider em { width: 46px; font-style: normal; text-align: right; }
-.binds { display: grid; grid-template-columns: 1fr 120px; gap: 4px 12px; align-items: center; font-size: 13px; }
+.binds { display: grid; grid-template-columns: 1fr 90px 90px 170px; gap: 4px 12px; align-items: center; font-size: 13px; }
 
 /* lobby */
 .champ-card { display: flex; gap: 14px; align-items: center; background: rgba(0, 0, 0, 0.25); padding: 10px; border-radius: 6px; }

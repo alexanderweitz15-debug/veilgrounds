@@ -1,7 +1,8 @@
 // Settings export / import as JSON (C7, FEATURE-GAP 3.13): settings + keybinds in one file. Import accepts only known
 // keys with the type of their default (and known enum values), so a hand-edited or old file cannot break the client.
 import type { Settings } from '../settings';
-import type { Action } from '../input/keybinds';
+import { LEVEL_UP_MODS, SELF_CAST_MODS, type Action } from '../input/keybinds';
+import { CAST_KEYS, CAST_MODES } from '../input/castMode';
 
 export const SETTINGS_FILE_VERSION = 1;
 
@@ -16,6 +17,8 @@ const ENUMS: Partial<Record<keyof Settings, readonly string[]>> = {
   colorMode: ['normal', 'deuteranopia', 'protanopia', 'tritanopia'],
   graphics: ['low', 'medium', 'high'],
   hpBarStyle: ['segmented', 'thousands', 'plain'],
+  selfCastMod: SELF_CAST_MODS,
+  levelUpMod: LEVEL_UP_MODS,
 };
 
 /** Slider ranges (settingsPanel.ts): imported numbers are clamped to them. */
@@ -44,7 +47,7 @@ export function parseSettingsFile(text: string, defaults: Readonly<Settings>, ac
     if (key === 'castModes' && ok) {
       // per-key cast modes: only known keys and modes survive
       const cm: Settings['castModes'] = {};
-      for (const [ck, cv] of Object.entries(v as object)) if (['q', 'w', 'e', 'r'].includes(ck) && ['quick', 'indicator', 'normal'].includes(cv as string)) cm[ck as 'q'] = cv as 'quick';
+      for (const [ck, cv] of Object.entries(v as object)) if ((CAST_KEYS as readonly string[]).includes(ck) && (CAST_MODES as readonly string[]).includes(cv as string)) cm[ck as 'q'] = cv as 'quick';
       out.castModes = cm;
       continue;
     }

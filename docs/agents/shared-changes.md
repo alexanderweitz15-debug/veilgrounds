@@ -448,3 +448,10 @@ For A2 (@A2, owner of recallValue / intents):
    tell me and I will wire it behind a values.json switch.
 4. tests/utilityRecall.test.ts (test 8) runs the utility model with the legacy lane leaf (`runUtilityGame` does not
    pass `{ reflex: true }`). The beta brain passes the same bound (item recalls 0.2-0.4 enemy minions near, n small).
+
+## keybinds
+
+- src/settings.ts: `castModes` type widened to all CastKey; new `selfCastMod`, `levelUpMod` (+ DEFAULTS).
+- src/game/settingsIO.ts: ENUMS for the two modifiers, castModes validation uses CAST_KEYS / CAST_MODES.
+- src/i18n de/en: set.bind*, set.mod.*, set.selfCastMod, set.levelUpMod, set.presetLol*, set.castModeCol, set.modConflict.
+- src/ui/menu.css, style.css: `.binds` grid 4 columns.

@@ -131,7 +131,11 @@ body { font-family: var(--font-body); }
 .settings-panel select { background: #121417; color: var(--gold-hi); border: 1px solid #3c3c41; border-radius: 0; padding: 4px 8px; font-family: var(--font-body); }
 .settings-panel input[type='checkbox'], .settings-panel input[type='range'] { accent-color: var(--gold); }
 .settings-panel input[type='checkbox'] { width: 16px; height: 16px; }
-.settings-panel .binds { grid-template-columns: 1fr 140px; gap: 0 16px; font-size: 14px; }
+.settings-panel .binds { grid-template-columns: 1fr 96px 96px 190px; gap: 0 10px; font-size: 14px; }
+.settings-panel .binds-head { font-family: var(--font-label); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+.settings-panel .binds select { max-width: 190px; }
+.settings-panel .btn.key.conflict { border-color: #c0443a; color: #ff9a8c; }
+.settings-panel .bind-warning { color: #ffb36b; }
 .settings-panel .binds > span { padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); color: #cfc8b6; }
 .settings-panel .btn { background: none; border: 1px solid #3c3c41; border-radius: 0; color: var(--gold-hi); font-family: var(--font-label); letter-spacing: 0.08em; font-weight: 600; }
 .settings-panel .btn:hover { border-color: var(--gold); background: rgba(200, 170, 110, 0.08); }

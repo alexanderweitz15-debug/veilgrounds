@@ -1,0 +1,153 @@
+{
+  "id": "torrik",
+  "name": "Torrik Wetterreiter",
+  "title": { "de": "der Sturmreiter", "en": "the Storm Rider" },
+  "roles": ["jungle"],
+  "archetype": "chain_lightning_bruiser",
+  "botBias": { "aggression": 1, "roam": 2, "objectiveRisk": 1 },
+  "trainingPurpose": { "de": "Kettenblitze lesen, Absitzen als Schwächefenster nutzen.", "en": "Read chain lightning, punish the dismount window." },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 660,
+    "hpGrowth": 108,
+    "hpRegen": 8.5,
+    "hpRegenGrowth": 0.8,
+    "mana": 320,
+    "manaGrowth": 45,
+    "manaRegen": 7,
+    "manaRegenGrowth": 0.6,
+    "ad": 62,
+    "adGrowth": 3.3,
+    "armor": 34,
+    "armorGrowth": 4.6,
+    "mr": 32,
+    "mrGrowth": 2.05,
+    "as": 0.66,
+    "asGrowth": 2.2,
+    "range": 175,
+    "ms": 335,
+    "windup": 0.25,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Wolfsritt", "en": "Wolf Ride" },
+    "desc": {
+      "de": "Auf dem Wolf: +8 % Lauftempo, Q springt auf 2 weitere Ziele, W springt 550. Unter 30 % HP wirft ihn der Wolf ab: Schild (90–350) und Donnerschlag (70–260 magisch, 40 % Slow) um ihn. Zu Fuß: +25 % Angriffstempo, Q springt 3-mal, W springt 350. Wieder aufsitzen nach 30 s oder bei einem Champion-Takedown.",
+      "en": "Mounted: +8% move speed, Q chains to 2 more targets, W leaps 550. Under 30% HP the wolf throws him: shield (90-350) and a thunderclap (70-260 magic, 40% slow) around him. On foot: +25% attack speed, Q chains 3 times, W leaps 350. He remounts after 30 s or on a champion takedown."
+    },
+    "hooks": ["torrik_wolf_ride"]
+  },
+  "abilities": [
+    {
+      "id": "torrik_q",
+      "name": { "de": "Kettenblitz", "en": "Chain Lightning" },
+      "desc": {
+        "de": "Zielgerichtet 650: Blitz auf ein Ziel, springt in 450 auf weitere Gegner (60 % Schaden). Markiert alle Getroffenen 4 s mit Ladung.",
+        "en": "Targeted 650: lightning on one target, chains to more enemies within 450 (60% damage). Marks everything hit with Charge for 4 s."
+      },
+      "type": "targeted",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 650,
+      "cooldown": [8, 7.5, 7, 6.5, 6],
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "speed": 2200,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [60, 95, 130, 165, 200], "ap": 0.6, "bonusAd": 0.4 } },
+        { "kind": "mark", "id": "torrik_charge", "duration": 4 },
+        { "kind": "hook", "id": "torrik_q_chain" }
+      ]
+    },
+    {
+      "id": "torrik_w",
+      "name": { "de": "Wolfssprung", "en": "Wolf Leap" },
+      "desc": {
+        "de": "Sprung 550 (zu Fuß 350): Gegner am Ziel in 220 erleiden Schaden und 30 % Slow 1,5 s.",
+        "en": "Leap 550 (350 on foot): enemies within 220 of the landing take damage and a 30% slow for 1.5 s."
+      },
+      "type": "dash",
+      "castTime": 0.15,
+      "movesWhileCasting": true,
+      "range": 550,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": 45,
+      "costType": "mana",
+      "speed": 1500,
+      "radius": 220,
+      "distance": 550,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [50, 80, 110, 140, 170], "bonusAd": 0.7 } },
+        { "kind": "slow", "pct": 30, "duration": 1.5 },
+        { "kind": "hook", "id": "torrik_w_reach" }
+      ]
+    },
+    {
+      "id": "torrik_e",
+      "name": { "de": "Donnerhuf", "en": "Thunder Hoof" },
+      "desc": {
+        "de": "Kreis 330 um ihn: Schaden und 30 % Slow 1,5 s. Gegner mit Ladung verlieren sie, werden 0,75 s betäubt und erleiden 50 % Zusatzschaden.",
+        "en": "Circle 330 around him: damage and a 30% slow for 1.5 s. Enemies with Charge lose it, are stunned for 0.75 s and take 50% bonus damage."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "movesWhileCasting": false,
+      "range": 0,
+      "cooldown": [12, 11.5, 11, 10.5, 10],
+      "cost": 55,
+      "costType": "mana",
+      "radius": 330,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [70, 110, 150, 190, 230], "ap": 0.5, "bonusAd": 0.3 } },
+        { "kind": "slow", "pct": 30, "duration": 1.5 },
+        { "kind": "hook", "id": "torrik_e_discharge" }
+      ]
+    },
+    {
+      "id": "torrik_r",
+      "name": { "de": "Gewitterfront", "en": "Storm Front" },
+      "desc": {
+        "de": "Sofort Blitzschlag auf alle Gegner in 600, danach 4 s +20 % Lauftempo und alle 0,8 s ein Kettenblitz auf das nächste Ziel (50 % Schaden).",
+        "en": "Instant lightning strike on all enemies within 600, then 4 s of +20% move speed and a chain lightning every 0.8 s at the nearest target (50% damage)."
+      },
+      "type": "self",
+      "castTime": 0.25,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [100, 85, 70],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 600,
+      "duration": 4,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [90, 140, 190], "ap": 0.5, "bonusAd": 0.4 } },
+        { "kind": "mark", "id": "torrik_charge", "duration": 4 },
+        { "kind": "buff", "stat": "ms", "pct": 20, "duration": 4, "target": "self" },
+        { "kind": "hook", "id": "torrik_r_front" }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3: Kettenblitz, Donnerhuf-Betäubung und Sprung sind ein Gank. Level 6: Gewitterfront entscheidet Teamkämpfe.",
+    "en": "Level 3: Chain Lightning, Thunder Hoof stun and Leap make a gank. Level 6: Storm Front decides teamfights."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Blitz und Huf", "en": "Bolt and hoof" }, "sequence": ["Q", "E", "AA"] },
+    { "name": { "de": "Sprung in den Sturm", "en": "Leap into the storm" }, "sequence": ["W", "Q", "E", "R"] },
+    { "name": { "de": "Frontale", "en": "Front line" }, "sequence": ["R", "Q", "AA"] }
+  ],
+  "scores": { "engage": 4, "peel": 1, "range": 2, "scaling": 3, "waveclear": 3, "mobility": 3 },
+  "voiceLines": {
+    "pick": { "de": "Der Himmel grollt. Mein Wolf auch.", "en": "The sky growls. So does my wolf." },
+    "firstBlood": { "de": "Erster Donner.", "en": "First thunder." },
+    "kill": { "de": "Vom Blitz getroffen.", "en": "Struck down." },
+    "death": { "de": "Abgeworfen. Und eingeschlagen.", "en": "Thrown. And struck." },
+    "recall": { "de": "Heim ins Gewitter.", "en": "Back to the storm." },
+    "taunt": { "de": "Du hörst den Donner erst nach dem Blitz.", "en": "You hear the thunder after the bolt." }
+  },
+  "silhouette": "hooded storm rider mounted on a big grey wolf, copper lightning rods on the bracers, wolf pelt cape"
+}

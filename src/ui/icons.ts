@@ -7,6 +7,7 @@ import { championData } from '../sim/champions';
 import { abilityForSlot } from '../data/champions';
 import { championKit } from '../render/champions/atlas';
 import { MOTIF_RULES, abilityTheme } from '../render/abilityTheme';
+import { ITEM_ICON_TABLE, RUNE_ICON_TABLE } from './iconTable';
 
 const S = 64;
 const cache = new Map<string, string>();
@@ -343,33 +344,42 @@ export function itemIcon(id: string): string | null {
   const it = itemById(id);
   if (!it) return null;
   return cached(`item:${id}`, (g) => {
-    const [h0, s] = itemHue(it);
-    const h = (h0 + (idRand(id, 99) - 0.5) * 24 + 360) % 360; // same category, slightly different hue per item
-    paintedBackdrop(g, id, h, s);
+    // G icon rework: motif table first (one silhouette per item), the old regex rules only for ids not listed yet
+    const spec = ITEM_ICON_TABLE[id];
+    const [h0, s0] = spec ? [spec.hue, spec.sat ?? 45] : itemHue(it);
+    const h = spec ? h0 : (h0 + (idRand(id, 99) - 0.5) * 24 + 360) % 360;
+    paintedBackdrop(g, id, h, s0);
     // main object with a drop shadow, then a soft top-left highlight (painted look)
     g.save();
     g.shadowColor = 'rgba(0,0,0,0.6)';
     g.shadowBlur = 4;
     g.shadowOffsetX = 2;
     g.shadowOffsetY = 3;
-    GLYPHS[itemGlyph(it)]!(g, hsl(h, Math.max(s, 55), 64));
+    const glyph = spec ? ITEM_GLYPHS[spec.glyph] ?? GLYPHS.gem! : GLYPHS[itemGlyph(it)]!;
+    glyph(g, hsl(h, Math.max(s0, 55), 64));
     g.restore();
     const hl = g.createRadialGradient(S * 0.3, S * 0.25, 2, S * 0.3, S * 0.25, S * 0.45);
     hl.addColorStop(0, 'rgba(255,250,235,0.28)');
     hl.addColorStop(1, 'rgba(255,250,235,0)');
     g.fillStyle = hl;
     g.fillRect(0, 0, S, S);
-    // element accent badge (bottom right)
-    const acc = ITEM_ACCENT.find(([re]) => re.test(id));
-    if (acc && it.tier !== 'basic') {
+    // passive/active badge (top left, big enough to read at 34 px): from the table, else the old id rules
+    const acc: [string, number] | null = spec ? (spec.accent ? [spec.accent, spec.accentHue ?? h] : null) : (() => {
+      const a = ITEM_ACCENT.find(([re]) => re.test(id));
+      return a && it.tier !== 'basic' ? [a[1], a[2]] : null;
+    })();
+    if (acc) {
       g.save();
-      g.fillStyle = 'rgba(12,9,6,0.82)';
+      g.fillStyle = 'rgba(12,9,6,0.85)';
       g.beginPath();
-      g.arc(48, 48, 12, 0, 7);
+      g.arc(15, 15, 13, 0, 7);
       g.fill();
-      g.translate(37, 37);
+      g.strokeStyle = 'rgba(232,196,90,0.55)';
+      g.lineWidth = 1.5;
+      g.stroke();
+      g.translate(4, 4);
       g.scale(0.34, 0.34);
-      (MOTIF[acc[1]] ?? GLYPHS[acc[1]] ?? GLYPHS.gem)!(g, hsl(acc[2], 85, 64));
+      badgeGlyph(acc[0])(g, hsl(acc[1], 85, 66));
       g.restore();
     }
     tierFrame(g, it.tier, h);
@@ -620,6 +630,331 @@ function GLYPHS_SPARK(g: CanvasRenderingContext2D, c: string, x: number, y: numb
   }
 }
 
+/** Draw `fn` translated to (x, y) and scaled by k (0,0 = the glyph's own top-left of its 64 px cell). */
+function at(g: CanvasRenderingContext2D, fn: Glyph, c: string, x: number, y: number, k: number): void {
+  g.save();
+  g.translate(x, y);
+  g.scale(k, k);
+  fn(g, c);
+  g.restore();
+}
+
+const BLADE = '#dfe4ea';
+const DARK = '#2a2630';
+
+/**
+ * G icon rework: one silhouette per item (src/data/itemIcons.json picks the glyph). Rule of thumb: one object, two
+ * colours + glow, 70 % of the cell, thick ink outline like the champion sprites; readable at 34 px.
+ */
+export const ITEM_GLYPHS: Record<string, Glyph> = {
+  // ---- blades (attack): different silhouettes, not one sword in five colours
+  shortSword: (g, c) => {
+    shape(g, BLADE, () => (g.moveTo(24, 40), g.lineTo(42, 12), g.lineTo(52, 18), g.lineTo(34, 48), g.closePath()));
+    line(g, c, 6, [18, 34, 38, 52]);
+    line(g, WOOD, 5, [27, 44, 16, 55]);
+  },
+  longSword: (g, c) => {
+    line(g, BLADE, 5, [16, 48, 54, 10]);
+    line(g, c, 4, [18, 34, 30, 46]);
+    line(g, WOOD, 4, [22, 42, 10, 54]);
+  },
+  thornBlade: (g, c) => {
+    line(g, BLADE, 6, [18, 46, 46, 18]);
+    for (let k = 0; k < 3; k++) line(g, c, 3, [27 + k * 7, 37 - k * 7, 25 + k * 7, 30 - k * 7]);
+    line(g, '#6a8a3a', 4, [14, 38, 26, 50]);
+    line(g, WOOD, 4, [20, 44, 12, 52]);
+  },
+  whetDagger: (g, c) => {
+    at(g, GLYPHS.dagger!, c, 8, -6, 0.9);
+    shape(g, '#8a8f96', () => g.rect(10, 46, 24, 9), undefined, 2);
+    line(g, '#c9d0d8', 1.5, [14, 50, 30, 50]);
+  },
+  pickaxe: (g, c) => {
+    line(g, WOOD, 5, [32, 56, 32, 24]);
+    shape(g, BLADE, () => (g.moveTo(10, 26), g.quadraticCurveTo(32, 6, 54, 26), g.quadraticCurveTo(32, 18, 10, 26), g.closePath()));
+    g.fillStyle = c;
+    g.fillRect(29, 22, 6, 8);
+  },
+  wingBlade: (g, c) => {
+    line(g, BLADE, 5, [24, 50, 48, 14]);
+    for (const [dy, len] of [[0, 24], [9, 18]] as const)
+      shape(g, c, () => (g.moveTo(12, 24 + dy), g.quadraticCurveTo(16, 10 + dy, 12 + len, 16 + dy), g.quadraticCurveTo(18, 24 + dy, 12, 30 + dy), g.closePath()), undefined, 2);
+    line(g, WOOD, 4, [26, 47, 18, 56]);
+  },
+  bloodDagger: (g, c) => {
+    at(g, GLYPHS.dagger!, c, 0, 0, 1);
+    shape(g, '#d8323c', () => (g.moveTo(44, 32), g.bezierCurveTo(50, 40, 51, 45, 48, 50), g.quadraticCurveTo(44, 54, 40, 50), g.bezierCurveTo(37, 45, 38, 40, 44, 32), g.closePath()), undefined, 2);
+  },
+  brokenBlade: (g, c) => {
+    line(g, BLADE, 6, [18, 46, 33, 31]);
+    line(g, BLADE, 6, [39, 23, 50, 12]);
+    line(g, c, 2.5, [31, 27, 36, 32, 33, 35]);
+    line(g, c, 4, [14, 40, 24, 50]);
+    line(g, WOOD, 4, [20, 44, 12, 52]);
+  },
+  frostBlade: (g, c) => {
+    line(g, '#cfe6f5', 6, [18, 46, 46, 18]);
+    line(g, '#ffffff', 2, [26, 38, 44, 20]);
+    line(g, c, 4, [14, 38, 26, 50]);
+    line(g, WOOD, 4, [20, 44, 12, 52]);
+  },
+  stormBow: (g, c) => {
+    at(g, GLYPHS.bow!, c, 0, 0, 1);
+    shape(g, '#ffe36a', () => (g.moveTo(33, 14), g.lineTo(28, 31), g.lineTo(33, 31), g.lineTo(29, 50), g.lineTo(37, 30), g.lineTo(32, 30), g.closePath()), undefined, 1.5);
+  },
+  bloodCrown: (g, c) => {
+    at(g, GLYPHS.crown!, c, 0, 0, 1);
+    shape(g, '#d8323c', () => (g.moveTo(32, 34), g.bezierCurveTo(37, 40, 38, 44, 35, 48), g.quadraticCurveTo(32, 51, 29, 48), g.bezierCurveTo(26, 44, 27, 40, 32, 34), g.closePath()), undefined, 2);
+  },
+  doubleAxe: (g, c) => {
+    line(g, WOOD, 5, [32, 56, 32, 10]);
+    for (const k of [-1, 1]) shape(g, BLADE, () => (g.moveTo(32, 18), g.quadraticCurveTo(32 + k * 26, 12, 32 + k * 22, 38), g.quadraticCurveTo(32 + k * 8, 32, 32, 34), g.closePath()));
+    g.fillStyle = c;
+    g.fillRect(29, 20, 6, 14);
+  },
+  chainBall: (g, c) => {
+    for (const [x, y] of [[14, 14], [24, 24]] as const) {
+      g.beginPath();
+      g.ellipse(x, y, 8, 5, Math.PI / 4, 0, 7);
+      g.lineWidth = 6;
+      g.strokeStyle = 'rgba(12,9,6,0.9)';
+      g.stroke();
+      g.lineWidth = 3;
+      g.strokeStyle = METAL;
+      g.stroke();
+    }
+    shape(g, DARK, () => g.arc(42, 42, 12, 0, 7));
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      line(g, c, 2.5, [42 + Math.cos(a) * 11, 42 + Math.sin(a) * 11, 42 + Math.cos(a) * 17, 42 + Math.sin(a) * 17]);
+    }
+  },
+  // ---- magic
+  ring: (g, c) => GLYPHS.ring!(g, c),
+  book: (g, c) => GLYPHS.book!(g, c),
+  knotStaff: (g, c) => {
+    line(g, WOOD, 5, [20, 54, 42, 16]);
+    shape(g, '#7a5230', () => g.arc(31, 35, 5, 0, 7), undefined, 2);
+    shape(g, WOOD, () => g.arc(44, 13, 8, 0, 7));
+    g.fillStyle = c;
+    g.shadowColor = c;
+    g.shadowBlur = 10;
+    g.beginPath();
+    g.arc(44, 13, 4.5, 0, 7);
+    g.fill();
+    g.shadowBlur = 0;
+  },
+  apprenticeRod: (g, c) => {
+    line(g, WOOD, 4, [26, 56, 40, 28]);
+    shape(g, c, () => (g.moveTo(40, 8), g.lineTo(49, 22), g.lineTo(40, 30), g.lineTo(31, 22), g.closePath()));
+    line(g, 'rgba(255,255,255,0.7)', 1.5, [36, 20, 40, 12]);
+  },
+  bowl: (g, c) => {
+    shape(g, '#cfd8e0', () => (g.moveTo(10, 30), g.quadraticCurveTo(32, 60, 54, 30), g.closePath()));
+    line(g, '#8a929c', 2, [16, 30, 48, 30]);
+    shape(g, c, () => (g.moveTo(32, 6), g.lineTo(41, 19), g.lineTo(32, 30), g.lineTo(23, 19), g.closePath()), undefined, 2);
+  },
+  sapphire: (g, c) => {
+    shape(g, '#3e7fe0', () => (g.moveTo(32, 8), g.lineTo(50, 26), g.lineTo(32, 56), g.lineTo(14, 26), g.closePath()));
+    line(g, 'rgba(255,255,255,0.7)', 2, [22, 26, 32, 12]);
+    line(g, c, 2, [16, 26, 48, 26]);
+  },
+  rubyShard: (g, c) => {
+    shape(g, '#d8323c', () => (g.moveTo(28, 8), g.lineTo(46, 20), g.lineTo(40, 54), g.lineTo(22, 44), g.closePath()));
+    line(g, 'rgba(255,255,255,0.6)', 2, [30, 14, 42, 22]);
+    line(g, c, 1.5, [24, 42, 38, 50]);
+  },
+  gear: (g, c) => MOTIF.gear!(g, c),
+  veilStaff: (g, c) => {
+    line(g, WOOD, 5, [18, 54, 38, 22]);
+    at(g, MOTIF.moon!, c, 26, -2, 0.55);
+  },
+  iceCore: (g, c) => {
+    shape(g, '#bfe9ff', () => {
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
+        if (i) g.lineTo(32 + Math.cos(a) * 20, 32 + Math.sin(a) * 20);
+        else g.moveTo(32 + Math.cos(a) * 20, 32 + Math.sin(a) * 20);
+      }
+      g.closePath();
+    });
+    at(g, MOTIF.snow!, c, 18, 18, 0.45);
+  },
+  lens: (g, c) => {
+    line(g, WOOD, 5, [42, 42, 54, 56]);
+    g.beginPath();
+    g.arc(28, 30, 15, 0, 7);
+    g.lineWidth = 8;
+    g.strokeStyle = 'rgba(12,9,6,0.9)';
+    g.stroke();
+    g.lineWidth = 4;
+    g.strokeStyle = GOLD;
+    g.stroke();
+    g.fillStyle = 'rgba(255,240,200,0.35)';
+    g.fill();
+    at(g, MOTIF.flame!, c, 17, 18, 0.36);
+  },
+  chalice: (g, c) => {
+    shape(g, GOLD, () => (g.moveTo(16, 14), g.lineTo(48, 14), g.quadraticCurveTo(46, 36, 32, 38), g.quadraticCurveTo(18, 36, 16, 14), g.closePath()));
+    line(g, GOLD, 4, [32, 38, 32, 50]);
+    shape(g, GOLD, () => g.rect(22, 50, 20, 5), undefined, 2);
+    at(g, MOTIF.bolt!, c, 22, 8, 0.36);
+  },
+  hourglass: (g, c) => GLYPHS.hourglass!(g, c),
+  // ---- defence
+  vest: (g, c) => {
+    shape(g, c, () => (g.moveTo(18, 14), g.lineTo(26, 10), g.lineTo(32, 18), g.lineTo(38, 10), g.lineTo(46, 14), g.lineTo(48, 52), g.lineTo(16, 52), g.closePath()));
+    line(g, 'rgba(12,9,6,0.6)', 2, [32, 20, 32, 50]);
+    for (const y of [26, 34, 42]) line(g, '#e8d7b0', 1.5, [27, y, 37, y + 4]);
+  },
+  chainmail: (g, c) => {
+    shape(g, c, () => (g.moveTo(14, 12), g.lineTo(50, 12), g.lineTo(54, 54), g.lineTo(10, 54), g.closePath()));
+    g.strokeStyle = METAL;
+    g.lineWidth = 1.5;
+    for (let y = 18; y <= 48; y += 8) for (let x = 16 + ((y / 8) % 2) * 4; x <= 48; x += 8) {
+      g.beginPath();
+      g.arc(x, y, 3, 0, 7);
+      g.stroke();
+    }
+  },
+  wallHeart: (g, c) => {
+    shape(g, '#8a8070', () => g.rect(10, 12, 44, 42));
+    g.strokeStyle = 'rgba(12,9,6,0.6)';
+    g.lineWidth = 1.5;
+    for (let y = 22; y < 54; y += 10) {
+      line(g, 'rgba(12,9,6,0.5)', 1.5, [10, y, 54, y]);
+      for (let x = 10 + ((y / 10) % 2) * 11; x < 54; x += 22) line(g, 'rgba(12,9,6,0.5)', 1.5, [x, y, x, y + 10]);
+    }
+    at(g, GLYPHS.heart!, c, 14, 14, 0.56);
+  },
+  cloak: (g, c) => GLYPHS.cloak!(g, c),
+  runeCloak: (g, c) => {
+    GLYPHS.cloak!(g, c);
+    line(g, '#dff6ff', 3, [32, 24, 32, 46]);
+    line(g, '#dff6ff', 3, [25, 31, 39, 41]);
+  },
+  stormRobe: (g, c) => {
+    GLYPHS.cloak!(g, c);
+    at(g, MOTIF.bolt!, '#ffe36a', 20, 20, 0.4);
+  },
+  belt: (g, c) => GLYPHS.belt!(g, c),
+  horn: (g, c) => GLYPHS.horn!(g, c),
+  root: (g, c) => {
+    shape(g, '#8a6a3a', () => g.ellipse(32, 22, 14, 10, 0, 0, 7));
+    line(g, '#8a6a3a', 5, [32, 30, 32, 40, 20, 54]);
+    line(g, '#8a6a3a', 4, [32, 38, 44, 54]);
+    line(g, c, 3, [32, 44, 32, 54]);
+  },
+  relayRing: (g, c) => {
+    g.beginPath();
+    g.arc(32, 32, 18, 0, 7);
+    g.lineWidth = 9;
+    g.strokeStyle = 'rgba(12,9,6,0.9)';
+    g.stroke();
+    g.lineWidth = 5;
+    g.strokeStyle = METAL;
+    g.stroke();
+    at(g, GLYPHS.shield!, c, 18, 18, 0.44);
+  },
+  // ---- support / jungle / consumables
+  lantern: (g, c) => GLYPHS.lamp!(g, c),
+  coinLamp: (g, c) => {
+    at(g, GLYPHS.lamp!, c, 4, -4, 0.85);
+    for (const [x, y] of [[38, 50], [48, 46], [44, 56]] as const) shape(g, GOLD, () => g.arc(x, y, 5, 0, 7), undefined, 1.5);
+  },
+  sunStaff: (g, c) => {
+    line(g, WOOD, 5, [18, 54, 38, 24]);
+    at(g, MOTIF.sun!, c, 24, -2, 0.52);
+  },
+  fang: (g, c) => GLYPHS.fang!(g, c),
+  potion: (g, c) => GLYPHS.potion!(g, c),
+  sealEye: (g, c) => {
+    g.beginPath();
+    g.arc(32, 32, 24, 0, 7);
+    g.lineWidth = 6;
+    g.strokeStyle = 'rgba(12,9,6,0.9)';
+    g.stroke();
+    g.lineWidth = 3;
+    g.strokeStyle = GOLD;
+    g.stroke();
+    at(g, GLYPHS.eye!, c, 10, 10, 0.68);
+  },
+  // ---- boots: five shapes
+  bootFlat: (g, c) => GLYPHS.boot!(g, c),
+  bootWing: (g, c) => {
+    GLYPHS.boot!(g, c);
+    for (const [dy, len] of [[0, 20], [7, 15]] as const)
+      shape(g, '#f2e6c8', () => (g.moveTo(36, 18 + dy), g.quadraticCurveTo(44, 8 + dy, 36 + len, 12 + dy), g.quadraticCurveTo(44, 18 + dy, 36, 24 + dy), g.closePath()), undefined, 2);
+  },
+  bootPlate: (g, c) => {
+    GLYPHS.boot!(g, c);
+    shape(g, METAL, () => g.rect(24, 16, 10, 20), undefined, 2);
+    line(g, '#8a929c', 1.5, [26, 22, 32, 22, 26, 28, 32, 28]);
+  },
+  bootFelt: (g, c) => {
+    GLYPHS.boot!(g, c);
+    shape(g, '#dff6ff', () => g.rect(22, 20, 14, 7), undefined, 2);
+    line(g, '#3a5f8a', 2, [25, 23, 33, 23]);
+  },
+  bootGear: (g, c) => {
+    GLYPHS.boot!(g, c);
+    at(g, MOTIF.gear!, GOLD, 38, 30, 0.34);
+  },
+  // ---- rune keystones and badges
+  arrowBundle: (g, c) => {
+    for (const dx of [-10, 0, 10]) {
+      line(g, WOOD, 3, [32 + dx, 54, 32 + dx, 18]);
+      shape(g, METAL, () => (g.moveTo(32 + dx, 8), g.lineTo(37 + dx, 20), g.lineTo(27 + dx, 20), g.closePath()), undefined, 1.5);
+      line(g, c, 3, [28 + dx, 50, 32 + dx, 54, 36 + dx, 50]);
+    }
+  },
+  fist: (g, c) => {
+    shape(g, c, () => (g.moveTo(16, 30), g.lineTo(46, 30), g.quadraticCurveTo(52, 30, 52, 36), g.lineTo(52, 50), g.quadraticCurveTo(52, 56, 46, 56), g.lineTo(18, 56), g.quadraticCurveTo(12, 56, 12, 50), g.lineTo(12, 34), g.closePath()));
+    for (const x of [20, 30, 40]) shape(g, c, () => g.arc(x, 26, 5, 0, 7), undefined, 2);
+    line(g, 'rgba(12,9,6,0.7)', 2, [18, 40, 46, 40]);
+  },
+  bulb: (g, c) => {
+    g.fillStyle = c;
+    g.shadowColor = c;
+    g.shadowBlur = 12;
+    g.beginPath();
+    g.arc(32, 26, 15, 0, 7);
+    g.fill();
+    g.shadowBlur = 0;
+    g.strokeStyle = 'rgba(12,9,6,0.9)';
+    g.lineWidth = 3;
+    g.stroke();
+    shape(g, METAL, () => g.rect(25, 40, 14, 10), undefined, 2);
+    line(g, '#ffe7a0', 2, [28, 20, 36, 32]);
+  },
+  coin: (g, c) => {
+    shape(g, GOLD, () => g.arc(32, 32, 22, 0, 7));
+    shape(g, c, () => g.arc(32, 32, 12, 0, 7), undefined, 2);
+  },
+  skull: (g, c) => {
+    shape(g, '#efe6cf', () => (g.arc(32, 28, 18, Math.PI, 0), g.lineTo(44, 50), g.lineTo(20, 50), g.closePath()));
+    for (const x of [25, 39]) shape(g, DARK, () => g.arc(x, 30, 5, 0, 7), undefined, 1);
+    line(g, c, 2, [28, 44, 36, 44]);
+  },
+  rune: (g, c) => {
+    line(g, c, 5, [32, 10, 32, 54]);
+    line(g, c, 5, [20, 22, 44, 42]);
+    line(g, c, 5, [44, 22, 20, 42]);
+  },
+  mote: (g, c) => {
+    g.fillStyle = c;
+    g.shadowColor = c;
+    g.shadowBlur = 14;
+    g.beginPath();
+    g.arc(32, 32, 12, 0, 7);
+    g.fill();
+    g.shadowBlur = 0;
+  },
+};
+
+/** Badge motif lookup: ability motifs, basic glyphs, then item glyphs. */
+const badgeGlyph = (key: string): Glyph => MOTIF[key] ?? GLYPHS[key] ?? ITEM_GLYPHS[key] ?? GLYPHS.gem!;
+
 
 function abilityMotif(champ: string, slot: number): [Glyph, number] | null {
   const m = abilityTheme(champ, slot);
@@ -714,11 +1049,18 @@ const RUNE_GLYPHS = ['sword', 'dagger', 'crown', 'shield', 'staff', 'book', 'gem
 /** Rune (Prägung): keystones big glyph + gold frame, minors smaller with bronze frame; hue + glyph from the id. */
 export function runeIcon(id: string, keystone: boolean): string {
   return cached(`rune:${id}`, (g) => {
+    const spec = RUNE_ICON_TABLE[id];
     let hsh = 0;
     for (const ch of id) hsh = (hsh * 31 + ch.charCodeAt(0)) >>> 0;
-    const h = hsh % 360;
+    const h = spec ? spec.hue : hsh % 360;
     backdrop(g, hsl(h, 45, keystone ? 34 : 26), hsl(h, 40, 8));
-    GLYPHS[RUNE_GLYPHS[hsh % RUNE_GLYPHS.length]!]!(g, hsl(h, 75, keystone ? 70 : 62));
+    const glyph = spec ? badgeGlyph(spec.glyph) : GLYPHS[RUNE_GLYPHS[hsh % RUNE_GLYPHS.length]!]!;
+    g.save();
+    g.shadowColor = 'rgba(0,0,0,0.6)';
+    g.shadowBlur = 4;
+    g.shadowOffsetY = 2;
+    glyph(g, hsl(h, 75, keystone ? 70 : 62));
+    g.restore();
     frame(g, keystone ? GOLD : '#8a6a44', keystone ? 4 : 3);
   });
 }

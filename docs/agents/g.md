@@ -45,3 +45,17 @@ tests/inventory.test.ts (3 cases).
 - Screenshots (800x600, the browser pane cannot show 1280 wide): docs/ist/g-shop-before.jpg (= c7-shop-after, main),
   docs/ist/g-shop-recommended-after.jpg (Empfohlen view, next step Langschwert, numbered core items, vsAD/vsAP tags),
   docs/ist/g-shop-detail-after.jpg (Sturmbogen: sell value, "Es fehlen 2300 Gold", stat chips).
+
+## Package 5 - icon rework (items + runes)
+
+- `src/data/itemIcons.json` + `src/ui/iconTable.ts` (canvas-free): one motif per item (glyph, backdrop hue/sat,
+  passive badge + hue) and per rune (glyph, path hue). `src/ui/icons.ts`: 47 new silhouettes in `ITEM_GLYPHS`
+  (blade family with different shapes, staffs/vessels, armour pieces, 5 boot shapes, rune keystones), badge moved
+  top-left and enlarged (readable at 34 px), `runeIcon` uses the table (hash only as fallback for unknown ids).
+  Old regex rules stay as fallback for ids without an entry.
+- tests/itemIcons.test.ts: every item/rune has an entry, every glyph/badge name is drawable (icons.ts source
+  scanned via ?raw), no two items share glyph + hue (before: 28 of 47 in shared groups), no stale entries.
+- Contact sheet: `npx vite --config tools/scratch/vite.icons.config.mjs --port 4397` -> /iconSheet.html;
+  docs/ist/g-icons-after.png (all items at 64/48/34 px, runes at 64/40 px). Before: docs/ist/g-shop-before.jpg.
+- Known weaker pairs for a second pass: Kurzschwert vs Blutdolch (both short blades with a drop), Langschwert vs
+  Kaltstahl (frost glint is the only difference at 34 px), Lederweste.

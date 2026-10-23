@@ -442,3 +442,9 @@ Measure: console lines `champion atlas: ... in N ms` (sheets.ts) cold vs warm, 1
 | src/game/game.ts | lead | minion/monster atlas bakes start 2.5 s after the clock | A4 |
 
 If art/f-identity rewrites `push()`: the three hooks to keep are `castPoseActive(...)` in the cast branch, the `runPh` block for `anim === 'run'`, and the `intent` facing override before `turnToward`.
+
+## 2026-10-23 · Agent G · src/ui/icons.ts (C) · icon rework (lead-assigned)
+
+- `ITEM_GLYPHS` table + `badgeGlyph()`; `itemIcon` / `runeIcon` read `src/data/itemIcons.json` (`src/ui/iconTable.ts`).
+  Ability / summoner / passive / stat / objective icons untouched. New items need a row in itemIcons.json
+  (tests/itemIcons.test.ts fails otherwise).

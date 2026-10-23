@@ -26,6 +26,18 @@ export function portraitUrl(id: string): string | null {
   return url;
 }
 
+/** Highest row with visible pixels in the column band [x0, x1] above `maxY` (maxY when nothing is found). */
+function opaqueTop(src: CanvasImageSource & { width: number; height: number }, x0: number, x1: number, maxY: number): number {
+  const g = (src as HTMLCanvasElement).getContext?.('2d') as CanvasRenderingContext2D | null;
+  if (!g) return maxY;
+  const a = Math.max(0, Math.floor(x0));
+  const w = Math.max(1, Math.min(src.width, Math.ceil(x1)) - a);
+  const h = Math.max(1, Math.min(src.height, Math.ceil(maxY)));
+  const px = g.getImageData(a, 0, w, h).data;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (px[(y * w + x) * 4 + 3]! > 40) return y;
+  return maxY;
+}
+
 function render(id: string): string | null {
   const head = headAnchor(id, YAW, RES);
   if (!head) return null;
@@ -40,10 +52,17 @@ function render(id: string): string | null {
   bg.addColorStop(1, '#16121e');
   g.fillStyle = bg;
   g.fillRect(0, 0, OUT, OUT);
-  // crop: head slightly above centre, shoulders at the bottom
-  const side = head.r * 5.4;
+  // crop: head slightly above centre, shoulders at the bottom; the window grows upward when hair, hats, horns or
+  // headdresses reach above the head sphere (Ilvane, Seraphyne ...), so nothing is cut at the top edge
+  let side = head.r * 5.4;
   const cx = head.x - head.r * 0.2;
-  const cy = head.y + head.r * 0.7;
+  let cy = head.y + head.r * 0.7;
+  const want = opaqueTop(src, cx - head.r * 2.2, cx + head.r * 2.2, head.y) - head.r * 0.3;
+  if (cy - side / 2 > want) {
+    const bottom = cy + side / 2;
+    side = bottom - want;
+    cy = bottom - side / 2;
+  }
   g.imageSmoothingEnabled = true;
   g.imageSmoothingQuality = 'high';
   g.save();

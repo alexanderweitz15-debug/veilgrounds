@@ -1,3 +1,4 @@
+// @ts-nocheck - scratch measurement script (not part of the build)
 // Scratch (idea agent): headless measurements behind docs/IDEAS-FEEL-SHOP.md (pathfinding detours, command latency,
 // collision cost, wind-up quantisation, icon glyph collisions). Run: npx tsx tools/scratch/feelMeasure.ts
 import { createSim, step, type Sim } from '../../src/sim/sim';

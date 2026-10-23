@@ -809,3 +809,69 @@ export function kesselbrutIcon(): string {
     g.fill();
   });
 }
+
+// ------------------------------------------------------------------------------------------------ rank badges (1.7)
+const RANK_ORDER = ['iron', 'bronze', 'silver', 'gold', 'platinum', 'emerald', 'diamond', 'master', 'grandmaster', 'challenger'] as const;
+type RankKey = (typeof RANK_ORDER)[number];
+/** [shield dark, shield light, trim/chevrons] per rank. */
+const RANK_PALETTE: Record<RankKey, [string, string, string]> = {
+  iron: ['#34343a', '#8a8a92', '#c2c2c8'],
+  bronze: ['#4f2d12', '#b9773a', '#e8b07a'],
+  silver: ['#434b59', '#aab5c6', '#eef2f8'],
+  gold: ['#654a0e', '#e0b53e', '#fff1b0'],
+  platinum: ['#0f4d55', '#4cc0c8', '#cdf8f4'],
+  emerald: ['#0b4528', '#2fbf72', '#b8f7d2'],
+  diamond: ['#1b3b73', '#68a4f2', '#e4f2ff'],
+  master: ['#47186a', '#a763dd', '#f0d8ff'],
+  grandmaster: ['#68121e', '#d6424f', '#ffd2d2'],
+  challenger: ['#173f5c', '#f0d068', '#c4f6ff'],
+};
+
+/**
+ * Rank badge for the scoreboard (10 ranks, FEATURE-GAP 1.7): a heater shield in the rank's metal/gem colour. The
+ * emblem grows with the rank: chevrons (1 -> 3), a crest gem from Gold, wings from Diamond, a crown for Challenger.
+ * Unknown ranks fall back to Gold.
+ */
+export function rankIcon(rank: string): string {
+  const found = RANK_ORDER.indexOf(rank as RankKey);
+  const i = found < 0 ? 3 : found;
+  const key = RANK_ORDER[i]!;
+  const [dark, light, trim] = RANK_PALETTE[key];
+  return cached(`rank:${key}`, (g) => {
+    g.clearRect(0, 0, S, S);
+    if (i >= 6) {
+      // wings behind the shield
+      for (const s of [-1, 1]) {
+        const x = (v: number): number => 32 + s * v;
+        shape(g, light, () => (g.moveTo(x(18), 22), g.lineTo(x(30), 8), g.lineTo(x(28), 24), g.lineTo(x(31), 28), g.lineTo(x(26), 34), g.lineTo(x(18), 36), g.closePath()), undefined, 2);
+        shape(g, trim, () => (g.moveTo(x(19), 24), g.lineTo(x(28), 13), g.lineTo(x(26), 25), g.closePath()), 'rgba(12,9,6,0.5)', 1);
+      }
+    }
+    const gr = g.createLinearGradient(0, 8, 0, 58);
+    gr.addColorStop(0, light);
+    gr.addColorStop(1, dark);
+    shape(g, gr as unknown as string, () => (g.moveTo(32, 5), g.lineTo(51, 11), g.lineTo(51, 32), g.quadraticCurveTo(48, 48, 32, 59), g.quadraticCurveTo(16, 48, 13, 32), g.lineTo(13, 11), g.closePath()), 'rgba(12,9,6,0.92)', 3);
+    g.strokeStyle = trim;
+    g.lineWidth = 1.5;
+    g.beginPath();
+    g.moveTo(32, 9);
+    g.lineTo(47, 14);
+    g.lineTo(47, 31);
+    g.quadraticCurveTo(44, 44, 32, 54);
+    g.quadraticCurveTo(20, 44, 17, 31);
+    g.lineTo(17, 14);
+    g.closePath();
+    g.stroke();
+    // chevrons: 1 (Iron-Silver), 2 (Gold-Emerald), 3 (Diamond and up)
+    const n = i < 3 ? 1 : i < 6 ? 2 : 3;
+    const y0 = i >= 3 ? 30 : 26;
+    for (let c = 0; c < n; c++) {
+      const y = y0 + c * 8 - (n - 1) * 3;
+      line(g, trim, 3, [22, y, 32, y + 8, 42, y]);
+    }
+    // crest gem from Gold
+    if (i >= 3) shape(g, trim, () => (g.moveTo(32, 12), g.lineTo(37, 18), g.lineTo(32, 24), g.lineTo(27, 18), g.closePath()), 'rgba(12,9,6,0.85)', 2);
+    // crown for the top rank
+    if (i === 9) shape(g, GOLD, () => (g.moveTo(21, 9), g.lineTo(21, 1), g.lineTo(27, 5), g.lineTo(32, 0), g.lineTo(37, 5), g.lineTo(43, 1), g.lineTo(43, 9), g.closePath()), 'rgba(12,9,6,0.92)', 2);
+  });
+}

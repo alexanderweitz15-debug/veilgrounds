@@ -448,3 +448,10 @@ For A2 (@A2, owner of recallValue / intents):
    tell me and I will wire it behind a values.json switch.
 4. tests/utilityRecall.test.ts (test 8) runs the utility model with the legacy lane leaf (`runUtilityGame` does not
    pass `{ reflex: true }`). The beta brain passes the same bound (item recalls 0.2-0.4 enemy minions near, n small).
+
+## scoreboard-bots (FEATURE-GAP 1.7)
+
+- src/settings.ts: new `scoreBotInfo: boolean` (default false) in `Settings` + `DEFAULTS` (Tab scoreboard Bot-Info column).
+- src/i18n/de.json, en.json: `score.botInfo`, `score.botInfoToggleTip`, `score.botInfoAxis`, `score.rankTip`, and 50 keys
+  `tend.<axis>.<-2..2>` (tendency sentences per playstyle axis).
+- src/ui/icons.ts: new exported `rankIcon(rank)` appended at the end (additive).

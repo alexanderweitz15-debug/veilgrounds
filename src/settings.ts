@@ -51,6 +51,8 @@ export interface Settings {
   attackMoveNearCursor: boolean;
   /** Outline enemy skillshots more strongly (C7 data; drawn by the render telegraphs, agent D). */
   enemySkillshotOutline: boolean;
+  /** Tab scoreboard: extra "Bot-Info" column with the ten playstyle mini-scales per bot (FEATURE-GAP 1.7). */
+  scoreBotInfo: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -79,6 +81,7 @@ const DEFAULTS: Settings = {
   hpBarStyle: 'segmented',
   enemySkillshotOutline: false,
   attackMoveNearCursor: true,
+  scoreBotInfo: false,
 };
 
 /** Default values (settings import validates keys and types against them). */

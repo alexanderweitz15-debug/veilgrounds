@@ -1,0 +1,15 @@
+/* Jungle-Tracker panel (src/ui/jungleTrackerPanel.ts): button + list above the minimap, scales with --ui */
+.jungle-tracker { position: absolute; right: 8px; bottom: calc((292px * var(--mm, 1) + 48px) * var(--ui)); display: flex; flex-direction: column; align-items: flex-end; gap: 4px; pointer-events: auto; }
+html.minimap-left .jungle-tracker { right: auto; left: 8px; align-items: flex-start; }
+.jt-btn { font: 700 12px 'Barlow Condensed', sans-serif; padding: 2px 8px; color: #d8cfb6; background: var(--panel); border: 1px solid var(--brass-dim); border-radius: 4px; cursor: pointer; transform: scale(var(--ui)); transform-origin: bottom right; }
+.jungle-tracker.open .jt-btn { color: var(--brass); border-color: var(--brass); }
+.jt-panel { display: none; width: 240px; padding: 6px 8px; background: var(--panel); border: 1px solid var(--brass-dim); border-radius: 6px; color: #d8cfb6; font: 600 13px 'Barlow Condensed', sans-serif; font-variant-numeric: tabular-nums; transform: scale(var(--ui)); transform-origin: bottom right; }
+.jungle-tracker.open .jt-panel { display: block; }
+.jt-ttl { font-weight: 800; color: var(--brass); margin-bottom: 2px; }
+.jt-grp { margin-top: 4px; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brass-dim); }
+.jt-row { display: flex; justify-content: space-between; gap: 8px; }
+.jt-row .jt-t { color: #a89f88; text-align: right; }
+.jt-row.cleared .jt-t, .jt-row.pending .jt-t { color: #fff6da; }
+.jt-row.empty .jt-t { color: #e4d9b8; font-style: italic; }
+.jt-row.estimate .jt-t { color: #ffb15a; font-style: italic; }
+.jt-opt { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; cursor: pointer; }

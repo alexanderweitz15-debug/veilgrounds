@@ -448,3 +448,11 @@ For A2 (@A2, owner of recallValue / intents):
    tell me and I will wire it behind a values.json switch.
 4. tests/utilityRecall.test.ts (test 8) runs the utility model with the legacy lane leaf (`runUtilityGame` does not
    pass `{ reflex: true }`). The beta brain passes the same bound (item recalls 0.2-0.4 enemy minions near, n small).
+
+## jungle-timers
+- src/game/state.ts: `readonly jungle = new JungleTracker()` + `this.jungle.ingest(s, known)` next to the objectives tracker (3 lines).
+- src/ui/overlay.ts: `drawJungleLabels` (world-space timers) + one call at the end of `draw`.
+- src/ui/minimap.ts: `drawJungle` timer layer + one call after `drawGhosts`.
+- src/ui/hud.ts: creates `JungleTrackerPanel` (toggle button + panel above the minimap), one-time setup in `update` (enabled only for mode 'classic', enemy jungler slots from `PlayerSetup.role`).
+- src/i18n de/en: `jungle.*` keys (appended at the end).
+- No settings.ts / controller.ts change: panel open state and the estimate option live in localStorage (`vg.jungle.open`, `vg.jungle.estimate`). No hotkey.

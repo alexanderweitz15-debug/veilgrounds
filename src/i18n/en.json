@@ -672,5 +672,21 @@
   "plan.streak.win": "Win streak {n} (best {best})",
   "plan.streak.cs": "{n}× CS improved",
   "plan.streak.days": "{n} days in a row",
-  "plan.empty": "No entries yet."
+  "plan.empty": "No entries yet.",
+  "jungle.title": "Jungle tracker",
+  "jungle.btn": "Jungle",
+  "jungle.tip": "Camp timers from what your team has seen",
+  "jungle.own": "Own side",
+  "jungle.enemy": "Enemy side",
+  "jungle.river": "River",
+  "jungle.riverTop": "top",
+  "jungle.riverBottom": "bottom",
+  "jungle.pending": "spawns in {s}",
+  "jungle.cleared": "back in {s}",
+  "jungle.empty": "seen empty, back by {s} at the latest",
+  "jungle.estimate": "Show estimate (enemy jungler seen nearby)",
+  "jungle.estimate.row": "Estimate: taken, back ~{s}",
+  "jungle.up": "up",
+  "jungle.seen": "up (seen {s} ago)",
+  "jungle.unknown": "? (not seen)"
 }

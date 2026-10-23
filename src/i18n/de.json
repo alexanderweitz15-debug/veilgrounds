@@ -672,5 +672,21 @@
   "plan.streak.win": "Siegesserie {n} (Bestwert {best})",
   "plan.streak.cs": "{n}× CS gesteigert",
   "plan.streak.days": "{n} Tage in Folge trainiert",
-  "plan.empty": "Noch keine Einträge."
+  "plan.empty": "Noch keine Einträge.",
+  "jungle.title": "Jungle-Tracker",
+  "jungle.btn": "Dschungel",
+  "jungle.tip": "Camp-Timer aus dem, was dein Team gesehen hat",
+  "jungle.own": "Eigene Seite",
+  "jungle.enemy": "Gegnerische Seite",
+  "jungle.river": "Fluss",
+  "jungle.riverTop": "oben",
+  "jungle.riverBottom": "unten",
+  "jungle.pending": "erscheint in {s}",
+  "jungle.cleared": "zurück in {s}",
+  "jungle.empty": "leer gesehen, spätestens in {s}",
+  "jungle.estimate": "Schätzung zeigen (Gegner-Jungler in der Nähe gesehen)",
+  "jungle.estimate.row": "Schätzung: weg, zurück ~{s}",
+  "jungle.up": "da",
+  "jungle.seen": "da (gesehen vor {s})",
+  "jungle.unknown": "? (nicht gesehen)"
 }

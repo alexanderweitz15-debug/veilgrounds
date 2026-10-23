@@ -10,6 +10,7 @@ import { canvasToSim, mulberry, simToCanvas, MAP_SIZE } from '../render/coords';
 import { REL, INK } from '../render/palette';
 import { organicOutline } from '../render/organic';
 import { CAMPS } from '../sim/systems/jungle';
+import { campLabel } from '../game/jungleTracker';
 
 const SIZE = 280;
 const REDRAW_MS = 66;
@@ -168,6 +169,7 @@ export class Minimap {
       }
     }
     this.drawGhosts(state);
+    this.drawJungle(state);
     // team pings: pulsing rings
     for (const pg of state.pings) {
       const age = (now - pg.at) / 3000;
@@ -196,6 +198,32 @@ export class Minimap {
     });
     ctx.closePath();
     ctx.stroke();
+  }
+
+  /**
+   * Jungle-Tracker timers under each camp (src/game/jungleTracker.ts, only what the team saw): "1:42" exact, "~1:42"
+   * upper bound after finding the camp empty, "~1:42?" optional estimate (orange), "?" unseen. Camps up show nothing.
+   */
+  private drawJungle(state: ClientState): void {
+    if (!state.jungle.enabled) return;
+    const ctx = this.ctx;
+    const d = this.dpr;
+    ctx.font = `bold ${8 * d}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.lineWidth = 2.5 * d;
+    ctx.lineJoin = 'round';
+    for (const c of state.jungle.camps()) {
+      const text = campLabel(c);
+      if (!text) continue;
+      const [x, y] = simToCanvas(c.x, c.y, this.canvas.width);
+      ctx.globalAlpha = c.state === 'unknown' ? 0.6 : 1;
+      ctx.strokeStyle = 'rgba(27,22,18,0.9)';
+      ctx.strokeText(text, x, y + 4 * d);
+      ctx.fillStyle = c.state === 'estimate' ? '#ffb15a' : c.state === 'unknown' ? '#d8d0bc' : '#fff6da';
+      ctx.fillText(text, x, y + 4 * d);
+    }
+    ctx.globalAlpha = 1;
   }
 
   /** Last seen enemy champions: faded, dashed ring with the initial and a "?" (fades out over GHOST_S). */

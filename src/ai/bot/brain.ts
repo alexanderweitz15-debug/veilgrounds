@@ -12,6 +12,7 @@ import { near, ticksOfMs, towerCovering, type View } from './perception';
 import { escapeCast, hpPct, offensiveCast, supportCast } from './combat';
 import { jungle, laneSpot, pushTarget, incomingDps, structureToHit } from './laning';
 import { reflexState, setIntent, type LaneIntent } from '../reflex/state';
+import { chooseWaveState } from '../reflex/wave';
 import { planLastHit } from './lasthit';
 import { shop, spendable } from './shop';
 import { dst, laneProgress, lanePoint } from './geo';
@@ -342,9 +343,6 @@ function currentLane(n: NodeCtx): LaneName {
 /** §4.3: no harass filler from this gank risk on. */
 const HARASS_MAX_GANK_RISK = 0.6;
 
-/** Reflex wave label of the tree's wave state (rework §4.5 names; Phase 2 replaces chooseWave). */
-const REFLEX_WAVE: Record<string, LaneIntent['wave']> = { crash: 'push', default: 'neutral', slowPush: 'slowPush', freeze: 'freeze', hold: 'hold' };
-
 /**
  * Laning decision (rework §3/§4): wave state, gank-risk tier, stand distance and the support's side point become
  * the lane intent; the reflex layer (src/ai/reflex) executes it every tick: last hits as plans, every free attack
@@ -358,13 +356,14 @@ export function laneLeaf(n: NodeCtx): NodeResult {
   const melee = ctx.champ.attackType === 'melee';
   let behind = melee ? 220 : Math.max(250, v.me.stats.range * 0.75);
   const lane = currentLane(n);
-  let wave: { state: string } = ctx.lane || mem.ext.laneOverride ? chooseWave(n, lane) : { state: 'default' };
+  // §4.5 wave states as a target picture (src/ai/reflex/wave.ts); jungler on a lane: push
+  let wave: { state: string } = ctx.lane || mem.ext.laneOverride ? chooseWaveState(n, lane) : { state: 'push' };
   if (wave.state === 'freeze' || wave.state === 'hold') behind += 200;
   // L's §4.1 gank-risk tier: shift back, no push, Diamond+ crash first, stay in Flash reach of the tower
   const safety = laningSafety(mem);
   behind += safety?.targetShift ?? 0;
-  if (safety?.crashFirst) wave = { state: 'crash' };
-  const pushOk = (safety?.allowPush ?? true) && wave.state !== 'freeze' && wave.state !== 'hold';
+  if (safety?.crashFirst) wave = { state: 'push' };
+  const pushOk = safety?.allowPush ?? true; // the wave state limits the filler targets (reflex), not this flag
   let farm = true;
   if (v.enemyMinions.filter((m) => m.atkTarget === v.me.eid).length >= 2) behind += 350;
   let spot = laneSpot(v, ctx, lane, behind);
@@ -398,13 +397,13 @@ export function laneLeaf(n: NodeCtx): NodeResult {
   // a ward is due: yield to the vision node (no lane intent, the reflex layer stays out of the ward walk)
   if (wardDue(n)) return 'failure';
   const wardWalk = mem.wardTrip >= 0 && v.tick - mem.wardTrip < 8 * 30;
-  const slowPushOk = wave.state !== 'slowPush' || v.ownMinions.filter((m) => dst(m, spot) < 1200).length - v.enemyMinions.filter((m) => dst(m, spot) < 1200).length >= 2;
+  
   const intent: LaneIntent = {
     kind: 'laneFarm',
     lane,
-    wave: REFLEX_WAVE[wave.state] ?? 'neutral',
+    wave: (wave.state as LaneIntent['wave']) ?? 'neutral',
     farm: farm && !wardWalk,
-    pushMinions: farm && !wardWalk && pushOk && slowPushOk,
+    pushMinions: farm && !wardWalk && pushOk,
     hitStructures: true,
     // §4.3 harass filler (budget, aggro and CS-window rules in the reflex layer): not under high gank risk
     harass: !wardWalk && (n.pv.gankRisk[lane] ?? 0) < HARASS_MAX_GANK_RISK,

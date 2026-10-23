@@ -12,21 +12,26 @@ docs/agents/plan-api.md (contract + "Changes" 1-12), docs/agents/a1.md (numbers,
 | Runner wiring | src/ai/runner.ts | reflex pass after decisions; per-team reflex view (`buildTeamEntities`, same fog rule + B3 atkTarget masking) through onPerceive; cost split view/reflex |
 | laneLeaf | src/ai/bot/brain.ts | `laneLeaf` = intent for reflex if `reflexState(mem).enabled`, else `laneLeafLegacy`; `think()` no busyUntil for movesWhileCasting casts (B2) |
 | Last-hit prediction | src/ai/bot/lasthit.ts | `predictWindows` (reflex horizon 120 ticks), legacy `planLastHit` unchanged (horizon 75) |
-| Tests | tests/brainReflex.test.ts | tests 1-4, 11, 12 green (b24ea8e); test 5 describe.skip (harass gate) |
+| Wave states | src/ai/reflex/wave.ts | `chooseWaveState` (reflex path only; `reflexState(mem).waveOverride` forces a state for tests) |
+| Tests | tests/brainReflex.test.ts | tests 1-6, 11, 12 (test 6 = freeze at the own tower) |
 
 ## Next steps (in order)
 
-1. Lead decision pending: switch reflex on in src/sim/worker.ts (criterion met: 4 Gold games seeds 1-4, laner
-   CS/min 3.27 on vs 2.90 off; lane-alone means meet the gate).
-2. Phase 2: harass filler is in (reflex only) but far below the gate (a1.md open item 5 has the diagnosis and the
-   next steps); wave states not started. Test 5 is describe.skip until harass meets its gate.
-3. Open items 1-3 and 6 in a1.md.
+1. Reflex is a beta setting in the game ("Neues Bot-Gehirn", SimConfig.botReflex, off by default).
+2. Phase 2 gate (Gold bot-sim): harass autos per laner to 14:00 >= 40 (now 6.6-9.2), kills >= 42, CS/min@15 >= 5.0
+   (now ~3.6). Diagnosis in a1.md "Phase 2"; the harass part is distance (enemy laner rarely near), the rest needs
+   Phase 3/4 (A2). Plates dropped with reflex on (supervisor: 4.0 -> 2.25): structures are a filler only in the
+   push state now - check the push conditions after a crash.
+3. Open items in a1.md.
 
-## How to measure (scratch scripts, not committed; recreate if needed)
+## How to measure
 
 - `npx tsx tools/botSim.ts --scenario=laneAlone --rank=<r> --games=3 --report=<file>` (lane alone).
-- `npx tsx tools/botSim.ts --rank=gold --games=4 --minutes=12 --variance=0 --seed=1 [--reflex=true] --out=x.csv
-  --report=x.md` twice (on/off) and compare the per-cause shares (the report and the CSV columns `loss15_*`).
+- `npx tsx tools/botSim.ts --rank=gold --games=4 --minutes=14 --variance=0 --seed=1 --brain=new --out=x.csv
+  --report=x.md` (new brain = reflex + utility; `--reflex=true` / `--utility=true` alone). Games run in parallel
+  (`--jobs`, default cores - 2): 4 x 14 min in ~2 min wall. Compare per-cause shares (CSV `loss15_*`).
+- Phase 2 levers in code: `harassTarget` / `stanceTarget` / `standPoint` (src/ai/reflex/reflex.ts), wave states
+  (src/ai/reflex/wave.ts), trade opportunity (src/ai/utility/value.ts `tradeValue`, values.json weights).
 
 ## Traps
 

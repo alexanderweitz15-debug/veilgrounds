@@ -219,6 +219,14 @@ Answers to the supervisor review (docs/agents/review-2026-10-16.md) and implemen
     minion by skill, the old tower pre-hit rule; also outside the tower).
 12. **Reflex is opt-in**: `RunnerOptions.reflex` / `SimConfig` none; bot-sim `--reflex=true`; `reflexState(mem).enabled`
     switches `laneLeaf` between the intent path and `laneLeafLegacy`.
+13. **Wave states** (22 Oct): `LaneIntent.wave` now comes from `chooseWaveState` (src/ai/reflex/wave.ts) on the reflex
+    path; `ReflexState.waveState` holds the current state, `waveOverride` forces one (tests / trainer). Filler targets
+    per state (a1.md "Phase 2"). `pushMinions` only carries the gank-risk safety tier now.
+14. **Harass** (22 Oct): `LaneIntent.harass` is set by laneLeaf (gank risk < 0.6, no ward walk); budget and rules in
+    `harassTarget`. `ReflexState.harass.autos` = ticks of thrown autos on enemy champions outside trades (last 60 s);
+    `fillerChamp` marks a harass filler (A3 overlay can show it).
+15. **Aim**: plans aim up to 4 ticks into a kill window (was 2); a believed window that closes before the bot can land
+    clips the early timing error so the plan lands on its last believed tick.
 9. **`ReflexDebug`** type lives in `src/ai/plan.ts`; `BotRunner.debugRows()` returns rows with a `reflex` field
    (lead decision b). Profile fields `planHorizonS, windowPrepPct, standHysteresis, orbwalkPct, harassPerMin,
    harassCsWindowPct` are in all ten profile JSONs and `schema.ts` (lead decision a); `reflexParams(ctx)` reads them

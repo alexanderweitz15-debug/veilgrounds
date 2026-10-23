@@ -22,7 +22,8 @@ describe('hit flash', () => {
     const g = new FlashGate();
     let n = 0;
     for (let t = 0; t < 1000; t += 33) if (g.accept(7, t)) n++;
-    expect(n).toBe(Math.ceil(1000 / READ.hitFlash.minGapMs));
+    // hits arrive on a 33 ms grid: the effective gap is minGapMs rounded up to that grid (120 -> 132, 250 -> 264)
+    expect(n).toBe(Math.ceil(1000 / (Math.ceil(READ.hitFlash.minGapMs / 33) * 33)));
     expect(g.accept(8, 500)).toBe(true);
     expect(flashAmp('minion', false)).toBeLessThan(flashAmp('champion', false));
     expect(flashAmp('champion', true)).toBe(READ.hitFlash.ampReduceMotion);

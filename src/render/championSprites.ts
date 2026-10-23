@@ -8,14 +8,17 @@ import { Kind } from '../sim/types';
 import { PITCH } from './camera';
 import { CAST_FLEX, CAST_RELEASE, dirFromAngle, type Anim, type ChampionAtlas, type Dir } from './champions';
 import { champions } from '../data/champions';
-import { AFTER_MS, afterFrame } from './spriteTiming';
+import { AFTER_MS, afterFrame, castPoseActive, runRate, windupMsOf } from './spriteTiming';
 import { turnToward } from './readability';
 
 /** How a cast plays: directed spells release forward, self buffs flex, dashes lunge. */
 export type CastKind = 'directed' | 'self' | 'dash';
-/** hit flinch: knock-back distance and duration */
+/** hit flinch: knock-back distance (champions a bit more than minions, G/A7) and duration */
 const FLINCH = 9;
+const FLINCH_CHAMPION = 13;
 const FLINCH_MS = 150;
+/** G/A3: a click's intent facing is shown for at most this long, or until the sim facing changes. */
+const INTENT_MS = 300;
 /** fallback wind-ups until one was measured (sim: 0.3 s of the attack period for minions) */
 const WIND_MS: Partial<Record<number, number>> = { [Kind.MinionMelee]: 240, [Kind.MinionCaster]: 450, [Kind.MinionSiege]: 300, [Kind.MinionSuper]: 350 };
 
@@ -87,6 +90,10 @@ interface AnimState {
   /** D2: displayed facing angle (radians, smoothed toward the sim facing) and its last update time; NaN = unset. */
   ang: number;
   angT: number;
+  /** G/A2: run-cycle phase in frames (advanced by the speed-dependent rate, so a rate change never jumps a frame). */
+  runPh: number;
+  /** G/A3: facing the player's own click asked for, shown until the sim facing moves or INTENT_MS pass. */
+  intent: { ang: number; until: number; fx: number; fy: number } | null;
 }
 interface CastState {
   t0: number;
@@ -196,6 +203,16 @@ export class ChampionSprites {
     this.castAt.set(eid, { t0: now, dur: Math.max(0, Math.min(1500, durMs)), kind });
   }
 
+  /**
+   * G/A3: the player ordered a move/attack toward (dx, dy): turn the sprite there right away (render only). The
+   * next snapshot that carries a new sim facing takes over; until then the old sim facing is ignored.
+   */
+  intentFace(eid: number, dx: number, dy: number, now: number): void {
+    const a = this.byEid.get(eid);
+    if (!a || (!dx && !dy)) return;
+    a.intent = { ang: Math.atan2(dy, dx), until: now + INTENT_MS, fx: NaN, fy: NaN };
+  }
+
   /** Took a hit from (sx, sy): short knock-back flinch (rate-limited so damage over time does not jitter). */
   onHit(eid: number, now: number, sx: number, sy: number): void {
     const a = this.byEid.get(eid);
@@ -246,16 +263,23 @@ export class ChampionSprites {
     if (this.n >= this.opts.cap) return;
     let a = this.st.get(e.serial);
     if (!a) {
-      a = { scale: this.opts.scaleFor?.(e) ?? 1, serial: e.serial, seen: now, id, anim: 'idle', t0: now, dir: 'S', phase: 0, x, y, atk0: 0, atkHit: 0, wind: 0, hitT: -1e9, hx: 0, hy: 0, ang: NaN, angT: now };
+      a = { scale: this.opts.scaleFor?.(e) ?? 1, serial: e.serial, seen: now, id, anim: 'idle', t0: now, dir: 'S', phase: 0, x, y, atk0: 0, atkHit: 0, wind: 0, hitT: -1e9, hx: 0, hy: 0, ang: NaN, angT: now, runPh: 0, intent: null };
       this.st.set(e.serial, a);
     }
+    const dtMs = now - a.seen;
     a.seen = now;
     this.byEid.set(e.id, a);
     a.x = x;
     a.y = y;
-    if (e.fx || e.fy) {
+    // G/A3: an intent facing (own click) overrides the sim facing until the sim facing itself changes
+    const it = a.intent;
+    if (it) {
+      if (Number.isNaN(it.fx)) (it.fx = e.fx), (it.fy = e.fy); // sim facing at the time of the click
+      else if (e.fx !== it.fx || e.fy !== it.fy || now > it.until) a.intent = null;
+    }
+    if (a.intent || e.fx || e.fy) {
       // D2: turn through the in-between directions (180 deg in ~80 ms) instead of flipping in one tick
-      const target = Math.atan2(e.fy, e.fx);
+      const target = a.intent ? a.intent.ang : Math.atan2(e.fy, e.fx);
       a.ang = Number.isNaN(a.ang) ? target : turnToward(a.ang, target, now - a.angT);
       a.dir = dirFromAngle(a.ang);
     }
@@ -275,13 +299,14 @@ export class ChampionSprites {
     const ca = this.castAt.get(e.id);
     let anim: Anim = e.moving ? 'run' : 'idle';
     let frame = -1;
-    if (ca && now - ca.t0 < this.castLen(ca) && fr.cast.S.length) {
+    // G/A1: the cast pose ends early when the champion walks (castPoseActive), like the attack backswing below
+    if (ca && fr.cast.S.length && castPoseActive(now - ca.t0, ca.dur, this.castLen(ca), e.moving)) {
       anim = 'cast';
       frame = this.castFrame(ca, now - ca.t0, fr.cast.S.length);
     } else if (e.atkPhase === 1 && nA && a.atk0) {
-      // anticipation spread over the (measured or estimated) wind-up
+      // anticipation spread over the wind-up: from the snapshot (G/A6), else measured, else estimated
       anim = 'attack';
-      const est = a.wind || windEstimate(e);
+      const est = windupMsOf(e.atkStart, e.atkEnd) ?? (a.wind || windEstimate(e));
       frame = hit > 0 ? Math.min(hit - 1, Math.floor(((now - a.atk0) / est) * hit)) : 0;
     } else if (a.atkHit && nA && now - a.atkHit < (nA - hit) * AFTER_MS + 60 && (!e.moving || now - a.atkHit < AFTER_MS)) {
       // strike, follow-through, recover (moving during the backswing cancels it: orbwalking)
@@ -291,12 +316,19 @@ export class ChampionSprites {
     if (anim !== a.anim) {
       a.anim = anim;
       a.t0 = now;
+      if (anim === 'run') a.runPh = (e.id * 97) / 1000 * (this.atlas.rate[id]?.run ?? this.atlas.fps.run);
+    }
+    if (frame < 0 && anim === 'run') {
+      // G/A2: run cycle paced by the distance walked in the last tick (boots faster, slows slower), phase-continuous
+      const base = this.atlas.rate[id]?.run ?? this.atlas.fps.run;
+      a.runPh += (Math.min(100, Math.max(0, dtMs)) / 1000) * runRate(base, Math.hypot(e.x - e.px, e.y - e.py));
+      frame = Math.floor(a.runPh);
     }
     if (frame < 0) frame = Math.floor(((now - a.t0 + e.id * 97) / 1000) * (this.atlas.rate[id]?.[anim] ?? this.atlas.fps[anim]));
     // hit flinch: a quick knock away from the source
     const fk = (now - a.hitT) / FLINCH_MS;
     if (fk >= 0 && fk < 1) {
-      const d = Math.sin(fk * Math.PI) * FLINCH * (1 - fk * 0.5);
+      const d = Math.sin(fk * Math.PI) * (e.kind === Kind.Champion ? FLINCH_CHAMPION : FLINCH) * (1 - fk * 0.5);
       x += a.hx * d;
       y += a.hy * d;
     }

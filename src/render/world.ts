@@ -114,6 +114,11 @@ export class World {
     this.units.setMinionAtlas(atlas);
   }
 
+  /** G/A3: the player's own click toward (dx, dy): the champion sprite turns there before the sim answers. */
+  intentFace(eid: number, dx: number, dy: number, now: number): void {
+    this.units.champs?.intentFace(eid, dx, dy, now);
+  }
+
   onEvent(ev: SimEvent, state: ClientState, now: number): void {
     this.fx.onEvent(ev, state, now);
     if (ev.e === 'cast') {

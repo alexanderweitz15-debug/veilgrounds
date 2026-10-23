@@ -428,3 +428,17 @@ Measure: console lines `champion atlas: ... in N ms` (sheets.ts) cold vs warm, 1
   tradePunishS seconds (on cooldown). New triggers `cs_window` / `punish` in the log; term `opportunity`.
 - values.json weights: `tradeCsWindowBonus` 1.0, `tradePunishBonus` 0.8, `tradePunishS` 3.
 - Reason: user feedback "trade when the enemy misses a cast or last-hits"; only active with the utility flag.
+
+## 2026-10-23 · Agent G (feel/g-shop) · render feel fixes in F's area (src/render/**), kept small, pushed first
+
+| File | Owner | Change | Reason |
+|---|---|---|---|
+| src/render/spriteTiming.ts | D/F | + `castPoseActive`, `runRate`, `windupMsOf` (pure, tested in tests/spriteTiming.test.ts) | docs/IDEAS-FEEL-SHOP.md A1/A2/A6 |
+| src/render/championSprites.ts | F | `push()`: cast pose ends one AFTER_MS after the release while walking (A1); run cycle phase accumulator `runPh` paced by the walked distance `x-px` per tick (A2); wind-up frames from the snapshot's `atkStart/atkEnd` (A6); champion flinch 13 u (A7); `intentFace(eid, dx, dy, now)` + `AnimState.intent` (A3). No change to frames, atlas, draw() | A1/A2/A3/A6/A7 |
+| src/render/readability.json | D | `hitFlash.minGapMs` 250 -> 120 (tests/readability.test.ts reads the value) | A7 |
+| src/render/world.ts | D | + `intentFace()` forwarding to units.champs | A3 |
+| src/input/controller.ts | C | right click / attack-move call `world.intentFace` toward the ordered point | A3 |
+| src/game/state.ts | lead | `EXTRAPOLATE_TICKS 0.5`: late snapshots extrapolate instead of freezing (tests/interp.test.ts) | A4 |
+| src/game/game.ts | lead | minion/monster atlas bakes start 2.5 s after the clock | A4 |
+
+If art/f-identity rewrites `push()`: the three hooks to keep are `castPoseActive(...)` in the cast branch, the `runPh` block for `anim === 'run'`, and the `intent` facing override before `turnToward`.

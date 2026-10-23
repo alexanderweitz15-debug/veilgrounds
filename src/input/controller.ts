@@ -182,11 +182,18 @@ export class InputController {
     }
   }
 
+  /** G/A3: turn the own sprite toward the ordered point right away (render only; the sim facing follows). */
+  private intentFace(x: number, y: number, now: number): void {
+    const me = this.host.state.me();
+    if (me) this.host.world.intentFace(me.id, x - this.host.state.x(me), y - this.host.state.y(me), now);
+  }
+
   private rightClick(now: number, fresh: boolean): void {
     const enemy = this.hoveredEnemy();
     if (enemy && fresh) {
       this.send({ t: 'attack', target: enemy.id });
       this.host.world.fx.clickMarker(enemy.x, enemy.y, true, now);
+      this.intentFace(enemy.x, enemy.y, now);
       this.rightHeld = false;
       return;
     }
@@ -195,6 +202,7 @@ export class InputController {
       if (this.heldAttack !== enemy.id) {
         this.heldAttack = enemy.id;
         this.send({ t: 'attack', target: enemy.id });
+        this.intentFace(enemy.x, enemy.y, now);
       }
       this.lastHoldMove = now;
       return;
@@ -203,6 +211,7 @@ export class InputController {
     const g = this.cursorGround();
     if (!g) return;
     this.send({ t: 'move', x: g.x, y: g.y });
+    this.intentFace(g.x, g.y, now);
     if (fresh) this.host.world.fx.clickMarker(g.x, g.y, false, now);
     this.lastHoldMove = now;
   }
@@ -359,10 +368,12 @@ export class InputController {
     if (enemy) {
       this.send({ t: 'attack', target: enemy.id });
       this.host.world.fx.clickMarker(enemy.x, enemy.y, true, now);
+      this.intentFace(enemy.x, enemy.y, now);
       return;
     }
     this.send(settings.attackMoveNearCursor ? { t: 'attackMove', x: g.x, y: g.y, cursor: true } : { t: 'attackMove', x: g.x, y: g.y });
     this.host.world.fx.clickMarker(g.x, g.y, true, now);
+    this.intentFace(g.x, g.y, now);
   }
 
   /** Quick cast at the cursor; enemy under cursor becomes the target; Alt = self-cast. */

@@ -95,7 +95,10 @@ export class Game {
         this.atlasReady = true;
         this.link.pause(this.state.paused);
       })
-      // minions after the champions (one worker pool at a time); usually already baked on the loading screen
+      // minions after the champions (one worker pool at a time); usually already baked on the loading screen.
+      // G/A4: wait 2.5 s after the clock started so the bakes do not compete with the first snapshots (the first
+      // minute showed snapshot jitter up to 71 ms = frozen frames; minions only appear at 1:05 anyway)
+      .then(() => new Promise<void>((r) => window.setTimeout(r, 2500)))
       .then(() => getMinionAtlas())
       .then((atlas) => this.world.setMinionAtlas(atlas))
       .catch((e) => console.warn('minion atlas failed, keeping placeholder sprites', e))

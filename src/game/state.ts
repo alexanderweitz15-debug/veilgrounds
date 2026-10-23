@@ -8,6 +8,12 @@ const TICK_MS = 1000 / TICK_HZ;
 const SNAP_DIST2 = 250 * 250;
 /** Render this many ticks behind the newest snapshot (absorbs delivery jitter; +16 ms input-to-screen latency). */
 const BUFFER_TICKS = 0.5;
+/**
+ * G/A4: a snapshot later than the buffer no longer freezes the scene: units keep their last tick velocity for up to
+ * this many ticks past the segment end (measured first-minute jitter p99 28 ms, max 71 ms vs. the 17 ms buffer).
+ * Small cap: a unit that stopped on that tick overshoots by at most half a step (~5 u) and settles on the next one.
+ */
+export const EXTRAPOLATE_TICKS = 0.5;
 
 type DeathEvent = Extract<SimEvent, { e: 'death' }>;
 
@@ -114,7 +120,8 @@ export class ClientState {
     this.ix.clear();
     this.iy.clear();
     if (!this.snap) return;
-    const a = this.alpha;
+    // past the segment end: extrapolate a little instead of standing still (a > 1 only when the snapshot is late)
+    const a = this.paused ? this.alpha : Math.min(1 + EXTRAPOLATE_TICKS, Math.max(0, v));
     const b = Math.max(0, v + 1); // position inside the previous segment (tick-2 .. tick-1) while v < 0
     for (const e of this.snap.entities) {
       const dx = e.x - e.px;

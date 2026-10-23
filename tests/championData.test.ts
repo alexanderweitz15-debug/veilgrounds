@@ -56,7 +56,7 @@ describe('champion data', () => {
   it('contains every roster champion except possibly mira', () => {
     const ids = new Set(entries.map((e) => (e.data as ChampionData).id));
     const expected = hasMira ? ROSTER : ROSTER.filter((id) => id !== 'mira');
-    expect([...ids].sort()).toEqual([...expected].sort());
+    for (const id of expected) expect(ids.has(id), `missing ${id}.json`).toBe(true); // later champions are allowed
   });
 
   it.skipIf(!hasMira)('all 27 roster ids are present (needs mira.json from Agent B)', () => {

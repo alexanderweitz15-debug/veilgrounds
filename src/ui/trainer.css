@@ -20,6 +20,7 @@
 .tr-result h2 { margin: 0 0 4px; font-family: var(--font-display, Georgia); color: var(--gold-hi, #f0e6d2); font-weight: 600; }
 .tr-result .tr-grade { font-family: var(--font-display, Georgia); font-size: 64px; line-height: 1; color: var(--gold, #c8aa6e); margin: 8px 0; }
 .tr-result .tr-score { color: var(--text-dim, #a09b8c); margin-bottom: 12px; }
+.tr-result .tr-tip { color: var(--gold, #c8aa6e); font-size: 13px; line-height: 1.45; margin-bottom: 12px; max-width: 360px; }
 .tr-result .row-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
 
 /* right edge, above the minimap (the killfeed sits top left); two button columns keep it short at 1280x720 */

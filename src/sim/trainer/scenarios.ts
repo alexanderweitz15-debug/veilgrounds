@@ -8,21 +8,21 @@ import { query } from 'bitecs';
 import type { Sim } from '../sim';
 import { despawn } from '../sim';
 import { Kind, Lane, Team, sec, type PlayerSetup } from '../types';
-import { grantGold } from '../systems/economy';
-import { buyItem } from '../items/inventory';
+import { grantGold, START_GOLD } from '../systems/economy';
+import { buyItem, itemValue } from '../items/inventory';
 import { champAbil, refreshCooldowns } from '../systems/abilities';
 import { CLOSED, jungleState } from '../systems/jungle';
 import { laneGeo, lanePoint, laneProgress, setLanePath } from '../systems/minions';
 import { scheduleNextWave, spawnWave } from '../systems/waves';
 import { TOWER_RANGE } from '../systems/towers';
 import { spawnProjectile } from '../systems/projectiles';
-import { dealDamage } from '../damage';
+import { dealDamage, kill } from '../damage';
 import { reveal } from '../buffs';
 import type { Pt } from '../map';
 import { autoLevel, grade, place, raiseLevel, runSeconds, type TrainerHud } from './common';
 import type { TrainerPayload } from './dodge';
 
-export const SCENARIO_IDS = ['turret2v1', 'gankEscape', 'towerDive', 'dragonSteal', 'freezeWave', 'protectCarry', 'flashUlt'] as const;
+export const SCENARIO_IDS = ['turret2v1', 'gankEscape', 'towerDive', 'dragonSteal', 'freezeWave', 'protectCarry', 'flashUlt', 'waveCatch', 'baronCall', 'shoveRecall'] as const;
 export type ScenarioId = (typeof SCENARIO_IDS)[number];
 
 /** One champion of the scenario besides the player (slot 0, team 0). `bot: false` = passive champion (no BotRunner). */
@@ -51,8 +51,22 @@ export interface ScenarioInfo {
   minions?: boolean;
   /** Champions get boots + core items (config trainer.items). */
   items?: boolean;
+  /** Enemy champions get only the first n preset items (gold lead scenarios). */
+  foeItems?: number;
   units: ScenarioUnit[];
 }
+
+/** Tuning of the macro scenarios (Phase 7.3). */
+export const WAVE_CATCH = { csGoal: 4, csFull: 8, riskySec: 5, exposeFullSec: 8, jungleReach: 2500 } as const;
+/** allyDps: scripted extra true damage per living ally and second (the allies are passive), never below keepPct HP - the last hits are real. */
+export const BARON_CALL = { goldLead: 4000, level: 16, foeLevel: 15, allyDps: 20, keepPct: 10, collapseDist: 1700 } as const;
+export const SHOVE_RECALL = { gold: 1800, maxLost: 2, minOwnAtRecall: 3, maxFoeAtRecall: 2 } as const;
+/** Score helpers (exported for tests). */
+export const waveCatchScore = (cs: number, exposedSec: number): number =>
+  Math.round(60 * Math.min(1, cs / WAVE_CATCH.csFull) + 40 * (1 - Math.min(1, exposedSec / WAVE_CATCH.exposeFullSec)));
+export const baronScore = (elapsedTicks: number, limitTicks: number, alliesDown: number): number =>
+  Math.max(50, Math.round(100 - (50 * elapsedTicks) / Math.max(1, limitTicks)) - 15 * alliesDown);
+export const shoveScore = (lost: number): number => Math.max(60, 100 - 20 * lost);
 
 const JG = ['grimald', 'nyx', 'lio', 'vessa', 'sev'];
 const MID = ['thessaly', 'renn', 'aurel', 'ilvane', 'sev'];
@@ -102,6 +116,24 @@ export const SCENARIOS: Record<ScenarioId, ScenarioInfo> = {
     id: 'flashUlt', startMin: 8, limitSec: 24, playerRole: 'mid', needSummoner: 'sprung',
     units: [{ slot: 5, team: 1, role: 'adc', champs: ['corvin', 'tobin', 'lysa'], bot: false }],
   },
+  // Wave under the tower while the enemy jungler is visible on the minimap
+  waveCatch: {
+    id: 'waveCatch', startMin: 8, limitSec: 35, playerRole: 'mid', minions: true, items: true,
+    units: [{ slot: 6, team: 1, role: 'jungle', champs: JG, bot: true, summoners: ['sprung', 'bannen'], style: DIVE }],
+  },
+  // 4k gold ahead, enemy jungler dead: take the Schleierwaechter before he is back
+  baronCall: {
+    id: 'baronCall', startMin: 22, limitSec: 90, playerRole: 'jungle', items: true, foeItems: 1,
+    units: [
+      { slot: 1, team: 0, role: 'mid', champs: MID, bot: false },
+      { slot: 3, team: 0, role: 'adc', champs: ADC, bot: false },
+      { slot: 5, team: 1, role: 'jungle', champs: JG, bot: true, summoners: ['sprung', 'bannen'] },
+      { slot: 6, team: 1, role: 'mid', champs: ['thessaly', 'renn', 'aurel', 'ilvane'], bot: true, summoners: ['sprung', 'heilen'], style: { teamplay: 5 } },
+      { slot: 7, team: 1, role: 'adc', champs: ['corvin', 'lysa', 'tobin'], bot: true, summoners: ['sprung', 'heilen'], style: { teamplay: 5 } },
+    ],
+  },
+  // Item gold in the pocket: shove the wave into the enemy tower, then recall
+  shoveRecall: { id: 'shoveRecall', startMin: 8, limitSec: 70, playerRole: 'mid', minions: true, units: [] },
 };
 
 export const isScenarioId = (s: unknown): s is ScenarioId => typeof s === 'string' && (SCENARIO_IDS as readonly string[]).includes(s);
@@ -122,6 +154,9 @@ export interface ScenarioState {
   ally: number;
   foe: number;
   foe2: number;
+  /** All allies / foes of the scenario besides the player (slot order). */
+  allies: number[];
+  foes: number[];
   /** Counters shown in the HUD (insertion order = display order). */
   n: Record<string, number>;
   /** Scenario-specific scheduling: next scripted event tick, shots fired / to fire. */
@@ -184,6 +219,9 @@ export function initScenario(sim: Sim): ScenarioState {
   // only the camps a scenario needs; lane waves only where asked
   for (const c of jungleState(sim).camps) c.spawnAt = CLOSED;
   if (!info.minions) sim.flags.minions = false;
+  const units = info.units.map((u) => eidOfSlot(sim, u.slot));
+  const allies = info.units.map((u, i) => (u.team === 0 ? units[i]! : -1)).filter((e) => e >= 0);
+  const foes = info.units.map((u, i) => (u.team === 1 ? units[i]! : -1)).filter((e) => e >= 0);
   const s: ScenarioState = {
     id,
     start: sim.tick,
@@ -195,6 +233,8 @@ export function initScenario(sim: Sim): ScenarioState {
     ally: -1,
     foe: -1,
     foe2: -1,
+    allies,
+    foes,
     n: {},
     next: 0,
     cs0: 0,
@@ -202,9 +242,6 @@ export function initScenario(sim: Sim): ScenarioState {
     obj: -1,
     hp: [],
   };
-  const units = info.units.map((u) => eidOfSlot(sim, u.slot));
-  const allies = info.units.map((u, i) => (u.team === 0 ? units[i]! : -1)).filter((e) => e >= 0);
-  const foes = info.units.map((u, i) => (u.team === 1 ? units[i]! : -1)).filter((e) => e >= 0);
   s.ally = allies[0] ?? -1;
   s.foe = foes[0] ?? -1;
   s.foe2 = foes[1] ?? -1;
@@ -335,7 +372,78 @@ const SETUP: Record<ScenarioId, (sim: Sim, s: ScenarioState) => void> = {
     s.next = sim.tick + sec(3);
     s.n = { shots: 0, dodged: 0, hits: 0 };
   },
+
+  waveCatch(sim, s) {
+    const g = laneGeo(sim, 0, Lane.Mid);
+    const t = outerTower(sim, 0);
+    const pt = laneProgress(g, t.x, t.y);
+    equip(sim, s.me, 8);
+    place(sim, s.me, ...xy(lanePoint(g, pt + 150)));
+    // a big enemy wave (two waves, the second one a few steps behind) crashes into the tower; no own wave
+    const wave = [...spawnWave(sim, Team.Red, Lane.Mid, false, false), ...spawnWave(sim, Team.Red, Lane.Mid, false, false)];
+    wave.forEach((m, i) => putOnLane(sim, m, g, pt + 450 + Math.floor(i / 3) * 150, ((i % 3) - 1) * 70));
+    scheduleNextWave(sim, sim.tick + sec(120));
+    if (s.foe >= 0) {
+      equip(sim, s.foe, 8);
+      // the jungler waits in the river bush closest to the lane (shown on the minimap), else on the lane flank
+      let best: Pt | null = null;
+      let bestD = Infinity;
+      const ref = lanePoint(g, pt + 2300);
+      for (const b of sim.map.bushes) {
+        const d = len(sub(b, ref));
+        if (d <= 1200 && d < bestD) (bestD = d), (best = b);
+      }
+      place(sim, s.foe, ...xy(best ?? toward(ref, outerTower(sim, 1), 0, 500)));
+      reveal(sim, 0, s.foe, 2);
+    }
+    s.n = { survive: info(s).limitSec, cs: 0, foeDist: 0, exposed: 0, exposedTicks: 0 };
+  },
+  baronCall(sim, s) {
+    const pit = sim.map.objectives.schleierwaechter;
+    const camp = jungleState(sim).camps.find((c) => c.id === 'schleierwaechter');
+    if (camp) camp.spawnAt = sim.tick; // spawns on the first tick
+    const home = outerTower(sim, 0);
+    const away = outerTower(sim, 1);
+    equip(sim, s.me, BARON_CALL.level);
+    place(sim, s.me, ...xy(toward(pit, home, 1000, -150)));
+    s.allies.forEach((a, i) => {
+      equip(sim, a, BARON_CALL.level);
+      place(sim, a, ...xy(toward(pit, home, 800 + i * 120, 250 - i * 400)));
+    });
+    s.foes.forEach((f, i) => {
+      equip(sim, f, BARON_CALL.foeLevel);
+      if (i === 0) kill(sim, f, -1); // the enemy jungler is dead (respawn timer by level and game time)
+      else place(sim, f, ...xy(toward(pit, away, 2700, i === 1 ? -500 : 500)));
+    });
+    // gold lead: the team totals differ by exactly goldLead (earned-gold statistic shown in the HUD)
+    const { Champ } = sim.c;
+    for (const e of [s.me, ...s.allies, ...s.foes]) Champ.totalGold[e] = START_GOLD + itemValue(sim, e);
+    const lead = teamGold(sim, s, 0) - teamGold(sim, s, 1);
+    for (const e of [s.me, ...s.allies]) Champ.totalGold[e] = Champ.totalGold[e]! + (BARON_CALL.goldLead - lead) / (1 + s.allies.length);
+    s.n = { baronHp: 100, goldLead: Math.round(teamGold(sim, s, 0) - teamGold(sim, s, 1)), foeJglIn: 0, foesNear: 0, alliesDown: 0 };
+  },
+  shoveRecall(sim, s) {
+    const g = laneGeo(sim, 0, Lane.Mid);
+    const mid = g.len / 2;
+    equip(sim, s.me, 8);
+    grantGold(sim, s.me, SHOVE_RECALL.gold); // item gold in the pocket: the reason to recall
+    place(sim, s.me, ...xy(lanePoint(g, mid - 500)));
+    // both waves meet in the middle of the lane
+    for (const [team, dir] of [[Team.Blue, -1], [Team.Red, 1]] as const) {
+      spawnWave(sim, team, Lane.Mid, false, false).forEach((m, i) => putOnLane(sim, m, g, mid + dir * (150 + Math.floor(i / 3) * 70), ((i % 3) - 1) * 70));
+    }
+    scheduleNextWave(sim, sim.tick + sec(120));
+    s.n = { foeMinions: 0, ownMinions: 0, lost: 0, recalls: 0, foeAtRecall: 0, ownAtRecall: 0 };
+  },
 };
+
+/** Sum of earned gold of the player's team (team 0) or the enemy team (team 1). */
+function teamGold(sim: Sim, s: ScenarioState, team: 0 | 1): number {
+  const list = team === 0 ? [s.me, ...s.allies] : s.foes;
+  let v = 0;
+  for (const e of list) v += sim.c.Champ.totalGold[e]!;
+  return v;
+}
 
 const xy = (p: Pt): [number, number] => [p.x, p.y];
 const info = (s: ScenarioState): ScenarioInfo => SCENARIOS[s.id];
@@ -498,6 +606,99 @@ const UPDATE: Record<ScenarioId, (sim: Sim, s: ScenarioState, k: Tick) => void> 
     s.n.shots!++;
     s.n.dodged = s.n.shots! - 1 - s.n.hits!;
   },
+  waveCatch(sim, s, k) {
+    const { Champ } = sim.c;
+    const t = outerTower(sim, 0);
+    const foeAlive = alive(sim, s.foe);
+    if (foeAlive) reveal(sim, 0, s.foe, 2); // the jungler is on the minimap the whole time
+    s.n.survive = Math.max(0, (s.limit - (sim.tick - s.start)) / 30);
+    s.n.cs = Champ.cs[s.me]! - s.cs0;
+    s.n.foeDist = foeAlive ? Math.round(dist(sim, s.foe, posOf(sim, s.me))) : 0;
+    // exposed = outside the tower's cover while the jungler is close enough to jump
+    if (alive(sim, s.me) && foeAlive && dist(sim, s.me, t) > TOWER_RANGE - 100 && s.n.foeDist! < WAVE_CATCH.jungleReach) s.n.exposedTicks!++;
+    s.n.exposed = Math.floor(s.n.exposedTicks! / 30);
+    if (k.meDied) return finish(sim, s, false, 'died');
+    const resolved = sim.tick - s.start > sec(4) && minionsOf(sim, Team.Red).length === 0;
+    if (!k.timeUp && !resolved) return;
+    const ok = s.n.cs! >= WAVE_CATCH.csGoal;
+    finish(sim, s, ok, !ok ? 'passive' : s.n.exposed! >= WAVE_CATCH.riskySec ? 'caughtRisky' : 'caught');
+  },
+  baronCall(sim, s, k) {
+    const { Hp, Unit, Champ } = sim.c;
+    const camp = jungleState(sim).camps.find((c) => c.id === 'schleierwaechter');
+    const baron = camp?.members[0]?.eid ?? -1;
+    if (!s.ready && alive(sim, baron)) {
+      s.ready = true;
+      s.obj = baron;
+    }
+    if (alive(sim, baron)) {
+      reveal(sim, 0, baron, 2); // the pit is warded: HP bar visible
+      s.n.baronHp = Math.round((100 * Hp.cur[baron]!) / Math.max(1, Hp.max[baron]!));
+      // the allies hit the Schleierwaechter (passive champions get the order again when they lost the target)
+      if (sim.tick % 30 === 0 && Hp.cur[baron]! > (Hp.max[baron]! * BARON_CALL.keepPct) / 100) {
+        const dps = s.allies.filter((a) => alive(sim, a)).length * BARON_CALL.allyDps;
+        if (dps > 0) dealDamage(sim, -1, baron, dps, 'true');
+      }
+      if (sim.tick % 15 === 0) {
+        for (const a of s.allies) {
+          if (!alive(sim, a) || sim.c.Atk.target[a] === baron) continue;
+          sim.c.Atk.target[a] = baron;
+          sim.c.Atk.targetSerial[a] = Unit.serial[baron]!;
+          sim.c.Move.mode[a] = 2;
+        }
+      }
+    }
+    for (const ev of sim.events) if (ev.e === 'death' && ev.kind === Kind.Champion && ev.team === 0 && ev.eid !== s.me) s.n.alliesDown!++;
+    s.n.goldLead = Math.round(teamGold(sim, s, 0) - teamGold(sim, s, 1));
+    const jgl = s.foes[0] ?? -1;
+    s.n.foeJglIn = jgl >= 0 && !alive(sim, jgl) ? Math.max(0, (Champ.respawnAt[jgl]! - sim.tick) / 30) : 0;
+    let near = 0;
+    for (const f of s.foes) if (alive(sim, f) && dist(sim, f, sim.map.objectives.schleierwaechter) < 2500) near++;
+    // the enemy jungler is back: the team collapses on the pit (a shown threat, whatever the bots do on their own)
+    if (jgl >= 0 && alive(sim, jgl) && s.next === 0 && sim.tick > s.start + 30) {
+      s.next = sim.tick;
+      s.foes.forEach((f, i) => alive(sim, f) && place(sim, f, ...xy(toward(sim.map.objectives.schleierwaechter, outerTower(sim, 1), BARON_CALL.collapseDist, (i - 1) * 450))));
+    }
+    s.n.foesNear = near;
+    for (const ev of sim.events) {
+      if (ev.e !== 'death' || ev.eid !== s.obj || s.obj < 0) continue;
+      s.n.baronHp = 0;
+      const kt = ev.killer >= 0 ? Unit.team[ev.killer] : -1;
+      if (kt === 1) return finish(sim, s, false, 'baronStolen');
+      if (kt === 0 && !k.meDied) return finish(sim, s, true, s.n.alliesDown! === 0 ? 'baronClean' : 'baronCost');
+    }
+    if (k.meDied) return finish(sim, s, false, 'died');
+    if (k.timeUp) finish(sim, s, false, 'time');
+  },
+  shoveRecall(sim, s, k) {
+    const { Champ } = sim.c;
+    const foes = minionsOf(sim, Team.Red).length;
+    const own = minionsOf(sim, Team.Blue).length;
+    s.n.foeMinions = foes;
+    s.n.ownMinions = own;
+    // own minions that died since the recall began (the price of leaving the wave)
+    if (s.next > 0) for (const ev of sim.events) if (ev.e === 'death' && ev.team === 0 && ev.kind >= Kind.MinionMelee && ev.kind <= Kind.MinionSuper) s.n.lost!++;
+    if (k.meDied) return finish(sim, s, false, 'died');
+    const recalling = Champ.recallAt[s.me]! > 0;
+    const f = fountain(sim, 0);
+    const home = dist(sim, s.me, f) <= f.r + 50;
+    if (recalling && s.next === 0) {
+      // recall started: remember how the wave looked (and restart the loss count)
+      s.next = sim.tick;
+      s.n.recalls!++;
+      s.n.lost = 0;
+      s.n.foeAtRecall = foes;
+      s.n.ownAtRecall = own;
+    } else if (!recalling && s.next > 0) {
+      if (home) {
+        const early = s.n.foeAtRecall! > SHOVE_RECALL.maxFoeAtRecall || s.n.ownAtRecall! < SHOVE_RECALL.minOwnAtRecall;
+        const ok = !early && s.n.lost! <= SHOVE_RECALL.maxLost;
+        return finish(sim, s, ok, early ? 'early' : ok ? 'shoved' : 'lostMinions');
+      }
+      s.next = 0; // recall cancelled (moved, damaged, CC): try again
+    }
+    if (k.timeUp) finish(sim, s, false, s.n.recalls! === 0 ? 'noRecall' : 'time');
+  },
 };
 
 function minionsOf(sim: Sim, team: number): number[] {
@@ -523,22 +724,23 @@ export function scenarioShotHit(sim: Sim, t: number): void {
 
 export function scenarioHud(sim: Sim, s: ScenarioState): TrainerHud {
   const won = s.result === 'won';
-  const hidden = new Set(['samples', 'good']);
+  const hidden = new Set(['samples', 'good', 'exposedTicks', 'foeAtRecall', 'ownAtRecall']);
   const stats: TrainerHud['stats'] = Object.entries(s.n)
     .filter(([k]) => !hidden.has(k))
-    .map(([k, v]) => ({ k: `sc_${k}`, v, fmt: k === 'survive' ? 'sec' : k.endsWith('Pct') || k.endsWith('Hp') ? 'pct' : 'int' }));
+    .map(([k, v]) => ({ k: `sc_${k}`, v, fmt: k === 'survive' || k === 'foeJglIn' ? 'sec' : k.endsWith('Pct') || k.endsWith('Hp') ? 'pct' : 'int' }));
   const t = runSeconds(sim, s.start, s.end);
   // score: goals with a deadline (escape, dive, steal) score faster wins higher; survival goals are pass/fail
   const fast = s.id === 'gankEscape' || s.id === 'towerDive' || s.id === 'dragonSteal';
   const score = !won || s.end < 0 ? 0 : fast ? Math.max(50, Math.round(100 - (50 * (s.end - s.start)) / Math.max(1, s.limit))) : s.id === 'freezeWave' ? s.n.freezePct! : 100;
+  const macro = !won || s.end < 0 ? 0 : s.id === 'waveCatch' ? waveCatchScore(s.n.cs!, s.n.exposed!) : s.id === 'baronCall' ? baronScore(s.end - s.start, s.limit, s.n.alliesDown!) : s.id === 'shoveRecall' ? shoveScore(s.n.lost!) : -1;
   return {
     kind: 'scenario',
     time: t,
     duration: s.limit / 30,
     done: s.end >= 0,
     ...(s.end >= 0 ? { won } : {}),
-    score,
-    grade: s.end < 0 ? '' : won ? grade(score) : 'D',
+    score: macro >= 0 ? macro : score,
+    grade: s.end < 0 ? '' : won ? grade(macro >= 0 ? macro : score) : 'D',
     stats,
     scenario: s.id,
     ...(s.why ? { why: s.why } : {}),

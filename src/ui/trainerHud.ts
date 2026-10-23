@@ -83,6 +83,8 @@ export class TrainerPanel {
     el('h2', '', box, `${this.title} – ${t('trainer.result')}`);
     if (h.why) el('div', 'tr-score', box, t(`scenario.why.${h.why}`));
     if (h.won !== undefined) el('div', 'tr-score', box, h.won ? t('trainer.won') : t('trainer.lost'));
+    // Challenger hint of the scenario (only scenarios that have a tip text)
+    if (h.scenario && t(`scenario.${h.scenario}.tip`) !== `scenario.${h.scenario}.tip`) el('div', 'tr-tip', box, `${t('scenario.tipLabel')}: ${t(`scenario.${h.scenario}.tip`)}`);
     if (h.grade) el('div', 'tr-grade', box, h.grade);
     el('div', 'tr-score', box, this.kind === 'dodge' ? `${t('trainer.stat.survived')}: ${clock(h.score)}` : `${t('trainer.score')}: ${Math.round(h.score)}`);
     const st = el('div', 'tr-stats', box);

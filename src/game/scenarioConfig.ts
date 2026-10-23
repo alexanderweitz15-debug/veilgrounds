@@ -43,7 +43,7 @@ export function scenarioConfig(opts: TrainerOpts, pick: ScenarioPick, rank: Rank
   const trainer: TrainerOpts = { ...opts, scenario: id };
   if (sc.items) {
     const items: Record<string, string[]> = {};
-    for (const p of players) items[String(p.slot)] = presetItems(p.champion);
+    for (const p of players) items[String(p.slot)] = p.team === 1 && sc.foeItems !== undefined ? presetItems(p.champion).slice(0, sc.foeItems) : presetItems(p.champion);
     trainer.items = items;
   }
   return {

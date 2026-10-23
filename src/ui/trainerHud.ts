@@ -3,6 +3,7 @@ import './trainer.css';
 import type { TrainerHud, TrainerStat } from '../sim/trainer';
 import { t } from '../i18n';
 import { settings } from '../settings';
+import { renderDodgeTrend } from './dodgeReview';
 
 export interface TrainerResultActions {
   retry(): void;
@@ -24,7 +25,10 @@ export const clock = (s: number): string => {
 };
 
 export function formatStat(s: TrainerStat): string {
+  if (s.v < 0 && (s.fmt === 'ms' || s.fmt === 'pct')) return '–'; // not measured yet
   switch (s.fmt) {
+    case 'ms':
+      return `${Math.round(s.v)} ms`;
     case 'pct':
       return `${Math.round(s.v)} %`;
     case 'sec':
@@ -90,6 +94,7 @@ export class TrainerPanel {
       el('div', 'k', st, t(`trainer.stat.${s.k}`));
       el('div', 'v', st, statValue(s));
     }
+    if (h.dodge) renderDodgeTrend(box, h, h.time);
     const row = el('div', 'row-buttons', box);
     el('button', 'menu-btn secondary', row, t('menu.quit')).addEventListener('click', () => this.actions.quit());
     el('button', 'menu-btn secondary', row, t('trainer.analysis')).addEventListener('click', () => this.actions.analysis());

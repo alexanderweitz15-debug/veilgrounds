@@ -9,12 +9,16 @@ import { Team, sec } from '../types';
 import { spawnProjectile } from '../systems/projectiles';
 import { ARENA, humanEid, place, randomDir, runSeconds, type TrainerHud } from './common';
 import { scenarioShotHit } from './scenarios';
+import { metricsReport, metricsShotFired, metricsShotHit, metricsTick, metricsZoneHit, newMetrics, type DodgeMetrics, type PlayerObs } from './dodgeMetrics';
+import metricsCfg from './dodgeMetrics.json';
 
 /** Projectile payload of trainer shots (src/sim/systems/projectiles.ts dispatches hits to trainerShotHit). */
 export interface TrainerPayload {
   t: 'trainer';
   flags: string[];
   hit: number[];
+  /** Dodge trainer shots: id in the measurements (dodgeMetrics.ts). */
+  id?: number;
 }
 
 export interface DodgeState {
@@ -30,6 +34,8 @@ export interface DodgeState {
   zones: { x: number; y: number; r: number; at: number }[];
   /** Optional time limit (ticks, 0 = endless). */
   limit: number;
+  /** Reaction / panic / hit-rate measurements and the last hits for the review. */
+  metrics: DodgeMetrics;
 }
 
 const D = {
@@ -61,20 +67,49 @@ export function initDodge(sim: Sim): DodgeState {
     next: sim.tick + GRACE,
     zones: [],
     limit: o.durationSec ? sec(o.durationSec) : 0,
+    metrics: newMetrics(),
   };
 }
 
 const dodgeState = (sim: Sim): DodgeState | undefined => (sim.state.trainer as { dodge?: DodgeState } | undefined)?.dodge;
 
 /** A trainer projectile hit unit `t`. */
-export function trainerShotHit(sim: Sim, t: number): void {
+export function trainerShotHit(sim: Sim, t: number, payload?: TrainerPayload, x = 0, y = 0): void {
   const s = dodgeState(sim);
-  if (s && t === humanEid(sim)) registerHit(sim, s, t);
+  if (s && t === humanEid(sim)) registerHit(sim, s, t, { id: payload?.id, x, y });
   else if (!s) scenarioShotHit(sim, t);
 }
 
-function registerHit(sim: Sim, s: DodgeState, me: number): void {
+/** What the dodge trainer's measurements see of the player this tick (the order is filled in by updateDodge). */
+function observe(sim: Sim, me: number): PlayerObs {
+  const { Pos, Unit, Stats } = sim.c;
+  return { x: Pos.x[me]!, y: Pos.y[me]!, r: Unit.radius[me]!, ms: Stats.ms[me]!, ev: null };
+}
+
+/** The move order or blink the human gave this tick (input ran before the trainer), null if none. */
+function orderOf(sim: Sim, me: number, p: PlayerObs): PlayerObs['ev'] {
+  const { Pos, Move } = sim.c;
+  const slot = sim.config.players.find((q) => q.isHuman)?.slot ?? sim.config.players[0]?.slot;
+  let move = false;
+  let spell = false;
+  for (const c of sim.pending) {
+    if (c.slot !== slot) continue;
+    if (c.cmd.t === 'move') move = true;
+    else if (c.cmd.t === 'cast' || c.cmd.t === 'spell') spell = true;
+  }
+  const jx = Pos.x[me]! - Pos.px[me]!;
+  const jy = Pos.y[me]! - Pos.py[me]!;
+  const lim = p.ms * (1 / 30) * metricsCfg.blinkSteps;
+  if (spell && jx * jx + jy * jy > lim * lim) return 'blink';
+  if (move && Move.mode[me] === 1) return { tx: Move.tx[me]!, ty: Move.ty[me]! };
+  return null;
+}
+
+function registerHit(sim: Sim, s: DodgeState, me: number, by: { id?: number | undefined; x: number; y: number } | { zone: { x: number; y: number; r: number } }): void {
   if (s.end >= 0 || sim.tick < s.start) return;
+  const runT = (sim.tick - s.start) / 30;
+  if ('zone' in by) metricsZoneHit(s.metrics, runT, by.zone, observe(sim, me));
+  else metricsShotHit(s.metrics, runT, by.id, by.x, by.y, observe(sim, me));
   s.hits++;
   const { Hp } = sim.c;
   sim.events.push({ e: 'damage', src: -1, dst: me, amount: Hp.max[me]! / s.lives, type: 'true' });
@@ -106,7 +141,8 @@ function fireShot(sim: Sim, s: DodgeState, me: number, t: number): void {
   const l = Math.sqrt(dx * dx + dy * dy) || 1;
   dx /= l;
   dy /= l;
-  const payload: TrainerPayload = { t: 'trainer', flags: [], hit: [] };
+  const id = metricsShotFired(s.metrics, sim.tick, { x0: ox, y0: oy, dx, dy, speed, width: SHOT_WIDTH, maxDist: SPAWN_R * 2 }, observe(sim, me));
+  const payload: TrainerPayload = { t: 'trainer', flags: [], hit: [], id };
   spawnProjectile(sim, { kind: 1, src: -1, team: Team.Red, x: ox, y: oy, dx, dy, speed, width: SHOT_WIDTH, maxDist: SPAWN_R * 2, payload });
   s.shots++;
 }
@@ -135,7 +171,7 @@ export function updateDodge(sim: Sim, s: DodgeState): void {
     const dx = Pos.x[me]! - z.x;
     const dy = Pos.y[me]! - z.y;
     const r = z.r + Unit.radius[me]!;
-    if (Unit.alive[me] && !Unit.untargetable[me] && dx * dx + dy * dy <= r * r) registerHit(sim, s, me);
+    if (Unit.alive[me] && !Unit.untargetable[me] && dx * dx + dy * dy <= r * r) registerHit(sim, s, me, { zone: z });
   }
   if (s.end >= 0) {
     Hp.cur[me] = Hp.max[me]!;
@@ -147,6 +183,10 @@ export function updateDodge(sim: Sim, s: DodgeState): void {
     s.end = sim.tick;
     return;
   }
+  // measurements: position log, threats, the order given this tick (before this tick's new shot exists)
+  const obs = observe(sim, me);
+  obs.ev = orderOf(sim, me, obs);
+  metricsTick(s.metrics, sim.tick, obs, s.zones);
   if (sim.tick < s.next) return;
   const t = (sim.tick - s.start) / 30;
   const zoneChance = t < 8 ? 0 : s.difficulty === 1 ? 0.25 : 0.35;
@@ -166,6 +206,7 @@ export function dodgeHud(sim: Sim, s: DodgeState): TrainerHud {
   const sTime = S_TIME[s.difficulty - 1]!;
   const g = t >= sTime ? 'S' : t >= (sTime * 2) / 3 ? 'A' : t >= sTime / 2 ? 'B' : t >= sTime / 4 ? 'C' : 'D';
   const fired = s.shots + s.zonesFired;
+  const rep = metricsReport(s.metrics, s.end >= 0);
   return {
     kind: 'dodge',
     time: t,
@@ -180,6 +221,11 @@ export function dodgeHud(sim: Sim, s: DodgeState): TrainerHud {
       { k: 'dodged', v: Math.max(0, fired - s.hits), fmt: 'int' },
       { k: 'difficulty', v: s.difficulty, fmt: 'int' },
       { k: 'rate', v: 30 / dodgeInterval(s.difficulty, t), fmt: 'dec' },
+      { k: 'reaction', v: rep.reactionMs, fmt: 'ms' },
+      { k: 'panic', v: rep.panic, fmt: 'int' },
+      { k: 'unnecessary', v: rep.unnecessary, fmt: 'int' },
+      { k: 'hitRate', v: rep.hitRate, fmt: 'pct' },
     ],
+    dodge: rep,
   };
 }

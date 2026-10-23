@@ -6,6 +6,7 @@ import { champName } from './names';
 import { t } from '../i18n';
 import { clock, formatStat } from './trainerHud';
 import { renderGhostReview } from './ghostReview';
+import { renderDodgeAnalysis, renderDodgeTrend } from './dodgeReview';
 import { recordFromSummary } from '../stats/history';
 import { calibrateMatch, CATEGORY_IDS } from '../stats/rankCalibration';
 
@@ -154,6 +155,11 @@ export function renderPostGame(root: HTMLElement, d: MatchSummary, onBack: () =>
   tile(t('post.deaths'), String(d.deaths.length));
   tile(t('post.dealt'), String(Math.round(sum(d.dealtChamp))));
   tile(t('post.taken'), String(Math.round(sum(d.taken))));
+
+  if (d.trainer?.dodge) {
+    renderDodgeAnalysis(panel, d.trainer.dodge);
+    renderDodgeTrend(panel, d.trainer, d.duration);
+  }
 
   // rank calibration per category (Table A targets): which rank this match plays like - classic / lane games only
   if ((d.mode === 'classic' || d.mode === 'laneOnly') && d.duration >= 300) {

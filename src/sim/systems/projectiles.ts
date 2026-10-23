@@ -185,7 +185,7 @@ function updateHoming(sim: Sim, eid: number, payload: Payload): void {
 
 function hit(sim: Sim, payload: Payload, t: number, x: number, y: number): void {
   if (payload.t === 'auto') resolveAutoHit(sim, payload, t);
-  else if (payload.t === 'trainer') trainerShotHit(sim, t);
+  else if (payload.t === 'trainer') trainerShotHit(sim, t, payload, x, y);
   else resolveAbilityHit(sim, payload, t, x, y);
 }
 

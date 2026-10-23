@@ -68,3 +68,10 @@
 /* Szenario-Trainer: description + goal under the scenario select */
 .tr-sc-desc { grid-column: 1 / -1; color: var(--text-dim, #a09b8c); font-size: 13px; line-height: 1.45; }
 .tr-sc-desc .g { color: var(--gold, #c8aa6e); margin-top: 4px; }
+/* Dodge trainer review (dodgeReview.ts): one small canvas per hit */
+.dg-review { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin: 6px 0 16px; }
+.dg-hit { border: 1px solid #2c2c31; padding: 6px; background: rgba(255, 255, 255, 0.02); }
+.dg-hit canvas { width: 100%; height: auto; display: block; aspect-ratio: 1; }
+.dg-hit .cap { font-size: 12px; color: var(--text-dim, #a09b8c); margin-top: 3px; }
+.dg-trend { margin-top: 10px; }
+.tr-box .dg-trend .tr-stats .v { font-size: 12px; }

@@ -3,13 +3,15 @@
 import type { Sim } from '../sim';
 import { nearestWalkable } from '../map';
 import { canLevelSlot, levelAbility } from '../systems/abilities';
+import type { DodgeReport } from './dodgeMetrics';
 import { CUM_XP, grantXp, MAX_LEVEL } from '../systems/economy';
 
 /** One line of the trainer HUD; the client translates `k` (trainer.stat.<k>) and formats by `fmt`. */
 export interface TrainerStat {
   k: string;
   v: number;
-  fmt: 'int' | 'pct' | 'sec' | 'dec';
+  /** ms: milliseconds; ms and pct show a dash for negative values (not measured yet). */
+  fmt: 'int' | 'pct' | 'sec' | 'dec' | 'ms';
 }
 
 /** Trainer state as the client sees it (Snapshot.trainer). */
@@ -26,6 +28,8 @@ export interface TrainerHud {
   score: number;
   grade: string;
   stats: TrainerStat[];
+  /** Dodge trainer: measurements; the hit review is attached once the run is over. */
+  dodge?: DodgeReport;
   /** Szenario-Trainer: scenario id and why it ended (i18n scenario.why.<why>). */
   scenario?: string;
   why?: string;

@@ -448,3 +448,11 @@ For A2 (@A2, owner of recallValue / intents):
    tell me and I will wire it behind a values.json switch.
 4. tests/utilityRecall.test.ts (test 8) runs the utility model with the legacy lane leaf (`runUtilityGame` does not
    pass `{ reflex: true }`). The beta brain passes the same bound (item recalls 0.2-0.4 enemy minions near, n small).
+
+## dodge-metrics (FEATURE-GAP 7.4)
+
+- `src/sim/systems/projectiles.ts`: `hit()` passes `payload, x, y` to `trainerShotHit` (one line; the dodge trainer needs the shot id and impact point).
+- `src/sim/trainer/common.ts`: `TrainerStat.fmt` gets `'ms'`; `TrainerHud` gets optional `dodge?: DodgeReport`.
+- `src/i18n/de.json` + `en.json`: 32 new keys each, `trainer.stat.{reaction,panic,unnecessary,hitRate}` and `trainer.dodge.*` (appended at the end, same keys in both).
+- `src/stats/history.ts`: `MatchRecord.trainer.metrics?` (optional, old records stay valid), new `trainerMetrics`, `trainerSeries`, `trainerTrend`, `withoutRun`.
+- `src/ui/trainer.css`: `.dg-*` classes appended.

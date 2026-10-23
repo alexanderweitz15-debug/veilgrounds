@@ -211,7 +211,11 @@ export class TeamAI {
     const alive = this.members.filter((m) => !n.snap.players.find((r) => r.slot === m.slot)?.dead).map((m) => m.slot);
     const until = tick + 45 * 30;
     let d: Desire;
-    if (this.rng.chance(pct / 100)) {
+    const roll = this.rng.chance(pct / 100);
+    const local = roll && utilityOn(n.ctx) ? this.localConversion(n, tick, until) : undefined;
+    if (local !== undefined) {
+      d = local ?? { kind: 'idle', score: 1, x: 0, y: 0, slots: [], reason: 'won skirmish: no conversion (nothing in reach)', from: tick, until: tick + 8 * 30 };
+    } else if (roll) {
       const time = tick / 30;
       const objs = OBJECTIVES.filter((o) => this.aliveFrom[o] - tick < 20 * 30 && (o !== 'schleierwaechter' || time >= 20 * 60) && (o !== 'kesselbrut' || time < HERALD_UNTIL_S));
       if (objs.length) {
@@ -249,6 +253,35 @@ export class TeamAI {
       this.log.push({ tick, bot: n.ctx.slot, node: 'convert', inputs: { obj: d.obj ?? '', alive: alive.length, team: this.team }, scores: { conversionPct: pct }, chosen: what, reason: d.reason });
     }
     return d;
+  }
+
+  /**
+   * §7.4 (utility flag): convert where the fight was - the nearest epic monster alive or the nearest open enemy
+   * structure within macro.convertRange of the fight, taken by the own champions near it (others keep playing).
+   * Returns null when nothing is in reach (logged as none). Fight position: the latest enemy champion deaths the team
+   * saw (fog-filtered events), else the reporting bot.
+   */
+  private localConversion(n: NodeCtx, tick: number, until: number): Desire | null {
+    const deaths = n.snap.events.filter((e) => e.e === 'death' && e.kind === Kind.Champion && e.team !== this.team) as { x: number; y: number }[];
+    const at: Pt = deaths.length ? { x: deaths.reduce((a, e) => a + e.x, 0) / deaths.length, y: deaths.reduce((a, e) => a + e.y, 0) / deaths.length } : { x: n.v.self.x, y: n.v.self.y };
+    const M = VALUES.macro;
+    const near = [n.v.self, ...n.v.allies].filter((a) => dst(a, at) < M.convertGatherRange).map((a) => a.slot);
+    if (!near.length) return null;
+    const time = tick / 30;
+    const epic = OBJECTIVES.filter((o) => this.objectiveAlive(o, tick) && dst(this.map.objectives[o], at) < M.convertRange && (o !== 'schleierwaechter' || time >= 20 * 60) && (o !== 'kesselbrut' || time < HERALD_UNTIL_S));
+    if (epic.length) {
+      const o = epic.sort((a, b) => dst(this.map.objectives[a], at) - dst(this.map.objectives[b], at))[0]!;
+      const p = this.map.objectives[o];
+      return { kind: 'take_objective', obj: o, score: 1, x: p.x, y: p.y, slots: near, reason: 'won skirmish: convert (local)', from: tick, until };
+    }
+    let best: { lane: LaneName; p: Pt; d: number } | null = null;
+    for (const lane of LANES) {
+      const s = this.nextStructure(n, lane);
+      const d = dst(s.p, at);
+      if (d < M.convertRange && (!best || d < best.d)) best = { lane, p: s.p, d };
+    }
+    if (!best) return null;
+    return { kind: 'push_lane', lane: best.lane, score: 1, x: best.p.x, y: best.p.y, slots: near, reason: 'won skirmish: convert to tower (local)', from: tick, until };
   }
 
   private structureDown(p: Pt): boolean {

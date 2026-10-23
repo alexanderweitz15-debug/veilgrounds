@@ -1890,6 +1890,76 @@
           "lebenskraft"
         ]
       }
+    ],
+    "vargrim": [
+      {
+        "id": "standard",
+        "name": {
+          "de": "Standard",
+          "en": "Standard"
+        },
+        "desc": {
+          "de": "Empfohlene Prägungen für normale Matchups.",
+          "en": "Recommended runes for normal matchups."
+        },
+        "keystone": "praezision",
+        "minor": [
+          "angriffstempo",
+          "blutdurst",
+          "adaptiv"
+        ]
+      },
+      {
+        "id": "aggressiv",
+        "name": {
+          "de": "Aggressiv",
+          "en": "Aggressive"
+        },
+        "desc": {
+          "de": "Mehr Schaden für Kill-Lanes und frühe Trades.",
+          "en": "More damage for kill lanes and early trades."
+        },
+        "keystone": "dauerhafter_schaden",
+        "minor": [
+          "adaptiv",
+          "gnadenstoss",
+          "schnellfuss"
+        ]
+      },
+      {
+        "id": "sicher",
+        "name": {
+          "de": "Sicher",
+          "en": "Safe"
+        },
+        "desc": {
+          "de": "Mehr Ausdauer gegen starke Lane-Gegner.",
+          "en": "More sustain against strong lane opponents."
+        },
+        "keystone": "zaehigkeit",
+        "minor": [
+          "zweiter_wind",
+          "blutdurst",
+          "ruestung"
+        ]
+      },
+      {
+        "id": "gegen_magie",
+        "name": {
+          "de": "Gegen Magie",
+          "en": "Vs Magic"
+        },
+        "desc": {
+          "de": "Magieresistenz und Regeneration gegen AP-Lanes.",
+          "en": "Magic resist and regeneration against AP lanes."
+        },
+        "keystone": "praezision",
+        "minor": [
+          "angriffstempo",
+          "magieresistenz",
+          "lebenskraft"
+        ]
+      }
     ]
   }
 }

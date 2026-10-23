@@ -1,4 +1,4 @@
-// Typed champion registry for all 27 roster champions (order = spec roster).
+// Typed champion registry for all roster champions (order = spec roster).
 // `satisfies` checks every JSON file's shape against the widened schema (Json<ChampionData>) at compile time;
 // asChampion() then checks enums, tuple and rank-array lengths and unknown keys at runtime and narrows the type.
 import type { AbilityData, ChampionData } from '../../sim/champions/schema';
@@ -30,6 +30,7 @@ import tobin from './tobin.json';
 import vessa from './vessa.json';
 import wren from './wren.json';
 import sev from './sev.json';
+import vargrim from './vargrim.json';
 
 const raw = {
   ilvane,
@@ -59,6 +60,7 @@ const raw = {
   kiran,
   oda,
   sev,
+  vargrim,
 } satisfies Record<string, Json<ChampionData>>;
 
 export const champions: Record<string, ChampionData> = Object.fromEntries(

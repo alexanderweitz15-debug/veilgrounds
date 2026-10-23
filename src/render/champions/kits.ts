@@ -41,6 +41,7 @@ import {
   trailingThreads,
 } from './props2';
 import { crimsonHem, crowRing, featherMarks, genjutsuEyes, highCollar, longHair, palmCrow, ringNecklace, SEV_CRIMSON } from './sev';
+import { VARGRIM_KIT } from './cavalry';
 import type { Kit } from './types';
 
 const SKIN = { fair: '#e9c6a4', light: '#ddb08a', tan: '#c08a62', brown: '#946244', dark: '#6a4430', pale: '#e8cfba', old: '#d6b094', ash: '#c8b8a8' };
@@ -880,3 +881,5 @@ kit({
   gait: 'light',
   props: [longHair, highCollar, genjutsuEyes, ringNecklace, crimsonHem, featherMarks, palmCrow, crowRing],
 });
+// Vargrim: icon-colour stub; the sprite is painted by the SpriteDrawer in cavalry.ts (atlas.ts DRAWERS)
+kit(VARGRIM_KIT);

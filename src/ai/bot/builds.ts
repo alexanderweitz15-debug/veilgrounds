@@ -24,10 +24,11 @@ import seraphyne from '../../data/builds/seraphyne.json';
 import sev from '../../data/builds/sev.json';
 import thessaly from '../../data/builds/thessaly.json';
 import tobin from '../../data/builds/tobin.json';
+import vargrim from '../../data/builds/vargrim.json';
 import vessa from '../../data/builds/vessa.json';
 import wren from '../../data/builds/wren.json';
 
 export interface BuildVariant { boots: string; core: string[] }
 export interface BuildData { champion: string; starter: string[]; standard: BuildVariant; vsAD?: BuildVariant; vsAP?: BuildVariant }
 
-export const BUILDS: Record<string, BuildData> = { aurel, brom, corvin, dagny, ferris, gorvam, grimald, hagen, harrow, ilvane, isolde, kaelen, kiran, lio, lysa, mira, nyx, oda, oleth, ottilie, renn, seraphyne, sev, thessaly, tobin, vessa, wren };
+export const BUILDS: Record<string, BuildData> = { aurel, brom, corvin, dagny, ferris, gorvam, grimald, hagen, harrow, ilvane, isolde, kaelen, kiran, lio, lysa, mira, nyx, oda, oleth, ottilie, renn, seraphyne, sev, thessaly, tobin, vargrim, vessa, wren };

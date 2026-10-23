@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { step } from '../src/sim/sim';
 import { buildSnapshot } from '../src/sim/snapshot';
 import { MOTIF_GLYPHS, PARTICLE_KIND_IDS, abilityParticles, abilityTheme, motifParticle, tagParticles } from '../src/render/abilityTheme';
+import { champions } from '../src/data/champions';
 import motifData from '../src/render/abilityMotifs.json';
 import type { PlayerSetup } from '../src/sim/types';
 import { CX, CY, makeSim, place } from './combat-helpers';
@@ -13,7 +14,7 @@ const ROSTER = Object.keys((motifData as { champions: Record<string, unknown> })
 
 describe('ability motifs', () => {
   it('covers the 26 original champions with four distinct, drawable motifs each', () => {
-    expect(ROSTER.length).toBe(27);
+    expect(ROSTER.length).toBe(Object.keys(champions).length);
     for (const id of ROSTER) {
       const motifs = [0, 1, 2, 3].map((s) => abilityTheme(id, s)?.motif);
       expect([id, new Set(motifs).size]).toEqual([id, 4]);

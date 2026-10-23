@@ -9,6 +9,7 @@ import { REL } from './palette';
 import { abilityHue, markEmitters, tagParticles } from './abilityTheme';
 import type { Particles } from './particles';
 import { drawSevObject } from './sevFx';
+import { drawAbilityObject } from './abilityFx';
 
 type Shape = NonNullable<SnapObject['shape']>;
 
@@ -231,11 +232,19 @@ export class GroundObjects {
       m.material.color.set(col);
       m.material.opacity = a;
     };
-    // Sev (agent E): distinct per-ability looks (src/render/sevFx.ts); unknown tags fall through to the shapes below
-    if (o.tag.startsWith('sev_')) {
+    // Sev (agent E): distinct per-ability looks (src/render/sevFx.ts); every other hook tag: abilityFx.ts (agent F);
+    // unknown tags fall through to the shapes below
+    {
       const fol = o.follow !== undefined ? state.byId.get(o.follow) : undefined;
       const end = { x: fol ? state.x(fol) : o.x2 ?? o.x, y: fol ? state.y(fol) : o.y2 ?? o.y };
-      if (drawSevObject(o, now, { part: p, disc: GEO.disc, ring: GEO.ring, thin: GEO.thin, plane: GEO.plane, strip, end })) return void v.hideFrom(n);
+      const api = { part: p, disc: GEO.disc, ring: GEO.ring, thin: GEO.thin, plane: GEO.plane, strip, end };
+      const own = o.tag.startsWith('sev_') ? drawSevObject(o, now, api) : drawAbilityObject(o, now, api);
+      if (own) {
+        // B1 stealth: own stealthed objects translucent, revealed enemy ones with a pulsing reveal ring
+        if (o.stealth && o.team === state.myTeam) for (let i = 0; i < n; i++) v.parts[i]!.material.opacity *= 0.55;
+        else if (o.stealth) circle(GEO.thin, o.r + 26, team, 0.6 + 0.3 * Math.sin(now / 140), 6);
+        return void v.hideFrom(n);
+      }
     }
     switch (shape) {
       case 'blade': {

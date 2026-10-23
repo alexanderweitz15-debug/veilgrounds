@@ -10,7 +10,8 @@ import { Kind, type SimEvent } from '../sim/types';
 import type { AbilityData } from '../sim/champions/schema';
 import { abilityForSlot } from '../data/champions';
 import { REL } from './palette';
-import { abilityHue, abilityParticles, type ParticleKindId } from './abilityTheme';
+import { abilityParticles, abilityTheme, type ParticleKindId } from './abilityTheme';
+import { missileShape } from './missileStyles';
 import { Particles } from './particles';
 import { settings } from '../settings';
 import { castDir, castTelegraph, hitboxAbility, lineZone, windupTicks, zoneProgress, type CastTelegraph, type CircleShape, type LineShape, type Shape } from './telegraph';
@@ -70,14 +71,19 @@ const flatDisc = new THREE.CircleGeometry(1, 64).rotateX(-Math.PI / 2);
 const flatPlane = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
 interface MissileStyle {
   color: string;
-  /** Width multiplier, length along the flight direction and thickness (relative to the width). */
+  /** Width multiplier, length along the flight direction, thickness and sideways width (relative to the width). */
   size: number;
   length: number;
   thick: number;
+  wide: number;
   height: number;
   /** Halo scale relative to the core. */
   halo: number;
+  /** roll around the flight axis / end-over-end tumble (rad/s), F: shape language per motif (missileStyles.ts) */
+  spin: number;
+  tumble: number;
 }
+const ms = (color: string, size: number, length: number, thick: number, height: number, halo: number): MissileStyle => ({ color, size, length, thick, wide: thick, height, halo, spin: 0, tumble: 0 });
 
 /** Missile look from the projectile's source (snapshot srcKind / champ / slot). */
 function missileStyle(pr: { srcKind?: number; champ?: string | null; slot?: number }, own: boolean, homing: boolean): MissileStyle {
@@ -86,19 +92,21 @@ function missileStyle(pr: { srcKind?: number; champ?: string | null; slot?: numb
     case Kind.Tower:
     case Kind.Nexus: // big energy orb
       // D2: elongated energy lance (LoL tower shot) + spark trail (below), not a round blob
-      return { color: own ? '#c8ecff' : '#ffb08a', size: 2.3, length: 3.4, thick: 0.9, height: 260, halo: 2.2 };
+      return ms(own ? '#c8ecff' : '#ffb08a', 2.3, 3.4, 0.9, 260, 2.2);
     case Kind.MinionSiege: // dark cannonball
-      return { color: '#3a3430', size: 1.5, length: 1, thick: 1, height: 120, halo: 1.3 };
+      return ms('#3a3430', 1.5, 1, 1, 120, 1.3);
     case Kind.MinionCaster: // small bolt
-      return { color: team, size: 0.8, length: 2, thick: 0.55, height: 95, halo: 1.6 };
+      return ms(team, 0.8, 2, 0.55, 95, 1.6);
   }
   if (pr.champ && pr.slot !== undefined && pr.slot >= 0) {
-    // ability missile: element colour of the ability (fire orange, lightning yellow, water blue …), team-coloured halo
-    const hue = abilityHue(pr.champ, pr.slot);
-    return { color: hue === null ? team : `hsl(${hue}, 80%, 62%)`, size: 1.1, length: homing ? 2 : 2.8, thick: 0.75, height: homing ? 110 : 75, halo: 1.9 };
+    // ability missile: element colour of the ability (fire orange, lightning yellow, water blue …) and the motif's
+    // shape (arrow shaft, crackling bolt, flat wave, tumbling keg, spinning blade, web disc ...)
+    const t = abilityTheme(pr.champ, pr.slot);
+    const sh = missileShape(t?.motif, homing);
+    return { color: t ? `hsl(${t.hue}, 80%, 62%)` : team, ...sh };
   }
-  if (pr.srcKind === Kind.Champion) return { color: own ? '#fff1c8' : '#ffd0b8', size: 0.85, length: 3.2, thick: 0.35, height: 115, halo: 1.7 }; // arrow / bolt
-  return { color: team, size: 1, length: homing ? 1.8 : 2.6, thick: 0.7, height: homing ? 110 : 70, halo: 1.9 };
+  if (pr.srcKind === Kind.Champion) return ms(own ? '#fff1c8' : '#ffd0b8', 0.85, 3.2, 0.35, 115, 1.7); // arrow / bolt
+  return ms(team, 1, homing ? 1.8 : 2.6, 0.7, homing ? 110 : 70, 1.9);
 }
 
 /** Tower attack range, edge to edge (sim: src/sim/systems/towers.ts TOWER_RANGE; not imported to keep the sim out of the render bundle). */
@@ -291,6 +299,8 @@ export class Fx {
   private readonly s = new THREE.Vector3();
   private readonly c = new THREE.Color();
   private readonly axis = new THREE.Vector3(1, 0, 0);
+  private readonly side = new THREE.Vector3(0, 0, 1);
+  private readonly q2 = new THREE.Quaternion();
   private readonly dir = new THREE.Vector3();
   /** Level-up light columns following their champion. */
   private readonly levelCols: { mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>; eid: number; t0: number; active: boolean }[] = [];
@@ -562,7 +572,12 @@ export class Fx {
         this.p.set(x, st.height, -y);
         this.dir.set(pr.dx || 1, 0, -(pr.dy || 0)).normalize();
         this.q.setFromUnitVectors(this.axis, this.dir);
-        this.s.set(w * st.length, w * st.thick, w * st.thick);
+        if (st.spin || st.tumble) {
+          const t = now / 1000 + pr.id * 0.37;
+          if (st.spin) this.q.multiply(this.q2.setFromAxisAngle(this.axis, t * st.spin));
+          if (st.tumble) this.q.multiply(this.q2.setFromAxisAngle(this.side, t * st.tumble));
+        }
+        this.s.set(w * st.length, w * st.thick, w * st.wide);
         this.m.compose(this.p, this.q, this.s);
         this.proj.setMatrixAt(n, this.m);
         this.c.set(st.color);

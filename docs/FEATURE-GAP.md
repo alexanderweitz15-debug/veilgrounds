@@ -101,7 +101,7 @@ Stand: 16.10.2026, Agent C (Audit des Codes auf `main` @ `0bbc3d0`). Quelle der 
 | 6.1 | Graphen Gold/XP/Schaden/Vision über Zeit | Gold/XP-Vorsprung, Schaden | teilweise | 5 | S | C | C6 `17f1a41`: + XP-Kurve, Item-Wert-Vorsprung des Teams, aktive Team-Wards (Ersatz für den fehlenden Vision-Score); Objective-Fähnchen auf allen Graphen (docs/ist/c6-postgame-after-charts.jpg). |
 | 6.2 | Zeitleiste mit Kill-/Objective-Markern, Klick öffnet Replay-Moment | – | teilweise | 4 | L | C | C6: Zeitleiste der Objectives unter den Graphen + Fähnchen; Klick → Replay-Moment fehlt (kein Replay-Viewer). |
 | 6.3 | Fehlerliste aus dem Bot-Log-Format | (Veilgrounds-eigen) | fehlt | 5 | M | C (Daten A3) | Wartet auf A3 Log-Format (`docs/agents/a3.md`). → C6 |
-| 6.4 | Rang-Kalibrierung pro Kategorie | (Veilgrounds-eigen) | fehlt | 5 | M | C (Daten A3) | Wartet auf A3 `stats/rankCalibration`. → C6 |
+| 6.4 | Rang-Kalibrierung pro Kategorie | (Veilgrounds-eigen) | da | 5 | M | C (Daten A3) | Wartet auf A3 `stats/rankCalibration`. → C6 Lead 23.10.: Post-Game „Rang-Einschätzung“ je Kategorie (97d66b2). |
 | 6.5 | „Was ein Challenger getan hätte“ | (Veilgrounds-eigen) | da | 5 | – | C | `ghostReview.ts`, bis zu 10 Momente; Test `tests/ghost.test.ts`. |
 | 6.6 | Replay-Browser mit Zeitleiste | Replays herunterladen und abspielen | fehlt | 3 | L | C | `src/replay/replay.ts` zeichnet auf und spielt headless ab; keine Liste, kein Viewer. |
 
@@ -109,15 +109,15 @@ Stand: 16.10.2026, Agent C (Audit des Codes auf `main` @ `0bbc3d0`). Quelle der 
 
 | # | Funktion | LoL-Verhalten | Stand | Nutzen | Aufwand | Agent | Beleg / Lücke |
 |---|---|---|---|---|---|---|---|
-| 7.1 | Trainingsplan aus den letzten 10 Partien | (Veilgrounds-eigen) | fehlt | 5 | M | D (Daten A3) | ROADMAP Phase 5 offen. D5 |
-| 7.2 | Verlauf über mehrere Matches (IndexedDB, Diagramme, Streaks) | – | fehlt | 4 | M | D | D5 |
+| 7.1 | Trainingsplan aus den letzten 10 Partien | (Veilgrounds-eigen) | da | 5 | M | D (Daten A3) | ROADMAP Phase 5 offen. D5 Trainer-Menü (C/D, main). |
+| 7.2 | Verlauf über mehrere Matches (IndexedDB, Diagramme, Streaks) | – | da | 4 | M | D | D5 IndexedDB-Verlauf, jede Partie ab 1 min (main.ts). |
 | 7.3 | Szenario-Trainer: Welle unter Turm fangen, Baron-Call, Shove-and-Recall | (Veilgrounds-eigen) | teilweise | 5 | M | D | Szenario-Trainer existiert, diese Momente fehlen. D5 |
 | 7.4 | Dodge-Trainer-Messwerte (Latenz pro Projektil, Panik-Dodges, Replay der letzten 10 Treffer) | – | teilweise | 4 | M | D | D5 |
 | 7.5 | Fähigkeiten-Anzeige für die 23 ungeprüften Champions | Jede Fähigkeit mit lesbarem Zustand | teilweise | 4 | L | D | ROADMAP „Fähigkeiten-Anzeige“. D1 |
 | 7.6 | CC-Symbole über HP-Balken für alle CC-Typen | Stun-/Root-/Slow-Symbole | teilweise | 4 | S | D | D2 |
 | 7.7 | Projektile nach Herkunft (Turmstrahl, Pfeile, Bolzen) | – | teilweise | 3 | M | D | IST-ZUSTAND §6/§7. D2 |
-| 7.8 | HP-Balken-Überlappung lösen | – | fehlt | 3 | S | D | IST-ZUSTAND §6. D2 |
-| 7.9 | Dash-/Knock-up-Flugbogen, Blickrichtung geglättet | – | fehlt | 3 | M | D (+B5 Flags) | D2 |
+| 7.8 | HP-Balken-Überlappung lösen | – | da | 3 | S | D | IST-ZUSTAND §6. D2 Balken stapeln nach oben (C, picking-Branch). |
+| 7.9 | Dash-/Knock-up-Flugbogen, Blickrichtung geglättet | – | da | 3 | M | D (+B5 Flags) | D2 Flugbögen + geglättete Blickrichtung (B/D). |
 | 7.10 | Maßstab: Minions, Lane-Breite, Klippen, Camps | – | teilweise | 2 | L | D | IST-ZUSTAND §5/§6/§9. D3 |
 | 7.11 | Sprite-Revision, unterscheidbare Fähigkeits-Icons | 4 Motive pro Champion | teilweise | 2 | L | D | IST-ZUSTAND §2. D4 |
 | 7.12 | Fähigkeits-Beschreibungen LoL-artig, Voice-Lines als Text, Ladebildschirm-Tipps (Texte) | – | teilweise | 2 | M | D | IST-ZUSTAND §3. D6 (C zeigt die Tipps an, 4.6) |

@@ -78,8 +78,8 @@ export type Command =
   /** R choice (champions with ultChoices, e.g. Sev): permanent for the match; also allowed while dead. */
   | { t: 'ultChoice'; choice: 0 | 1 | 2 }
   | { t: 'recall' }
-  /** Team ping at a map point; target = entity eid for focus/objective pings. */
-  | { t: 'ping'; kind: PingKind; x: number; y: number; target?: number }
+  /** Team ping at a map point; target = entity eid for focus/objective pings; label = context text ("Leviathan in 1:23"). */
+  | { t: 'ping'; kind: PingKind; x: number; y: number; target?: number; label?: string }
   /** Team chat line (bots: spec §9; ref = decision log tick the line refers to). Team-only, like pings. */
   | { t: 'chat'; text: string; ref?: number }
   | { t: 'buy'; item: string }
@@ -155,7 +155,7 @@ export type SimEvent =
   | { e: 'wave'; lane: number; team: number; index: number }
   | { e: 'respawn'; eid: number }
   /** Team ping (only delivered to the pinging team). */
-  | { e: 'ping'; slot: number; team: number; kind: PingKind; x: number; y: number; target: number }
+  | { e: 'ping'; slot: number; team: number; kind: PingKind; x: number; y: number; target: number; label?: string }
   /** Team chat line (only delivered to the sender's team). */
   | { e: 'chat'; slot: number; team: number; text: string; ref?: number }
   /** Ground telegraph: AoE that resolves at tick `at` (render shows radius + fill). */

@@ -8,6 +8,7 @@ import { cancelCastIntents, chooseUlt, commandCast, levelAbility, refreshCooldow
 import { cancelRecall, grantGold, grantXp, startRecall, xpToNext } from './economy';
 import { spawnDummy } from './champions';
 import { PING_KINDS, type Command } from '../types';
+import { PING_MAX, PING_WINDOW, cleanPingLabel } from '../pingRules'; // window/limit: anti-spam, LoL-like
 import { sees } from '../vision';
 import { buyItem, sellItem } from '../items/inventory';
 import { useItem } from '../items/itemHooks';
@@ -193,8 +194,6 @@ function cheat(sim: Sim, eid: number, cmd: Extract<Command, { t: 'cheat' }>): vo
   }
 }
 
-const PING_WINDOW = 30 * 4; // ticks
-const PING_MAX = 6; // per window and player (anti-spam, LoL-like)
 
 /** Team ping. Rate-limited per player; delivered only to the pinging team by the snapshot filter. */
 /** Team chat (bots, spec §9): same rate limit as pings, 120 chars max. */
@@ -219,5 +218,6 @@ function ping(sim: Sim, eid: number, cmd: Extract<Command, { t: 'ping' }>): void
   const { Unit } = sim.c;
   // a target must be something the team actually sees (no info leak through pings)
   const target = cmd.target !== undefined && cmd.target >= 0 && Unit.alive[cmd.target] && sees(sim, Unit.team[eid]!, cmd.target) ? cmd.target : -1;
-  sim.events.push({ e: 'ping', slot: Unit.slot[eid]!, team: Unit.team[eid]!, kind: cmd.kind, x: Math.max(0, Math.min(16000, cmd.x)), y: Math.max(0, Math.min(16000, cmd.y)), target });
+  const label = cleanPingLabel(cmd.label);
+  sim.events.push({ e: 'ping', slot: Unit.slot[eid]!, team: Unit.team[eid]!, kind: cmd.kind, x: Math.max(0, Math.min(16000, cmd.x)), y: Math.max(0, Math.min(16000, cmd.y)), target, ...(label ? { label } : {}) });
 }

@@ -5,7 +5,7 @@ import { Kind, isMinion } from '../sim/types';
 import type { ClientState } from '../game/state';
 import { championData } from '../sim/champions';
 import { abilityForSlot } from '../data/champions';
-import { play, playCast, playFizzle } from './sfx';
+import { pingCue, play, playCast, playFizzle } from './sfx';
 
 /** Auto attack leaving the wind-up (projectile launch / melee strike): champions full, minions soft. */
 export function soundForFire(e: SnapEntity): void {
@@ -56,7 +56,7 @@ export function soundForEvent(ev: SimEvent, state: ClientState): void {
       play('plate', ...(at(ev.tower) as [number, number]));
       return;
     case 'ping':
-      play('ping'); // team pings are always audible
+      play(pingCue(ev.kind)); // team pings are always audible, one voice per kind
       return;
     case 'wave':
       if (me && ev.team === me.team && ev.lane === 1) play('wave'); // once per wave (mid lane event)

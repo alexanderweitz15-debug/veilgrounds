@@ -1,7 +1,7 @@
 // One running match on the client: sim link, render world, input, HUD, minimap and the frame loop.
 import { ChatBox } from '../ui/chat';
 import { soundForEvent, soundForFire } from '../audio/eventSounds';
-import { audioUnlock, setListener, setVolume } from '../audio/sfx';
+import { audioUnlock, playFizzle, setListener, setVolume } from '../audio/sfx';
 import { blockBrowserShortcuts, enterGameFullscreen, exitGameFullscreen } from './fullscreen';
 import { loadMap } from '../sim/map';
 import type { SimConfig } from '../sim/types';
@@ -14,6 +14,8 @@ import { Hud } from '../ui/hud';
 import { Overlay } from '../ui/overlay';
 import { Minimap } from '../ui/minimap';
 import { minimapPingFor } from './minimapPing';
+import { PingSender } from './pingSender';
+import { objectiveAt, type PingCtx, type PingReq } from './contextPing';
 import { buildSettingsPanel } from '../ui/settingsPanel';
 import { onSettingsChange, settings } from '../settings';
 import { t } from '../i18n';
@@ -31,6 +33,9 @@ export class Game {
   private readonly overlay = new Overlay();
   private readonly minimap: Minimap;
   private readonly menu: HTMLElement;
+  /** Every ping leaves through here (spam limit, context labels). */
+  private readonly pings = new PingSender((c) => this.link.send(c), () => playFizzle());
+  private pingCtx!: () => PingCtx;
   private readonly extras: SessionExtras;
   private readonly chat: ChatBox;
   private raf = 0;
@@ -72,6 +77,14 @@ export class Game {
     this.root.appendChild(canvas);
     this.root.appendChild(this.overlay.canvas);
 
+    this.pingCtx = () => ({
+      epics: this.state.objectives.epicTimers(),
+      camps: this.state.camps,
+      tick: this.state.snap?.tick ?? 0,
+      pits: { leviathan: map.objectives.leviathan, kesselbrut: map.objectives.kesselbrut },
+      lanes: map.sides[0].lanes,
+      myTeam: this.state.myTeam,
+    });
     this.world = new World(canvas, map);
     const f = map.sides[0].fountain;
     this.world.rig.focus(f.x + 600, f.y + 600);
@@ -133,6 +146,16 @@ export class Game {
         swapTrinket: (id) => this.link.send({ t: 'trinket', id }),
         say: (text) => this.chat.say(text),
         ultChoice: (choice) => this.link.send({ t: 'ultChoice', choice }),
+        epicPing: (kind) => {
+          const pit = kind === 'leviathan' ? map.objectives.leviathan : map.objectives.kesselbrut;
+          const req = objectiveAt(this.pingCtx(), pit.x, pit.y);
+          if (req) this.pings.ping(req);
+        },
+        // context ping (own ability, enemy summoner / item): a labelled "Achtung" over the own champion
+        ctxPing: (label) => {
+          const me = this.state.me();
+          if (me) this.pings.ping({ kind: 'alert', x: me.x, y: me.y, label });
+        },
       },
       config?.mode === 'kite' || !config, // sandbox: one merged panel (src/ui/sandboxPanel.ts)
       config?.players ?? [],
@@ -152,9 +175,12 @@ export class Game {
         this.world.fx.clickMarker(x, y, false, performance.now());
       },
       (x, y) => {
-        // Alt+click: snaps to a structure / objective pit under the cursor (src/game/minimapPing.ts)
+        // Alt+click: snaps to a structure / objective pit under the cursor (src/game/minimapPing.ts); pits and
+        // camps with a running timer carry it as label
         const p = minimapPingFor(x, y, this.state.snap?.entities ?? [], this.state.myTeam, [map.objectives.leviathan, map.objectives.kesselbrut]);
-        this.link.send(p.target !== undefined ? { t: 'ping', kind: p.kind, x: p.x, y: p.y, target: p.target } : { t: 'ping', kind: p.kind, x: p.x, y: p.y });
+        const open = p.kind === 'objective' || (p.kind === 'danger' && p.x === x && p.y === y);
+        const req: PingReq = (open ? objectiveAt(this.pingCtx(), p.x, p.y) : null) ?? p;
+        this.pings.ping(req);
       },
     );
     const mmWrap = document.createElement('div');
@@ -185,6 +211,9 @@ export class Game {
         useItem: (i) => this.hud.flashItem(i),
         onArmedChange: (a: Armed) => this.hud.setArmed(a),
         select: (eid) => this.hud.target.select(eid),
+        pings: this.pings,
+        pingCtx: this.pingCtx,
+        minimapAt: (cx, cy) => this.minimap.simAtClient(cx, cy),
         // the menu, chat input and the victory/defeat screen swallow game input
         menuOpen: () => this.menu.classList.contains('open') || this.chat.typing || this.state.winner !== null,
       },

@@ -10,6 +10,8 @@ import { abilityInfo, champName, variantName } from './names';
 import { abilityIcon, itemIcon, setIcon } from './icons';
 import { setTip } from './tooltip';
 import { t } from '../i18n';
+import { itemPingText } from '../game/pingText';
+import { itemName } from './shop';
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?: HTMLElement, text?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -82,6 +84,8 @@ export class TargetFrame {
   private readonly info = el('div', 'tf-info', this.body);
   private readonly items = el('div', 'tf-items', this.body);
   private readonly chips = el('div', 'tf-chips', this.body);
+  /** Alt+click on a shown item: "Wren hat Sturmklinge" as a labelled ping (set by the HUD). */
+  onItemPing?: (label: string) => void;
   private eid: number | null = null;
   private identity = '';
   private chipKey = '';
@@ -143,6 +147,11 @@ export class TargetFrame {
         const s = el('span', 'mini-item', this.items);
         setIcon(s, itemIcon(it));
         setTip(s, `item:${it}`);
+        s.addEventListener('mousedown', (e) => {
+          if (!e.altKey) return;
+          e.stopPropagation();
+          this.onItemPing?.(itemPingText(this.name.textContent ?? '', itemName(it)));
+        });
       }
     }
     this.chipKey = drawChips(this.chips, unitChips(e, snap.tick), this.chipKey);

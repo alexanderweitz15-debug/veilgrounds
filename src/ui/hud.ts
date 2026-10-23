@@ -25,6 +25,7 @@ import { abilityIcon, itemIcon, kesselbrutIcon, objectiveIcon, passiveIcon, setI
 import { KESSELBRUT_MAX_STACKS, KESSELBRUT_STRUCT_PCT } from '../sim/systems/jungle';
 import { setTip } from './tooltip';
 import { play } from '../audio/sfx';
+import { abilityPingText, cooldownPingText } from '../game/pingText';
 
 const KILLFEED_MS = 9000;
 
@@ -74,6 +75,10 @@ export interface HudHooks {
   say?(text: string): void;
   /** R choice (Sev): the picked card (src/ui/ultChoice.ts). */
   ultChoice?(choice: 0 | 1 | 2): void;
+  /** Context ping with a text label over the own champion ("Q bereit in 4 s"; src/game/pingText.ts). */
+  ctxPing?(label: string): void;
+  /** Alt+click on an epic timer chip: ping the pit with its timer. */
+  epicPing?(kind: string): void;
 }
 
 type TrinketHud = NonNullable<NonNullable<ClientState['snap']>['me']>['trinket'];
@@ -85,6 +90,8 @@ export class Hud {
   private readonly keyLabels: { el: HTMLElement; action: Action }[] = [];
   private bindsSeen = bindsVersion();
   private readonly items: HTMLElement[] = [];
+  /** Newest ability state per slot (Alt+click context ping). */
+  private readonly abilState: Partial<Record<number, AbilityHud>> = {};
   private readonly hpFill: HTMLElement;
   private readonly hpText: HTMLElement;
   private readonly mpFill: HTMLElement;
@@ -134,6 +141,7 @@ export class Hud {
   private buffKey = '';
   private lastItems: (string | null)[] = [];
   private readonly say: (text: string) => void;
+  private readonly hooks: HudHooks;
   /** Target frame of the left-clicked unit (C3). */
   readonly target = new TargetFrame();
   private trinketKey = '';
@@ -152,6 +160,8 @@ export class Hud {
   constructor(hooks: HudHooks, sandbox: boolean, players: readonly PlayerSetup[] = [], mode?: string) {
     const r = this.root;
     this.say = (text) => hooks.say?.(text);
+    this.hooks = hooks;
+    this.target.onItemPing = (l) => hooks.ctxPing?.(l);
     // ---- top bar
     const top = el('div', 'hud-top', r);
     this.kills = [el('span', 'k blue', top, '0'), el('span', 'k red', top, '0')];
@@ -199,6 +209,13 @@ export class Hud {
       plus.addEventListener('mousedown', (e) => {
         e.stopPropagation();
         if (i < 4) hooks.levelUp(i as 0 | 1 | 2 | 3);
+      });
+      // LoL: Alt+click an own ability / summoner spell pings its cooldown to the team
+      root.addEventListener('mousedown', (e) => {
+        const a = this.abilState[i];
+        if (!e.altKey || !a) return;
+        e.stopPropagation();
+        hooks.ctxPing?.(i >= 4 ? cooldownPingText(summonerName(a.id), a.cdLeft) : abilityPingText(keyLabel(binds[k]), a.cdLeft, a.rank > 0));
       });
       this.slots.push({ root, icon, cd, cdNum, pips, plus, key, rc, rlbl });
     });
@@ -268,7 +285,7 @@ export class Hud {
     this.debugText = el('pre', '', this.panels.debug);
     this.botDebug = new BotDebugPanel(this.panels.debug);
     this.shop = new ShopPanel(this.panels.shop, hooks);
-    this.score = new Scoreboard(this.panels.scoreboard, players, this.say);
+    this.score = new Scoreboard(this.panels.scoreboard, players, this.say, (l) => hooks.ctxPing?.(l));
     // active jungle/objective buffs (Dornenbock, Glutwächter, Schleierwächter) above the ability bar
     this.marks = el('div', 'buff-marks', r);
     r.appendChild(this.target.root);
@@ -343,7 +360,7 @@ export class Hud {
     if (ev.e === 'ping') {
       if (state.muted.has(ev.slot)) return;
       const who = [...state.byId.values()].find((e) => e.kind === Kind.Champion && e.slot === ev.slot);
-      const node = el('div', 'entry ping', this.feed, `${champName(who?.champ ?? null)}: ${t(`ping.${ev.kind}`)}`);
+      const node = el('div', 'entry ping', this.feed, `${champName(who?.champ ?? null)}: ${ev.label ?? t(`ping.${ev.kind}`)}`);
       node.style.borderLeftColor = PING_COLOR[ev.kind];
       this.feedEntries.push({ at: now, node });
       return;
@@ -470,6 +487,7 @@ export class Hud {
       const time = state.snap?.time ?? 0;
       chip.addEventListener('mousedown', (e) => {
         e.stopPropagation();
+        this.hooks.epicPing?.(x.kind);
         const name = t(`epic.${x.kind}`);
         this.say(x.left === null ? t('chat.epicUp', { name }) : t('chat.epicIn', { name, s: mmss(x.left), at: mmss(time + x.left) }));
       });
@@ -531,12 +549,14 @@ ${t(`trinket.${tr.id}.desc`)}${tr.cdLeft > 0 ? ` (${Math.ceil(tr.cdLeft)} s)` : 
       const a = list[i];
       toggle(s.root, 'empty', !a);
       if (!a) {
+        delete this.abilState[i];
         setText(s.cdNum, '');
         setStyle(s.cd, '--p', '0');
         toggle(s.plus, 'show', false);
         continue;
       }
       const isSumm = i >= 4;
+      this.abilState[i] = a;
       const vs = ultDisplaySlot(i, a.ultChoice?.chosen); // R after the choice (Sev): the chosen ultimate
       const info = isSumm ? { name: summonerName(a.id), desc: '' } : abilityInfo(this.champ, vs, a.id);
       // procedural icon (src/ui/icons.ts); the short name stays as fallback

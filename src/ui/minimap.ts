@@ -1,6 +1,7 @@
 // Minimap (bottom right) drawn like a hand-inked field map: parchment, washed river, inked lanes and cliffs.
 // Left click/drag moves the camera, right click sends a move command.
-import { PING_COLOR } from './pingWheel';
+import { PING_COLOR, PING_ICON } from './pingWheel';
+import { PING_STYLE } from '../render/pingAnim';
 import type { MapData, Pt } from '../sim/map';
 import type { ClientState } from '../game/state';
 import type { World } from '../render/world';
@@ -61,6 +62,13 @@ export class Minimap {
       window.removeEventListener('mouseup', up);
       window.removeEventListener('blur', up);
     };
+  }
+
+  /** Map point under a screen position when it is over the minimap (ping wheel on the minimap), else null. */
+  simAtClient(cx: number, cy: number): [number, number] | null {
+    const r = this.canvas.getBoundingClientRect();
+    if (cx < r.left || cx > r.right || cy < r.top || cy > r.bottom) return null;
+    return canvasToSim(((cx - r.left) / r.width) * SIZE, ((cy - r.top) / r.height) * SIZE, SIZE);
   }
 
   draw(state: ClientState, world: World, fog: FogOfWar, now: number): void {
@@ -176,12 +184,19 @@ export class Minimap {
       ctx.strokeStyle = PING_COLOR[pg.kind];
       ctx.globalAlpha = 1 - age;
       ctx.lineWidth = 2.5 * this.dpr;
+      const inward = PING_STYLE[pg.kind].inward; // "back"/"on my way" rings shrink onto the spot, the rest expand
       for (const k of [0, 0.5]) {
-        const r = (6 + ((age * 3 + k) % 1) * 14) * this.dpr;
+        const w = (age * 3 + k) % 1;
+        const r = (6 + (inward ? 1 - w : w) * 14) * this.dpr;
         ctx.beginPath();
         ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.stroke();
       }
+      ctx.fillStyle = PING_COLOR[pg.kind];
+      ctx.font = `900 ${11 * this.dpr}px "Segoe UI Symbol", "Segoe UI", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(PING_ICON[pg.kind], x, y - 1 * this.dpr);
       ctx.globalAlpha = 1;
     }
     // camera footprint

@@ -16,6 +16,13 @@ export type Cue =
   | 'wave'
   | 'recall'
   | 'ping'
+  | 'pingDanger'
+  | 'pingBack'
+  | 'pingGo'
+  | 'pingAsk'
+  | 'pingHelp'
+  | 'pingObjective'
+  | 'pingOk'
   | 'plate'
   | 'ui';
 
@@ -164,6 +171,34 @@ export function play(cue: Cue, x?: number, y?: number): void {
       tone(v, 'sine', 1046, 1046, 0.15, 0.2);
       tone({ out: v.out, t: v.t + 0.12 }, 'sine', 1318, 1318, 0.2, 0.18);
       break;
+    // distinct ping voices (kind -> cue: pingCue below): danger = two harsh falling saws, back =
+    // falling triangle pair, go = rising triplet, ask = rising question glide, help = urgent triple beep,
+    // objective = bell fifth, ok = soft low-high
+    case 'pingDanger':
+      tone(v, 'sawtooth', 880, 620, 0.12, 0.16);
+      tone({ out: v.out, t: v.t + 0.1 }, 'sawtooth', 880, 620, 0.16, 0.16);
+      break;
+    case 'pingBack':
+      tone(v, 'triangle', 700, 520, 0.14, 0.2);
+      tone({ out: v.out, t: v.t + 0.13 }, 'triangle', 520, 350, 0.2, 0.2);
+      break;
+    case 'pingGo':
+      for (let i = 0; i < 3; i++) tone({ out: v.out, t: v.t + i * 0.07 }, 'square', 660 + i * 165, 660 + i * 165, 0.08, 0.1);
+      break;
+    case 'pingAsk':
+      tone(v, 'sine', 600, 900, 0.2, 0.18);
+      break;
+    case 'pingHelp':
+      for (let i = 0; i < 3; i++) tone({ out: v.out, t: v.t + i * 0.09 }, 'square', 990, 990, 0.06, 0.12);
+      break;
+    case 'pingObjective':
+      tone(v, 'sine', 784, 784, 0.4, 0.2);
+      tone({ out: v.out, t: v.t + 0.05 }, 'sine', 1176, 1176, 0.45, 0.14);
+      break;
+    case 'pingOk':
+      tone(v, 'sine', 523, 523, 0.1, 0.16);
+      tone({ out: v.out, t: v.t + 0.09 }, 'sine', 784, 784, 0.16, 0.16);
+      break;
     case 'plate':
       noise(v, 0.3, 400, 0.8, 0.35, 'lowpass');
       tone(v, 'square', 110, 60, 0.3, 0.1);
@@ -247,4 +282,31 @@ export function playCast(abilityId: string, type: string, x?: number, y?: number
       tone(v, wave, base, base * 1.5, len, 0.14, 0.03);
   }
   if (ultimate) tone(v, 'sine', base / 2, base / 4, len + 0.4, 0.18, 0.04);
+}
+
+/** Sound per ping kind (alert keeps the classic two-tone ping). */
+export function pingCue(kind: string): Cue {
+  switch (kind) {
+    case 'danger':
+      return 'pingDanger';
+    case 'back':
+      return 'pingBack';
+    case 'onMyWay':
+    case 'group':
+      return 'pingGo';
+    case 'missing':
+    case 'question':
+    case 'vision':
+      return 'pingAsk';
+    case 'help':
+      return 'pingHelp';
+    case 'objective':
+    case 'focus':
+      return 'pingObjective';
+    case 'ok':
+    case 'myBad':
+      return 'pingOk';
+    default:
+      return 'ping';
+  }
 }

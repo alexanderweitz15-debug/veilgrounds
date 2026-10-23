@@ -6,6 +6,31 @@ import { t } from '../i18n';
 export const WHEEL: PingKind[] = ['danger', 'onMyWay', 'help', 'vision', 'missing', 'back', 'group', 'ok'];
 const DEADZONE = 22;
 
+/** Glyph per kind: wheel slots, world badges (src/render/pings.ts) and the minimap share it. */
+export const PING_ICON: Record<PingKind, string> = {
+  alert: '!',
+  danger: '⚠',
+  onMyWay: '➜',
+  back: '↶',
+  missing: '?',
+  vision: '◉',
+  help: '✚',
+  group: '⚑',
+  focus: '◎',
+  objective: '★',
+  ok: '✓',
+  question: '?',
+  myBad: '✗',
+};
+
+/** Wheel slot for a mouse offset from the wheel centre (dx, dy in px, y down); 'alert' inside the dead zone. */
+export function pickWheel(dx: number, dy: number): PingKind {
+  if (dx * dx + dy * dy < DEADZONE * DEADZONE) return 'alert';
+  const a = Math.atan2(dy, dx) + Math.PI / 2; // 0 = up, clockwise
+  const i = Math.round((a / (Math.PI * 2)) * WHEEL.length + WHEEL.length) % WHEEL.length;
+  return WHEEL[i]!;
+}
+
 export const PING_COLOR: Record<PingKind, string> = {
   alert: '#e8d9a8',
   danger: '#e0473a',
@@ -39,9 +64,20 @@ export class PingWheel {
       s.style.left = `${Math.cos(a) * 78}px`;
       s.style.top = `${Math.sin(a) * 78}px`;
       s.style.setProperty('--c', PING_COLOR[k]);
-      s.textContent = t(`ping.${k}`);
+      const g = document.createElement('span');
+      g.className = 'ping-glyph';
+      g.textContent = PING_ICON[k];
+      s.append(g, t(`ping.${k}`));
       this.el.appendChild(s);
     });
+    // centre: releasing without moving pings "Achtung / Hier hin"
+    const c = document.createElement('div');
+    c.className = 'ping-slot ping-centre';
+    c.dataset.kind = 'alert';
+    c.style.setProperty('--c', PING_COLOR.alert);
+    c.textContent = PING_ICON.alert;
+    c.title = t('ping.alert');
+    this.el.appendChild(c);
     parent.appendChild(this.el);
   }
 
@@ -60,12 +96,7 @@ export class PingWheel {
 
   /** Ping kind for the current mouse position (alert inside the dead zone). */
   pick(mx: number, my: number): PingKind {
-    const dx = mx - this.ox;
-    const dy = my - this.oy;
-    if (dx * dx + dy * dy < DEADZONE * DEADZONE) return 'alert';
-    const a = Math.atan2(dy, dx) + Math.PI / 2; // 0 = up, clockwise
-    const i = Math.round((a / (Math.PI * 2)) * WHEEL.length + WHEEL.length) % WHEEL.length;
-    return WHEEL[i]!;
+    return pickWheel(mx - this.ox, my - this.oy);
   }
 
   highlight(mx: number, my: number): void {

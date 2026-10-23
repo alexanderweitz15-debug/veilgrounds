@@ -9,7 +9,7 @@
 // UVs follow three.js CanvasTexture defaults (flipY = true: v = 1 at the canvas top). Mirrored directions
 // (W, SW, NW when opts.mirror) reuse the E/SE/NE cells with u0/u1 swapped and flip = true.
 import { Painter, Stage, TAU, dirOf, len, lerp3, madd, norm, project, sub, type V3, type View } from './core';
-import { ATTACK_HIT, CAST_FLEX, CAST_RELEASE, CHAMP_FPS, FPS, FRAMES, LOOP, poseFor } from './anim';
+import { ATTACK_HIT, CAST_B, CAST_FLEX, CAST_RELEASE, CHAMP_FPS, FPS, FRAMES, LOOP, poseFor } from './anim';
 import { bodyOf, drawHumanoid, solveRig } from './humanoid';
 import { KITS } from './kits';
 import { motionOf } from './motion';
@@ -56,7 +56,8 @@ export function registerSpriteDrawer(id: string, d: SpriteDrawer): void {
 }
 const kitOf = (id: string): Kit | undefined => KITS[id] ?? EXTRA_KITS[id];
 
-export { ANIMS, DIRS, FRAMES, FPS, LOOP, CAST_RELEASE, CAST_FLEX };
+export { ANIMS, DIRS, FRAMES, FPS, LOOP, CAST_RELEASE, CAST_B, CAST_FLEX };
+export { castFamily, castSelfPose } from './casts';
 export type { Anim, Dir };
 
 export interface FrameRect {
@@ -166,7 +167,19 @@ function canvases(size: number) {
 const SUN_RIM = { x: 0, y: -1 };
 const RIM_WARM = '#ffcf8c';
 /** attack styles whose strike frame gets a smear (fast melee swings/stabs) */
-const SMEAR: Partial<Record<string, 'arc' | 'stab'>> = { chop: 'arc', slash: 'arc', swipe: 'arc', bash: 'arc', thrust: 'stab' };
+const SMEAR: Partial<Record<string, 'arc' | 'stab'>> = {
+  chop: 'arc',
+  slash: 'arc',
+  swipe: 'arc',
+  bash: 'arc',
+  thrust: 'stab',
+  hammer: 'arc',
+  heave: 'arc',
+  pounce: 'arc',
+  cane: 'stab',
+  lance: 'stab',
+  spear: 'stab',
+};
 /** outer contour: dilation taps on a ring (8 keep the line round at <= 2.5 px radius) */
 const INK_TAPS = 8;
 

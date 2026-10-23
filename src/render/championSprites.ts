@@ -6,7 +6,7 @@ import { gouacheSprite } from './materials';
 import type { SnapEntity } from '../sim/snapshot';
 import { Kind } from '../sim/types';
 import { PITCH } from './camera';
-import { CAST_FLEX, CAST_RELEASE, dirFromAngle, type Anim, type ChampionAtlas, type Dir } from './champions';
+import { CAST_B, CAST_FLEX, CAST_RELEASE, castFamily, castSelfPose, dirFromAngle, type Anim, type ChampionAtlas, type Dir } from './champions';
 import { champions } from '../data/champions';
 import { AFTER_MS, afterFrame } from './spriteTiming';
 import { turnToward } from './readability';
@@ -106,6 +106,8 @@ interface CastState {
   /** wind-up until the release (ms) */
   dur: number;
   kind: CastKind;
+  /** ability slot (0..3; Sev's R choices 4..6 count as R) -> cast family (casts.ts) */
+  slot: number;
   /** release pop already fired */
   popped: boolean;
 }
@@ -219,9 +221,10 @@ export class ChampionSprites {
     return (this.atlas.foot[id]! - this.atlas.top[id]!) * this.atlas.worldSize[id]! * (e && this.opts.scaleFor ? this.opts.scaleFor(e) : 1);
   }
 
-  /** A cast started: `durMs` = wind-up until the release (sim cast time), `kind` from the ability type. */
-  onCast(eid: number, now: number, durMs = 0, kind: CastKind = 'directed'): void {
-    this.castAt.set(eid, { t0: now, dur: Math.max(0, Math.min(1500, durMs)), kind, popped: false });
+  /** A cast started: `durMs` = wind-up until the release (sim cast time), `kind` from the ability type, `slot` picks
+   *  the baked cast family (Q W E R may differ: casts.ts). */
+  onCast(eid: number, now: number, durMs = 0, kind: CastKind = 'directed', slot = 0): void {
+    this.castAt.set(eid, { t0: now, dur: Math.max(0, Math.min(1500, durMs)), kind, slot, popped: false });
   }
 
   /** Took a hit from (sx, sy): short knock-back flinch (rate-limited so damage over time does not jitter). */
@@ -238,14 +241,17 @@ export class ChampionSprites {
     KICKS.hit(a.dyn, dx > 20 ? -1 : dx < -20 ? 1 : 0, this.amp());
   }
 
-  /** Cast frame and whether the cast is still playing. */
-  private castFrame(c: CastState, ms: number, n: number): number {
-    // castTime 0 (instant): skip the gather
+  /** Cast frame: family A (gather 0, release 1, follow 2) or B (gather 3, release 4) by the ability slot, flex last. */
+  private castFrame(c: CastState, ms: number, n: number, id: string): number {
+    // the 6-frame layout has both families; older 4-frame sheets (minion-like kits) only A
+    const fam = n >= CAST_FLEX + 1 ? castFamily(id, c.slot) : 0;
     const gather = c.dur;
-    if (ms < gather) return 0;
+    const g = fam ? CAST_B : 0;
+    if (ms < gather) return g; // castTime 0 (instant): skip the gather
     const k = ms - gather;
-    if (c.kind === 'self') return n > CAST_FLEX ? CAST_FLEX : n - 1;
-    if (c.kind === 'dash') return Math.min(n - 1, CAST_RELEASE);
+    if (c.kind === 'self') return Math.min(n - 1, n >= CAST_FLEX + 1 && castSelfPose(id, c.slot) ? g + 1 : n >= CAST_FLEX + 1 ? CAST_FLEX : n - 1);
+    if (c.kind === 'dash') return Math.min(n - 1, g + 1);
+    if (fam) return Math.min(n - 1, CAST_B + 1); // B has no follow-through: hold the release
     return Math.min(n - 1, k < AFTER_MS * 1.3 ? CAST_RELEASE : CAST_RELEASE + 1);
   }
   private castLen(c: CastState): number {
@@ -316,7 +322,7 @@ export class ChampionSprites {
     let frame = -1;
     if (ca && now - ca.t0 < this.castLen(ca) && fr.cast.S.length) {
       anim = 'cast';
-      frame = this.castFrame(ca, now - ca.t0, fr.cast.S.length);
+      frame = this.castFrame(ca, now - ca.t0, fr.cast.S.length, id);
       if (!ca.popped && now - ca.t0 >= ca.dur) {
         ca.popped = true;
         KICKS.castRelease(a.dyn, amp);

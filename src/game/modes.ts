@@ -50,6 +50,31 @@ export function configFor(mode: 'lane' | 'sandbox', runes?: RuneChoice, champion
   return { seed, mode: 'laneOnly', players: [player] };
 }
 
+// ---------------------------------------------------------------- tutorial (src/ui/tutorial*.ts)
+
+/**
+ * The tutorial is a sandbox sim (cheats for the steps' preparation) marked by TrainerOpts.scenario; the sandbox only
+ * reads `trainer` for trainer modes, so the marker needs no sim change. Lane minions stay off until a step needs them.
+ */
+export const TUTORIAL_MARK = 'tutorial';
+
+export function isTutorialConfig(c: Pick<SimConfig, 'mode' | 'trainer'> | null | undefined): boolean {
+  return c?.mode === 'sandbox' && c.trainer?.scenario === TUTORIAL_MARK;
+}
+
+export function tutorialConfig(runes?: RuneChoice, champion = MIRA_ID, summoners: [string, string] = ['sprung', 'heilen'], seed = (Math.random() * 2 ** 31) | 0): SimConfig {
+  const player: PlayerSetup = { slot: 0, team: 0, champion, role: 'mid', summoners, isHuman: true, ...(runes ? { runes } : {}) };
+  return {
+    seed,
+    mode: 'sandbox',
+    players: [player],
+    dummies: [{ ...SANDBOX_DUMMY, team: 1 }],
+    minionsEnabled: false,
+    minionLanes: [Lane.Mid],
+    trainer: { scenario: TUTORIAL_MARK },
+  };
+}
+
 // ---------------------------------------------------------------- Phase 5 trainers
 
 /** Trainer modes selectable from the trainer menu. */

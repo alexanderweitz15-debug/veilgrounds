@@ -439,7 +439,9 @@ const structureNear = (v: View): boolean => v.enemyTowers.some((t) => dst(t, v.s
 
 /** Enemy minions with no own minion near them (they would target the bot). */
 function untankedMinions(v: View): View['enemyMinions'] {
-  return v.enemyMinions.filter((m) => dst(m, v.self) < 1200 && !tanked(v, m));
+  // also minions that target the bot right now (aggro drawn by harass / a champion hit): step out of their reach like a
+  // LoL player dropping aggro instead of standing in it (lead 23 Oct: caster minions dealt 28-33 % of laner damage)
+  return v.enemyMinions.filter((m) => dst(m, v.self) < 1200 && (!tanked(v, m) || m.atkTarget === v.self.id));
 }
 
 /** Harass budget shift per aggression axis step (autos/min; §4.3: aggression axis +-3 at +-5). */

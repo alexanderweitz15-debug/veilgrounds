@@ -4,6 +4,7 @@ import runesJson from '../src/data/runes.json';
 import type { ItemData, RuneData } from '../src/sim/items/schema';
 import { botRunes, defaultRunes, runePresets, runesFromPreset } from '../src/sim/items/runes';
 import { Rng } from '../src/sim/rng';
+import { champions as rosterData } from '../src/data/champions';
 
 const items = itemsJson.items as unknown as ItemData[];
 const runes = runesJson.runes as unknown as RuneData[];
@@ -67,6 +68,7 @@ describe('builds (data/builds)', () => {
   it('26 champions, every id resolves, core legendaries unique, boots are boots, 1 keystone + 3 minors', () => {
     const list = Object.values(builds);
     expect(list.length).toBeGreaterThanOrEqual(27);
+    expect(list.length).toBe(Object.keys(rosterData).length);
     const runeIds = new Map(runes.map((r) => [r.id, r]));
     for (const b of list) {
       for (const id of b.starter) expect(byId.has(id), `${b.champion} starter ${id}`).toBe(true);

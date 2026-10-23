@@ -128,7 +128,7 @@ function bounceAlly(sim: Sim, eid: number, x: number, y: number): number {
 
 /** Enemy the dust bounces to from an ally: nearest enemy champion within 700, else nearest other enemy unit within 450. */
 function bounceEnemy(sim: Sim, eid: number, x: number, y: number): number {
-  const { Pos, Unit } = sim.c;
+  const { Pos } = sim.c;
   const pick = (cands: number[], r: number): number => {
     let best = -1;
     let bestD = r * r;
@@ -357,3 +357,4 @@ export const hooks: ChampionHooks = {
     },
   },
 };
+

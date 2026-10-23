@@ -118,7 +118,7 @@ describe('W Chosen Flame', () => {
     expect(sim.c.Hp.shield[a[1]!]!).toBeCloseTo(s0, 0);
     expect(fennaPartner(sim, m)).toBe(a[1]);
     // the snapshot shows the bond line
-    const snap = buildSnapshot(sim, 0);
+    const snap = buildSnapshot(sim, 0, 0);
     expect(snap.objects.some((o) => o.tag === 'fenna_p_bond')).toBe(true);
   });
 });
@@ -155,3 +155,4 @@ describe('R Cocoon Light', () => {
     expect(sim.c.Hp.cur[a[0]!]!).toBeGreaterThan(200);
   });
 });
+

@@ -1,10 +1,10 @@
-// Passive-bot repro (user report: "Gegner bleiben still stehen oder rennen in dich rein, waehrend du sie hitten kannst").
+﻿// Passive-bot repro (user report: "Gegner bleiben still stehen oder rennen in dich rein, waehrend du sie hitten kannst").
 // A scripted human (slot 0) teleports next to an enemy bot every 30 s and auto-attacks it for 8 s; per trial we log
 // whether / when the bot reacts (attacks back, casts, or runs away) and what it did while taking damage.
 // usage: npx tsx tools/scratch/passive.ts <rank> <seed> [minutes=11] [reflex=0|1] [verbose=0|1]
 import { botGameConfig, BotRunner } from '../../src/ai/runner';
 import { createSim, step } from '../../src/sim/sim';
-import { Kind, type TickInput } from '../../src/sim/types';
+import { type TickInput } from '../../src/sim/types';
 import type { Rank } from '../../src/ai/profiles/schema';
 declare const process: { argv: string[]; stdout: { write(s: string): void } };
 
@@ -123,3 +123,4 @@ for (const r of results) {
   if (verbose || slow) out('   ' + r.nodes.slice(0, 14).join(' > ') + '\n   ' + r.cmds.slice(0, 40).join(' '));
 }
 out(`${rank} s${seed}: ${results.length} trials, ${bad} slow/none`);
+

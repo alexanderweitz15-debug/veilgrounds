@@ -57,6 +57,7 @@
     "vessa": [["claw", 14], ["fang", 350], ["eye", 80], ["wing", 20]],
     "wren": [["arrow", 22], ["flame", 22], ["moon", 270], ["spiral", 15]],
     "sev": [["sun", 22], ["wing", 270], ["eye", 0], ["spiral", 355], ["flame", 345], ["sword", 14], ["moon", 355]],
-    "fenna": [["wing", 40], ["lamp", 30], ["ring", 265], ["moon", 250]]
+    "fenna": [["wing", 40], ["lamp", 30], ["ring", 265], ["moon", 250]],
+    "vargrim": [["sword", 170], ["cloak", 165], ["boot", 150], ["horn", 175]]
   }
 }

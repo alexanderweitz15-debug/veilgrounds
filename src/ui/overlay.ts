@@ -9,6 +9,7 @@ import { settings } from '../settings';
 import { t } from '../i18n';
 import { champName, variantName } from './names';
 import { VisualCues } from './cues';
+import { VoiceBubbles } from './voiceBubbles';
 import { barLayout, barLift } from './hpBarGeom';
 import { stackBars, type BarRect } from '../render/barLayout';
 import { drawCcGlyph } from '../render/ccGlyphs';
@@ -63,6 +64,8 @@ export class Overlay {
   private dpr = 1;
   /** Phase 6: visual cues for important sounds (off-screen pings, tower fire, captions). */
   private readonly cues = new VisualCues();
+  /** Champion voice lines as speech bubbles (FEATURE-GAP 7.12). */
+  private readonly voice = new VoiceBubbles();
 
   constructor() {
     this.canvas.className = 'overlay2d';
@@ -79,6 +82,7 @@ export class Overlay {
 
   onEvent(ev: SimEvent, state: ClientState, now: number): void {
     this.cues.onEvent(ev, state, now);
+    this.voice.onEvent(ev, state, now);
     const myEid = state.snap?.me?.eid ?? -1;
     if (ev.e === 'damage' && settings.damageNumbers) {
       if (ev.src !== myEid && ev.dst !== myEid) return;
@@ -395,5 +399,6 @@ export class Overlay {
     ctx.globalAlpha = 1;
     this.floaters = keep;
     if (snap) this.cues.draw(ctx, state, world, this.w, this.h, now);
+    if (snap) this.voice.draw(ctx, state, world, this.w, this.h, now);
   }
 }

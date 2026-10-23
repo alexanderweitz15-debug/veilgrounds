@@ -51,6 +51,8 @@ export interface Settings {
   attackMoveNearCursor: boolean;
   /** Outline enemy skillshots more strongly (C7 data; drawn by the render telegraphs, agent D). */
   enemySkillshotOutline: boolean;
+  /** Champion voice lines as text: speech bubbles in the match and the pick line in the lobby (src/ui/voiceBubbles.ts). */
+  voiceLines: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -79,6 +81,7 @@ const DEFAULTS: Settings = {
   hpBarStyle: 'segmented',
   enemySkillshotOutline: false,
   attackMoveNearCursor: true,
+  voiceLines: true,
 };
 
 /** Default values (settings import validates keys and types against them). */

@@ -448,3 +448,8 @@ For A2 (@A2, owner of recallValue / intents):
    tell me and I will wire it behind a values.json switch.
 4. tests/utilityRecall.test.ts (test 8) runs the utility model with the legacy lane leaf (`runUtilityGame` does not
    pass `{ reflex: true }`). The beta brain passes the same bound (item recalls 0.2-0.4 enemy minions near, n small).
+
+## voice-lines (swarm/voice-lines)
+
+Additive only: src/settings.ts (`voiceLines` + default), src/i18n/de.json + en.json (`set.voiceLines`), src/ui/settingsPanel.ts (1 row),
+src/ui/overlay.ts (VoiceBubbles field, onEvent call, draw call), src/ui/classicLobby.ts + practiceLobby.ts (import + `renderPickLine` after `renderShowcase`).

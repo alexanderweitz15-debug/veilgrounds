@@ -10,6 +10,7 @@ import { t } from '../i18n';
 import { setPortrait } from '../render/portraits';
 import { setTip } from './tooltip';
 import { renderShowcase } from './showcase';
+import { renderPickLine } from './voiceBubbles';
 import { runeIcon, setIcon, summonerIcon } from './icons';
 
 type Role = PlayerSetup['role'];
@@ -68,6 +69,7 @@ export function renderPracticeLobby(root: HTMLElement, title: string, onBack: ()
     }
 
     renderShowcase(body, pick.champ);
+    renderPickLine(body, pick.champ);
     const cols = el('div', 'classic-cols', body);
     const left = el('div', '', cols);
     const right = el('div', '', cols);

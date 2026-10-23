@@ -23,6 +23,7 @@ import { t } from '../i18n';
 import { setPortrait } from '../render/portraits';
 import { setTip } from './tooltip';
 import { renderShowcase } from './showcase';
+import { renderPickLine } from './voiceBubbles';
 import { roleIcon, runeIcon, setIcon, summonerIcon } from './icons';
 import { getChampionAtlas, getMinionAtlas } from '../render/sheets';
 
@@ -192,6 +193,7 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
 
     // selected champion: splash + passive/abilities with LoL-style hover tooltips
     renderShowcase(left, pick.champ);
+    renderPickLine(left, pick.champ);
 
     // summoners: one icon row per slot (D, F)
     el('div', 'field-label', left, t('lobby.summoners'));

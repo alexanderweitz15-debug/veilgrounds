@@ -7,7 +7,7 @@ import type { Sim } from './sim';
 import type { System } from './systems/index';
 import { Kind, isMinion, sec } from './types';
 import raw from '../data/summoners.json';
-import { addBuff, canAttack, canMove, hasBuff, healUnit, removeBuffs, type BuffKind } from './buffs';
+import { addBuff, addShield, canAttack, canMove, hasBuff, healUnit, removeBuffs, type BuffKind } from './buffs';
 import { dir, dist2 } from './vec';
 import { champAbil, landingPoint, nearestAlly, noteDashEnd, teleport } from './systems/abilities';
 import { onMoveCommand } from './systems/attack';
@@ -47,6 +47,9 @@ export const EXHAUST_SLOW_PCT = 30;
 export const EXHAUST_TICKS = sec(2.5);
 export const CLEANSE_TENACITY_PCT = 65;
 export const CLEANSE_TICKS = sec(3);
+export const BARRIER_TICKS = sec(2);
+/** Barrier shield by champion level 1..18 (LoL: 115-455). */
+export const BARRIER_SHIELD: readonly [number, number] = [115, 455];
 
 /** Cooldown in seconds at the current game time (before the PlayerSetup override). */
 export function summonerCooldown(sim: Sim, id: string): number {
@@ -102,6 +105,9 @@ export function castSummonerSpell(sim: Sim, eid: number, id: string, x: number, 
     }
     case 'geist':
       addBuff(sim, eid, { kind: 'stat', stat: 'ms', id: 'geist', src: eid, pct: byLevel(sim, eid, 24, 48), ticks: sec(10) });
+      return true;
+    case 'barriere':
+      addShield(sim, eid, byLevel(sim, eid, BARRIER_SHIELD[0], BARRIER_SHIELD[1]), BARRIER_TICKS, 'barriere', eid);
       return true;
     case 'entflammen': {
       const t = enemyChampionTarget(sim, eid, x, y, 600, target);

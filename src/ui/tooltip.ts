@@ -116,8 +116,9 @@ const SUMMONER_DESC: Record<string, [string, string]> = {
   heilen: ['Heilt dich und den nächsten Verbündeten (90–345 nach Stufe) und gibt 1 s lang +30 % Lauftempo.', 'Heals you and the nearest ally (90–345 by level) and grants +30% move speed for 1 s.'],
   geist: ['10 s lang +24–48 % Lauftempo (nach Stufe), du ignorierst Einheitenkollision.', '+24–48% move speed (by level) for 10 s, ignore unit collision.'],
   entflammen: ['Setzt einen gegnerischen Champion 5 s in Brand (60–410 absoluter Schaden) und verringert seine Heilung um 40 %.', 'Ignites an enemy champion for 5 s (60–410 true damage) and reduces its healing by 40%.'],
-  erschoepfen: ['Verlangsamt einen gegnerischen Champion und verringert seinen verursachten Schaden für kurze Zeit.', 'Slows an enemy champion and reduces the damage it deals for a short time.'],
+  erschoepfen: ['Verlangsamt einen gegnerischen Champion 2,5 s lang um 30 % und verringert seinen verursachten Schaden um 40 %.', 'Slows an enemy champion by 30% for 2.5 s and reduces the damage it deals by 40%.'],
   reinigen: ['Entfernt Verlangsamung, Betäubung, Festhalten, Verstummen und Blendung und gibt kurz Zähigkeit.', 'Removes slows, stuns, roots, silences and blinds and grants brief tenacity.'],
+  barriere: ['Gibt dir 2 s lang einen Schild (115–455 nach Stufe).', 'Shields you for 2 s (115–455 by level).'],
   teleport: ['Kanalisiert und teleportiert dich zu einem verbündeten Turm, Vasallen oder Ward.', 'Channels, then teleports you to an allied tower, minion or ward.'],
   bannen: ['Verursacht 450–900 absoluten Schaden an einem Monster oder Vasallen in 500 Reichweite.', 'Deals 450–900 true damage to a monster or minion within 500 range.'],
 };

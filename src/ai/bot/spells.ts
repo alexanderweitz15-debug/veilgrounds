@@ -2,6 +2,8 @@
 // snapshot data. ponytail: fixed rules; Phase 3 team AI decides warding/teleports with desires + influence map.
 //   Reinigen: rooted/stunned (HUD cc >= 3) with an enemy champion close, after the reaction delay.
 //   Erschöpfen: the enemy champion closest to a low (< 50 % HP) bot or ally within 650 - the diver.
+//   Barriere: hp under a rank-scaled line (Iron 16 % .. Challenger 30 %) with an enemy champion / tower on the bot.
+//   Geist: chase a fleeing low-HP enemy champion (skill >= 40), or run when in retreat mode with a foe close.
 //   Teleport: in the fountain, full HP, back to the own lane's furthest tower.
 //   Wards: supports and junglers drop a Schleierward in a nearby unwarded bush (lane/tri/river), every ~25 s at most.
 
@@ -41,10 +43,44 @@ export function exhaustStep(v: View): BotAction | null {
       const dToMe = dst(e, v.self);
       if (dToMe > 650 + e.radius + v.self.radius) continue;
       const d = dst(e, a);
-      if (d < 500 && d < bestD) (bestD = d), (best = e);
+      // the one that is hitting the protected unit right now (the diver) wins over a merely close one
+      const score = d - (e.atkTarget === a.id ? 300 : 0);
+      if (d < 500 && score < bestD) (bestD = score), (best = e);
     }
   }
   return best ? { cmd: { t: 'spell', slot, x: best.x, y: best.y, target: best.id } } : null;
+}
+
+/**
+ * Barrier before the burst lands. The bot has no damage history, so "lethal" is approximated by a HP line that grows
+ * with skill (low ranks fire late or never get the timing) while an enemy champion is close or a tower has aggro on it.
+ */
+export function barrierStep(v: View, ctx: BotStatic, rng: Rng, penaltyMs = 0): BotAction | null {
+  const slot = sumReady(v, 'barriere');
+  if (slot === -1 || v.self.shield > 0) return null;
+  const line = 0.16 + 0.14 * Math.min(1, Math.max(0, ctx.params.skill / 100));
+  if (v.hpPct >= line) return null;
+  const threat = v.enemies.some((e) => dst(e, v.self) < 700) || v.enemyTowers.some((t) => t.atkTarget === v.me.eid);
+  if (!threat) return null;
+  return { cmd: { t: 'spell', slot, x: v.self.x, y: v.self.y }, delay: ticksOfMs(sampleReactionMs(ctx.profile.behavior, rng) + penaltyMs) };
+}
+
+/** Ghost: run down a fleeing enemy below 35 % HP (fight mode, skill >= 40) or get away in retreat mode. */
+export function ghostStep(v: View, ctx: BotStatic, mem: BotMemory): BotAction | null {
+  const slot = sumReady(v, 'geist');
+  if (slot === -1 || ctx.params.skill < 40) return null;
+  const go = { cmd: { t: 'spell' as const, slot, x: v.self.x, y: v.self.y } };
+  if (mem.mode === 'retreat') {
+    return v.hpPct < 0.3 && v.enemies.some((e) => dst(e, v.self) < 800) ? go : null;
+  }
+  if (mem.mode !== 'fight' || v.hpPct < 0.35 || v.enemies.length > 2) return null;
+  for (const e of v.enemies) {
+    const d = dst(e, v.self);
+    const out = d > v.reach + e.radius + 100 && d < 1000;
+    const fleeing = out && Math.hypot(e.px - v.self.x, e.py - v.self.y) < d - 5;
+    if (hpPct(e) < 0.35 && fleeing) return go;
+  }
+  return null;
 }
 
 /** In the fountain with full HP: Teleport to the own lane's furthest alive tower. */

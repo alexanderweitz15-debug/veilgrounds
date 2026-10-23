@@ -22,7 +22,7 @@ Ist-Zustand mit Screenshots: [docs/IST-ZUSTAND.md](IST-ZUSTAND.md) · Bot-Gehirn
 - [x] Recast nicht sichtbar (Isolde Q hat einen, man sieht ihn nicht), Recast-Reichweite als Kreis → Fähigkeiten-Audit
 - [x] Renn: Kreis an jeder Klinge „E kann hierhin dashen“ → Fähigkeiten-Audit
 - [x] Isolde E: sichtbarer Draht beim Ranziehen → Fähigkeiten-Audit
-- [~] Alle Champions mit sichtbarer, funktionierender Passive → Fähigkeiten-Audit
+- [x] Alle Champions mit sichtbarer, funktionierender Passive: Passiv-Badge im HUD für alle 27 (Test `abilityMotifs` „passive badge"), Wren nachgezogen 16.10.
 - [~] Kills ~34 statt 40–60, erster Turm ~18 min statt 12–16
 - [~] CS der Bots ~40 % von Tabelle A in Partien (allein auf der Lane 5,6–7,8 CS/min; Verluste durch Abwesenheit)
 - [x] Trainingsplan + Verlauf über mehrere Matches (Phase 5): Plan im Trainer-Menü, jede Partie ab 1 min im Verlauf (IndexedDB); Kalibrierung noch lokaler Adapter bis A3-API
@@ -43,9 +43,9 @@ Ist-Zustand mit Screenshots: [docs/IST-ZUSTAND.md](IST-ZUSTAND.md) · Bot-Gehirn
 - [x] Manche Fähigkeiten halten den Champion fälschlich an → B2: `movesWhileCasting` + `castTime` für alle 26×4 + Beschwörer (docs/ability-cast-audit.md); offen: brain.ts `busyUntil` soll diese Casts nicht mehr sperren (B-Hinweis, shared-changes.md)
 - [x] Toplane: nach 1500 Gold aus Minions Teleport als 3. Beschwörerzauber (B4 Sim-Seite + C HUD-Slot/Taste T; im Spiel noch nicht gesehen – Bot-Tops tragen Teleport bereits, Freischaltung greift nur für einen menschlichen Top; FEATURE-GAP 1.18 „teilweise")
 - [x] Fernkampf-Hitbox 55 → 65 (B5, Nutzerentscheidung 19.10., DECISIONS „Fernkampf-Hitbox")
-- [~] Agent B: B1–B6 + Hitbox auf main; offen: B5-Reste laut b.md (Dash-Flag `dashing` für D), B7 Ladezeit (gebackene Atlanten) → an D übergeben (Lead 19.10.); S-Messung: Spielstart 10,4 s kalt / 7,0 s warm (Ziel < 5 s warm)
-- [ ] Agent C offen: C5 Lobby (Prägungen-Editor, Bann-Phase, Rollentausch, Bot-Konfiguration prüfen), C7 Einstellungen (braucht Entscheidung zu src/settings.ts), Shop-Rückgängig (Sim-Befehl, B), „Nochmal" nach Classic (issues.md), Post-Game-Fehlerliste + Spielstil-Skalen (nach A3)
-- [ ] Agent D offen: D1 Fähigkeiten-Anzeige-Audit der 23 Champions (nur Motiv-JSON begonnen, ungetestet), D2 Kampf-Lesbarkeit, D3 Maßstab/Karte, D4 Sprite-Revision (lokaler Stand docs/style/revision pushen), D5 Trainer-Reste (Trainingsplan, Verlauf), D6 Tooltips/Texte; Portrait-Ausschnitte (issues.md)
+- [x] Agent B: B1–B6, Hitbox 65, Item-Fehlermeldungen fertig (b.md); B7 Ladezeit von D gebaut (IndexedDB-Atlas-Cache, warm 4–4,5 s bei 128-px-Frames; nach Umstellung auf 152 px neu zu messen)
+- [x] Agent C: Lobby (Bann-Phase, Rollentausch, Prägungsseite je Champion, Bot-Konfiguration), Einstellungen (Minimap, Cast-Modi, Export/Import, HP-Balken-Striche), Klick-Auswahl neu (picking.ts), A+Klick am Cursor, Trainingsplan im Trainer-Menü; offen nur, was auf A3 wartet: Spielstil-Skalen + Rang-Kalibrierung im Scoreboard, Post-Game-Fehlerliste; Shop-Rückgängig → Agent G
+- [x] Agent D: Motive je Fähigkeit (4 verschiedene pro Champion), Partikel je Fähigkeit, Turm-Lanze, Dash-/Knock-up-Bögen, Blickrichtung geglättet, Treffer-Aufhellung gedrosselt, Trainingsplan-Logik, Atlas-Cache, Sev-Effekte; offen → Agent F: D3 Maßstab/Karte/Camps, D4 Silhouetten-Test, D6 Fähigkeitstexte LoL-artig + Voice-Lines
 - [x] Agent E: Sev Fassung 3 (Itachi-Look, Feuerball/Krähensturm-AoE, Bannblick, R-Wahl Amaterasu/Susanoo/Tsukuyomi) auf main; Bot-Regeln von A2 umgesetzt (Ult-Wahl, Q-Finte ab Platin, Wegschauen); offen: Bots werfen Fähigkeiten auf Trugbilder (unter Gold), Amaterasu-Brand im ExchangeEstimate, Susanoo als volle Geistfigur (F). Vorgeschichte: Champion „Sev Aschenblick" auf main (Daten, Hooks Nachbild/Q-Finte/Schwarzglut/Trugbild/Augenbann, Fear-CC + `uncleansable`, Trugbild-Pet mit Champion-Look, Sprite-Kit, tests/sev.test.ts, Roster #27); offen: Balance des Glut-Sprungs (sevCasts.ts-Lauf), schwarze Flammen-Optik + Augenbann-Phantome (D), Fear-Symbol, Sounds, Bot-Regeln (issues.md: Finten, Trugbild, Glut im ExchangeEstimate, Fear im Escape-Knoten), Trainer-Pools
 - [x] 5-Minuten-Browserprüfung nach den C-Merges (S, review-2026-10-19.md: 0 Konsolenfehler, 3 kleine Befunde – von C in 6348bef behoben); Beta-Schalter-Prüfung 22.10. (F9 zeigt Intent/Pläne/Auslastung, 0 Konsolenfehler); offen: Screenshot-Abnahme der D-Änderungen durch S im gebauten Spiel
 
@@ -98,7 +98,7 @@ Ist-Zustand mit Screenshots: [docs/IST-ZUSTAND.md](IST-ZUSTAND.md) · Bot-Gehirn
 - [x] Post-Game-Analyse (CS-/Gold-Kurven, Tode, Schaden)
 - [x] „Was ein Challenger getan hätte“: Schatten-Bot auf deiner Sicht, Zeitleiste mit bis zu 10 Momenten
 - [x] Sandbox+ (Level, keine Abklingzeiten, Godmode, Welle, Camps)
-- [ ] Trainingsplan, Verlauf über mehrere Matches
+- [x] Trainingsplan, Verlauf über mehrere Matches (Trainer-Menü, IndexedDB)
 
 ## Phase 6 – Politur – weitgehend ✔
 - [x] Menüs, Lobby (Splash-Art, Porträt-Kacheln, Rollen-Icons), Enzyklopädie, Ladebildschirm
@@ -109,8 +109,8 @@ Ist-Zustand mit Screenshots: [docs/IST-ZUSTAND.md](IST-ZUSTAND.md) · Bot-Gehirn
 - [x] Jungle-Inhalt: 6 Lager je Seite, Kesselbrut, Pflanzen, LoL-Werte
 - [x] Ansagen, Todes-Zusammenfassung, Level-up-Effekt, große Pings, Recall-/Ward-Effekte, Kesselbrut-Anzeige
 - [x] Bughunt: 4 kritische, 12 mittlere, ~20 kleine Bugs behoben (41 Regressionstests)
-- [~] Sprite-Revision nach Analyse anderer Spiele → Sprite-Agent
-- [~] Fähigkeiten-/Passiv-Anzeige vollständig → Fähigkeiten-Audit
+- [~] Sprite-Revision nach Analyse anderer Spiele: Licht wie die Welt + Größe 1,3× + 152-px-Frames + kein Clipping (Lead 23.10.); eigene Animationen je Champion → Agent F
+- [x] Fähigkeiten-/Passiv-Anzeige vollständig (Recast-Ringe, Klingen-Kreise, Draht, Passiv-Badges, Motive, Partikel)
 
 ## Mechanik-Feeling vs. LoL
 Audit 2026-10-16 („fühlt sich scuffed an“). Erledigt und gepusht:
@@ -129,14 +129,14 @@ Audit 2026-10-16 („fühlt sich scuffed an“). Erledigt und gepusht:
 - [x] Minions 325 Tempo, Wellen treffen sich 1:27 / 1:38, Turm tötet Caster mit 2 / Melee mit 3 Schüssen
 
 Noch offen:
-- [ ] Dashes und Knock-ups sehen nach Rutschen aus (kein Flugbogen, Animation endet vor dem Dash) → Snapshot-Flags `dashing`/`airborne`
-- [ ] Render liest `atkStart`/`atkEnd` noch nicht (Ausholen nach Item-/Buff-Angriffstempo geschätzt)
-- [ ] Fähigkeiten-Effekte individueller (eigene Partikel/Formen je Fähigkeit, nicht nur Farbe)
-- [ ] Blickrichtung dreht in einem Tick um 180° (Glätten ~80 ms)
-- [ ] Auto-Reset sofort (nur Dagny Q, Cast-Zeit 0,2 s)
-- [ ] Treffer-Aufhellung flackert im Teamfight (für DoT/Minion-Ziele abschwächen)
+- [x] Dashes und Knock-ups mit Flugbogen (Snapshot `dash`/`air`, B + D)
+- [~] Render liest `atkStart`/`atkEnd` noch nicht → Agent G (Feel-Fix A6, Wind-up-Frames aus dem Snapshot)
+- [~] Fähigkeiten-Effekte individueller: Partikel/Motiv je Fähigkeit (D) erledigt; echte Effekte + Cast-Posen je Fähigkeit → Agent F
+- [x] Blickrichtung geglättet (180° in ~80 ms, D)
+- [x] Auto-Reset sofort (Dagny Q Cast-Zeit 0, B)
+- [x] Treffer-Aufhellung gedrosselt (B-Flag + 4/s Render-Grenze, D); Feinschliff (Gate 120 ms, Flinch) → Agent G
 - [ ] Optional: gegnerische Skillshots nur als Projektil statt ganzem Bodenstreifen (Einstellung „LoL-Telegraphe“)
-- [ ] Optional: Fernkampf-Radius 55 → 65 wie in LoL; Angriffsbewegung mit „Ziel am Cursor“
+- [x] Fernkampf-Radius 55 → 65 (Nutzer 19.10.) und Angriffsbewegung „Ziel am Cursor" (Standard an seit 22.10.)
 
 ## Fähigkeiten-Anzeige (Audit)
 Neue Grundlage (gilt für alle Champions): `ChampionHooks.visuals` (nur Snapshot, read-only) liefert Objekte auf der Karte

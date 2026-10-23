@@ -131,18 +131,24 @@ export function tradeValue(w: World): CandidateValue | null {
   const hpLead = (logit(ex.winProb) / 5) * t.maxHp;
   const kill = e.killProb * killGold();
   const lead = Math.max(0, hpLead);
-  const benefit = kill + hpGold(lead, hpPct(t));
+  // opportunities (user: "trade when the enemy misses a cast or last-hits"): the enemy winds up on an own minion
+  // (CS window, it cannot answer without losing the minion; rank share harassCsWindowPct) or just used an ability
+  // (it is on cooldown; scaled by skill)
+  const csWindow = t.atkPhase === 1 && v.ownMinions.some((m) => m.id === t.atkTarget);
+  const punish = v.tick - (n.mem.ext.enemyCastAt.get(t.serial) ?? -1e9) < W.tradePunishS * 30;
+  const opportunity = 1 + (csWindow ? (W.tradeCsWindowBonus * n.ctx.profile.behavior.harassCsWindowPct) / 100 : 0) + (punish ? W.tradePunishBonus * clamp01(n.ctx.params.skill / 100) : 0);
+  const benefit = (kill + hpGold(lead, hpPct(t))) * opportunity;
   const death = e.deathProb * w.deathCost;
   const behind = hpGold(Math.max(0, -hpLead), v.hpPct);
   const missed = farmWithin(w, h) * W.tradeMissedFarm;
   const aggro = near(v.enemyMinions, v.self, 500).length * W.tradeAggroPerMinion * h;
   const gank = w.gankRisk * w.deathCost * W.tradeGankRisk;
-  const trigger = focus && focus.eid === t.id ? 'gank_focus' : t.atkTarget === v.self.id ? 'retaliate' : e.killProb > VALUES.combat.killWindowFromFarm ? 'kill_window' : 'value';
+  const trigger = focus && focus.eid === t.id ? 'gank_focus' : t.atkTarget === v.self.id ? 'retaliate' : e.killProb > VALUES.combat.killWindowFromFarm ? 'kill_window' : csWindow && opportunity > 1 ? 'cs_window' : punish && opportunity > 1 ? 'punish' : 'value';
   return {
     benefit,
     cost: death + behind + missed + aggro + gank,
     horizonS: h,
-    terms: { win: ex.winProb, kill: e.killProb, death: e.deathProb, hpLead, killGold: kill, deathGold: death, missed, aggro, gank },
+    terms: { win: ex.winProb, kill: e.killProb, death: e.deathProb, hpLead, killGold: kill, deathGold: death, missed, aggro, gank, opportunity },
     data: { target: t, kind: allin ? 'allin' : 'trade', trigger, ex, exK },
   };
 }

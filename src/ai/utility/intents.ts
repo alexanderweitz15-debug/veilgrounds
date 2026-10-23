@@ -99,6 +99,20 @@ function uRecall(n: NodeCtx): NodeResult {
     n.out.push(moveCmd(n.ctx.map.sides[n.ctx.team].fountain));
     return 'running';
   }
+  // no recall attempt with enemy minions walking in (they break the channel - recall loop next to a wave): back off
+  // toward the fountain until they are out of recall.minionAvoidRange, then channel
+  const foes = near(n.v.enemyMinions, n.v.self, VALUES.recall.minionAvoidRange).length;
+  if (foes > 0) {
+    cancelOrbwalk(n);
+    n.mem.mode = 'home';
+    const f = n.ctx.map.sides[n.ctx.team].fountain;
+    if (!(n.mem.lastMove && dst(n.mem.lastMove, f) < 100 && n.v.self.moving)) {
+      n.out.push(moveCmd(f));
+      n.mem.lastMove = { x: f.x, y: f.y, tick: n.v.tick };
+    }
+    n.log('recall', 'back_off', 'enemy minions near: walk off before recalling', { minions: foes });
+    return 'running';
+  }
   return recall(n);
 }
 

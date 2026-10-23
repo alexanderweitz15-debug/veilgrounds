@@ -84,6 +84,8 @@ export type Command =
   | { t: 'chat'; text: string; ref?: number }
   | { t: 'buy'; item: string }
   | { t: 'sell'; slot: number }
+  /** Shop undo (G/B1): revert the last buy/sell while still in the fountain (inventory.ts ledger). */
+  | { t: 'undo' }
   /** Use the item in inventory slot 0..5 (actives, consumables; src/sim/items/itemHooks.ts). */
   | { t: 'item'; slot: number; x?: number; y?: number }
   /** Use the trinket at a point: Schleierward places a ward, Suchfeuer sweeps (src/sim/wards.ts). */

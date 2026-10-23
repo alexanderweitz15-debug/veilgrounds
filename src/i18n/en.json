@@ -279,6 +279,8 @@
   "shop.buildsInto": "Builds into",
   "shop.buy": "Buy",
   "shop.sell": "Sell",
+  "shop.undo": "Undo",
+  "shop.undoTip": "Revert the last buy or sell (Ctrl+Z). Only while you stay in the fountain and have not used an item.",
   "shop.inventory": "Inventory",
   "shop.tier.starter": "Starter",
   "shop.tier.consumable": "Consumables",

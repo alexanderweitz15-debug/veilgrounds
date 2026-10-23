@@ -26,6 +26,9 @@
 .sp-hint { color: #e8806a; font-size: 13px; }
 .sp-search { margin-left: auto; width: 220px; padding: 6px 10px; background: rgba(0, 0, 0, 0.45); border: 1px solid #5a4a30; color: #f2ead8; font: 500 14px 'Barlow', sans-serif; }
 .sp-search:focus { outline: none; border-color: #e8c45a; }
+.sp-undo { padding: 5px 10px; background: rgba(0, 0, 0, 0.4); border: 1px solid #5a4a30; color: #d8d0bf; font: 600 13px 'Barlow Condensed', sans-serif; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; }
+.sp-undo:hover:not(:disabled) { border-color: #e8c45a; color: #fff; }
+.sp-undo:disabled { color: #6a6252; border-color: #3a3226; cursor: default; }
 .sp-close { width: 30px; height: 30px; background: rgba(0, 0, 0, 0.4); border: 1px solid #5a4a30; color: #d8d0bf; cursor: pointer; }
 .sp-close:hover { border-color: #e8c45a; color: #fff; }
 

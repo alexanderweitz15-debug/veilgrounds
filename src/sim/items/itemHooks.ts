@@ -13,7 +13,7 @@ import { addBuff, addShield, buffs, canAttack } from '../buffs';
 import { dealDamage, heal, lastCombatTick } from '../damage';
 import { reward } from '../systems/economy';
 import { alliedChampionsIn, enemiesInRadius, nearestAlly } from '../systems/abilities';
-import { ITEM_SLOTS, inventory, itemById, itemStats } from './inventory';
+import { ITEM_SLOTS, clearUndo, inFountain, inventory, itemById, itemStats } from './inventory';
 import { runeHooksOf } from './runeHooks';
 import { placeSealWard } from '../wards';
 
@@ -304,6 +304,7 @@ export function extraHooksOf(sim: Sim, eid: number): ItemHook[] {
 /** Per-tick upkeep for one champion (abilities system, after the champion's own onTick). */
 export function tickItemsAndRunes(sim: Sim, eid: number): void {
   const { Unit } = sim.c;
+  if (Unit.alive[eid] && !inFountain(sim, eid)) clearUndo(sim, eid); // G/B1: undo only while still in the shop
   const s = itemState(sim).ent.get(eid);
   if (s) {
     if (!Unit.alive[eid]) (s.potion = 0), (s.wind = 0);
@@ -370,6 +371,7 @@ export function useItem(sim: Sim, eid: number, slot: number, x?: number, y?: num
     m.set(it.id, [sim.tick + sec(it.active.cooldown), sec(it.active.cooldown)]);
   }
   if (it.tier === 'consumable') inv[slot] = null;
+  clearUndo(sim, eid); // G/B1: a used active / consumable cannot be undone (LoL)
   return true;
 }
 

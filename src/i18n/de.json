@@ -279,6 +279,8 @@
   "shop.buildsInto": "Wird zu",
   "shop.buy": "Kaufen",
   "shop.sell": "Verkaufen",
+  "shop.undo": "Rückgängig",
+  "shop.undoTip": "Letzten Kauf oder Verkauf zurücknehmen (Strg+Z). Nur solange du im Brunnen bleibst und nichts benutzt hast.",
   "shop.inventory": "Inventar",
   "shop.tier.starter": "Start",
   "shop.tier.consumable": "Verbrauch",

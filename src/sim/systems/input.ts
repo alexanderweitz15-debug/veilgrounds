@@ -9,7 +9,7 @@ import { cancelRecall, grantGold, grantXp, startRecall, xpToNext } from './econo
 import { spawnDummy } from './champions';
 import { PING_KINDS, type Command } from '../types';
 import { sees } from '../vision';
-import { buyItem, sellItem } from '../items/inventory';
+import { buyItem, sellItem, undoLast } from '../items/inventory';
 import { useItem } from '../items/itemHooks';
 import { swapTrinket, useTrinket } from '../wards';
 import { scheduleNextWave } from './waves';
@@ -66,6 +66,7 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
   if (cmd.t === 'cheat') return cheat(sim, eid, cmd);
   if (cmd.t === 'buy') return void buyItem(sim, eid, cmd.item); // allowed while dead (inventory.ts)
   if (cmd.t === 'sell') return void sellItem(sim, eid, cmd.slot);
+  if (cmd.t === 'undo') return void undoLast(sim, eid); // shop rule: also while dead
   if (cmd.t === 'trinket') return void swapTrinket(sim, eid, cmd.id); // shop rule: also while dead
   if (cmd.t === 'ping') return ping(sim, eid, cmd); // pings also while dead
   if (cmd.t === 'chat') return chat(sim, eid, cmd);

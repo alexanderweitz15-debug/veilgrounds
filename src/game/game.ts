@@ -133,6 +133,7 @@ export class Game {
         quit: () => this.exit(),
         buy: (item) => this.link.send({ t: 'buy', item }),
         sell: (slot) => this.link.send({ t: 'sell', slot }),
+        undo: () => this.link.send({ t: 'undo' }),
         swapTrinket: (id) => this.link.send({ t: 'trinket', id }),
         say: (text) => this.chat.say(text),
         ultChoice: (choice) => this.link.send({ t: 'ultChoice', choice }),

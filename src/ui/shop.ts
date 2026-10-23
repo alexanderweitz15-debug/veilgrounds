@@ -5,7 +5,7 @@ import './gamePanels.css';
 import './shop.css';
 import type { PlayerHud } from '../sim/snapshot';
 import type { ItemData, ItemStat, ItemTier } from '../sim/items/schema';
-import { ITEMS, ITEM_SLOTS, SELL_RATIO, itemById, recipePrice } from '../sim/items/inventory';
+import { ITEMS, ITEM_SLOTS, itemById, recipePrice, sellValue } from '../sim/items/inventory';
 import { BUILDS } from '../ai/bot/builds';
 import { settings } from '../settings';
 import { t } from '../i18n';
@@ -91,6 +91,8 @@ function iconEl(parent: HTMLElement, id: string, cls = 'sp-icon'): HTMLElement {
 export interface ShopHooks {
   buy(item: string): void;
   sell(slot: number): void;
+  /** Revert the last buy/sell (G/B1, LoL undo; Ctrl+Z while the shop is open). */
+  undo?(): void;
   /** Team chat line (Alt+click item ping, C4). */
   say?(text: string): void;
 }
@@ -106,12 +108,20 @@ export class ShopPanel {
   private cards: { el: HTMLElement; it: ItemData; price: HTMLElement }[] = [];
   private goldEl: HTMLElement | null = null;
   private buyBtn: { el: HTMLButtonElement; it: ItemData } | null = null;
+  private undoBtn: HTMLButtonElement | null = null;
+  private undoDepth = -1;
 
   constructor(private readonly root: HTMLElement, private readonly hooks: ShopHooks) {
     root.textContent = '';
     root.classList.add('sp-root');
     // clicks inside the panel must not turn into move commands on the canvas
     for (const ev of ['mousedown', 'contextmenu', 'wheel'] as const) root.addEventListener(ev, (e) => e.stopPropagation());
+    // Ctrl+Z / Cmd+Z while the shop is open: undo the last buy/sell (G/B1)
+    window.addEventListener('keydown', (e) => {
+      if (!root.classList.contains('open') || e.code !== 'KeyZ' || !(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      if ((this.me?.undo ?? 0) > 0) this.hooks.undo?.();
+    });
   }
 
   update(me: PlayerHud | null): void {
@@ -121,13 +131,15 @@ export class ShopPanel {
     if (key !== this.key) {
       this.key = key;
       this.render(me);
-    } else if (Math.floor(me.gold) !== this.gold) this.refresh(me);
+    } else if (Math.floor(me.gold) !== this.gold || (me.undo ?? 0) !== this.undoDepth) this.refresh(me);
   }
 
   /** Gold changed: update the gold label and affordability in place (no rebuild). */
   private refresh(me: PlayerHud): void {
     this.gold = Math.floor(me.gold);
+    this.undoDepth = me.undo ?? 0;
     if (this.goldEl) this.goldEl.textContent = String(this.gold);
+    if (this.undoBtn) this.undoBtn.disabled = !((me.undo ?? 0) > 0 && (me.inFountain || me.dead));
     for (const c of this.cards) c.el.classList.toggle('afford', this.canBuy(me, c.it).ok);
     if (this.buyBtn) {
       const q = this.canBuy(me, this.buyBtn.it);
@@ -160,6 +172,7 @@ export class ShopPanel {
     this.cards = [];
     this.buyBtn = null;
     this.gold = Math.floor(me.gold);
+    this.undoDepth = me.undo ?? 0;
     const build = BUILDS[me.champ];
     const recList = build ? [...build.starter, build.standard.boots, ...build.standard.core] : [];
     const rec = new Set(recList);
@@ -171,6 +184,12 @@ export class ShopPanel {
     el('span', 'sp-coin', g);
     this.goldEl = el('span', '', g, String(this.gold));
     if (!me.inFountain && !me.dead) el('div', 'sp-hint', head, t('shop.notInShop'));
+    // undo (G/B1): the last buy/sell, as long as the champion stays in the shop
+    const undo = el('button', 'sp-undo', head, t('shop.undo'));
+    undo.title = t('shop.undoTip');
+    undo.disabled = !((me.undo ?? 0) > 0 && (me.inFountain || me.dead));
+    undo.addEventListener('click', () => this.hooks.undo?.());
+    this.undoBtn = undo;
     const search = el('input', 'sp-search', head);
     search.placeholder = t('shop.search');
     search.value = this.query;
@@ -274,7 +293,7 @@ export class ShopPanel {
       iconEl(s, id);
       setTip(s, `item:${id}`);
       s.addEventListener('click', () => this.select(id));
-      const sell = el('button', 'sp-sell', s, `+${Math.floor((itemById(id)?.cost ?? 0) * SELL_RATIO)}`);
+      const sell = el('button', 'sp-sell', s, `+${sellValue(id)}`);
       sell.title = t('shop.sell');
       sell.disabled = !me.inFountain && !me.dead;
       sell.addEventListener('click', (e) => (e.stopPropagation(), this.hooks.sell(slot)));

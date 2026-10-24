@@ -10,7 +10,7 @@ Neue Einträge oben. Format: Was / Warum / Wie getestet.
 ein Belagerungs-Minion stand sonst für immer am eigenen Turm (Knoten im Turmkreis), zwei Minions blockierten sich an einem
 Knoten zwischen ihnen (Wellen blieben an Lane-Ecken stehen, bewiesen > 10 s); Neu: `tools/bughunt/matchProbe.ts` (Invarianten-Prüfung je Tick für komplette Bot-Partien).
 
-**Warum:** Befunde aus 10 kompletten Probe-Partien und mehreren Teilläufen (Seeds 11-13, 21, 22; Standard- und Beta-Gehirn; Iron/Gold/Challenger).
+**Warum:** Befunde aus 12 kompletten Probe-Partien und mehreren Teilläufen (Seeds 11-13, 21, 22; Standard- und Beta-Gehirn; Iron/Gold/Challenger).
 Kein Ausnahmefehler, kein NaN, keine Konsolenmeldung gefunden; die drei Fehler waren Stillstände im Kern (Wellen).
 
 **Wie getestet:** Je Fehler ein Regressionstest in `tests/a2SimBugs.test.ts` (vor dem Fix rot, nach dem Fix grün); dazu

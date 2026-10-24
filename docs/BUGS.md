@@ -9,8 +9,8 @@ unverändert.
 
 ## Messläufe (alle Seeds `botGameConfig(seed, rank)`, Varianz normal)
 
-10 komplette Partien (bis Nexus oder 45-min-Deckel) plus mehrere Teilläufe (3-36 min) zum Eingrenzen. Spalte Stand: vor = vor
-den Fixes, nach = nach den Fixes (Partieverlauf ändert sich durch die Fixes, derselbe Seed ergibt danach eine andere Partie).
+12 komplette Partien (bis Nexus oder 45-min-Deckel) plus mehrere Teilläufe (3-36 min) zum Eingrenzen. Spalte Stand: vor = vor
+den Fixes, danach Zwischenstand bzw. endgültig (Partieverlauf ändert sich durch die Fixes, derselbe Seed ergibt danach eine andere Partie).
 
 | Seed | Rang | Gehirn | Stand | Ergebnis | Dauer |
 |---|---|---|---|---|---|
@@ -18,12 +18,17 @@ den Fixes, nach = nach den Fixes (Partieverlauf ändert sich durch die Fixes, de
 | 13 | Gold | Standard | vor | Blau gewinnt | 36,9 min |
 | 12 | Gold | Standard | vor | Rot gewinnt | 36,8 min |
 | 11 | Gold | Beta (`--brain=new`) | vor | Rot gewinnt | 44,7 min |
-| 11 | Gold | Standard | nach | Blau gewinnt | 42,0 min |
-| 13 | Gold | Standard | nach | Blau gewinnt | 38,4 min |
-| 21 | Iron | Standard | nach | Rot gewinnt | 34,3 min |
-| 11 | Gold | Beta | nach | Rot gewinnt | 41,9 min |
-| 12 | Gold | Beta | nach (Fix 1+2) | Deckel 45 min, kein Sieger | 45,0 min |
-| 22 | Challenger | Beta | nach | Deckel 45 min, kein Sieger | 45,0 min |
+| 11 | Gold | Standard | Zwischenstand* | Blau gewinnt | 42,0 min |
+| 13 | Gold | Standard | Zwischenstand* | Blau gewinnt | 38,4 min |
+| 21 | Iron | Standard | Zwischenstand* | Rot gewinnt | 34,3 min |
+| 11 | Gold | Beta | Zwischenstand* | Rot gewinnt | 41,9 min |
+| 12 | Gold | Beta | Zwischenstand* (Fix 1+2) | Deckel 45 min, kein Sieger | 45,0 min |
+| 22 | Challenger | Beta | Zwischenstand* | Deckel 45 min, kein Sieger | 45,0 min |
+| **13** | Gold | Standard | **endgültig** | Blau gewinnt (Nexus) | 33,7 min |
+| **11** | Gold | Beta | **endgültig** | Rot gewinnt (Nexus) | 38,0 min |
+
+\* Zwischenstand = mit dem inzwischen entfernten Movement-Fix `11b44dd` (siehe BUG-02). Die beiden „endgültig“-Läufe
+(Seed 13 Standard, Seed 11 Beta, Commit `614e805`) zeigen keinen Stillstand von Minions mehr, keine Ausnahme, kein NaN.
 
 Ergebnis über alle Läufe: **keine Ausnahme, kein NaN/Infinity, keine HP <= 0 bei lebenden Einheiten, keine
 `console.warn/error`-Ausgabe, keine falschen Todes-/Respawn-Zeiten** (Abweichungen von 1-2 Ticks sind Messrauschen der

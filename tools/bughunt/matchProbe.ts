@@ -162,7 +162,7 @@ function check(sim: Sim, inputs: { slot: number; cmd: { t: string } }[], runner:
     if (g > 6000) note(T, 'gold>6000 unspent', `${name} gold ${g} inv [${inventory(sim, e).map((x) => x ?? '-').join(',')}] at ${fmtT(T)}`);
     const lvl = Champ.level[e]!;
     let lvlFromXp = 1;
-    for (let i = 2; i <= MAX_LEVEL; i++) if (Champ.xp[e]! >= CUM_XP[i]!) lvlFromXp = i;
+    for (let i = 2; i <= MAX_LEVEL; i++) if (Champ.xp[e]! >= CUM_XP[i]! - 1e-6) lvlFromXp = i; // economy.grantXp levels up with the same 1e-6 tolerance
     if (lvl !== lvlFromXp) note(T, 'level != level from xp', `${name} level ${lvl}, xp ${Champ.xp[e]} implies ${lvlFromXp} at ${fmtT(T)}`);
     t.totalGold = Champ.totalGold[e]!;
     t.xp = Champ.xp[e]!;

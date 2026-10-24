@@ -17,7 +17,9 @@ import { minimapPingFor } from './minimapPing';
 import { buildSettingsPanel } from '../ui/settingsPanel';
 import { onSettingsChange, settings } from '../settings';
 import { t } from '../i18n';
-import { getChampionAtlas, getMinionAtlas, getMonsterAtlases } from '../render/sheets';
+import { preloadMatch } from '../render/loader';
+import { createLoadingBar } from '../render/loader/progressBar';
+import type { ChampionAtlas } from '../render/champions';
 import { SessionExtras, type ExitOpts, type SessionResult } from './session';
 import { withClientSettings } from './modes';
 
@@ -75,34 +77,47 @@ export class Game {
     this.world = new World(canvas, map);
     const f = map.sides[0].fountain;
     this.world.rig.focus(f.x + 600, f.y + 600);
-    // bake the animated champion sprites (worker pool); champions show the placeholder sprite until it is done
+    // A1 asset pipeline: champion, minion and monster atlases are loaded by ONE preloader (src/render/loader) with a
+    // combined progress bar; the sim stays paused until it resolves (a step that fails or times out becomes the
+    // pink/black checkerboard and is swapped for the real sprites if it still finishes).
     this.cover = document.createElement('div');
     this.cover.className = 'boot-cover';
     this.root.appendChild(this.cover);
     const loading = document.createElement('div');
-    // centred on the dark cover; the sim stays paused until the atlases are ready (loading must not eat game time)
+    // centred on the dark cover; loading must not eat game time
     loading.className = 'sprite-loading';
-    loading.textContent = t('hud.loadingChamps', { p: 0 });
+    const label = document.createElement('div');
+    const bar = createLoadingBar();
+    loading.append(label, bar.root);
+    const paint = (k: number): void => {
+      bar.set(k);
+      label.textContent = t('loading.graphics', { p: Math.round(bar.value() * 100) });
+    };
+    paint(0);
     this.cover.appendChild(loading);
-    void getChampionAtlas(config?.players.map((p) => p.champion) ?? ['mira'], (done, total) => {
-      loading.textContent = t('hud.loadingChamps', { p: Math.round((done / total) * 100) });
-    })
-      .then((atlas) => this.world.setChampionAtlas(atlas))
-      .catch((e) => console.warn('champion atlas failed, keeping placeholder sprites', e))
+    const applyAtlases = (kind: 'champions' | 'minions' | 'monsters', atlas: ChampionAtlas | [ChampionAtlas, ChampionAtlas]): void => {
+      try {
+        if (kind === 'champions') this.world.setChampionAtlas(atlas as ChampionAtlas);
+        else if (kind === 'minions') this.world.setMinionAtlas(atlas as ChampionAtlas);
+        else this.world.setMonsterAtlases(atlas as [ChampionAtlas, ChampionAtlas]);
+      } catch (e) {
+        console.warn(`${kind} atlas could not be used, keeping placeholder sprites`, e);
+      }
+    };
+    void preloadMatch({ champions: config?.players.map((p) => p.champion) ?? ['mira'], onProgress: paint, onLate: applyAtlases })
+      .then((r) => {
+        applyAtlases('champions', r.champions);
+        applyAtlases('minions', r.minions);
+        applyAtlases('monsters', r.monsters);
+        if (r.degraded.length) console.warn(`[loader] started with placeholder sprites for: ${r.degraded.join(', ')}`);
+      })
+      .catch((e) => console.warn('sprite preload failed, keeping placeholder sprites', e))
       .then(() => {
-        // champions ready: start the clock (minions only appear at 1:05, they keep baking in the background)
+        // everything a match draws is ready (or replaced by placeholders): start the clock
         loading.remove();
         this.atlasReady = true;
         this.link.pause(this.state.paused);
-      })
-      // minions after the champions (one worker pool at a time); usually already baked on the loading screen
-      .then(() => getMinionAtlas())
-      .then((atlas) => this.world.setMinionAtlas(atlas))
-      .catch((e) => console.warn('minion atlas failed, keeping placeholder sprites', e))
-      // jungle monsters + plants appear at 1:30: baked last, in the background
-      .then(() => getMonsterAtlases())
-      .then((atlases) => this.world.setMonsterAtlases(atlases))
-      .catch((e) => console.warn('monster atlases failed, keeping placeholder sprites', e));
+      });
     this.link = config ? workerLink(config, 0) : mockLink();
     this.link.pause(true); // sim builds in the worker meanwhile but does not tick until the sprites are baked
     this.link.onBotDebug = (rows, tick) => this.hud.botDebug.update(rows, tick);

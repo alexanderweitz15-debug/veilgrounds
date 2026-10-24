@@ -117,11 +117,25 @@ async function precacheRoster(): Promise<void> {
       await buildChampionAtlasAsync([id], { master: CHAMP_MASTER, frame: CHAMP_FRAME, autoHark: false, worker: makeWorker, workers: 2, cache: store });
       baked++;
     }
+    // the jungle monsters and plants too (A1): they were the last thing a cold first match baked, with the sim already
+    // paused for them on the loading screen; their strips are then only decoded
+    for (const [ids, master, frame] of [[BIG_MONSTER_IDS, 320, 200], [CAMP_MONSTER_IDS, 192, 128]] as const) {
+      for (const id of ids) {
+        if (gameRequested) break;
+        const hit = await store.get(stripKey(id, master, frame, true)).catch(() => null);
+        if (hit) {
+          hit.bmp.close();
+          continue;
+        }
+        await buildChampionAtlasAsync([id], { master, frame, autoHark: false, worker: makeWorker, workers: 2, cache: store });
+        baked++;
+      }
+    }
   } catch {
     /* best effort: the game bakes what is missing */
   } finally {
     precaching = false;
-    if (baked) console.info(`sprite precache: ${baked} champions baked in ${Math.round(performance.now() - t0)} ms`);
+    if (baked) console.info(`sprite precache: ${baked} sprites baked in ${Math.round(performance.now() - t0)} ms`);
   }
 }
 

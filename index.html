@@ -8,9 +8,10 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Spectral+SC:wght@600;700&display=swap" rel="stylesheet" />
+    <!-- Fonts are self-hosted (public/fonts, SIL OFL: docs/ASSETS-LICENSES.md) with font-display: swap. They used to come
+         from fonts.googleapis.com as a render-blocking stylesheet: when that host was slow or unreachable the whole page
+         waited for it. The stylesheet is same-origin now; text shows in the fallback font until a file has arrived. -->
+    <link rel="stylesheet" href="./fonts/fonts.css" />
   </head>
   <body>
     <div id="app"></div>

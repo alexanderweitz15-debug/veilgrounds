@@ -3,7 +3,7 @@
 // throws must not take every other champion down with it (renderMaster threw for ids without a kit, e.g. 'fenna').
 import './loaderEnv';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildChampionAtlasAsync, type AtlasCellCache, type BakeRequest, type BakeResult } from '../src/render/champions/atlas';
+import { buildChampionAtlasAsync, resetBakePool, type AtlasCellCache, type BakeRequest, type BakeResult } from '../src/render/champions/atlas';
 
 // a canvas that accepts the atlas builder's calls but cannot paint a sprite: renderMaster() throws on it, which stands
 // in for a painter bug
@@ -42,6 +42,7 @@ beforeAll(() => {
 afterAll(() => vi.unstubAllGlobals());
 beforeEach(() => {
   made = [];
+  resetBakePool();
   vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 });
 afterEach(() => vi.restoreAllMocks());
@@ -68,6 +69,16 @@ describe('bake worker pool robustness', () => {
     expect(made.every((w) => w.terminated)).toBe(true); // no worker is left running
     // the fake canvas cannot paint, so mira ends up as the checkerboard rather than breaking the atlas
     expect(a.placeholders).toEqual(['mira']);
+  });
+
+  it('after a failed pool the next atlas of the session does not wait for workers again', async () => {
+    behaviour = () => undefined;
+    await buildChampionAtlasAsync(['mira'], { ...opts, stallMs: 30 });
+    const before = made.length;
+    const t0 = Date.now();
+    await buildChampionAtlasAsync(['renn'], { ...opts, stallMs: 5000 });
+    expect(made.length).toBe(before); // no new worker was started
+    expect(Date.now() - t0).toBeLessThan(1000);
   });
 
   it('a messageerror from a worker is a failure, not an endless wait', async () => {

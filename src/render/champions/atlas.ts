@@ -791,6 +791,12 @@ export interface BakeResult {
 }
 
 export const DEFAULT_STALL_MS = 20000;
+/** A worker pool failed (hung, errored, unreadable message): later bakes of this session use the main thread at once. */
+let poolBroken = false;
+/** Test hook: forget a failed pool. */
+export function resetBakePool(): void {
+  poolBroken = false;
+}
 
 /**
  * Renders the jobs in a worker pool; false if the pool failed (the caller then bakes on the main thread). A pool fails
@@ -809,7 +815,7 @@ async function bakeInWorkers(
   failed: Set<string>,
 ): Promise<boolean> {
   const make = opts.worker;
-  if (!make || typeof OffscreenCanvas === 'undefined' || typeof Worker === 'undefined') return false;
+  if (!make || poolBroken || typeof OffscreenCanvas === 'undefined' || typeof Worker === 'undefined') return false;
   const n = Math.max(1, Math.min(opts.workers ?? 6, (navigator.hardwareConcurrency || 4) - 1, Math.ceil(jobs.length / 30)));
   const total = p.jobs.length;
   const stallMs = opts.stallMs ?? DEFAULT_STALL_MS;
@@ -860,6 +866,7 @@ async function bakeInWorkers(
     return true;
   } catch (e) {
     console.warn('sprite bake workers failed, baking on the main thread', e);
+    poolBroken = true; // the next atlases of this session skip the pool instead of waiting for it again
     return false;
   } finally {
     for (const t of timers) clearTimeout(t);

@@ -3,8 +3,10 @@
 // only decodes them. Records carry a version derived from this module's built URL (content-hashed chunk: any art change
 // in the bundle invalidates them); the dev server bakes every time. Not Cache Storage: the PWA service worker deletes
 // every cache but its own on activate.
-import { buildChampionAtlasAsync, BIG_MONSTER_IDS, CAMP_MONSTER_IDS, CHAMPION_IDS, MINION_IDS, STRIP_COLS, stripKey, type AnyCanvas, type AtlasCellCache, type ChampionAtlas } from './champions';
+import { buildChampionAtlasAsync, BIG_MONSTER_IDS, CAMP_MONSTER_IDS, CHAMPION_IDS, MINION_IDS, STRIP_COLS, stripKey, type AnyCanvas, type AtlasCellCache, type AtlasOptions, type ChampionAtlas } from './champions';
 import { atlasStoreAvailable, buildVersion, loadStrip, saveStrip } from './atlasStore';
+import { atlasAreaCap, atlasCanvasValid } from './loader/canvasProbe';
+import { MAX_CANVAS_AREA } from './loader/layout';
 
 const cache = new Map<string, Promise<ChampionAtlas>>();
 const makeWorker = (): Worker => new Worker(new URL('./spriteWorker.ts', import.meta.url), { type: 'module' });
@@ -31,6 +33,28 @@ function cellStore(): AtlasCellCache | undefined {
   });
 }
 
+/** Set once an atlas at the probed size came out blank: every later atlas is planned within MAX_CANVAS_AREA. */
+let forceCap = false;
+
+/**
+ * Bakes one atlas and checks that its canvas really holds the pixels (a strict browser draws nothing into a canvas above
+ * its limit and says nothing). A blank result is baked again within MAX_CANVAS_AREA (smaller cells); still blank = error.
+ */
+async function bakeChecked(ids: string[], opts: AtlasOptions): Promise<ChampionAtlas> {
+  const cap = forceCap ? MAX_CANVAS_AREA : atlasAreaCap();
+  const a = await buildChampionAtlasAsync(ids, { ...opts, maxArea: cap, stallMs: STALL_MS });
+  if (atlasCanvasValid(a)) return a;
+  if (cap === undefined || cap > MAX_CANVAS_AREA) {
+    console.warn(`atlas canvas ${a.canvas.width}x${a.canvas.height} came out blank (browser canvas limit?): baking again within ${MAX_CANVAS_AREA} px`);
+    forceCap = true;
+    const b = await buildChampionAtlasAsync(ids, { ...opts, maxArea: MAX_CANVAS_AREA, stallMs: STALL_MS });
+    if (atlasCanvasValid(b)) return b;
+  }
+  throw new Error('sprite atlas canvas is blank even at the safe size');
+}
+/** A bake worker pool silent for this long counts as dead (champions/atlas.ts bakeInWorkers). */
+const STALL_MS = 20000;
+
 /** Champion atlas for the champions of a match (Hark added when Ottilie plays). Cached per id set. */
 export function getChampionAtlas(ids: string[], onProgress?: (done: number, total: number) => void): Promise<ChampionAtlas> {
   const list = [...new Set(ids)].sort();
@@ -39,7 +63,7 @@ export function getChampionAtlas(ids: string[], onProgress?: (done: number, tota
   let p = cache.get(key);
   if (!p) {
     const t0 = performance.now();
-    p = buildChampionAtlasAsync(list, { master: CHAMP_MASTER, frame: CHAMP_FRAME, maxSize: ATLAS_MAX, autoHark: true, worker: makeWorker, cache: cellStore(), onProgress }).then((a) => {
+    p = bakeChecked(list, { master: CHAMP_MASTER, frame: CHAMP_FRAME, maxSize: ATLAS_MAX, autoHark: true, worker: makeWorker, cache: cellStore(), onProgress }).then((a) => {
       console.info(`champion atlas: ${list.length} champions, ${a.canvas.width}x${a.canvas.height} @${a.frameSize}px in ${Math.round(performance.now() - t0)} ms`);
       return a;
     });
@@ -106,7 +130,7 @@ let minions: Promise<ChampionAtlas> | null = null;
 export function getMinionAtlas(onProgress?: (done: number, total: number) => void): Promise<ChampionAtlas> {
   if (!minions) {
     const t0 = performance.now();
-    const p = buildChampionAtlasAsync(MINION_IDS, { master: 144, frame: 96, autoHark: false, worker: makeWorker, cache: cellStore(), onProgress }).then((a) => {
+    const p = bakeChecked(MINION_IDS, { master: 144, frame: 96, autoHark: false, worker: makeWorker, cache: cellStore(), onProgress }).then((a) => {
       console.info(`minion atlas: ${MINION_IDS.length} sprites, ${a.canvas.width}x${a.canvas.height} @${a.frameSize}px in ${Math.round(performance.now() - t0)} ms`);
       // the menu backdrop asks for minions first: afterwards warm the champion cache while the player is in menus
       setTimeout(() => void precacheRoster(), 1500);
@@ -128,8 +152,8 @@ let monsters: Promise<[ChampionAtlas, ChampionAtlas]> | null = null;
 export function getMonsterAtlases(onProgress?: (done: number, total: number) => void): Promise<[ChampionAtlas, ChampionAtlas]> {
   if (!monsters) {
     const t0 = performance.now();
-    const p = buildChampionAtlasAsync(BIG_MONSTER_IDS, { master: 320, frame: 200, autoHark: false, worker: makeWorker, cache: cellStore(), onProgress: (d, n) => onProgress?.(d * 0.4, n) })
-      .then((big) => buildChampionAtlasAsync(CAMP_MONSTER_IDS, { master: 192, frame: 128, autoHark: false, worker: makeWorker, cache: cellStore(), onProgress: (d, n) => onProgress?.(n * 0.4 + d * 0.6, n) }).then((camp) => [big, camp] as [ChampionAtlas, ChampionAtlas]))
+    const p = bakeChecked(BIG_MONSTER_IDS, { master: 320, frame: 200, autoHark: false, worker: makeWorker, cache: cellStore(), onProgress: (d, n) => onProgress?.(d * 0.4, n) })
+      .then((big) => bakeChecked(CAMP_MONSTER_IDS, { master: 192, frame: 128, autoHark: false, worker: makeWorker, cache: cellStore(), onProgress: (d, n) => onProgress?.(n * 0.4 + d * 0.6, n) }).then((camp) => [big, camp] as [ChampionAtlas, ChampionAtlas]))
       .then((a) => {
         console.info(`monster atlases: ${a[0].canvas.width}x${a[0].canvas.height} + ${a[1].canvas.width}x${a[1].canvas.height} in ${Math.round(performance.now() - t0)} ms`);
         return a;

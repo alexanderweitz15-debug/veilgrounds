@@ -24,7 +24,8 @@ import { setPortrait } from '../render/portraits';
 import { setTip } from './tooltip';
 import { renderShowcase } from './showcase';
 import { roleIcon, runeIcon, setIcon, summonerIcon } from './icons';
-import { getChampionAtlas, getMinionAtlas } from '../render/sheets';
+import { preloadMatch } from '../render/loader';
+import { createLoadingBar } from '../render/loader/progressBar';
 
 type Role = PlayerSetup['role'];
 type Variance = 'stable' | 'normal' | 'volatile';
@@ -403,38 +404,43 @@ export function renderLoading(root: HTMLElement, cfg: SimConfig, onDone: () => v
   };
   const tipTimer = window.setInterval(showTip, TIP_MS);
   showTip();
-  const bar = el('div', 'loading-bake', root);
-  bar.style.cssText = 'font-size:13px;letter-spacing:0.06em;color:#a09b8c;min-height:1.2em';
+  const status = el('div', 'loading-bake', root);
+  status.style.cssText = 'font-size:13px;letter-spacing:0.06em;color:#a09b8c;min-height:1.2em;text-align:center';
+  const bar = createLoadingBar(360);
+  root.appendChild(bar.root);
   const paint = (k: number): void => {
-    bar.textContent = `${settings.lang === 'en' ? 'Painting sprites…' : 'Sprites werden gemalt…'} ${Math.round(k * 100)} %`;
+    bar.set(k);
+    status.textContent = t('loading.graphics', { p: Math.round(bar.value() * 100) });
   };
   paint(0);
-  // champions first, then the (session-cached) minions: one worker pool at a time. The game starts once they are
-  // baked (or after 20 s at most: it then shows placeholder sprites until the bake finishes).
+  // One preloader for everything the match draws (champions of this match, minions, jungle monsters): the same steps
+  // the game joins afterwards, so nothing is baked twice. It always resolves: a step that hangs or fails is replaced by
+  // placeholder sprites (src/render/loader/pipeline.ts), so there is no extra cap here.
   let ready = false;
   let wanted = false;
   let done = false;
-  const release = (): void => {
+  const release = (degraded: string[]): void => {
     ready = true;
-    bar.textContent = '';
+    status.textContent = degraded.length ? t('loading.degraded') : '';
+    bar.root.remove();
     if (wanted) go();
   };
-  void getChampionAtlas(cfg.players.map((p) => p.champion), (d, n) => paint((d / n) * 0.8))
-    .catch((e) => console.warn('champion atlas failed on the loading screen', e))
-    .then(() => getMinionAtlas((d, n) => paint(0.8 + (d / n) * 0.2)))
-    .catch((e) => console.warn('minion atlas failed on the loading screen', e))
-    .finally(release);
-  const cap = setTimeout(release, 20000);
+  void preloadMatch({ champions: cfg.players.map((p) => p.champion), onProgress: paint })
+    .then((r) => r.degraded)
+    .catch((e) => {
+      console.warn('sprite preload failed on the loading screen', e);
+      return ['preload'];
+    })
+    .then(release);
   const go = (): void => {
     wanted = true;
     if (done) return;
     if (!ready) {
-      hint.textContent = settings.lang === 'en' ? 'Starting as soon as the sprites are ready…' : 'Startet, sobald die Sprites fertig sind…';
+      hint.textContent = t('loading.waitGraphics');
       return;
     }
     done = true;
     clearTimeout(timer);
-    clearTimeout(cap);
     onDone();
   };
   const timer = setTimeout(go, 2500);

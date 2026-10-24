@@ -18,6 +18,8 @@ import { MINION_DRAWERS, MINION_KITS } from './minions';
 import { MONSTER_DRAWERS } from './monsters';
 import { ANIMS, DIRS, type Anim, type Dir, type Kit } from './types';
 import { STRIP_COLS, stripKey, stripPos } from '../atlasStrip';
+import { layoutAtlas, MAX_CANVAS_AREA } from '../loader/layout';
+import { paintChecker } from '../loader/checker';
 
 /** Canvas in the page or (in a Worker) an OffscreenCanvas. */
 export type AnyCanvas = HTMLCanvasElement | OffscreenCanvas;
@@ -58,6 +60,12 @@ export function registerSpriteDrawer(id: string, d: SpriteDrawer): void {
   DRAWERS[id] = d;
 }
 const kitOf = (id: string): Kit | undefined => KITS[id] ?? EXTRA_KITS[id];
+/** Which painter draws an id: Hark's wolf, a custom drawer (minions, monsters, Vargrim) or a paper-doll kit; null = none registered. */
+export function rendererOf(id: string): 'wolf' | 'drawer' | 'kit' | null {
+  if (id === 'hark') return 'wolf';
+  if (DRAWERS[id]) return 'drawer';
+  return kitOf(id) ? 'kit' : null;
+}
 
 export { ANIMS, DIRS, FRAMES, FPS, LOOP, CAST_RELEASE, CAST_FLEX };
 export type { Anim, Dir };
@@ -94,6 +102,13 @@ export interface ChampionAtlas {
   /** attack frame of the impact per id (synced to the sim's hit point) */
   hit: Record<string, number>;
   loop: Record<Anim, boolean>;
+  /**
+   * Ids that have frames in this atlas but no painted ones (no renderer registered, or their bake failed): every frame of
+   * them is the pink/black checkerboard cell, so a missing asset is visible instead of an invisible or blob sprite.
+   */
+  placeholders: string[];
+  /** a pixel of the canvas that is opaque pink when the canvas really holds what was drawn (see loader/validate.ts) */
+  check: { x: number; y: number };
 }
 
 export interface AtlasOptions {
@@ -101,6 +116,10 @@ export interface AtlasOptions {
   frame?: number;
   /** max texture edge (default 4096) */
   maxSize?: number;
+  /** max canvas width x height in px (default unlimited; the game passes 16,777,216 where big canvases fail, see loader/layout.ts) */
+  maxArea?: number;
+  /** a bake worker pool that sends nothing for this long counts as dead (default 20 s): the rest is baked on the main thread */
+  stallMs?: number;
   /** reuse E/SE/NE for W/SW/NW (default true; false renders all 8 with consistent light) */
   mirror?: boolean;
   /** master render resolution before downsampling (default 256) */
@@ -570,27 +589,34 @@ export interface AtlasJob {
   cell: number;
 }
 
-function plan(ids: string[], opts: AtlasOptions) {
-  const list = [...ids];
-  if ((opts.autoHark ?? true) && list.includes('ottilie') && !list.includes('hark')) list.push('hark');
+/**
+ * Layout of an atlas for `ids` (pure: no canvas). Ids without a registered renderer are not baked (renderMaster would
+ * throw and take the whole atlas down): they are listed in `missing` and drawn as the checkerboard cell, which is
+ * reserved as the last cell of the grid (`placeholderCell`).
+ */
+export function planAtlas(ids: string[], opts: AtlasOptions = {}) {
+  const wanted = [...ids];
+  if ((opts.autoHark ?? true) && wanted.includes('ottilie') && !wanted.includes('hark')) wanted.push('hark');
+  const list = wanted.filter((id) => rendererOf(id) !== null);
+  const missing = wanted.filter((id) => rendererOf(id) === null);
+  for (const id of missing) warnOnce(`sprite '${id}' has no renderer (champions/kits.ts, minions.ts, monsters.ts): drawn as the missing-asset checkerboard`);
   const mirror = opts.mirror ?? true;
   const uniqueDirs = DIRS.filter((d) => !(mirror && MIRROR_OF[d]));
   const jobs: AtlasJob[] = [];
   for (const id of list)
     for (const anim of ANIMS)
       for (const dir of uniqueDirs) for (let f = 0; f < framesOf(id, anim); f++) jobs.push({ id, anim, dir, frame: f, cell: jobs.length });
-  const maxSize = opts.maxSize ?? 4096;
-  let frame = opts.frame ?? 128;
-  const fits = (fs: number) => Math.floor(maxSize / fs) ** 2 >= jobs.length;
-  while (!fits(frame) && frame > 48) frame -= 8;
-  const cols = Math.floor(maxSize / frame);
-  const width = Math.min(maxSize, pot(Math.min(cols, jobs.length) * frame));
-  const perRow = Math.floor(width / frame);
-  const height = pot(Math.ceil(jobs.length / perRow) * frame);
-  return { list, mirror, jobs, frame, width, height, perRow };
+  const placeholderCell = jobs.length;
+  const lay = layoutAtlas(jobs.length + 1, { frame: opts.frame ?? 128, maxSize: opts.maxSize ?? 4096, maxArea: opts.maxArea });
+  return { list, missing, mirror, jobs, placeholderCell, frame: lay.frame, width: lay.width, height: lay.height, perRow: lay.perRow, capped: lay.capped };
 }
-type Plan = ReturnType<typeof plan>;
-const pot = (n: number) => 2 ** Math.ceil(Math.log2(Math.max(1, n)));
+const warned = new Set<string>();
+function warnOnce(msg: string): void {
+  if (warned.has(msg)) return;
+  warned.add(msg);
+  console.warn(msg);
+}
+type Plan = ReturnType<typeof planAtlas>;
 
 function emptyFrames(list: string[]): ChampionAtlas['frames'] {
   const frames: ChampionAtlas['frames'] = {};
@@ -658,26 +684,60 @@ function record(p: Plan, job: AtlasJob, frames: ChampionAtlas['frames']): { x: n
   return { x, y };
 }
 
-function place(ctx: CanvasRenderingContext2D, p: Plan, job: AtlasJob, master: number, frames: ChampionAtlas['frames'], top: Record<string, number>): void {
-  const c = renderCell(job, master, p.frame);
-  const { x, y } = record(p, job, frames);
-  ctx.drawImage(c, x + 1, y + 1);
-  if (isTopJob(job)) top[job.id] = topRow(c, p.frame);
+/** Rect of the reserved checkerboard cell (same UV convention as `record`). */
+function placeholderRect(p: Plan): FrameRect {
+  const fs = p.frame;
+  const x = (p.placeholderCell % p.perRow) * fs;
+  const y = Math.floor(p.placeholderCell / p.perRow) * fs;
+  return { x, y, w: fs, h: fs, u0: (x + 0.5) / p.width, u1: (x + fs - 0.5) / p.width, v1: 1 - (y + 0.5) / p.height, v0: 1 - (y + fs - 0.5) / p.height, flip: false };
 }
 
-function result(p: Plan, canvas: HTMLCanvasElement, frames: ChampionAtlas['frames'], top: Record<string, number>): ChampionAtlas {
+/** Frames of `id` that all show the checkerboard cell: same shape (anims x dirs x frame count) as a painted id. */
+function placeholderFrames(p: Plan, id: string): Record<Anim, Record<Dir, FrameRect[]>> {
+  const rect = placeholderRect(p);
+  const a = {} as Record<Anim, Record<Dir, FrameRect[]>>;
+  for (const anim of ANIMS) {
+    const d = {} as Record<Dir, FrameRect[]>;
+    const n = Math.max(1, framesOf(id, anim));
+    for (const dir of DIRS) d[dir] = Array.from({ length: n }, () => rect);
+    a[anim] = d;
+  }
+  return a;
+}
+
+/** Renders one cell into the atlas; false (and a warning) if the painter threw: that id then becomes a placeholder. */
+function place(ctx: CanvasRenderingContext2D, p: Plan, job: AtlasJob, master: number, frames: ChampionAtlas['frames'], top: Record<string, number>, failed: Set<string>): boolean {
+  if (failed.has(job.id)) return false;
+  try {
+    const c = renderCell(job, master, p.frame);
+    const { x, y } = record(p, job, frames);
+    ctx.drawImage(c, x + 1, y + 1);
+    if (isTopJob(job)) top[job.id] = topRow(c, p.frame);
+    return true;
+  } catch (e) {
+    failed.add(job.id);
+    console.warn(`sprite '${job.id}' failed to paint (${job.anim} ${job.dir} #${job.frame}): drawn as the missing-asset checkerboard`, e);
+    return false;
+  }
+}
+
+function result(p: Plan, canvas: HTMLCanvasElement, frames: ChampionAtlas['frames'], top: Record<string, number>, failed: ReadonlySet<string>): ChampionAtlas {
   const worldSize: Record<string, number> = {};
   const foot: Record<string, number> = {};
   const rate: Record<string, Record<Anim, number>> = {};
   const hit: Record<string, number> = {};
-  for (const id of p.list) {
+  const placeholders = [...p.missing, ...p.list.filter((id) => failed.has(id))];
+  for (const id of placeholders) frames[id] = placeholderFrames(p, id);
+  for (const id of [...p.list, ...p.missing]) {
     worldSize[id] = worldSizeOf(id);
     foot[id] = footOf(id);
     rate[id] = rateOf(id);
     hit[id] = hitOf(id);
     top[id] ??= 0.2;
   }
-  return { canvas, frameSize: p.frame, frames, worldSize, foot, top, fps: { ...FPS }, rate, hit, loop: { ...LOOP } };
+  if (p.capped) console.info(`atlas cells shrunk to ${p.frame} px to stay within ${MAX_CANVAS_AREA} canvas px (${p.width}x${p.height})`);
+  const pr = placeholderRect(p);
+  return { canvas, frameSize: p.frame, frames, worldSize, foot, top, fps: { ...FPS }, rate, hit, loop: { ...LOOP }, placeholders, check: { x: pr.x + 2, y: pr.y + 2 } };
 }
 
 function atlasCanvas(p: Plan): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
@@ -685,22 +745,27 @@ function atlasCanvas(p: Plan): { canvas: HTMLCanvasElement; ctx: CanvasRendering
   canvas.width = p.width;
   canvas.height = p.height;
   const ctx = ctx2d(canvas);
+  if (!ctx) throw new Error(`2D canvas of ${p.width}x${p.height} px is not available (browser canvas size limit?)`);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
+  // the reserved cell shows the missing-asset checkerboard (content area; the 1 px gutter stays transparent like the others)
+  const r = placeholderRect(p);
+  paintChecker(ctx, r.x + 1, r.y + 1, p.frame - 2);
   return { canvas, ctx };
 }
 
 export function buildChampionAtlas(ids: string[], opts: AtlasOptions = {}): ChampionAtlas {
-  const p = plan(ids, opts);
+  const p = planAtlas(ids, opts);
   const { canvas, ctx } = atlasCanvas(p);
   const frames = emptyFrames(p.list);
   const top: Record<string, number> = {};
+  const failed = new Set<string>();
   const master = opts.master ?? 256;
   p.jobs.forEach((job, i) => {
-    place(ctx, p, job, master, frames, top);
+    place(ctx, p, job, master, frames, top, failed);
     opts.onProgress?.(i + 1, p.jobs.length);
   });
-  return result(p, canvas, frames, top);
+  return result(p, canvas, frames, top, failed);
 }
 
 /** Yield to the event loop (MessageChannel: not clamped like setTimeout in background tabs). */
@@ -712,7 +777,7 @@ function yieldToLoop(): Promise<void> {
   });
 }
 
-/** Message protocol of a bake worker (see src/render/spriteWorker.ts). */
+/** Message protocol of a bake worker (see src/render/spriteWorker.ts). `error` set = the painter threw for this cell. */
 export interface BakeRequest {
   master: number;
   cell: number;
@@ -720,11 +785,24 @@ export interface BakeRequest {
 }
 export interface BakeResult {
   cell: number;
-  bmp: ImageBitmap;
+  bmp?: ImageBitmap;
   top?: number;
+  error?: string;
 }
 
-/** Renders the jobs in a worker pool; false if a worker failed (the caller then bakes on the main thread). */
+export const DEFAULT_STALL_MS = 20000;
+/** A worker pool failed (hung, errored, unreadable message): later bakes of this session use the main thread at once. */
+let poolBroken = false;
+/** Test hook: forget a failed pool. */
+export function resetBakePool(): void {
+  poolBroken = false;
+}
+
+/**
+ * Renders the jobs in a worker pool; false if the pool failed (the caller then bakes on the main thread). A pool fails
+ * when a worker errors, answers with an unreadable message (`messageerror`), or sends nothing for `stallMs`.
+ * Cells whose painter threw are reported by id in `failed` and do not fail the pool.
+ */
 async function bakeInWorkers(
   p: Plan,
   opts: AtlasOptions,
@@ -734,13 +812,16 @@ async function bakeInWorkers(
   top: Record<string, number>,
   jobs: readonly AtlasJob[],
   done0: number,
+  failed: Set<string>,
 ): Promise<boolean> {
   const make = opts.worker;
-  if (!make || typeof OffscreenCanvas === 'undefined' || typeof Worker === 'undefined') return false;
+  if (!make || poolBroken || typeof OffscreenCanvas === 'undefined' || typeof Worker === 'undefined') return false;
   const n = Math.max(1, Math.min(opts.workers ?? 6, (navigator.hardwareConcurrency || 4) - 1, Math.ceil(jobs.length / 30)));
   const total = p.jobs.length;
+  const stallMs = opts.stallMs ?? DEFAULT_STALL_MS;
   let done = done0;
   const pool: Worker[] = [];
+  const timers: ReturnType<typeof setTimeout>[] = [];
   try {
     await Promise.all(
       Array.from({ length: n }, (_, wi) => {
@@ -750,17 +831,33 @@ async function bakeInWorkers(
           const w = make();
           pool.push(w);
           let left = slice.length;
+          let timer: ReturnType<typeof setTimeout> | undefined;
+          const arm = (): void => {
+            clearTimeout(timer);
+            timer = setTimeout(() => reject(new Error(`sprite bake worker silent for ${stallMs} ms`)), stallMs);
+            timers.push(timer);
+          };
+          arm();
           w.onmessage = (ev: MessageEvent<BakeResult>) => {
             const r = ev.data;
             const job = p.jobs[r.cell]!;
-            const { x, y } = record(p, job, frames);
-            ctx.drawImage(r.bmp, x + 1, y + 1);
-            r.bmp.close();
-            if (r.top !== undefined) top[job.id] = r.top;
+            if (r.error !== undefined) {
+              if (!failed.has(job.id)) console.warn(`sprite '${job.id}' failed to paint in the bake worker: ${r.error}`);
+              failed.add(job.id);
+            } else if (r.bmp) {
+              const { x, y } = record(p, job, frames);
+              ctx.drawImage(r.bmp, x + 1, y + 1);
+              r.bmp.close();
+              if (r.top !== undefined) top[job.id] = r.top;
+            }
             opts.onProgress?.(++done, total);
-            if (--left === 0) resolve();
+            if (--left === 0) {
+              clearTimeout(timer);
+              resolve();
+            } else arm();
           };
           w.onerror = (e) => reject(e);
+          w.onmessageerror = () => reject(new Error('sprite bake worker sent a message that could not be deserialized'));
           const req: BakeRequest = { master, cell: p.frame, jobs: slice };
           w.postMessage(req);
         });
@@ -769,8 +866,10 @@ async function bakeInWorkers(
     return true;
   } catch (e) {
     console.warn('sprite bake workers failed, baking on the main thread', e);
+    poolBroken = true; // the next atlases of this session skip the pool instead of waiting for it again
     return false;
   } finally {
+    for (const t of timers) clearTimeout(t);
     for (const w of pool) w.terminate();
   }
 }
@@ -780,10 +879,11 @@ async function bakeInWorkers(
  * faster), otherwise on the main thread, yielding to the event loop after every ~40 frames.
  */
 export async function buildChampionAtlasAsync(ids: string[], opts: AtlasOptions = {}): Promise<ChampionAtlas> {
-  const p = plan(ids, opts);
+  const p = planAtlas(ids, opts);
   const { canvas, ctx } = atlasCanvas(p);
   const frames = emptyFrames(p.list);
   const top: Record<string, number> = {};
+  const failed = new Set<string>();
   const master = opts.master ?? 256;
   const mirror = opts.mirror ?? true;
   // B7: ids found in the persistent cache are blitted from their strip, only the rest is baked
@@ -799,11 +899,15 @@ export async function buildChampionAtlasAsync(ids: string[], opts: AtlasOptions 
       const src = Math.round(h.bmp.width / Math.min(jobs.length, STRIP_COLS));
       const need = stripPos(jobs.length - 1, src);
       if (src < p.frame || h.bmp.height < need.y + src) return h.bmp.close(); // stale layout
+      // one readback of the strip into a CPU canvas, then cheap canvas-to-canvas blits: drawing every cell straight from
+      // the (possibly GPU-backed) bitmap costs one GPU sync per cell, ~100 per id
+      const stripCanvas = newCanvas(h.bmp.width, h.bmp.height);
+      ctx2d(stripCanvas).drawImage(h.bmp, 0, 0);
       jobs.forEach((job, k) => {
         const s = stripPos(k, src);
         const { x, y } = record(p, job, frames);
         // content only (1 px gutter on both sides stays transparent)
-        ctx.drawImage(h.bmp, s.x + 1, s.y + 1, src - 2, src - 2, x + 1, y + 1, p.frame - 2, p.frame - 2);
+        ctx.drawImage(stripCanvas, s.x + 1, s.y + 1, src - 2, src - 2, x + 1, y + 1, p.frame - 2, p.frame - 2);
       });
       h.bmp.close();
       top[id] = h.top;
@@ -813,10 +917,11 @@ export async function buildChampionAtlasAsync(ids: string[], opts: AtlasOptions 
   const todo = p.jobs.filter((j) => !cached.has(j.id));
   const done0 = p.jobs.length - todo.length;
   opts.onProgress?.(done0, p.jobs.length);
-  if (todo.length && !(await bakeInWorkers(p, opts, master, ctx, frames, top, todo, done0))) {
+  if (todo.length && !(await bakeInWorkers(p, opts, master, ctx, frames, top, todo, done0, failed))) {
+    failed.clear(); // the main thread redoes every cell
     for (const job of todo) ctx.clearRect(...cellRect(p, job));
     for (let i = 0; i < todo.length; i++) {
-      place(ctx, p, todo[i]!, master, frames, top);
+      place(ctx, p, todo[i]!, master, frames, top, failed);
       if (i % 40 === 39) {
         opts.onProgress?.(done0 + i + 1, p.jobs.length);
         await yieldToLoop();
@@ -824,8 +929,9 @@ export async function buildChampionAtlasAsync(ids: string[], opts: AtlasOptions 
     }
   }
   opts.onProgress?.(p.jobs.length, p.jobs.length);
-  if (opts.cache && todo.length) storeStrips(p, canvas, top, todo, opts.cache, master, want, mirror);
-  return result(p, canvas, frames, top);
+  // a cache strip of a failed id would persist a broken sprite: only complete ones are stored
+  if (opts.cache && todo.length) storeStrips(p, canvas, top, todo.filter((j) => !failed.has(j.id)), opts.cache, master, want, mirror);
+  return result(p, canvas, frames, top, failed);
 }
 
 /** Atlas rectangle of a job's cell. */

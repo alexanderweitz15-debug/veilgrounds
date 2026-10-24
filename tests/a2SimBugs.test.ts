@@ -6,6 +6,8 @@ import { step } from '../src/sim/sim';
 import { Kind, Lane } from '../src/sim/types';
 import { spawnMinion } from '../src/sim/systems/minions';
 import { inBush } from '../src/sim/map';
+import { structureAt } from '../src/sim/systems/towers';
+import { cmd, makeSim, mira, place, steps } from './combat-helpers';
 
 describe('BUG-01: minions chasing a minion hidden in a bush', () => {
   it('an enemy minion outside the bush neither stands idle chasing it forever nor loses its lane', () => {
@@ -33,5 +35,34 @@ describe('BUG-01: minions chasing a minion hidden in a bush', () => {
     // it never picks the unseen minion as its target (it could not attack it) and goes on down its lane instead
     expect(chasedHidden).toBe(0);
     expect(Math.hypot(sim.c.Pos.x[red]! - x0, sim.c.Pos.y[red]! - y0)).toBeGreaterThan(300);
+  });
+});
+
+describe('BUG-02: a waypoint inside a structure never completes', () => {
+  it('a siege minion at the rim of its own tower walks on (matchProbe seed 13: stuck for good at 2:41)', () => {
+    // exact state from the probe: the lane vertex (1200, 11267) lies inside the collision circle of the outer top tower
+    // (1300, 11300); the push-out kept the minion on a fixed point of walk-in / push-out for ever
+    const sim = newSim(false);
+    const m = spawnMinion(sim, Kind.MinionSiege, 0, Lane.Top, 1155.2117692165352, 11250.508907603547);
+    sim.c.Face.x[m] = 0.9555492125467194;
+    sim.c.Face.y[m] = 0.2948316509490533;
+    sim.paths.set(m, [{ x: 1200, y: 11266.613553357407 }, { x: 1200, y: 14800 }, { x: 13000, y: 14800 }, { x: 14200, y: 14200 }]);
+    sim.c.Move.mode[m] = 1;
+    for (let i = 0; i < 30 * 8; i++) step(sim);
+    expect(sim.c.Pos.y[m]!).toBeGreaterThan(11600);
+  });
+
+  it('a move order onto the own tower ends at its rim instead of walking into it for ever', () => {
+    // bots send champions to tower positions; the order stayed Move.mode 1 (matchProbe: aurel at 15:36, thessaly at 17:55)
+    const sim = makeSim();
+    const t = structureAt(sim, 0, Kind.Tower, Lane.Mid, 0)!.eid;
+    const tx = sim.c.Pos.x[t]!;
+    const ty = sim.c.Pos.y[t]!;
+    const m = mira(sim);
+    place(sim, m, tx - 500, ty - 500);
+    cmd(sim, { t: 'move', x: tx, y: ty });
+    steps(sim, 30 * 8);
+    expect(sim.c.Move.mode[m]).toBe(0);
+    expect(Math.hypot(sim.c.Pos.x[m]! - tx, sim.c.Pos.y[m]! - ty)).toBeLessThan(sim.c.Unit.radius[t]! + sim.c.Unit.radius[m]! + 30);
   });
 });

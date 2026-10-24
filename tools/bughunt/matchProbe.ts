@@ -18,7 +18,7 @@ import { CUM_XP, MAX_LEVEL, deathTimerTicks } from '../../src/sim/systems/econom
 import { channelOf, isBusy } from '../../src/sim/systems/abilities';
 import { walkable } from '../../src/sim/map';
 import { wardsOf } from '../../src/sim/wards';
-import { buffs, hasStat } from '../../src/sim/buffs';
+import { buffs } from '../../src/sim/buffs';
 
 BUILDS.sev ??= sevBuild as (typeof BUILDS)[string];
 
@@ -77,9 +77,10 @@ interface CTrack {
   deadY: number;
 }
 const tracks = new Map<number, CTrack>();
-const unitStill = new Map<number, { x: number; y: number; since: number }>();
+const unitStill = new Map<number, { x: number; y: number; since: number; serial: number }>();
 const wardBorn = new Map<number, number>();
 const respawnedAt = new Map<number, number>();
+const stuckEids = new Set<number>();
 
 function check(sim: Sim, inputs: { slot: number; cmd: { t: string } }[]): void {
   const { Pos, Unit, Hp, Mana, Stats, Champ, Move, Atk } = sim.c;
@@ -103,14 +104,26 @@ function check(sim: Sim, inputs: { slot: number; cmd: { t: string } }[]): void {
       if (!finite(Mana.cur[e]!) || Mana.cur[e]! < -1e-6) note(T, `bad-mana kind${k}`, `${tag} mana ${Mana.cur[e]} at ${fmtT(T)}`);
     }
     // stuck non-champions (walking a path / chasing, no CC): minions and monsters
-    if (alive && k !== Kind.Champion && (Move.mode[e] === 1 || Move.mode[e] === 2) && Stats.ms[e]! > 0 && Unit.team[e] !== 2) {
-      const u = unitStill.get(e);
+    const tg0 = Atk.target[e]!;
+    const inReach = Move.mode[e] === 2 && tg0 >= 0 && Math.hypot(Pos.x[tg0]! - Pos.x[e]!, Pos.y[tg0]! - Pos.y[e]!) <= Stats.range[e]! + Unit.radius[e]! + Unit.radius[tg0]! + 5;
+    if (alive && k !== Kind.Champion && (Move.mode[e] === 1 || (Move.mode[e] === 2 && !inReach)) && Stats.ms[e]! > 0 && Unit.team[e] !== 2) {
+      let u = unitStill.get(e);
+      if (u && u.serial !== Unit.serial[e]) u = undefined; // eid recycled
       const d = u ? Math.hypot(Pos.x[e]! - u.x, Pos.y[e]! - u.y) : 1e9;
-      if (!u || d > 25 || Atk.phase[e] !== 0) unitStill.set(e, { x: Pos.x[e]!, y: Pos.y[e]!, since: T });
+      if (!u || d > 25 || Atk.phase[e] !== 0) {
+        if (u && T - u.since >= 300) note(T, `stuck minion/monster resolved kind${k}`, `${tag} was still for ${((T - u.since) / 30).toFixed(1)}s, resolved ${fmtT(T)} at ${Math.round(Pos.x[e]!)},${Math.round(Pos.y[e]!)}`);
+        unitStill.set(e, { x: Pos.x[e]!, y: Pos.y[e]!, since: T, serial: Unit.serial[e]! });
+      }
       else if (T - u.since === 300) {
         const tg = Atk.target[e]!;
         const tgs = tg >= 0 ? `target kind${Unit.kind[tg]} alive ${Unit.alive[tg]} at ${Math.round(Pos.x[tg]!)},${Math.round(Pos.y[tg]!)} d ${Math.round(Math.hypot(Pos.x[tg]! - Pos.x[e]!, Pos.y[tg]! - Pos.y[e]!))} r ${Unit.radius[tg]} untargetable ${Unit.untargetable[tg]} targetTeam ${Unit.team[tg]} ownTeam ${Unit.team[e]} serialOk ${Atk.targetSerial[e] === Unit.serial[tg]} atkPhase ${Atk.phase[e]} nextReady ${Atk.nextReady[e]} tick ${T} ownBuffs [${buffs(sim, e).map((b) => b.kind + ':' + b.id).join(',')}] ms ${Stats.ms[e]}` : 'no target';
-        note(T, `stuck>10s kind${k}`, `${tag} at ${Math.round(Pos.x[e]!)},${Math.round(Pos.y[e]!)} mode ${Move.mode[e]} pathLen ${sim.paths.get(e)?.length} ${tgs} range ${Stats.range[e]} walkable ${walkable(sim.map.nav, Pos.x[e]!, Pos.y[e]!)} ${fmtT(T)}`);
+        stuckEids.add(e);
+        console.warn = origWarn;
+        process.stdout.write(`STUCK exact: eid ${e} tick ${T} pos ${Pos.x[e]},${Pos.y[e]} face ${sim.c.Face.x[e]},${sim.c.Face.y[e]} radius ${Unit.radius[e]} wp ${JSON.stringify(sim.paths.get(e))} move ${Move.tx[e]},${Move.ty[e]} pathIdx ${Move.pathIdx[e]} atk.nextReady ${Atk.nextReady[e]}\n`);
+        console.warn = (...a) => logs.push('warn: ' + a.map(String).join(' '));
+        const near: string[] = [];
+        for (const o of query(sim.world, [Unit, Pos])) if (o !== e && Unit.alive[o] && Math.hypot(Pos.x[o]! - Pos.x[e]!, Pos.y[o]! - Pos.y[e]!) < 250) near.push(`kind${Unit.kind[o]}/team${Unit.team[o]}@${Math.round(Pos.x[o]!)},${Math.round(Pos.y[o]!)}`);
+        note(T, `stuck>10s kind${k}`, `${tag} team ${Unit.team[e]} lane ${Unit.lane[e]} near [${near.join(' ')}] path ${JSON.stringify(sim.paths.get(e)?.slice(0, 3).map((p) => [Math.round(p.x), Math.round(p.y)]))} at ${Math.round(Pos.x[e]!)},${Math.round(Pos.y[e]!)} mode ${Move.mode[e]} pathLen ${sim.paths.get(e)?.length} ${tgs} range ${Stats.range[e]} walkable ${walkable(sim.map.nav, Pos.x[e]!, Pos.y[e]!)} ${fmtT(T)}`);
       }
     }
     if (k === Kind.Ward && alive && !wardBorn.has(Unit.serial[e]!)) wardBorn.set(Unit.serial[e]!, T);
@@ -166,7 +179,7 @@ function check(sim: Sim, inputs: { slot: number; cmd: { t: string } }[]): void {
       if (Hp.cur[e]! < Hp.max[e]! - 1e-6) note(T, 'respawn hp not full', `${name} ${Hp.cur[e]}/${Hp.max[e]} ${fmtT(T)}`);
       if (Atk.target[e] !== -1 || Atk.attackMove[e]) note(T, 'respawn kept attack order', `${name} ${fmtT(T)}`);
       if (isBusy(sim, e) || channelOf(sim, e)) note(T, 'respawn still busy/channeling', `${name} ${fmtT(T)}`);
-      if (hasStat(sim, e, 'stun') || Stats.ms[e] === 0) note(T, 'respawn with CC / ms 0', `${name} ms ${Stats.ms[e]} buffs [${buffs(sim, e).map((b) => b.kind + ':' + b.id + ':' + b.until).join(',')}] ${fmtT(T)}`);
+      if (buffs(sim, e).some((b) => b.kind === 'stun') || Stats.ms[e] === 0) note(T, 'respawn with CC / ms 0', `${name} ms ${Stats.ms[e]} buffs [${buffs(sim, e).map((b) => b.kind + ':' + b.id + ':' + b.until).join(',')}] ${fmtT(T)}`);
     }
     t.alive = alive;
     if (alive && t.deathTick >= 0 && T - 3 >= 0 && T === respawnedAt.get(e)! + 3 && (Stats.ms[e] === 0 || !finite(Stats.ms[e]!))) note(T, 'ms still 0 three ticks after respawn', `${name} ms ${Stats.ms[e]} busy ${isBusy(sim, e)} buffs [${buffs(sim, e).map((b) => b.kind + ':' + b.id + ':' + b.until).join(',')}] ${fmtT(T)}`);
@@ -226,6 +239,10 @@ if (result) {
       `  slot ${s.slot} ${s.team === 0 ? 'B' : 'R'} ${s.role.padEnd(7)} ${s.champion.padEnd(10)} K/D ${s.kills}/${s.deaths} cs ${s.cs} maxIdleS(harness) ${s.maxIdleS.toFixed(1)} probeMaxIdleS ${((tr?.maxIdle ?? 0) / 30).toFixed(1)} idleTotalS ${((tr?.idleTotal ?? 0) / 30).toFixed(0)} maxStuckS ${tr?.maxStuck.toFixed(1)}`,
     );
   }
+}
+if (result) {
+  const { Pos, Unit, Move, Atk, Stats, Hp } = result.sim.c;
+  for (const e of stuckEids) out.push(`final state of once-stuck eid ${e}: alive ${Unit.alive[e]} kind ${Unit.kind[e]} team ${Unit.team[e]} pos ${Pos.x[e]!.toFixed(0)},${Pos.y[e]!.toFixed(0)} mode ${Move.mode[e]} atk phase ${Atk.phase[e]} target ${Atk.target[e]} ms ${Stats.ms[e]} hp ${Hp.cur[e]!.toFixed(0)} path ${JSON.stringify(result.sim.paths.get(e)?.slice(0, 2))}`);
 }
 if (thrown) out.push('EXCEPTION: ' + thrown);
 out.push(`console output lines: ${logs.length}`);

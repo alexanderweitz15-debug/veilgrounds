@@ -10,6 +10,7 @@ import { isRef } from '../sim';
 import { MAX_ENT } from '../ecs';
 import { fearSource, hasBuff } from '../buffs';
 import { isDisplacing } from './abilities';
+import { dist2 } from '../vec';
 
 /** Chase path is recomputed once the target moved this far from the path's end (no eid-phased timer: mirror-symmetric). */
 const REPATH_DIST = 100;
@@ -308,6 +309,17 @@ function collideStructures(sim: Sim, ents: ArrayLike<number>): void {
       // tangential nudge so units walking straight at a structure slide around instead of sticking
       const side = ux * sim.c.Face.y[e]! - uy * sim.c.Face.x[e]! >= 0 ? 1 : -1; // slide toward facing side
       shove(sim, e, Pos.x[s]! + ux * min - uy * 2 * side, Pos.y[s]! + uy * min + ux * 2 * side);
+      // A waypoint inside the structure's collision circle can never be reached: walking in and the push-out cancel
+      // each other for ever (a siege minion stood at its own tower from 2:41 on, champions kept a move order onto a
+      // tower, A2 bug hunt BUG-02). Standing at the rim counts as arrived.
+      if (sim.c.Move.mode[e] === 1) {
+        const path = sim.paths.get(e);
+        const wp = path?.[0];
+        if (path && wp && dist2(wp.x, wp.y, Pos.x[s]!, Pos.y[s]!) < min * min && dist2(Pos.x[e]!, Pos.y[e]!, Pos.x[s]!, Pos.y[s]!) <= (min + 4) * (min + 4)) {
+          path.shift();
+          if (path.length === 0) sim.c.Move.mode[e] = 0;
+        }
+      }
     }
   }
 }

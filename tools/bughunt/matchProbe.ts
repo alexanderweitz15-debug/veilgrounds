@@ -16,6 +16,7 @@ import type { Sim } from '../../src/sim/sim';
 import { Kind } from '../../src/sim/types';
 import { CUM_XP, MAX_LEVEL, deathTimerTicks } from '../../src/sim/systems/economy';
 import { channelOf, isBusy } from '../../src/sim/systems/abilities';
+import { inventory } from '../../src/sim/items/inventory';
 import { walkable } from '../../src/sim/map';
 import { wardsOf } from '../../src/sim/wards';
 import { buffs } from '../../src/sim/buffs';
@@ -158,7 +159,7 @@ function check(sim: Sim, inputs: { slot: number; cmd: { t: string } }[], runner:
     if (!finite(g) || g < -1e-6) note(T, 'gold<0/NaN', `${name} gold ${g} at ${fmtT(T)}`);
     if (Champ.totalGold[e]! < t.totalGold - 1e-6) note(T, 'totalGold decreased', `${name} ${t.totalGold} -> ${Champ.totalGold[e]} at ${fmtT(T)}`);
     if (Champ.xp[e]! < t.xp - 1e-6 || !finite(Champ.xp[e]!)) note(T, 'xp decreased/NaN', `${name} ${t.xp} -> ${Champ.xp[e]} at ${fmtT(T)}`);
-    if (g > 6000) note(T, 'gold>6000 unspent', `${name} gold ${g} at ${fmtT(T)}`);
+    if (g > 6000) note(T, 'gold>6000 unspent', `${name} gold ${g} inv [${inventory(sim, e).map((x) => x ?? '-').join(',')}] at ${fmtT(T)}`);
     const lvl = Champ.level[e]!;
     let lvlFromXp = 1;
     for (let i = 2; i <= MAX_LEVEL; i++) if (Champ.xp[e]! >= CUM_XP[i]!) lvlFromXp = i;
@@ -196,7 +197,7 @@ function check(sim: Sim, inputs: { slot: number; cmd: { t: string } }[], runner:
       if (buffs(sim, e).some((b) => b.kind === 'stun') || Stats.ms[e] === 0) note(T, 'respawn with CC / ms 0', `${name} ms ${Stats.ms[e]} buffs [${buffs(sim, e).map((b) => b.kind + ':' + b.id + ':' + b.until).join(',')}] ${fmtT(T)}`);
     }
     t.alive = alive;
-    if (alive && t.deathTick >= 0 && T - 3 >= 0 && T === respawnedAt.get(e)! + 3 && (Stats.ms[e] === 0 || !finite(Stats.ms[e]!))) note(T, 'ms still 0 three ticks after respawn', `${name} ms ${Stats.ms[e]} busy ${isBusy(sim, e)} buffs [${buffs(sim, e).map((b) => b.kind + ':' + b.id + ':' + b.until).join(',')}] ${fmtT(T)}`);
+    if (alive && t.deathTick >= 0 && T - 3 >= 0 && T === respawnedAt.get(e)! + 3 && (Stats.ms[e] === 0 || !finite(Stats.ms[e]!)) && !isBusy(sim, e)) note(T, 'ms still 0 three ticks after respawn', `${name} ms ${Stats.ms[e]} busy ${isBusy(sim, e)} buffs [${buffs(sim, e).map((b) => b.kind + ':' + b.id + ':' + b.until).join(',')}] ${fmtT(T)}`);
     if (!alive) continue;
     // stuck with an order (walking/chasing, no CC, not attacking)
     const moved = Math.hypot(Pos.x[e]! - t.lastX, Pos.y[e]! - t.lastY);

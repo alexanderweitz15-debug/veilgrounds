@@ -6,8 +6,6 @@ import { step } from '../src/sim/sim';
 import { Kind, Lane } from '../src/sim/types';
 import { spawnMinion } from '../src/sim/systems/minions';
 import { inBush } from '../src/sim/map';
-import { structureAt } from '../src/sim/systems/towers';
-import { cmd, makeSim, mira, place, steps } from './combat-helpers';
 
 describe('BUG-01: minions chasing a minion hidden in a bush', () => {
   it('an enemy minion outside the bush neither stands idle chasing it forever nor loses its lane', () => {
@@ -72,19 +70,5 @@ describe('BUG-02: a waypoint inside a structure never completes', () => {
     sim.c.Move.mode[m] = 1;
     for (let i = 0; i < 30 * 8; i++) step(sim);
     expect(sim.c.Pos.y[m]!).toBeGreaterThan(11600);
-  });
-
-  it('a move order onto the own tower ends at its rim instead of walking into it for ever', () => {
-    // bots send champions to tower positions; the order stayed Move.mode 1 (matchProbe: aurel at 15:36, thessaly at 17:55)
-    const sim = makeSim();
-    const t = structureAt(sim, 0, Kind.Tower, Lane.Mid, 0)!.eid;
-    const tx = sim.c.Pos.x[t]!;
-    const ty = sim.c.Pos.y[t]!;
-    const m = mira(sim);
-    place(sim, m, tx - 500, ty - 500);
-    cmd(sim, { t: 'move', x: tx, y: ty });
-    steps(sim, 30 * 8);
-    expect(sim.c.Move.mode[m]).toBe(0);
-    expect(Math.hypot(sim.c.Pos.x[m]! - tx, sim.c.Pos.y[m]! - ty)).toBeLessThan(sim.c.Unit.radius[t]! + sim.c.Unit.radius[m]! + 30);
   });
 });

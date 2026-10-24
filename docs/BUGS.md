@@ -10,7 +10,7 @@ unverändert.
 ## Messläufe (alle Seeds `botGameConfig(seed, rank)`, Varianz normal)
 
 10 komplette Partien (bis Nexus oder 45-min-Deckel) plus mehrere Teilläufe (3-36 min) zum Eingrenzen. Spalte Stand: vor = vor
-den Fixes, nach = nach allen drei Fixes (Partieverlauf ändert sich durch die Fixes, derselbe Seed ergibt danach eine andere Partie).
+den Fixes, nach = nach den Fixes (Partieverlauf ändert sich durch die Fixes, derselbe Seed ergibt danach eine andere Partie).
 
 | Seed | Rang | Gehirn | Stand | Ergebnis | Dauer |
 |---|---|---|---|---|---|
@@ -46,24 +46,25 @@ Stuck/Crash – nicht angefasst, Hinweis für das Brain-Team).
 
 ## KRITISCH
 
-### BUG-02 · Wegpunkt im Kollisionskreis eines Gebäudes wird nie erreicht (Belagerungs-Minion steht für immer am Turm)
+### BUG-02 · Belagerungs-Minion bleibt für immer am eigenen Turm hängen (Lane-Knoten im Kollisionskreis des Turms)
 
 - **Symptom:** Ein eigener Belagerungs-Minion stand ab 2:41 am Rand des eigenen Außenturms oben (1155, 11251) und ging nie
-  weiter (bis er getötet wurde, mindestens 80 s). Bots schicken Champions per `move` auf Turmpositionen: die Order blieb
-  für immer `Move.mode 1` (Aurel bei 15:36 am eigenen Mid-Turm, Thessaly bei 17:55 am eigenen Bot-Turm).
+  weiter (bis er getötet wurde, mindestens 80 s).
 - **Reproduktion:** auf Basis `5b776d3`: `npx tsx tools/bughunt/matchProbe.ts --seed=13 --minutes=4` → Fund `stuck>10s kind4`
-  (Teamfarbe 0, Bahn Top, Wegpunkt `[1200, 11267]`); Gold Seed 11 Standard, `--minutes=25` → `champion stuck >5s ... target
-  (14700,4700)`. Der exakte Zustand (Position, Blickrichtung, Pfad) ist im Test nachgestellt.
+  (Team 0, Bahn Top, Wegpunkt `[1200, 11267]`). Der exakte Zustand (Position, Blickrichtung, Pfad) ist im Test nachgestellt.
 - **Bewiesene Ursache:** `src/sim/systems/movement.ts:93` (`d <= step`) verbraucht einen Wegpunkt nur, wenn die Einheit auf
-  weniger als einen Schritt (ms/30) herankommt. Liegt der Wegpunkt innerhalb des Kollisionskreises eines Gebäudes
-  (Turm 88 + Einheitsradius), schiebt `collideStructures` (`movement.ts:311`) die Einheit nach jedem Schritt auf den Rand
-  zurück: Hineingehen und Herausschieben heben sich auf – ein Fixpunkt (im Test: Position nach 300 Ticks bit-identisch). Der
-  Lane-Knoten (1200, 11267) liegt 105 vom Turm (1300, 11300) entfernt, der Kreis hat 153.
-- **Status:** gefixt in `11b44dd`. `collideStructures` verbraucht den Wegpunkt, wenn er im Kreis liegt und die Einheit am Rand
-  steht (Pfad leer → `Move.mode 0`).
-- **Regressionstests:** `tests/a2SimBugs.test.ts` › „BUG-02: a waypoint inside a structure never completes“ › „a siege minion
-  at the rim of its own tower walks on …“ und „a move order onto the own tower ends at its rim …“. Vor dem Fix rot
-  (`y = 11250.5` unverändert; `Move.mode` 1 statt 0) – verifiziert durch Lauf vor dem Fix.
+  weniger als einen Schritt (ms/30) herankommt. Der Lane-Knoten (1200, 11267) liegt 105 vom Turm (1300, 11300) entfernt, also
+  im Kollisionskreis (Turm 88 + Minion 65 = 153). `collideStructures` (`movement.ts:311`) schiebt die Einheit nach jedem Schritt
+  auf den Rand zurück: Hineingehen und Herausschieben heben sich auf, ein Fixpunkt (im Test: Position nach 300 Ticks
+  bit-identisch). Dieselbe Fehlerklasse wie BUG-03 (Wegpunkt nicht auf Schrittweite erreichbar).
+- **Status:** gefixt in `4ed06dd` (Toleranz in `walkLane`, siehe BUG-03). Ein erster, allgemeinerer Fix in `collideStructures`
+  (`11b44dd`, Wegpunkt im Kreis gilt am Rand als erreicht) wurde im Folge-Commit wieder entfernt: der walkLane-Fix deckt den
+  bewiesenen Fall ab, der Movement-Fix änderte nur Champion-Pfade (Befehle auf Türme, siehe COS-5) ohne bewiesenen Schaden und
+  verschob dabei jede Bot-Partie ab Sekunde 7; dadurch kippte `tests/attention.test.ts` Test 10 Klausel 3 (eine
+  Einzelpartie-Statistik, die an der exakten Trajektorie hängt).
+- **Regressionstest:** `tests/a2SimBugs.test.ts` › „BUG-02: a waypoint inside a structure never completes“ › „a siege minion at the
+  rim of its own tower walks on …“. Vor dem Fix rot (`y = 11250.5` unverändert), mit ausgeschaltetem walkLane-Fix wieder rot –
+  verifiziert.
 
 ### BUG-03 · Zwei eigene Minions blockieren sich gegenseitig an einem Lane-Knoten (Wellen stauen sich an Lane-Ecken)
 
@@ -134,10 +135,18 @@ Verhalten → Brain-Team (Build-Logik), nicht geändert.
 - **Befehls-Fuzz** (`tests/a2Fuzz.test.ts`, einmalig 8 Seeds x 9000 Ticks, im Repo 3 x 4000): feindliche Befehle (NaN,
   Infinity, tote/fremde/ungültige eids, ungültige Slots) werfen nie und lassen Positionen/HP endlich.
 
+## KOSMETISCH (Nachtrag)
+
+- **COS-5 · Bewegungsorder eines Champions auf eine Turmposition endet nie** (`Move.mode` bleibt 1; Beispiele der Sonde: Aurel
+  15:36 am eigenen Mid-Turm, Thessaly 17:55 am eigenen Bot-Turm, 5-8 s bis zur nächsten Bot-Order). Ursache wie BUG-02: der Zielpunkt
+  liegt im Kollisionskreis des Turms (`movement.ts:93` / `:311`). Die Position stimmt (Rand des Turms), die Animation hängt an
+  der echten Bewegung, nicht an `Move.mode`. Offen, weil der Fix jede Bot-Partie früh ändert (siehe BUG-02) und kein Schaden
+  bewiesen ist; Vorschlag für später: Wegpunkt am Rand verbrauchen, auch für Champions, mit neuer Messung der Gates.
+
 ## Auswirkung auf Determinismus
 
-Die drei Fixes ändern das Simulationsverhalten dort, wo der jeweilige Fall auftritt (Minion-Aggro im Busch, Bewegung in
-Gebäudekreise, Lane-Knoten zwischen Körpern): `stateHash` solcher Partien ist ein anderer als vor den Fixes. Replay- und
+Die Fixes ändern das Simulationsverhalten dort, wo der jeweilige Fall auftritt (Minion-Aggro im Busch, Lane-Knoten
+zwischen Körpern bzw. im Turmkreis): `stateHash` solcher Partien ist ein anderer als vor den Fixes. Replay- und
 Determinismus-Tests (`tests/replay.test.ts`, `tests/bughunt.test.ts` M2, `tests/sideMirror.test.ts`) sind grün; es gibt keine
 fest einprogrammierten Hash-Fixtures in `tests/`. Die in DECISIONS erwähnte Referenz `a5913c9c` (Flag aus = main) gilt für den
 Stand vor diesem Branch. Keine Information über Nebel wurde zusätzlich an Bots gegeben (BUG-01 verschärft im Gegenteil die

@@ -82,7 +82,17 @@ const wardBorn = new Map<number, number>();
 const respawnedAt = new Map<number, number>();
 const stuckEids = new Set<number>();
 
-function check(sim: Sim, inputs: { slot: number; cmd: { t: string } }[]): void {
+/** A wave clash queues the back rows behind the fighting front: an enemy lane unit within 700 means "expected wait". */
+function inClash(sim: Sim, e: number): boolean {
+  const { Pos, Unit } = sim.c;
+  for (const o of query(sim.world, [Unit, Pos])) {
+    if (o === e || !Unit.alive[o] || Unit.team[o] === Unit.team[e] || Unit.team[o] === 2 || Unit.kind[o]! < Kind.Champion || Unit.kind[o]! > Kind.Nexus) continue;
+    if (Math.hypot(Pos.x[o]! - Pos.x[e]!, Pos.y[o]! - Pos.y[e]!) < 700) return true;
+  }
+  return false;
+}
+
+function check(sim: Sim, inputs: { slot: number; cmd: { t: string } }[], runner: { bots: { ctx: { slot: number }; mem: { mode: string } }[] }): void {
   const { Pos, Unit, Hp, Mana, Stats, Champ, Move, Atk } = sim.c;
   const T = sim.tick;
   for (const e of query(sim.world, [Unit, Pos, Hp])) {
@@ -107,6 +117,9 @@ function check(sim: Sim, inputs: { slot: number; cmd: { t: string } }[]): void {
     const tg0 = Atk.target[e]!;
     const inReach = Move.mode[e] === 2 && tg0 >= 0 && Math.hypot(Pos.x[tg0]! - Pos.x[e]!, Pos.y[tg0]! - Pos.y[e]!) <= Stats.range[e]! + Unit.radius[e]! + Unit.radius[tg0]! + 5;
     if (alive && k !== Kind.Champion && (Move.mode[e] === 1 || (Move.mode[e] === 2 && !inReach)) && Stats.ms[e]! > 0 && Unit.team[e] !== 2) {
+      if (inClash(sim, e)) {
+        unitStill.delete(e);
+      } else {
       let u = unitStill.get(e);
       if (u && u.serial !== Unit.serial[e]) u = undefined; // eid recycled
       const d = u ? Math.hypot(Pos.x[e]! - u.x, Pos.y[e]! - u.y) : 1e9;
@@ -125,7 +138,8 @@ function check(sim: Sim, inputs: { slot: number; cmd: { t: string } }[]): void {
         for (const o of query(sim.world, [Unit, Pos])) if (o !== e && Unit.alive[o] && Math.hypot(Pos.x[o]! - Pos.x[e]!, Pos.y[o]! - Pos.y[e]!) < 250) near.push(`kind${Unit.kind[o]}/team${Unit.team[o]}@${Math.round(Pos.x[o]!)},${Math.round(Pos.y[o]!)}`);
         note(T, `stuck>10s kind${k}`, `${tag} team ${Unit.team[e]} lane ${Unit.lane[e]} near [${near.join(' ')}] path ${JSON.stringify(sim.paths.get(e)?.slice(0, 3).map((p) => [Math.round(p.x), Math.round(p.y)]))} at ${Math.round(Pos.x[e]!)},${Math.round(Pos.y[e]!)} mode ${Move.mode[e]} pathLen ${sim.paths.get(e)?.length} ${tgs} range ${Stats.range[e]} walkable ${walkable(sim.map.nav, Pos.x[e]!, Pos.y[e]!)} ${fmtT(T)}`);
       }
-    }
+      }
+    } else unitStill.delete(e);
     if (k === Kind.Ward && alive && !wardBorn.has(Unit.serial[e]!)) wardBorn.set(Unit.serial[e]!, T);
   }
   // champions
@@ -202,6 +216,10 @@ function check(sim: Sim, inputs: { slot: number; cmd: { t: string } }[]): void {
     if (idle) {
       t.idleTotal++;
       if (T - t.idleSince > t.maxIdle) t.maxIdle = T - t.idleSince;
+      if (T - t.idleSince === 300) {
+        const b = runner.bots.find((x) => x.ctx.slot === slot);
+        note(T, 'idle >10s (no order, not recalling)', `${name} mode ${b?.mem.mode} at ${Math.round(Pos.x[e]!)},${Math.round(Pos.y[e]!)} hp ${Math.round((100 * Hp.cur[e]!) / Hp.max[e]!)}% gold ${Math.round(Champ.gold[e]!)} ${fmtT(T)}`);
+      }
     } else t.idleSince = T;
   }
   // wards: caps, expiry
@@ -222,7 +240,7 @@ const t0 = Date.now();
 let result: ReturnType<typeof runBotGame> | undefined;
 let thrown: string | undefined;
 try {
-  result = runBotGame(config, Math.round(minutes * 60 * 30), (sim, inputs) => check(sim, inputs), { noVariance, reflex: newBrain });
+  result = runBotGame(config, Math.round(minutes * 60 * 30), (sim, inputs, bots) => check(sim, inputs, bots as never), { noVariance, reflex: newBrain });
 } catch (e) {
   thrown = e instanceof Error ? `${e.message}\n${e.stack}` : String(e);
 }

@@ -195,6 +195,9 @@ function walkLane(sim: Sim, m: number): void {
     const { Pos, Unit } = sim.c;
     const g = laneGeo(sim, Unit.team[m]!, Unit.lane[m]! as LaneId);
     if (laneProgress(g, path[0]!.x, path[0]!.y) < laneProgress(g, Pos.x[m]!, Pos.y[m]!)) path.shift();
+    // A vertex between two friendly bodies is unreachable for both (each walks in, the separation pushes it back by
+    // exactly the step): arrival within two body radii counts (A2 bug hunt BUG-03, waves stalled 20 s at lane corners).
+    else if (dist2(Pos.x[m]!, Pos.y[m]!, path[0]!.x, path[0]!.y) <= 4 * Unit.radius[m]! * Unit.radius[m]!) path.shift();
   }
 }
 
@@ -283,8 +286,10 @@ export function attackable(sim: Sim, team: number, t: number): boolean {
   const { Unit } = sim.c;
   if (t < 0 || !Unit.alive[t] || Unit.untargetable[t] || Unit.team[t] === team) return false;
   const k = Unit.kind[t]!;
-  if (k === Kind.Champion || k === Kind.Dummy) return sees(sim, team, t);
-  return isMinion(k) || isStructure(k);
+  // A minion hiding in a bush is not attackable either (attack.canTarget needs vision): without this check the wave
+  // chased it forever, standing still in range (A2 bug hunt BUG-01).
+  if (k === Kind.Champion || k === Kind.Dummy || isMinion(k)) return sees(sim, team, t);
+  return isStructure(k);
 }
 
 interface Call {
@@ -375,11 +380,12 @@ export function targetLists(sim: Sim, units: ArrayLike<number>): [TargetLists, T
 
 /** Nearest unit of `list` within AGGRO_RANGE (+ target radius) of minion m; exact ties -> older unit (spawn serial:
  *  eids are recycled, so query order differed between mirrored waves and broke blue/red symmetry). */
-function nearest(sim: Sim, m: number, list: number[], range = AGGRO_RANGE): number {
+function nearest(sim: Sim, m: number, list: number[], range = AGGRO_RANGE, seen = false): number {
   const { Pos, Unit } = sim.c;
   let best = -1;
   let bestD = Infinity;
   for (const t of list) {
+    if (seen && !sees(sim, Unit.team[m]!, t)) continue; // bushed minions cannot be attacked (see attackable)
     const r = range + Unit.radius[t]!;
     const d = dist2(Pos.x[m]!, Pos.y[m]!, Pos.x[t]!, Pos.y[t]!);
     if (d <= r * r && (best < 0 || nearer(d, Unit.serial[t]!, bestD, Unit.serial[best]!))) {
@@ -433,7 +439,7 @@ export function updateMinionAggro(sim: Sim, m: number, lists: [TargetLists, Targ
   if (cur >= 0 && st.prio[m]! >= 5) {
     const c = bestCall(sim, m, calls, 3);
     if (c) return setTarget(sim, m, c.src, c.prio);
-    const mt = nearest(sim, m, lists[team as 0 | 1].minions);
+    const mt = nearest(sim, m, lists[team as 0 | 1].minions, AGGRO_RANGE, true);
     if (mt >= 0) return setTarget(sim, m, mt, 4);
     if (st.prio[m] === 6) {
       const r = sim.c.Stats.range[m]! + Unit.radius[m]! + 150 + Unit.radius[cur]!;
@@ -451,7 +457,7 @@ export function updateMinionAggro(sim: Sim, m: number, lists: [TargetLists, Targ
   const c = bestCall(sim, m, calls, 3);
   if (c) return setTarget(sim, m, c.src, c.prio);
   const l = lists[team as 0 | 1];
-  let t = nearest(sim, m, l.minions);
+  let t = nearest(sim, m, l.minions, AGGRO_RANGE, true);
   if (t >= 0) return setTarget(sim, m, t, 4);
   t = nearest(sim, m, l.structures);
   if (t >= 0) return setTarget(sim, m, t, 5);

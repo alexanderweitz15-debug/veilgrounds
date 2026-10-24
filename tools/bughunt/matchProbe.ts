@@ -111,7 +111,7 @@ function check(sim: Sim, inputs: { slot: number; cmd: { t: string } }[]): void {
       if (u && u.serial !== Unit.serial[e]) u = undefined; // eid recycled
       const d = u ? Math.hypot(Pos.x[e]! - u.x, Pos.y[e]! - u.y) : 1e9;
       if (!u || d > 25 || Atk.phase[e] !== 0) {
-        if (u && T - u.since >= 300) note(T, `stuck minion/monster resolved kind${k}`, `${tag} was still for ${((T - u.since) / 30).toFixed(1)}s, resolved ${fmtT(T)} at ${Math.round(Pos.x[e]!)},${Math.round(Pos.y[e]!)}`);
+        if (u && T - u.since >= 600) note(T, `stuck minion/monster resolved kind${k}`, `${tag} was still for ${((T - u.since) / 30).toFixed(1)}s, resolved ${fmtT(T)} at ${Math.round(Pos.x[e]!)},${Math.round(Pos.y[e]!)}`);
         unitStill.set(e, { x: Pos.x[e]!, y: Pos.y[e]!, since: T, serial: Unit.serial[e]! });
       }
       else if (T - u.since === 300) {

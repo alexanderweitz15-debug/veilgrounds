@@ -195,6 +195,9 @@ function walkLane(sim: Sim, m: number): void {
     const { Pos, Unit } = sim.c;
     const g = laneGeo(sim, Unit.team[m]!, Unit.lane[m]! as LaneId);
     if (laneProgress(g, path[0]!.x, path[0]!.y) < laneProgress(g, Pos.x[m]!, Pos.y[m]!)) path.shift();
+    // A vertex between two friendly bodies is unreachable for both (each walks in, the separation pushes it back by
+    // exactly the step): arrival within two body radii counts (A2 bug hunt BUG-03, waves stalled 20 s at lane corners).
+    else if (dist2(Pos.x[m]!, Pos.y[m]!, path[0]!.x, path[0]!.y) <= 4 * Unit.radius[m]! * Unit.radius[m]!) path.shift();
   }
 }
 

@@ -38,6 +38,28 @@ describe('BUG-01: minions chasing a minion hidden in a bush', () => {
   });
 });
 
+describe('BUG-03: two friendly minions block each other at a lane vertex', () => {
+  it('minions on either side of the bot-lane corner (14800, 1200) both walk on (matchProbe seed 12, new brain, 12:58; 20 s+ stalls at 2:34, 7:02, 12:06)', () => {
+    // exact state from the probe: the vertex lies between the two bodies, each walks toward it, the separation pushes
+    // each back by exactly the step: positions identical after every tick
+    const sim = newSim(false);
+    const path = (): { x: number; y: number }[] => [{ x: 14800, y: 1200 }, { x: 14800, y: 13000 }, { x: 14200, y: 14200 }];
+    const a = spawnMinion(sim, Kind.MinionCaster, 0, Lane.Bot, 14748.237144426728, 1216.1893633337138);
+    const b = spawnMinion(sim, Kind.MinionCaster, 0, Lane.Bot, 14819.18156447219, 1194.000769217421);
+    sim.c.Face.x[a] = 0.9544092382797514;
+    sim.c.Face.y[a] = -0.29850126613846134;
+    sim.c.Face.x[b] = -0.9544092382797466;
+    sim.c.Face.y[b] = 0.29850126613847716;
+    for (const m of [a, b]) {
+      sim.paths.set(m, path());
+      sim.c.Move.mode[m] = 1;
+    }
+    for (let i = 0; i < 30 * 5; i++) step(sim);
+    expect(sim.c.Pos.y[a]!).toBeGreaterThan(1800);
+    expect(sim.c.Pos.y[b]!).toBeGreaterThan(1800);
+  });
+});
+
 describe('BUG-02: a waypoint inside a structure never completes', () => {
   it('a siege minion at the rim of its own tower walks on (matchProbe seed 13: stuck for good at 2:41)', () => {
     // exact state from the probe: the lane vertex (1200, 11267) lies inside the collision circle of the outer top tower

@@ -10,6 +10,7 @@ import { damageDealtMult, damageTakenMult, healMult, statMods } from './buffs';
 import { passiveHooksOf } from './champions';
 import { KESSELBRUT_STRUCT_PCT, isEpicMonster, kesselbrutStacks } from './systems/jungle';
 import { petOwner } from './summons';
+import type { ItemHook } from './items/engine';
 
 export interface DamageOpts {
   isAuto?: boolean;
@@ -136,6 +137,10 @@ export function dealDamage(sim: Sim, src: number, dst: number, amount: number, t
     if (flash) log.flash[dst] = sim.tick;
     sim.events.push({ e: 'damage', src, dst, amount: dmg, type, crit: opts.crit, ...(opts.isAuto ? { auto: true as const } : {}), ...(flash ? { flash: true as const } : {}) });
     if (top && dmg > 0) for (const h of passiveHooksOf(sim, dst)) h.onDamageTaken?.(sim, dst, src, { amount: dmg, absorbed, type, isAuto: !!opts.isAuto });
+    if (top && absorbed > 0 && Hp.shield[dst]! <= 0) {
+      // a hit emptied the shield: item rules on onShieldBreak (items/engine.ts; champion hooks have no such event)
+      for (const h of passiveHooksOf(sim, dst)) (h as ItemHook).onShieldBreak?.(sim, dst, src, { amount: dmg, absorbed, type, isAuto: !!opts.isAuto });
+    }
     if (top && dmg > 0 && Unit.kind[dst] === Kind.Pet) {
       const owner = petOwner(sim, dst); // Sev E decoy: enemy ability hits mark the attacker
       if (owner >= 0) for (const h of passiveHooksOf(sim, owner)) h.onPetDamaged?.(sim, owner, dst, src, { amount: dmg, absorbed, type, isAuto: !!opts.isAuto });

@@ -7,14 +7,31 @@
 import itemsJson from '../../data/items.json';
 import type { Sim } from '../sim';
 import type { ItemData, ItemStat } from './schema';
+import { validateItems, validateItemsDocument } from './validate';
 import { hasBuff } from '../buffs';
 import { dist2 } from '../vec';
 import { leviathanStacks } from '../systems/jungle';
 import { bootsPriceMult, runeStats } from './runeHooks';
 
-export const ITEMS = itemsJson.items as unknown as ItemData[];
+// Runtime format check (validate.ts): a typo in items.json (unknown trigger, effect, key, stat) fails at load with its path.
+export const ITEMS: ItemData[] = validateItemsDocument(itemsJson);
 const BY_ID = new Map(ITEMS.map((i) => [i.id, i]));
 export const itemById = (id: string): ItemData | undefined => BY_ID.get(id);
+
+/**
+ * Adds validated items to the live item list (tests and fixtures: new items by JSON alone). Throws ItemFormatError on any
+ * format problem or duplicate id. Returns an undo function that removes them again. Not used by the game itself.
+ */
+export function registerItems(raw: unknown[]): () => void {
+  const added = validateItems(raw, ITEMS);
+  for (const it of added) (ITEMS.push(it), BY_ID.set(it.id, it));
+  return () => {
+    for (const it of added) {
+      ITEMS.splice(ITEMS.indexOf(it), 1);
+      BY_ID.delete(it.id);
+    }
+  };
+}
 
 export const ITEM_SLOTS = 6;
 export const TRINKET_SLOT = 6;
@@ -88,8 +105,9 @@ export function quote(sim: Sim, eid: number, id: string): BuyQuote {
   const res = (reason?: BuyQuote['reason']): BuyQuote => ({ ok: !reason, reason, price, consumes });
   if (!canShop(sim, eid)) return res('notInShop');
   if (item.unique && inv.some((x, i) => x && !consumes.includes(i) && itemById(x)?.unique === item.unique)) return res('unique');
-  // LoL rule: at most one of each legendary item
-  if (item.tier === 'legendary' && inv.some((x, i) => x === item.id && !consumes.includes(i))) return res('unique');
+  // LoL rule: at most one of each legendary item (maxOwned overrides the default of 1 / unlimited)
+  const limit = item.maxOwned ?? (item.tier === 'legendary' ? 1 : Infinity);
+  if (inv.filter((x, i) => x === item.id && !consumes.includes(i)).length >= limit) return res('unique');
   const free = inv.some((x, i) => i < ITEM_SLOTS && (x === null || consumes.includes(i)));
   if (!free) return res('full');
   if (sim.c.Champ.gold[eid]! < price) return res('gold');
@@ -143,6 +161,11 @@ const SECONDARY = [
   ['haste', 'haste', 1],
 ] as const;
 
+const PEN = [
+  ['armorPenPct', 'armorPenPct', 0.01],
+  ['magicPen', 'magicPen', 1],
+] as const;
+
 /**
  * Crit/lifesteal/lethality/haste are not recomputed from a base each tick (hooks/tests may write them), so the
  * item part is applied as a delta against what this function added last time.
@@ -156,6 +179,17 @@ export function applySecondaryStats(sim: Sim, eid: number, it: Partial<Record<Bo
     sim.c.Stats[field][eid] = sim.c.Stats[field][eid]! - prev[i]! + next[i]!;
   });
   s.set(eid, next);
+  // penetration is tracked apart (and only once an item has it), so item sets without it keep their old state layout
+  let pen = sim.state.itemPen as Map<number, number[]> | undefined;
+  if (PEN.some(([, k]) => it[k]) || pen?.has(eid)) {
+    if (!pen) sim.state.itemPen = pen = new Map();
+    const before = pen.get(eid) ?? [0, 0];
+    const now = PEN.map(([, k, f]) => (it[k] ?? 0) * f);
+    PEN.forEach(([field], i) => {
+      sim.c.Stats[field][eid] = sim.c.Stats[field][eid]! - before[i]! + now[i]!;
+    });
+    pen.set(eid, now);
+  }
 }
 
 /** Dornenbock buff: ~15 % CDR (haste 18) and doubled mana regen. */

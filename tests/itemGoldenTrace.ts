@@ -26,9 +26,10 @@ function stats(sim: Sim, e: number): number[] {
 }
 
 /** Stats of every item alone in a duel (bonus stats, passives that rewrite stats). */
-export function statsTrace(): Record<string, number[]> {
+export function statsTrace(only?: ReadonlySet<string>): Record<string, number[]> {
   const out: Record<string, number[]> = {};
   for (const it of ITEMS) {
+    if (only && !only.has(it.id)) continue;
     const { sim, me } = duel({ items: [it.id] });
     out[it.id] = stats(sim, me);
   }
@@ -181,18 +182,27 @@ export function shopTrace(): Row[] {
   const out: Row[] = [];
   const { sim, me } = duel();
   sim.c.Champ.gold[me] = 100000;
-  for (const id of ['sturmbogen', 'sturmbogen', 'kurzschwert', 'zauberring', 'stiefel', 'stiefel_ruestung', 'trank', 'trank', 'langschwert', 'langschwert', 'zeitglas', 'kettenrelais']) {
+  const f = sim.map.sides[0]!.fountain;
+  place(sim, me, f.x, f.y);
+  const seq = [
+    'langschwert', 'spitzhacke', 'sturmbogen', 'sturmbogen', 'kurzschwert', 'zauberring', 'stiefel', 'stiefel_ruestung', 'trank', 'trank',
+    'zeitglas', 'zeitglas', 'kettenrelais', 'blutdolch', 'langschwert', 'siegelward',
+  ];
+  for (const id of seq) {
     const q = quote(sim, me, id);
-    out.push([id, q.ok, q.reason ?? '', q.price, JSON.stringify(q.consumes), buyItem(sim, me, id)]);
+    const gold = sim.c.Champ.gold[me]!;
+    out.push([id, q.ok, q.reason ?? '', q.price, JSON.stringify(q.consumes), buyItem(sim, me, id), gold - sim.c.Champ.gold[me]!]);
   }
   out.push(['inv', JSON.stringify(inventory(sim, me))]);
   return out;
 }
 
-export function goldenTrace(): Record<string, unknown> {
-  const out: Record<string, unknown> = { stats: statsTrace(), shop: shopTrace() };
+/** `only`: item ids to trace (the fixture's; items added after the fixture was made are not pinned). */
+export function goldenTrace(only?: ReadonlySet<string>): Record<string, unknown> {
+  const out: Record<string, unknown> = { stats: statsTrace(only), shop: shopTrace() };
   const script: Record<string, Row[]> = {};
   for (const it of ITEMS) {
+    if (only && !only.has(it.id)) continue;
     const special = it.passive || it.active;
     script[`${it.id}:mira`] = scriptTrace([it.id], 'mira');
     if (special) script[`${it.id}:gorvam`] = scriptTrace([it.id], 'gorvam');

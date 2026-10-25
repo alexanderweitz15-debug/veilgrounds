@@ -1,0 +1,264 @@
+{
+  "note": "Fixture items for tests/itemEngine.test.ts (A7). NOT part of the live item list (src/data/items.json); A12 owns content. Each sample proves one building block for the planned legendaries and actives: anti-heal, anti-tank, anti-burst, anti-CC. Docs: docs/ITEMS-FORMAT.md.",
+  "items": [
+    {
+      "id": "fx_wundenklinge",
+      "name": { "de": "Wundenklinge", "en": "Wound Blade" },
+      "tier": "legendary",
+      "cost": 3000,
+      "from": ["langschwert", "wetzdolch"],
+      "stats": { "ad": 45, "asPct": 20 },
+      "tags": ["ad", "onhit"],
+      "passive": {
+        "name": { "de": "Klaffende Wunden", "en": "Grievous Wounds" },
+        "desc": { "de": "Treffer auf Champions senken deren Heilung um 40 % für 3 s.", "en": "Hits on champions reduce their healing by 40 % for 3 s." },
+        "rules": [
+          {
+            "on": ["onHit", "onAbilityHit"],
+            "if": { "target": { "kind": ["champion"], "team": "enemy" } },
+            "do": [{ "type": "applyBuff", "to": "target", "kind": "grievous", "id": "fx_grievous", "pct": 40, "seconds": 3 }]
+          }
+        ]
+      }
+    },
+    {
+      "id": "fx_wundrauch",
+      "name": { "de": "Wundrauch", "en": "Wound Smoke" },
+      "tier": "legendary",
+      "cost": 2800,
+      "from": ["verstaerkerbuch", "rubinsplitter"],
+      "stats": { "ap": 60, "hp": 200 },
+      "tags": ["ap"],
+      "active": {
+        "name": { "de": "Giftnebel", "en": "Toxic Cloud" },
+        "desc": { "de": "Gegner im Umkreis 600 verlieren 50 % Heilung für 4 s.", "en": "Enemies within 600 lose 50 % healing for 4 s." },
+        "cooldown": 60,
+        "target": "self",
+        "requires": ["canAttack"],
+        "effects": [{ "type": "applyBuff", "to": "enemiesInRadius", "radius": 600, "kind": "grievous", "id": "fx_smoke", "pct": 50, "seconds": 4 }]
+      }
+    },
+    {
+      "id": "fx_titanspalter",
+      "name": { "de": "Titanspalter", "en": "Titan Cleaver" },
+      "tier": "legendary",
+      "cost": 3200,
+      "from": ["langschwert", "lederweste"],
+      "stats": { "ad": 50, "hp": 250, "armorPenPct": 30 },
+      "tags": ["ad", "tank"],
+      "passive": {
+        "name": { "de": "Zerschmettern", "en": "Shatter" },
+        "desc": { "de": "Treffer auf Champions: 3 % ihrer Max-HP als Magieschaden (max. 40).", "en": "Hits on champions deal 3 % of their max HP as magic damage (max 40)." },
+        "rules": [
+          {
+            "on": "onHit",
+            "if": { "target": { "kind": ["champion"], "team": "enemy" } },
+            "do": [{ "type": "damage", "to": "target", "dmgType": "magic", "value": { "scale": { "targetMaxHp": 0.03 }, "max": 40 } }]
+          }
+        ]
+      }
+    },
+    {
+      "id": "fx_leerenstab",
+      "name": { "de": "Leerenstab", "en": "Void Staff" },
+      "tier": "legendary",
+      "cost": 2800,
+      "from": ["verstaerkerbuch", "wollmantel"],
+      "stats": { "ap": 90, "magicPen": 20 },
+      "tags": ["ap"]
+    },
+    {
+      "id": "fx_bollwerk",
+      "name": { "de": "Bollwerk", "en": "Bulwark" },
+      "tier": "legendary",
+      "cost": 2900,
+      "from": ["rubinsplitter", "lederweste"],
+      "stats": { "hp": 400, "armor": 40 },
+      "tags": ["tank"],
+      "passive": {
+        "name": { "de": "Notschild", "en": "Panic Shield" },
+        "desc": { "de": "Schaden von mindestens 20 % Max-HP auf einmal: Schild über 20 % Max-HP für 3 s (30 s Abklingzeit). Bricht der Schild, sinkt der Schaden 2 s lang um 30 %.", "en": "A single hit of at least 20 % max HP grants a shield of 20 % max HP for 3 s (30 s cooldown). When it breaks, damage taken drops by 30 % for 2 s." },
+        "rules": [
+          {
+            "on": "onDamageTaken",
+            "if": { "damageTakenPctMaxHp": 20 },
+            "cooldown": 30,
+            "do": [{ "type": "shield", "to": "self", "id": "fx_panic", "value": { "scale": { "maxHp": 0.2 } }, "seconds": 3 }]
+          },
+          {
+            "on": "onShieldBreak",
+            "do": [{ "type": "applyBuff", "to": "self", "kind": "stat", "stat": "dmgReduction", "id": "fx_resolve", "pct": 30, "seconds": 2 }]
+          }
+        ]
+      }
+    },
+    {
+      "id": "fx_reinigungsamulett",
+      "name": { "de": "Reinigungsamulett", "en": "Purge Charm" },
+      "tier": "legendary",
+      "cost": 2700,
+      "from": ["zauberschutzmantel", "wetterhorn"],
+      "stats": { "mr": 50, "hp": 200, "tenacityPct": 35 },
+      "tags": ["tank"],
+      "active": {
+        "name": { "de": "Läuterung", "en": "Purge" },
+        "desc": { "de": "Entfernt Betäubung, Wurzel, Verlangsamung, Stille und Blindheit; 3 s lang +40 % Zähigkeit. Auch unter Kontrolle nutzbar.", "en": "Removes stun, root, slow, silence and blind; +40 % tenacity for 3 s. Usable while crowd controlled." },
+        "cooldown": 90,
+        "target": "self",
+        "effects": [
+          { "type": "cleanse", "to": "self" },
+          { "type": "applyBuff", "to": "self", "kind": "stat", "stat": "tenacity", "id": "fx_purge", "pct": 40, "seconds": 3 }
+        ]
+      }
+    },
+    {
+      "id": "fx_fangnetz",
+      "name": { "de": "Fangnetz", "en": "Snare Net" },
+      "tier": "legendary",
+      "cost": 2700,
+      "from": ["kettenhemd", "wetterhorn"],
+      "stats": { "armor": 40, "hp": 150 },
+      "tags": ["tank"],
+      "active": {
+        "name": { "de": "Netz", "en": "Net" },
+        "desc": { "de": "Wurzelt den sichtbaren gegnerischen Champion nahe dem Zielpunkt (Reichweite 700) 1,5 s.", "en": "Roots the visible enemy champion nearest to the target point (range 700) for 1.5 s." },
+        "cooldown": 45,
+        "target": "enemyChampion",
+        "range": 700,
+        "requires": ["canAttack"],
+        "effects": [{ "type": "applyBuff", "to": "target", "kind": "root", "id": "fx_net", "seconds": 1.5 }]
+      }
+    },
+    {
+      "id": "fx_segensperle",
+      "name": { "de": "Segensperle", "en": "Blessing Pearl" },
+      "tier": "legendary",
+      "cost": 2600,
+      "from": ["verstaerkerbuch", "wetterhorn"],
+      "stats": { "ap": 40, "haste": 20 },
+      "tags": ["support"],
+      "active": {
+        "name": { "de": "Schutzsegen", "en": "Ward Blessing" },
+        "desc": { "de": "Schild für den gewählten Verbündeten (Reichweite 800).", "en": "Shields the chosen ally (range 800)." },
+        "cooldown": 40,
+        "target": "allyChampion",
+        "range": 800,
+        "effects": [{ "type": "shield", "to": "target", "id": "fx_blessing", "value": { "base": 100, "scale": { "ap": 0.5 } }, "healPower": true, "seconds": 3 }]
+      }
+    },
+    {
+      "id": "fx_ahnenkelch",
+      "name": { "de": "Ahnenkelch", "en": "Ancestral Chalice" },
+      "tier": "legendary",
+      "cost": 2900,
+      "from": ["lehrlingsstab", "kristallschale"],
+      "stats": { "ap": 60, "mana": 300 },
+      "tags": ["ap"],
+      "passive": {
+        "name": { "de": "Ernte", "en": "Harvest" },
+        "desc": { "de": "Assists und Minion-Kills geben bis zu 10 Seelen (+4 AP je Seele, 20 s). Zauber: 5 Mana je Seele; ab 5 Seelen heilt der Wirker 30 beim Zauber.", "en": "Takedowns and minion kills grant up to 10 souls (+4 AP each, 20 s). Casting restores 5 mana per soul; at 5 souls a cast heals 30." },
+        "rules": [
+          { "on": "onTakedown", "do": [{ "type": "addStack", "name": "souls", "max": 10, "seconds": 20 }] },
+          { "on": "onKill", "if": { "target": { "kind": ["minion"] } }, "do": [{ "type": "addStack", "name": "souls", "max": 10, "seconds": 20 }] },
+          { "on": "onCast", "do": [{ "type": "restoreMana", "value": { "scale": { "stacks": { "souls": 5 } } } }] },
+          { "on": "onCast", "if": { "stacksAtLeast": { "souls": 5 } }, "do": [{ "type": "heal", "to": "self", "value": 30 }] },
+          { "on": "onComputeStats", "do": [{ "type": "statAdd", "stat": "ap", "value": { "scale": { "stacks": { "souls": 4 } } } }] }
+        ]
+      }
+    },
+    {
+      "id": "fx_stapelring",
+      "name": { "de": "Stapelring", "en": "Stacking Ring" },
+      "tier": "basic",
+      "cost": 400,
+      "from": [],
+      "stats": { "ad": 5 },
+      "tags": ["ad"],
+      "passive": {
+        "name": { "de": "Splitter", "en": "Splinter" },
+        "desc": { "de": "Jede Kopie wirkt einzeln: +3 Magieschaden pro Treffer.", "en": "Every copy works on its own: +3 magic damage per hit." },
+        "stack": "stack",
+        "rules": [{ "on": "onHit", "do": [{ "type": "damage", "to": "target", "dmgType": "magic", "value": 3 }] }]
+      }
+    },
+    {
+      "id": "fx_einzigartig_a",
+      "name": { "de": "Einzigartig A", "en": "Unique A" },
+      "tier": "basic",
+      "cost": 500,
+      "from": [],
+      "stats": { "ad": 10 },
+      "tags": ["ad"],
+      "passive": {
+        "name": { "de": "Eifer", "en": "Zeal" },
+        "desc": { "de": "Einzigartig: +2 Magieschaden pro Treffer (gleicher Schlüssel wie Einzigartig B).", "en": "Unique: +2 magic damage per hit (same key as Unique B)." },
+        "key": "fx_zeal",
+        "rules": [{ "on": "onHit", "do": [{ "type": "damage", "to": "target", "dmgType": "magic", "value": 2 }] }]
+      }
+    },
+    {
+      "id": "fx_einzigartig_b",
+      "name": { "de": "Einzigartig B", "en": "Unique B" },
+      "tier": "basic",
+      "cost": 500,
+      "from": [],
+      "stats": { "ap": 10 },
+      "tags": ["ap"],
+      "passive": {
+        "name": { "de": "Eifer", "en": "Zeal" },
+        "desc": { "de": "Einzigartig: +2 Magieschaden pro Treffer (gleicher Schlüssel wie Einzigartig A).", "en": "Unique: +2 magic damage per hit (same key as Unique A)." },
+        "key": "fx_zeal",
+        "rules": [{ "on": "onHit", "do": [{ "type": "damage", "to": "target", "dmgType": "magic", "value": 2 }] }]
+      }
+    },
+    {
+      "id": "fx_zweimal",
+      "name": { "de": "Zweimal", "en": "Twice" },
+      "tier": "basic",
+      "cost": 300,
+      "from": [],
+      "stats": { "hp": 50 },
+      "tags": ["tank"],
+      "maxOwned": 2
+    },
+    {
+      "id": "fx_rachetrank",
+      "name": { "de": "Rachetrank", "en": "Vengeance Draught" },
+      "tier": "consumable",
+      "cost": 60,
+      "from": [],
+      "stats": {},
+      "tags": [],
+      "passive": {
+        "name": { "de": "Trank", "en": "Draught" },
+        "desc": { "de": "Heilt 50 sofort, gibt 30 Mana und 10 Gold.", "en": "Heals 50 at once, restores 30 mana and grants 10 gold." }
+      },
+      "use": {
+        "target": "self",
+        "effects": [
+          { "type": "heal", "to": "self", "value": 50 },
+          { "type": "restoreMana", "value": 30 },
+          { "type": "gold", "to": "self", "amount": 10 }
+        ]
+      }
+    },
+    {
+      "id": "fx_fels",
+      "name": { "de": "Fels", "en": "Rock" },
+      "tier": "legendary",
+      "cost": 2600,
+      "from": ["rubinsplitter", "lederweste"],
+      "stats": { "hp": 300 },
+      "tags": ["tank"],
+      "passive": {
+        "name": { "de": "Standhaft", "en": "Steadfast" },
+        "desc": { "de": "Unter 30 % HP und unter Kontrolle: +20 Rüstung (Aura, jede Sekunde neu).", "en": "Below 30 % HP while crowd controlled: +20 armor." },
+        "rules": [
+          { "on": "onComputeStats", "if": { "self": { "hpBelowPct": 30, "crowdControlled": true } }, "do": [{ "type": "statAdd", "stat": "armor", "value": 20 }] },
+          { "on": "modifyDamage", "if": { "isAuto": true, "target": { "kind": ["champion"], "hpAbovePct": 90 } }, "do": [{ "type": "damageMult", "mult": 1.1 }] },
+          { "on": "modifyHeal", "do": [{ "type": "healMult", "mult": 1.25 }] }
+        ]
+      }
+    }
+  ]
+}

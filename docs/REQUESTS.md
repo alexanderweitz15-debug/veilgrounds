@@ -36,3 +36,15 @@ Matches (105 von 400 Seeds enthalten Fenna als Bot). A1 hat das abgefangen (Fenn
 gezeichnet, der Rest bleibt gemalt, `console.warn`), das ist aber nur der Notbehelf: Fenna braucht ein Kit (oder bis dahin
 eine Sperre in Lobby und Bot-Auswahl). `tests/assetManifest.test.ts` führt `fenna` in `KNOWN_WITHOUT_ART`; Eintrag
 entfernen, sobald das Kit existiert.
+
+## R4 – A7 → UI-/i18n-Besitzer (src/i18n/*.json, src/ui/shop.ts): Beschriftung der neuen Item-Werte · offen
+
+Die Item-Engine (docs/ITEMS-FORMAT.md) kennt drei neue Item-Werte, die A12 für Anti-Heal/Anti-Tank/Anti-CC-Items nutzen wird:
+`armorPenPct` (Prozent-Rüstungsdurchdringung), `magicPen` (flache Magiedurchdringung), `tenacityPct` (Zähigkeit in Prozentpunkten).
+Der Shop zeigt Werte als `t('stat.<key>')`; ohne Eintrag erscheint der rohe Schlüssel. Bitte in `de.json`/`en.json` ergänzen
+(`stat.armorPenPct` „Rüstungsdurchdringung“ / „Armor penetration“, `stat.magicPen` „Magiedurchdringung“ / „Magic penetration“,
+`stat.tenacityPct` „Zähigkeit“ / „Tenacity“) und in `src/ui/shop.ts` `PCT` um `armorPenPct` und `tenacityPct` erweitern
+(Anzeige „+30 %“). Kein Live-Item nutzt die Werte heute, nichts ist kaputt; die Anfrage wird mit dem ersten A12-Item fällig.
+Außerdem (nur zur Kenntnis): Aktive mit Einheitenziel (`target: "enemyChampion"` / `"allyChampion"`) wählen die Einheit über die
+Item-Befehls-Koordinaten (`{ t: 'item', slot, x, y }`, nächste passende Einheit zum Punkt, sichtbar und in `range`). Der Controller
+schickt den Mauszeiger-Punkt bereits mit (`src/input/controller.ts`); eine Zielanzeige (Reichweitenring) wäre ein UI-Wunsch.

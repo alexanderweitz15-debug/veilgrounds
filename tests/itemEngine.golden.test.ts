@@ -8,7 +8,8 @@ import { goldenTrace } from './itemGoldenTrace';
 const update = (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env?.UPDATE_GOLDEN;
 
 describe('item golden trace', () => {
-  const now = JSON.parse(JSON.stringify(goldenTrace())) as typeof golden;
+  // only the items of the fixture are pinned: items added later (A12 content) do not break it, removed ones do
+  const now = JSON.parse(JSON.stringify(goldenTrace(update ? undefined : new Set(Object.keys(golden.stats))))) as typeof golden;
 
   it('regenerates the fixture on request', async () => {
     if (!update) return;
@@ -27,8 +28,9 @@ describe('item golden trace', () => {
   });
 
   const ids = Object.keys(golden.script);
-  it('script keys are unchanged', () => {
+  it('every pinned item still exists', () => {
     if (update) return;
+    expect(Object.keys(now.stats)).toEqual(Object.keys(golden.stats));
     expect(Object.keys(now.script)).toEqual(ids);
   });
 

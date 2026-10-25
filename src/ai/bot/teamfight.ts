@@ -19,6 +19,8 @@ import { decisionInterval, executes } from './trade';
 import { focusSerial } from './social';
 import { utilityOn } from '../utility/flag';
 import { VALUES } from '../utility/values';
+import { microOn } from '../combat/flag';
+import { microPeel } from '../combat/peel';
 
 /** Current teamfight focus target per bot (enemy serial), utility flag only. */
 const focusOf = new WeakMap<object, number>();
@@ -99,9 +101,12 @@ export function teamfight(n: NodeCtx): NodeResult {
       if (dst(n.v.self, t) <= n.v.reach + t.radius + 30) return attack(t);
       return go(carrySpot(n, enemies, t, tooFar));
     }
-    case 'frontline':
+    case 'frontline': {
+      const peel = microOn(n.ctx, 'peel') ? microPeel(n, enemies) : null; // A13: CC on whoever reaches the carry
+      if (peel) return n.out.push(peel), 'running';
       if (ex.winProb > 0.5 || running > 1) return attack(enemies.reduce((a, e) => (dst(e, n.v.self) < dst(a, n.v.self) ? e : a)));
       return go(carrySpot(n, enemies, t, -100));
+    }
     case 'assassin': {
       const wait = Math.max(0, 2 - 0.4 * n.p.playstyle.aggression);
       if (running < wait) {
@@ -112,6 +117,8 @@ export function teamfight(n: NodeCtx): NodeResult {
       return attack(back);
     }
     case 'support': {
+      const peelCast = microOn(n.ctx, 'peel') ? microPeel(n, enemies) : null;
+      if (peelCast) return n.out.push(peelCast), 'running';
       const peel = peelSpot(n, enemies);
       const diver = enemies.find((e) => n.v.allies.some((a) => dst(a, e) < 400));
       if (diver && dst(diver, n.v.self) < 700) return attack(diver);

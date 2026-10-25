@@ -26,6 +26,10 @@ import { type LastHitMem, entityIndex, observeAttacks, ownAttack, predictWindows
 import { FARM_KINDS, insertPlan, type CancelReason, type Plan } from '../plan';
 import { reflexState, UTIL_WINDOW, type ReflexState } from './state';
 import { reflexView } from './view';
+import { microOn } from '../combat/flag';
+import { dodgeStep } from '../combat/dodge';
+import { comboTick } from '../combat/combo';
+import { executeChance } from '../bot/trade';
 
 /** Rank parameters of the reflex layer (profile §4.7 fields + playstyle knobs; no values in code). */
 export interface ReflexParams {
@@ -88,6 +92,16 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
   recordUtil(st, T, v.self.atkPhase !== 0 && v.self.alive);
   if (st.issued.length && st.issued[0]!.tick < T - 30) st.issued = st.issued.filter((i) => i.tick >= T - 30);
   const out: BotAction[] = [];
+  // A13 combat micro (beta brain only): dodge of visible enemy casts every tick, before anything else
+  if (microOn(ctx) && !v.me.dead) {
+    const dodged = microOn(ctx, 'dodge') ? dodgeStep(snap, ctx, mem, rng, v, entityIndex(snap.entities)) : [];
+    if (dodged.length) return dodged;
+    // the running trade's next combo ability the tick the previous cast is over (not at the next decision)
+    if (mem.ext.trade && !io.thinkIssued && microOn(ctx, 'combo')) {
+      const combo = comboTick(v, ctx, mem, rng, { ultKillThreshold: ctx.params.knobs.ultKillThreshold, executeChance: executeChance(ctx.params.skill) });
+      if (combo.length) return combo;
+    }
+  }
   const log = (chosen: string, reason: string, inputs: Record<string, number | string | boolean> = {}): void =>
     ctx.log.push({ tick: T, bot: ctx.slot, node: 'reflex', inputs, chosen, reason });
   const cancel = (p: Plan, why: CancelReason): void => {

@@ -46,8 +46,10 @@ export interface Side {
   dMoved: number;
   dInfeasible: number;
   dNotNeeded: number;
+  sidesteps: number;
+  dodgeDeaths: number;
 }
-export const newSide = (): Side => ({ casts: 0, hits: 0, threats: 0, dodged: 0, lineThreats: 0, lineDodged: 0, zoneThreats: 0, zoneDodged: 0, dealt: 0, taken: 0, dealtLane: 0, takenLane: 0, kills: 0, deaths: 0, tfDeaths: 0, cs10: 0, laners: 0, idleTicks: 0, utilDen: 0, dThreats: 0, dMoved: 0, dInfeasible: 0, dNotNeeded: 0 });
+export const newSide = (): Side => ({ casts: 0, hits: 0, threats: 0, dodged: 0, lineThreats: 0, lineDodged: 0, zoneThreats: 0, zoneDodged: 0, dealt: 0, taken: 0, dealtLane: 0, takenLane: 0, kills: 0, deaths: 0, tfDeaths: 0, cs10: 0, laners: 0, idleTicks: 0, utilDen: 0, dThreats: 0, dMoved: 0, dInfeasible: 0, dNotNeeded: 0, sidesteps: 0, dodgeDeaths: 0 });
 
 interface Pending {
   kind: 'cast' | 'line' | 'zone';
@@ -72,6 +74,7 @@ export function playConfig(config: SimConfig, microTeam: number | undefined, min
   const pend: Pending[] = [];
   const lineSeen = new Set<string>();
   const tfDeathsSeen = new Set<number>();
+  const deathLog: { slot: number; tick: number; team: number }[] = [];
   const res = runBotGame(
     config,
     Math.round(minutes * 60 * 30),
@@ -127,6 +130,7 @@ export function playConfig(config: SimConfig, microTeam: number | undefined, min
         } else if (ev.e === 'death' && ev.kind === Kind.Champion) {
           const vTeam = ev.team;
           sides[vTeam === 1 ? 1 : 0].deaths++;
+          deathLog.push({ slot: Unit.slot[ev.eid]!, tick: T, team: vTeam });
           if (ev.killer >= 0 && Unit.team[ev.killer] !== undefined && Unit.team[ev.killer] !== vTeam) sides[Unit.team[ev.killer] === 1 ? 1 : 0].kills++;
           let allies = 0;
           let foes = 0;
@@ -194,6 +198,10 @@ export function playConfig(config: SimConfig, microTeam: number | undefined, min
     s.idleTicks += st.idleTicks;
     s.utilDen += st.utilDen;
   }
+  // deaths within 3 s of an own sidestep (the dodge may have walked the bot into trouble)
+  const steps = res.bots.log.entries().filter((e) => e.node === 'dodge' && e.chosen === 'sidestep');
+  for (const e of steps) sides[config.players.find((p) => p.slot === e.bot)?.team === 1 ? 1 : 0].sidesteps++;
+  for (const d of deathLog) if (steps.some((e) => e.bot === d.slot && e.tick <= d.tick && d.tick - e.tick <= 90)) sides[d.team === 1 ? 1 : 0].dodgeDeaths++;
   for (const b of res.bots.bots) {
     const d = dodgeStats(b.mem);
     const s = sides[b.ctx.team === 1 ? 1 : 0];
@@ -223,7 +231,7 @@ export function report(label: string, s: Side, n: number): void {
     `deaths/game ${(s.deaths / n).toFixed(1)} tfDeaths ${(s.tfDeaths / n).toFixed(1)} (${pct(s.tfDeaths, s.deaths)})`,
     `cs10 ${(s.cs10 / Math.max(1, s.laners)).toFixed(1)}`,
     `idle ${pct(s.idleTicks, s.utilDen)}`,
-    `[dodge brain: ${s.dThreats} noticed, ${s.dMoved} moved, ${s.dInfeasible} no exit, ${s.dNotNeeded} not needed]`,
+    `[dodge brain: ${s.dThreats} noticed, ${s.dMoved} moved, ${s.dInfeasible} no exit, ${s.dNotNeeded} not needed; ${s.sidesteps} sidesteps, ${s.dodgeDeaths} deaths within 3 s after one]`,
   ];
   process.stdout.write(out.join(' | ') + '\n');
 }

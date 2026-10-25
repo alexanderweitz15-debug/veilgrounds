@@ -12,6 +12,7 @@ import { Painter, Stage, TAU, dirOf, len, lerp3, madd, norm, project, sub, type 
 import { ATTACK_HIT, CAST_FLEX, CAST_RELEASE, CHAMP_FPS, FPS, FRAMES, LOOP, poseFor } from './anim';
 import { bodyOf, drawHumanoid, solveRig } from './humanoid';
 import { KITS } from './kits';
+import { applyRateOverrides, hitOverride } from '../anim/data';
 import { drawWolf, HARK } from './wolf';
 import { VARGRIM_DRAWER } from './cavalry';
 import { MINION_DRAWERS, MINION_KITS } from './minions';
@@ -561,6 +562,8 @@ export function framesOf(id: string, anim: Anim): number {
 /** Attack frame of the impact (the sim's hit point) for an id. */
 export function hitOf(id: string): number {
   const n = framesOf(id, 'attack');
+  const ov = hitOverride(id); // src/render/anim/data.ts
+  if (ov !== undefined) return Math.max(0, Math.min(n - 1, ov));
   if (id === 'hark') return 2;
   const d = DRAWERS[id];
   if (d) return d.hit ?? Math.floor((n - 1) / 2);
@@ -568,7 +571,7 @@ export function hitOf(id: string): number {
 }
 /** Playback rates for an id: champions use the longer layout's rates, everything else the legacy ones. */
 export function rateOf(id: string): Record<Anim, number> {
-  return { ...(KITS[id] ? CHAMP_FPS : FPS) };
+  return applyRateOverrides(id, { ...(KITS[id] ? CHAMP_FPS : FPS) });
 }
 export function worldSizeOf(id: string): number {
   if (id === 'hark') return HARK.world;

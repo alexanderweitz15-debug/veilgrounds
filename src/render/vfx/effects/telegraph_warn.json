@@ -1,0 +1,39 @@
+{
+  "_doc": "Warnfunken am Rand gegnerischer Telegraphs (Teamfarbe rot). Unter der Telegraph-Kante gezeichnet (order.ts), verdeckt sie nie.",
+  "id": "telegraph_warn",
+  "class": "telegraph",
+  "blend": "add",
+  "glyph": "cross",
+  "tint": {
+    "mode": "team"
+  },
+  "life": [500, 800],
+  "count": 1,
+  "emitter": {
+    "shape": "point",
+    "jitter": 4,
+    "jitterH": 2
+  },
+  "velocity": {
+    "dir": "radial",
+    "speed": [0, 10],
+    "rise": [20, 50]
+  },
+  "size": [80, 110],
+  "sizeOverLife": [
+    [0, 0.6],
+    [0.3, 1],
+    [1, 0.4]
+  ],
+  "colorOverLife": [
+    [0, "#ffffff"],
+    [1, "#ffffff"]
+  ],
+  "alphaOverLife": [
+    [0, 0],
+    [0.25, 0.9],
+    [1, 0]
+  ],
+  "spin": [-2, 2],
+  "maxLive": 256
+}

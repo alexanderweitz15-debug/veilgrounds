@@ -19,3 +19,21 @@ export function afterFrame(ms: number, n: number): number {
   }
   return n - 1;
 }
+
+/**
+ * Attack speed scales the backswing: the follow-through frames get `availMs` (the part of the attack cycle after the
+ * wind-up, from the sim) instead of their natural n * AFTER_MS when that is shorter. Returns a time divisor in
+ * 0.45..1: elapsed ms are divided by it, so 0.5 plays the backswing twice as fast. Clamped so extreme attack speeds
+ * still show a readable strike. Unknown timing (<= 0) keeps the natural speed.
+ */
+export function backswingScale(availMs: number, n: number): number {
+  if (!(availMs > 0) || n <= 0) return 1;
+  const natural = n * AFTER_MS;
+  return Math.max(0.45, Math.min(1, availMs / natural));
+}
+
+/** Run cycle speed factor from the real movement speed (world units / s): feet follow the ground, clamped. */
+export function runSpeedScale(speed: number, refSpeed: number): number {
+  if (!(speed > 0) || !(refSpeed > 0)) return 1;
+  return Math.max(0.55, Math.min(1.7, speed / refSpeed));
+}

@@ -256,6 +256,7 @@ export class Units {
     // hit flash brightness (reduce motion: a faint tint instead of a white flash)
     const amp = flashAmp('other', settings.reduceMotion);
     champs?.begin();
+    champs?.setRecall(myEid, (snap?.me?.recallLeft ?? 0) > 0);
     minions?.begin();
     for (const b of this.monsters) b.begin();
     if (snap) {

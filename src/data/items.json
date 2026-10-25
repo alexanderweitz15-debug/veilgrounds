@@ -1,5 +1,5 @@
 {
-  "note": "Spec §5. 12 basic (5 starters + 7) + 14 components + 14 legendary (12 + 2 active) = 40; plus base boots (300) + 4 boots upgrades and consumables. See docs/DECISIONS.md.",
+  "note": "Spec §5. 12 basic (5 starters + 7) + 14 components + 14 legendary (12 + 2 active) = 40; plus base boots (300) + 4 boots upgrades and consumables. See docs/DECISIONS.md. Items are data-driven: format in docs/ITEMS-FORMAT.md, checked at load by src/sim/items/validate.ts.",
   "items": [
     {
       "id": "trank",
@@ -20,8 +20,17 @@
         "desc": {
           "de": "Heilt 120 HP über 15 s.",
           "en": "Restores 120 HP over 15 s."
-        },
-        "hook": "potion"
+        }
+      },
+      "use": {
+        "target": "self",
+        "effects": [
+          {
+            "type": "healOverTime",
+            "value": 120,
+            "seconds": 15
+          }
+        ]
       }
     },
     {
@@ -45,8 +54,15 @@
         "desc": {
           "de": "Permanenter sichtbarer Ward, enthüllt und blockt gegnerische Schleierwards im Radius. 1 pro Spieler.",
           "en": "Permanent visible ward; reveals and disables enemy veil wards nearby. 1 per player."
-        },
-        "hook": "seal_ward"
+        }
+      },
+      "use": {
+        "target": "point",
+        "effects": [
+          {
+            "type": "placeSealWard"
+          }
+        ]
       }
     },
     {
@@ -91,7 +107,25 @@
           "de": "Last-Hits stellen 6 Mana wieder her.",
           "en": "Last hits restore 6 mana."
         },
-        "hook": "spell_ring"
+        "rules": [
+          {
+            "on": "onKill",
+            "if": {
+              "target": {
+                "kind": [
+                  "minion",
+                  "monster"
+                ]
+              }
+            },
+            "do": [
+              {
+                "type": "restoreMana",
+                "value": 6
+              }
+            ]
+          }
+        ]
       },
       "unique": "starter"
     },
@@ -121,7 +155,29 @@
           "de": "Nahkampftreffer auf Champions heilen 3 HP.",
           "en": "Melee hits on champions heal 3 HP."
         },
-        "hook": "thorn_blade"
+        "rules": [
+          {
+            "on": "onHit",
+            "if": {
+              "target": {
+                "kind": [
+                  "champion"
+                ],
+                "team": "enemy"
+              },
+              "self": {
+                "attack": "melee"
+              }
+            },
+            "do": [
+              {
+                "type": "heal",
+                "to": "self",
+                "value": 3
+              }
+            ]
+          }
+        ]
       },
       "unique": "starter"
     },
@@ -147,7 +203,57 @@
           "de": "+80 % Schaden an Monstern; Angriffe auf Monster verursachen zusätzlich 30 (+3 pro Level) absoluten Schaden und heilen 6 (+1 pro Level) LP. Schaltet Bannen frei. Bis 14:00 nur 50 % Gold von Lane-Minions.",
           "en": "+80% damage to monsters; attacks on monsters deal an extra 30 (+3 per level) true damage and heal 6 (+1 per level) HP. Unlocks Banish. Until 14:00 only 50% gold from lane minions."
         },
-        "hook": "hunter_fang"
+        "rules": [
+          {
+            "on": "modifyDamage",
+            "if": {
+              "target": {
+                "kind": [
+                  "monster"
+                ]
+              }
+            },
+            "do": [
+              {
+                "type": "damageMult",
+                "mult": 1.8
+              }
+            ]
+          },
+          {
+            "on": "onHit",
+            "if": {
+              "target": {
+                "kind": [
+                  "monster"
+                ]
+              }
+            },
+            "do": [
+              {
+                "type": "damage",
+                "to": "target",
+                "dmgType": "true",
+                "value": {
+                  "base": 30,
+                  "perLevel": 3
+                }
+              },
+              {
+                "type": "heal",
+                "to": "self",
+                "value": {
+                  "base": 6,
+                  "perLevel": 1
+                }
+              }
+            ]
+          }
+        ],
+        "laneMinionGold": {
+          "mult": 0.5,
+          "untilSeconds": 840
+        }
       },
       "unique": "starter"
     },
@@ -176,7 +282,45 @@
           "de": "Bis 3 Ladungen: Treffer auf Champions geben dir und dem nächsten Verbündeten Gold. Keine Minion-Gold-Strafe. Quest 500 Gold: +1 Ward-Ladung.",
           "en": "Up to 3 charges: hits on champions grant gold to you and the nearest ally. No minion gold penalty. Quest 500 gold: +1 ward charge."
         },
-        "hook": "giving_lamp"
+        "rules": [
+          {
+            "on": [
+              "onHit",
+              "onAbilityHit"
+            ],
+            "if": {
+              "target": {
+                "kind": [
+                  "champion"
+                ],
+                "team": "enemy"
+              }
+            },
+            "cooldown": 1,
+            "charges": {
+              "max": 3,
+              "regenSeconds": 10
+            },
+            "do": [
+              {
+                "type": "gold",
+                "to": "self",
+                "amount": 15,
+                "counter": "lampGold"
+              },
+              {
+                "type": "gold",
+                "to": "nearestAlly",
+                "range": 1000,
+                "amount": 15
+              }
+            ]
+          }
+        ],
+        "quest": {
+          "counter": "lampGold",
+          "goal": 500
+        }
       },
       "unique": "starter"
     },
@@ -591,7 +735,27 @@
           "de": "Krit-Treffer verlangsamen 1 s.",
           "en": "Critical strikes slow for 1 s."
         },
-        "hook": "stormbow"
+        "rules": [
+          {
+            "on": "onHit",
+            "if": {
+              "crit": true,
+              "target": {
+                "team": "enemy"
+              }
+            },
+            "do": [
+              {
+                "type": "applyBuff",
+                "to": "target",
+                "kind": "slow",
+                "id": "stormbow",
+                "pct": 30,
+                "seconds": 1
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -625,7 +789,32 @@
           "de": "Lebensraub über volle HP wird zu Schild.",
           "en": "Lifesteal beyond full HP becomes a shield."
         },
-        "hook": "blood_crown"
+        "rules": [
+          {
+            "on": "onHit",
+            "if": {
+              "overheal": true
+            },
+            "do": [
+              {
+                "type": "shield",
+                "to": "self",
+                "id": "blood_crown",
+                "value": {
+                  "scale": {
+                    "overheal": 1
+                  }
+                },
+                "accumulate": true,
+                "cap": {
+                  "base": 65,
+                  "perLevel": 15
+                },
+                "seconds": 25
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -657,7 +846,25 @@
           "de": "+15 % Schaden an Zielen unter 40 % HP.",
           "en": "+15% damage to targets below 40% HP."
         },
-        "hook": "executioner"
+        "rules": [
+          {
+            "on": "modifyDamage",
+            "if": {
+              "target": {
+                "notKind": [
+                  "structure"
+                ],
+                "hpBelowPct": 40
+              }
+            },
+            "do": [
+              {
+                "type": "damageMult",
+                "mult": 1.15
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -690,7 +897,36 @@
           "de": "Treffer stapeln Rüstungsreduktion 5 × 6 %.",
           "en": "Hits stack armor reduction 5 x 6%."
         },
-        "hook": "black_chain"
+        "rules": [
+          {
+            "on": [
+              "onHit",
+              "onAbilityHit"
+            ],
+            "if": {
+              "target": {
+                "team": "enemy",
+                "notKind": [
+                  "structure"
+                ]
+              }
+            },
+            "do": [
+              {
+                "type": "applyBuff",
+                "to": "target",
+                "kind": "stat",
+                "stat": "armor",
+                "id": "black_chain",
+                "pct": -6,
+                "stacks": {
+                  "max": 5
+                },
+                "seconds": 6
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -721,7 +957,18 @@
           "de": "+35 % AP (multiplikativ).",
           "en": "+35% AP (multiplicative)."
         },
-        "hook": "veil_staff"
+        "rules": [
+          {
+            "on": "onComputeStats",
+            "do": [
+              {
+                "type": "statMult",
+                "stat": "ap",
+                "mult": 1.35
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -753,7 +1000,21 @@
           "de": "Fähigkeitstreffer verlangsamen 25 %.",
           "en": "Ability hits slow 25%."
         },
-        "hook": "frost_core"
+        "rules": [
+          {
+            "on": "onAbilityHit",
+            "do": [
+              {
+                "type": "applyBuff",
+                "to": "target",
+                "kind": "slow",
+                "id": "frost_core",
+                "pct": 25,
+                "seconds": 1
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -784,7 +1045,28 @@
           "de": "Fähigkeitstreffer brennen 3 s.",
           "en": "Ability hits burn for 3 s."
         },
-        "hook": "burning_glass"
+        "rules": [
+          {
+            "on": "onAbilityHit",
+            "do": [
+              {
+                "type": "applyBuff",
+                "to": "target",
+                "kind": "dot",
+                "id": "burning_glass",
+                "dmgType": "magic",
+                "period": 1,
+                "seconds": 3,
+                "damage": {
+                  "base": 30,
+                  "scale": {
+                    "ap": 0.12
+                  }
+                }
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -815,7 +1097,25 @@
           "de": "Alle 1,5 s: nächste Fähigkeit macht Bonus-Blitzschaden.",
           "en": "Every 1.5 s: next ability deals bonus lightning damage."
         },
-        "hook": "spark_chalice"
+        "rules": [
+          {
+            "on": "onAbilityHit",
+            "cooldown": 1.5,
+            "do": [
+              {
+                "type": "damage",
+                "to": "target",
+                "dmgType": "magic",
+                "value": {
+                  "base": 50,
+                  "scale": {
+                    "ap": 0.2
+                  }
+                }
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -846,7 +1146,29 @@
           "de": "Aura: nahe Gegner −10 % AS.",
           "en": "Aura: nearby enemies -10% AS."
         },
-        "hook": "rampart_heart"
+        "rules": [
+          {
+            "on": "onTick",
+            "if": {
+              "self": {
+                "alive": true
+              },
+              "everyTicks": 10
+            },
+            "do": [
+              {
+                "type": "applyBuff",
+                "to": "enemiesInRadius",
+                "radius": 550,
+                "kind": "stat",
+                "stat": "as",
+                "id": "rampart_heart",
+                "pct": -10,
+                "ticks": 15
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -877,7 +1199,26 @@
           "de": "Schild gegen Magieschaden, lädt alle 40 s.",
           "en": "Magic damage shield, recharges every 40 s."
         },
-        "hook": "storm_mantle"
+        "rules": [
+          {
+            "on": "onDamageTaken",
+            "if": {
+              "damageType": [
+                "magic"
+              ]
+            },
+            "do": [
+              {
+                "type": "absorbDamage",
+                "value": {
+                  "base": 192,
+                  "perLevel": 12
+                },
+                "rechargeSeconds": 40
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -908,7 +1249,29 @@
           "de": "Heilt 1,5 % Max-HP pro 5 s im Kampf.",
           "en": "Heals 1.5% max HP per 5 s in combat."
         },
-        "hook": "life_root"
+        "rules": [
+          {
+            "on": "onTick",
+            "if": {
+              "self": {
+                "alive": true
+              },
+              "inCombatSeconds": 5
+            },
+            "do": [
+              {
+                "type": "heal",
+                "to": "self",
+                "value": {
+                  "scale": {
+                    "maxHp": 0.015
+                  }
+                },
+                "perSeconds": 5
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -941,7 +1304,17 @@
           "de": "Heilung und Schilde +12 %.",
           "en": "Heals and shields +12%."
         },
-        "hook": "warden_staff"
+        "rules": [
+          {
+            "on": "modifyHeal",
+            "do": [
+              {
+                "type": "healMult",
+                "mult": 1.12
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -973,8 +1346,23 @@
           "de": "2,5 s Stasis: unverwundbar, unbeweglich.",
           "en": "2.5 s stasis: invulnerable, unable to act."
         },
-        "hook": "hourglass",
-        "cooldown": 120
+        "cooldown": 120,
+        "target": "self",
+        "requires": [
+          "canAttack"
+        ],
+        "effects": [
+          {
+            "type": "applyBuff",
+            "to": "self",
+            "kind": "stasis",
+            "id": "zeitglas",
+            "seconds": 2.5
+          },
+          {
+            "type": "stopMovement"
+          }
+        ]
       }
     },
     {
@@ -1006,8 +1394,25 @@
           "de": "Verbündete in 500 erhalten einen Schild.",
           "en": "Allies within 500 gain a shield."
         },
-        "hook": "chain_relay",
-        "cooldown": 90
+        "cooldown": 90,
+        "target": "self",
+        "requires": [
+          "canAttack"
+        ],
+        "effects": [
+          {
+            "type": "shield",
+            "to": "alliesInRadius",
+            "radius": 500,
+            "id": "kettenrelais",
+            "value": {
+              "base": 90,
+              "perLevel": 10
+            },
+            "healPower": true,
+            "seconds": 2.5
+          }
+        ]
       }
     },
     {

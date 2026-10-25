@@ -1,0 +1,42 @@
+{
+  "_doc": "Ultimate: Ring aus Funken, der vom Wirkenden nach außen schießt.",
+  "id": "ult_ring",
+  "class": "ultimate",
+  "blend": "add",
+  "glyph": "dot",
+  "tint": {
+    "mode": "hue",
+    "saturation": 0.95,
+    "lightness": 0.7,
+    "hueJitter": 8,
+    "lightnessJitter": 0.06
+  },
+  "life": [600, 900],
+  "count": 48,
+  "emitter": {
+    "shape": "ring",
+    "radius": 40,
+    "jitterH": 4
+  },
+  "velocity": {
+    "dir": "outward",
+    "speed": [240, 360],
+    "rise": [0, 30]
+  },
+  "drag": 3,
+  "size": [110, 160],
+  "sizeOverLife": [
+    [0, 1],
+    [1, 0.3]
+  ],
+  "colorOverLife": [
+    [0, "#ffffff"],
+    [1, "#ffffff"]
+  ],
+  "alphaOverLife": [
+    [0, 1],
+    [0.6, 0.7],
+    [1, 0]
+  ],
+  "maxLive": 192
+}

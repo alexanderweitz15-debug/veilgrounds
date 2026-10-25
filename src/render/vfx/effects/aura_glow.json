@@ -1,0 +1,43 @@
+{
+  "_doc": "Aura: aufsteigende Lichtpunkte um eine Einheit oder auf einer Fläche (disc), Farbton der Fähigkeit.",
+  "id": "aura_glow",
+  "class": "aura",
+  "blend": "add",
+  "glyph": "dot",
+  "tint": {
+    "mode": "hue",
+    "saturation": 0.95,
+    "lightness": 0.7,
+    "hueJitter": 10,
+    "lightnessJitter": 0.08
+  },
+  "life": [800, 1400],
+  "count": 3,
+  "emitter": {
+    "shape": "disc",
+    "radius": 60,
+    "jitterH": 6
+  },
+  "velocity": {
+    "dir": "radial",
+    "speed": [5, 20],
+    "rise": [40, 100]
+  },
+  "size": [90, 140],
+  "sizeOverLife": [
+    [0, 0.4],
+    [0.3, 1],
+    [1, 0.2]
+  ],
+  "colorOverLife": [
+    [0, "#ffffff"],
+    [1, "#ffffff"]
+  ],
+  "alphaOverLife": [
+    [0, 0],
+    [0.2, 0.8],
+    [1, 0]
+  ],
+  "flicker": 0.2,
+  "maxLive": 384
+}

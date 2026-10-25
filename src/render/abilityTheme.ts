@@ -51,21 +51,17 @@ export function abilityTheme(champ: string, slot: number): { motif: string; hue:
 /** Element hue (0..360) of an ability, null if no rule matches. */
 export const abilityHue = (champ: string, slot: number): number | null => abilityTheme(champ, slot)?.hue ?? null;
 
-/** Particle language of one motif family (src/render/abilityMotifs.json `particleKinds`). */
+/**
+ * Emission rates of one particle kind (src/render/abilityMotifs.json `particleKinds`). The look of the kind is the
+ * effect definition with the same id in src/render/vfx/effects/ (A4: data-driven GPU particles).
+ */
 export interface ParticleKind {
-  life: number;
-  speed: number;
-  rise: number;
-  gravity: number;
-  back: number;
-  size: number;
-  light: number;
+  /** Particles per second behind a missile. */
   trail: number;
+  /** Particles of an impact burst. */
   burst: number;
+  /** Particles per second per 100 radius on hook ground objects. */
   ambient: number;
-  flicker: boolean;
-  /** Additive glow (sparks) instead of alpha blending (keeps the colour on bright ground). */
-  additive: boolean;
 }
 export type ParticleKindId = 'ember' | 'spark' | 'drip' | 'mote' | 'shard' | 'blackflame';
 /** Emitter on a marked unit (abilityMotifs.json markParticles): particles per second at height h. */

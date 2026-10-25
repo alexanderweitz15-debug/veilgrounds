@@ -1,0 +1,44 @@
+{
+  "_doc": "Schild-/Kuppel-Aura: Funken kreisen auf dem Rand (ring) und steigen langsam.",
+  "id": "aura_ring",
+  "class": "aura",
+  "blend": "add",
+  "glyph": "cross",
+  "tint": {
+    "mode": "hue",
+    "saturation": 0.95,
+    "lightness": 0.72,
+    "hueJitter": 8,
+    "lightnessJitter": 0.06
+  },
+  "life": [600, 1000],
+  "count": 4,
+  "emitter": {
+    "shape": "ring",
+    "radius": 90,
+    "thickness": 8,
+    "jitterH": 4
+  },
+  "velocity": {
+    "dir": "outward",
+    "speed": [0, 12],
+    "rise": [20, 60]
+  },
+  "size": [70, 100],
+  "sizeOverLife": [
+    [0, 0.5],
+    [0.3, 1],
+    [1, 0.3]
+  ],
+  "colorOverLife": [
+    [0, "#ffffff"],
+    [1, "#ffffff"]
+  ],
+  "alphaOverLife": [
+    [0, 0],
+    [0.25, 0.85],
+    [1, 0]
+  ],
+  "spin": [-2, 2],
+  "maxLive": 256
+}

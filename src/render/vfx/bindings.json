@@ -1,0 +1,13 @@
+{
+  "_doc": "Trigger -> effects (src/render/vfx/bus.ts). Filters: team (own|enemy|neutral), minSlot (ability slot >= n). count overrides the effect's burst count, cls the class pool, h the default height. Free-form triggers without an entry only reach bus.on handlers.",
+  "hitFrame": [{ "effect": "hit_spark", "count": 5 }],
+  "impact": [{ "effect": "hit_slash" }, { "effect": "hit_spark", "count": 4 }],
+  "release": [{ "effect": "release_flare" }, { "effect": "release_motes" }],
+  "ultimate": [
+    { "effect": "ult_ring", "cls": "ultimate" },
+    { "effect": "ult_pillar" },
+    { "effect": "ult_dust" }
+  ],
+  "death": [{ "effect": "death_dust", "h": 20 }],
+  "levelUp": [{ "effect": "levelup_sparks", "h": 20 }]
+}

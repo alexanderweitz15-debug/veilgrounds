@@ -1,0 +1,37 @@
+{
+  "_doc": "Lösen eines Zaubers (Trigger release): ein Ring, der sich um den Wirkenden aufweitet.",
+  "id": "release_flare",
+  "class": "hit",
+  "blend": "add",
+  "glyph": "ring",
+  "tint": {
+    "mode": "hue",
+    "saturation": 0.95,
+    "lightness": 0.7,
+    "hueJitter": 6,
+    "lightnessJitter": 0.04
+  },
+  "life": [260, 320],
+  "count": 1,
+  "emitter": {
+    "shape": "point"
+  },
+  "velocity": {
+    "dir": "radial",
+    "speed": [0, 0]
+  },
+  "size": [220, 260],
+  "sizeOverLife": [
+    [0, 0.3],
+    [1, 2.2]
+  ],
+  "colorOverLife": [
+    [0, "#ffffff"],
+    [1, "#ffffff"]
+  ],
+  "alphaOverLife": [
+    [0, 0.9],
+    [1, 0]
+  ],
+  "maxLive": 48
+}

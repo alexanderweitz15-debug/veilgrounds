@@ -1,0 +1,41 @@
+{
+  "_doc": "Funken, die beim Lösen eines Zaubers vom Wirkenden wegstieben.",
+  "id": "release_motes",
+  "class": "hit",
+  "blend": "add",
+  "glyph": "dot",
+  "tint": {
+    "mode": "hue",
+    "saturation": 0.95,
+    "lightness": 0.72,
+    "hueJitter": 14,
+    "lightnessJitter": 0.08
+  },
+  "life": [250, 480],
+  "count": 10,
+  "emitter": {
+    "shape": "disc",
+    "radius": 30,
+    "jitterH": 8
+  },
+  "velocity": {
+    "dir": "outward",
+    "speed": [60, 200],
+    "rise": [20, 120]
+  },
+  "drag": 3,
+  "size": [80, 120],
+  "sizeOverLife": [
+    [0, 1],
+    [1, 0.2]
+  ],
+  "colorOverLife": [
+    [0, "#ffffff"],
+    [1, "#ffffff"]
+  ],
+  "alphaOverLife": [
+    [0, 1],
+    [1, 0]
+  ],
+  "maxLive": 256
+}

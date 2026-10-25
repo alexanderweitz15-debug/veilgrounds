@@ -1,0 +1,39 @@
+{
+  "_doc": "Treffer-Funken am Ziel (Trigger hitFrame / Auto-Angriff), Teamfarbe: eigene blau, gegnerische rot.",
+  "id": "hit_spark",
+  "class": "hit",
+  "blend": "add",
+  "glyph": "spark",
+  "tint": {
+    "mode": "team"
+  },
+  "life": [140, 260],
+  "count": 6,
+  "emitter": {
+    "shape": "point",
+    "jitter": 6,
+    "jitterH": 4
+  },
+  "velocity": {
+    "dir": "radial",
+    "speed": [120, 360],
+    "rise": [0, 80]
+  },
+  "drag": 4,
+  "size": [90, 150],
+  "sizeOverLife": [
+    [0, 1],
+    [1, 0.3]
+  ],
+  "colorOverLife": [
+    [0, "#ffffff"],
+    [1, "#ffe2b0"]
+  ],
+  "alphaOverLife": [
+    [0, 1],
+    [0.6, 0.8],
+    [1, 0]
+  ],
+  "spin": [-8, 8],
+  "maxLive": 256
+}

@@ -1,7 +1,8 @@
 {
-  "_doc": "D2 combat readability (render only). facingMs180 = time a sprite needs to turn 180 deg (AGENTS-PLAN B5: ~80 ms). hitFlash: minGapMs = at most one flash per unit per gap (4/s), amp = brightness boost per target kind. airborne: hop height (world units) over the knock-up; dash: arc height per 100 units of dash length (only when the snapshot carries `dashing`, agent B5).",
+  "_doc": "D2 combat readability (render only). facingMs180 = time a sprite needs to turn 180 deg (AGENTS-PLAN B5: ~80 ms). hitFlash: minGapMs = at most one flash per unit per gap (4/s), amp = brightness boost per target kind. airborne: hop height (world units) over the knock-up; dash: arc height per 100 units of dash length (only when the snapshot carries `dashing`, agent B5). telegraph (A4): enemyRimMin = minimum rim alpha of an enemy telegraph while shown, warnRate = warning sparks per second along an enemy telegraph rim (draw order: src/render/vfx/order.ts).",
   "facingMs180": 80,
   "hitFlash": { "minGapMs": 250, "ampChampion": 1.6, "ampMinion": 0.55, "ampOther": 1.0, "ampReduceMotion": 0.35 },
   "airborne": { "height": 70, "minMs": 250 },
-  "dash": { "heightPer100": 9, "maxHeight": 60 }
+  "dash": { "heightPer100": 9, "maxHeight": 60 },
+  "telegraph": { "enemyRimMin": 0.85, "warnRate": 22 }
 }

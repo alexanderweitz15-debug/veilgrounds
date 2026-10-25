@@ -1,12 +1,12 @@
 {
   "note": "Tunables of the combat micro layer (src/ai/combat, A13). Rank differences enter ONLY through the profile fields reaction time, aim error and error rates (src/data/bots/profiles/*.json); nothing here depends on the rank. Distances in units, times in seconds unless the name says ticks.",
   "parts": {
-    "note": "Parts of the micro layer that are on (flag.ts). tick = per-tick combo executor in the reflex layer: measured worse than the decision-rate execution in A/B games (docs/agents/wave1-a13.md), so off; BOT_MICRO_ON=tick turns it on for measurements.",
+    "note": "Parts of the micro layer that are on (flag.ts). tick = per-tick combo executor in the reflex layer: measured worse than the decision-rate execution in A/B games (docs/agents/wave1-a13.md), so off; BOT_MICRO_ON=tick turns it on for measurements. spacing = ranged spacing from the enemy hint ranges: self-play Gold 8 x 14 min cost ~2 kills/game (13.6 -> 11.6) and the benchmark trade balance got worse at Diamond, so off; BOT_MICRO_ON=spacing turns it on.",
     "aim": true,
     "dodge": true,
     "combo": true,
     "tick": false,
-    "spacing": true,
+    "spacing": false,
     "focus": true,
     "peel": true
   },

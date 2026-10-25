@@ -53,3 +53,12 @@ vorliegt. A3 hat die Loader-/Cache-Teile nicht angefasst.
 `recalling?: true` an `SnapEntity` (nur sichtbare Champions, `Champ.recallAt[e] > sim.tick`); danach setzt A3 die Zeile
 `inp.recalling = e.recalling || e.id === this.recallEid` in `ChampionSprites.push` (eine Zeile). Enthüllt nichts, was die
 Sichtbarkeit nicht schon verrät (der Rückruf-Kanal ist in LoL für alle sichtbar).
+## R-A4-1 – A4 → A3 (Animation) und A8 (Game Feel): VFX-Trigger anschließen · offen
+
+`world.fx.bus` (`src/render/vfx/bus.ts`, Format: docs/VFX-FORMAT.md §5) ist die Abonnier-Schnittstelle der VFX.
+A3: wenn der Sprite-Treffer-Frame (`hitFrame`) und der Cast-Release-Frame (`release`) feststehen, dort
+`world.fx.bus.trigger('hitFrame' | 'release', { x, y, h, dx, dy, hue, team, slot, now })` aufrufen (Sim-Koordinaten, `team`
+relativ zum Betrachter: `'own' | 'enemy'`) und einmalig `world.fx.animatedHits = true` setzen, damit der sim-getriebene
+Auto-Angriffs-Funke nicht doppelt erscheint. A8: `world.fx.bus.on('impact' | 'hitFrame' | 'death', handler)` für Kamera-Ruck,
+Hit-Stop usw.; neue Effekte brauchen nur eine JSON-Datei und einen Eintrag in `src/render/vfx/bindings.json`.
+Der Aufruf liegt in `units.ts`/`world.ts`/`championSprites.ts` (nicht A4-Besitz), deshalb als Anfrage.

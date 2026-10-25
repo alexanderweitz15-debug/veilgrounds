@@ -1,0 +1,38 @@
+{
+  "_doc": "Ultimate: Staubwulst am Boden (alpha-blend, damit er auch auf hellem Boden sichtbar bleibt).",
+  "id": "ult_dust",
+  "class": "ultimate",
+  "blend": "normal",
+  "glyph": "smoke",
+  "tint": {
+    "mode": "none"
+  },
+  "life": [700, 1100],
+  "count": 20,
+  "emitter": {
+    "shape": "ring",
+    "radius": 60,
+    "jitterH": 2
+  },
+  "velocity": {
+    "dir": "outward",
+    "speed": [160, 260],
+    "rise": [10, 60]
+  },
+  "drag": 2.5,
+  "size": [200, 320],
+  "sizeOverLife": [
+    [0, 0.5],
+    [1, 1.6]
+  ],
+  "colorOverLife": [
+    [0, "#9a8a76"],
+    [1, "#4a4038"]
+  ],
+  "alphaOverLife": [
+    [0, 0.5],
+    [1, 0]
+  ],
+  "spin": [-1.5, 1.5],
+  "maxLive": 128
+}

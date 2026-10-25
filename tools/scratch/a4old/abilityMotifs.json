@@ -1,0 +1,63 @@
+{
+  "_doc": "D1/D4: per-ability motif + element hue (ability icons in src/ui/icons.ts, missile and ground-object colours in src/render). Overrides the keyword rules in abilityTheme.ts so that Q/W/E/R of one champion never share a motif. `glyphs` = every motif key the icon painter can draw (MOTIF + GLYPHS in src/ui/icons.ts).",
+  "glyphs": ["arrow", "flame", "bolt", "wave", "hook", "web", "gear", "bell", "claw", "moon", "sun", "bomb", "banner", "spiral", "snow", "glass", "root", "drop", "leaf", "wing", "sword", "dagger", "axe", "bow", "crown", "chain", "shield", "cloak", "staff", "book", "ring", "gem", "lamp", "hourglass", "belt", "horn", "heart", "boot", "potion", "eye", "fang"],
+  "particleDoc": "D1b: particle language per motif (src/render/particles.ts). life ms, speed = random burst speed (world units/s), rise = upward drift, gravity = downward accel, back = trail sprays against the flight direction, size = point size (world units), light = HSL lightness %, trail = particles/s behind a missile, burst = impact count, ambient = particles/s per 100 radius on hook ground objects, flicker = ember shimmer.",
+  "particleKinds": {
+    "ember": { "life": 700, "speed": 45, "rise": 110, "gravity": 0, "back": 0, "size": 140, "light": 52, "trail": 42, "burst": 32, "ambient": 12, "flicker": true, "additive": false },
+    "spark": { "life": 260, "speed": 300, "rise": 0, "gravity": 0, "back": 0, "size": 100, "light": 78, "trail": 50, "burst": 40, "ambient": 10, "flicker": true, "additive": true },
+    "drip": { "life": 520, "speed": 80, "rise": 70, "gravity": 520, "back": 0, "size": 110, "light": 66, "trail": 36, "burst": 34, "ambient": 10, "flicker": false, "additive": false },
+    "mote": { "life": 1200, "speed": 22, "rise": 28, "gravity": 0, "back": 0, "size": 120, "light": 72, "trail": 20, "burst": 24, "ambient": 8, "flicker": false, "additive": false },
+    "shard": { "life": 320, "speed": 140, "rise": 0, "gravity": 260, "back": 160, "size": 90, "light": 74, "trail": 34, "burst": 26, "ambient": 5, "flicker": false, "additive": false },
+    "blackflame": { "life": 700, "speed": 30, "rise": 160, "gravity": 0, "back": 0, "size": 150, "light": 12, "trail": 20, "burst": 18, "ambient": 10, "flicker": true, "additive": false }
+  },
+  "specialDoc": "Champion-specific particle rules: tagParticles = ground-object tag -> kind (+hue), markParticles = unit mark id -> emitters on the marked unit (rate per second, height). Sev (agent E spec): black flame tongues with a copper core on units burning with Schwarzglut (mark sev_w) and on the burning decoy.",
+  "tagParticles": { "sev_w_decoy": { "kind": "blackflame", "hue": 20 } },
+  "markParticles": {
+    "sev_w": [
+      { "kind": "blackflame", "rate": 16, "hue": 20, "h": 50 },
+      { "kind": "ember", "rate": 9, "hue": 24, "h": 40 }
+    ]
+  },
+  "motifParticles": {
+    "flame": "ember", "sun": "ember", "bomb": "ember", "lamp": "ember", "heart": "ember", "potion": "ember",
+    "bolt": "spark", "gem": "spark", "crown": "spark", "glass": "spark", "staff": "spark", "eye": "spark",
+    "wave": "drip", "drop": "drip",
+    "gear": "spark", "hourglass": "drip",
+    "moon": "mote", "cloak": "mote", "web": "mote", "spiral": "mote", "ring": "mote",
+    "leaf": "mote", "wing": "mote", "book": "mote", "belt": "mote", "banner": "mote", "horn": "mote", "bell": "mote",
+    "shield": "mote", "root": "mote", "snow": "mote",
+    "chain": "shard", "arrow": "shard", "bow": "shard", "dagger": "shard", "sword": "shard", "axe": "shard", "claw": "shard", "fang": "shard",
+    "hook": "shard", "boot": "shard"
+  },
+  "champions": {
+    "aurel": [["gear", 42], ["spiral", 60], ["hourglass", 42], ["snow", 195]],
+    "brom": [["spiral", 190], ["root", 110], ["hook", 30], ["axe", 18]],
+    "corvin": [["arrow", 35], ["bomb", 28], ["boot", 22], ["flame", 22]],
+    "dagny": [["axe", 18], ["wave", 200], ["shield", 210], ["bomb", 28]],
+    "ferris": [["sun", 48], ["lamp", 48], ["banner", 120], ["moon", 270]],
+    "gorvam": [["hook", 30], ["axe", 18], ["chain", 210], ["spiral", 200]],
+    "grimald": [["fang", 35], ["shield", 210], ["web", 300], ["claw", 14]],
+    "hagen": [["bell", 45], ["shield", 210], ["boot", 45], ["bolt", 52]],
+    "harrow": [["axe", 18], ["shield", 210], ["banner", 10], ["crown", 45]],
+    "ilvane": [["chain", 300], ["spiral", 190], ["wing", 280], ["web", 300]],
+    "isolde": [["dagger", 5], ["glass", 185], ["web", 300], ["gem", 185]],
+    "kaelen": [["dagger", 5], ["moon", 270], ["sword", 0], ["axe", 350]],
+    "kiran": [["arrow", 300], ["chain", 300], ["web", 300], ["root", 300]],
+    "lio": [["gem", 52], ["bolt", 52], ["sun", 55], ["drop", 52]],
+    "lysa": [["spiral", 300], ["arrow", 300], ["web", 300], ["bow", 35]],
+    "mira": [["bow", 35], ["wave", 200], ["boot", 30], ["arrow", 35]],
+    "nyx": [["dagger", 5], ["cloak", 270], ["wing", 280], ["moon", 250]],
+    "oda": [["drop", 200], ["ring", 190], ["wave", 200], ["spiral", 200]],
+    "oleth": [["banner", 10], ["horn", 30], ["boot", 52], ["shield", 210]],
+    "ottilie": [["arrow", 35], ["eye", 30], ["bow", 35], ["horn", 14]],
+    "renn": [["dagger", 220], ["spiral", 200], ["wing", 230], ["sword", 5]],
+    "seraphyne": [["bolt", 52], ["wave", 200], ["boot", 60], ["spiral", 230]],
+    "thessaly": [["staff", 48], ["gem", 185], ["eye", 55], ["sun", 45]],
+    "tobin": [["hook", 30], ["wave", 200], ["web", 300], ["bolt", 52]],
+    "vessa": [["claw", 14], ["fang", 350], ["eye", 80], ["wing", 20]],
+    "wren": [["arrow", 22], ["flame", 22], ["moon", 270], ["spiral", 15]],
+    "sev": [["sun", 22], ["wing", 270], ["eye", 0], ["spiral", 355], ["flame", 345], ["sword", 14], ["moon", 355]],
+    "fenna": [["wing", 40], ["lamp", 30], ["ring", 265], ["moon", 250]],
+    "vargrim": [["sword", 170], ["cloak", 165], ["boot", 150], ["horn", 175]]
+  }
+}

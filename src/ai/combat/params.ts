@@ -3,6 +3,7 @@
 import raw from '../../data/bots/micro.json';
 
 export interface MicroParams {
+  parts: Record<'aim' | 'dodge' | 'combo' | 'tick' | 'spacing' | 'focus' | 'peel', boolean>;
   aim: {
     leadNoiseDivisor: number;
     jukeLateral: number;

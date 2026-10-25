@@ -1,0 +1,44 @@
+{
+  "_doc": "Ultimate: Lichtsäule aus aufsteigenden Flammenzungen.",
+  "id": "ult_pillar",
+  "class": "ultimate",
+  "blend": "add",
+  "glyph": "wisp",
+  "tint": {
+    "mode": "hue",
+    "saturation": 0.95,
+    "lightness": 0.55,
+    "hueJitter": 8,
+    "lightnessJitter": 0.06
+  },
+  "life": [700, 1100],
+  "count": 40,
+  "emitter": {
+    "shape": "disc",
+    "radius": 40,
+    "jitterH": 6
+  },
+  "velocity": {
+    "dir": "radial",
+    "speed": [0, 20],
+    "rise": [300, 520]
+  },
+  "drag": 0.8,
+  "size": [150, 230],
+  "sizeOverLife": [
+    [0, 0.5],
+    [0.3, 1],
+    [1, 0.4]
+  ],
+  "colorOverLife": [
+    [0, "#ffffff"],
+    [1, "#ffffff"]
+  ],
+  "alphaOverLife": [
+    [0, 0],
+    [0.15, 0.9],
+    [1, 0]
+  ],
+  "spin": [-1, 1],
+  "maxLive": 256
+}

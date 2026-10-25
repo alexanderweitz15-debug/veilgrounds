@@ -1,0 +1,41 @@
+{
+  "_doc": "Migriert: langsame Staubpunkte.",
+  "id": "mote",
+  "class": "projectile",
+  "glyph": "dot",
+  "count": 8,
+  "emitter": {
+    "shape": "point",
+    "jitter": 8,
+    "jitterH": 6
+  },
+  "velocity": {
+    "dir": "radial",
+    "speed": [8.8, 22],
+    "rise": [16.8, 39.2]
+  },
+  "sizeOverLife": [
+    [0, 1],
+    [1, 1]
+  ],
+  "colorOverLife": [
+    [0, "#ffffff"],
+    [1, "#ffffff"]
+  ],
+  "maxLive": 640,
+  "blend": "normal",
+  "tint": {
+    "mode": "hue",
+    "saturation": 0.95,
+    "lightness": 0.72,
+    "hueJitter": 12,
+    "lightnessJitter": 0.08
+  },
+  "life": [840, 1560],
+  "size": [120, 120],
+  "alphaOverLife": [
+    [0, 1],
+    [0.286, 1],
+    [1, 0]
+  ]
+}

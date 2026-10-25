@@ -32,3 +32,15 @@ swap`, Stylesheet `public/fonts/fonts.css` (gleicher Ursprung), Aufruf in `index
 | Three.js 0.170, bitecs 0.4 (npm-Abhängigkeiten, im Bundle) | MIT |
 | `public/icon.svg`, `public/manifest.webmanifest` | eigene Arbeit (Projekt) |
 | Sprites, Icons, Terrain, Töne | prozedural im Projektcode erzeugt, keine Fremdassets |
+
+## Audio (`public/audio/`, A5, 2026-10-25)
+
+Stand: **keine Audiodateien.** Alle Töne (Fähigkeiten, Autoangriffe, Treffer, Türme, UI, Ansage, Umgebungsrauschen)
+entstehen zur Laufzeit per WebAudio aus Oszillatoren und gefiltertem Rauschen (`src/audio/sfx.ts`, `src/audio/ambient.ts`)
+und sind eigene Arbeit des Projekts. Das Verzeichnis `public/audio/` ist für spätere Dateien vorgesehen. Regel für jede
+Datei, die dort abgelegt wird: eine Tabellenzeile unten mit Datei, Zweck, Quelle (URL), Urheber, Lizenz (nur CC0 oder
+gleichwertig, keine Dateien unbekannter Lizenz, kein Download ohne geprüfte Lizenz) und Abrufdatum.
+
+| Datei | Zweck | Quelle | Urheber | Lizenz | Abruf |
+|---|---|---|---|---|---|
+| (keine) | | | | | |

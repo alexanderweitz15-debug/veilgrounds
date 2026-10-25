@@ -12,10 +12,16 @@ import { abilityForSlot } from '../data/champions';
 import { REL } from './palette';
 import { abilityHue, abilityParticles, type ParticleKindId } from './abilityTheme';
 import { Particles } from './particles';
+import { VfxBus } from './vfx/bus';
+import type { EmitOpts } from './vfx/system';
+import { RENDER_ORDER, telegraphOrder } from './vfx/order';
+import { READ } from './readability';
 import { settings } from '../settings';
 import { castDir, castTelegraph, hitboxAbility, lineZone, windupTicks, zoneProgress, type CastTelegraph, type CircleShape, type LineShape, type Shape } from './telegraph';
 
 const MAX_PROJ = 160;
+/** Tower lance trail particles per second. */
+const LANCE_TRAIL = 60;
 /** Border thickness (world units), drawn inside the hitbox; enemy skillshots with the outline setting use the strong one. */
 const BASE_EDGE = 10;
 const STRONG_EDGE = 22;
@@ -58,7 +64,7 @@ function columnMesh(color: string): THREE.Mesh<THREE.BufferGeometry, THREE.MeshB
   columnGeo ??= new THREE.CylinderGeometry(1, 1, 1, 24, 1, true).translate(0, 0.5, 0);
   const m = new THREE.Mesh(columnGeo, columnMat(color));
   m.visible = false;
-  m.renderOrder = 4;
+  m.renderOrder = RENDER_ORDER.column;
   return m;
 }
 
@@ -147,11 +153,18 @@ class ShapeView {
   readonly edges = [0, 1, 2, 3].map(() => new THREE.Mesh(flatPlane, this.rimMat));
 
   constructor(group: THREE.Group) {
-    this.fill.renderOrder = 2;
-    this.rim.renderOrder = 3;
-    for (const e of this.edges) e.renderOrder = 3;
+    this.setEnemy(false);
     group.add(this.fill, this.rim, ...this.edges);
     this.hide();
+  }
+
+  /** Draw order (src/render/vfx/order.ts): enemy telegraphs above every other effect, own ones below the particles. */
+  setEnemy(enemy: boolean): void {
+    this.fill.renderOrder = telegraphOrder(enemy, 'fill');
+    this.rim.renderOrder = telegraphOrder(enemy, 'rim');
+    for (const e of this.edges) e.renderOrder = telegraphOrder(enemy, 'rim');
+    this.fill.userData.enemyTelegraph = this.rim.userData.enemyTelegraph = enemy;
+    for (const e of this.edges) e.userData.enemyTelegraph = enemy;
   }
 
   hide(): void {
@@ -163,9 +176,10 @@ class ShapeView {
    * Draw `s` with fill progress k (0..1): circles/cones fill outward, lines along their length (from A, or from the
    * middle when `centre`). Border always at the full hitbox.
    */
-  show(s: Shape, color: string, k: number, fillOpacity: number, rimOpacity: number, centre = false, strong = false): void {
+  show(s: Shape, color: string, k: number, fillOpacity: number, rimOpacity: number, centre = false, strong = false, enemy = false): void {
     // C7 setting "enemy skillshot outline": double border in the enemy colour, at least 0.9 alpha (fill unchanged)
     const EDGE = strong ? STRONG_EDGE : BASE_EDGE;
+    this.setEnemy(enemy);
     this.fillMat.color.set(color);
     this.rimMat.color.set(strong ? REL.enemy : color);
     this.fillMat.opacity = fillOpacity;
@@ -301,8 +315,23 @@ export class Fx {
   private chanCol: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial> | null = null;
   /** D1b ability particles (trails, impacts, cast flourishes; ground objects emit through it too). */
   readonly particles = new Particles();
-  /** Ability missiles seen last frame: impact burst where one disappears. */
-  private readonly trails = new Map<number, { x: number; y: number; h: number; kind: ParticleKindId; hue: number; frame: number }>();
+  /**
+   * A4: trigger bus for animation / game-feel code (`bus.trigger('hitFrame' | 'release' | 'impact' ..., event)`, `bus.on`),
+   * see src/render/vfx/bus.ts. The effects bound to a trigger are data (src/render/vfx/bindings.json).
+   */
+  readonly bus = new VfxBus(this.particles.vfx);
+  /**
+   * true once the sprite animation publishes `hitFrame` itself (A3): the sim-driven auto-attack spark below is then
+   * skipped so a hit is not drawn twice.
+   */
+  animatedHits = false;
+  private readonly eo: EmitOpts = {};
+  private readonly dirScratch = { dx: 0, dy: 0 };
+  private readonly hLance = this.particles.vfx.handle('lance_trail');
+  private readonly hTowerHit = this.particles.vfx.handle('tower_impact');
+  private readonly hWarn = this.particles.vfx.handle('telegraph_warn');
+  /** Ability missiles seen last frame: impact burst where one disappears. `tower`: energy lance (team-coloured effects). */
+  private readonly trails = new Map<number, { x: number; y: number; h: number; kind: ParticleKindId; hue: number; frame: number; tower: 'own' | 'enemy' | null }>();
   private frameNo = 0;
   private lastNow = 0;
   /** Sev R / fear: dark screen vignette for the feared player (clip-space quad, drawn last). */
@@ -335,23 +364,23 @@ export class Fx {
     this.range = new THREE.Mesh(new THREE.RingGeometry(0.985, 1, 96).rotateX(-Math.PI / 2), groundMat('#f2e7b6', 0.7));
     this.range.visible = false;
     this.group.add(this.range);
-    this.aimRange.renderOrder = 3;
+    this.aimRange.renderOrder = RENDER_ORDER.rim;
     this.aimRange.visible = false;
     this.group.add(this.aimRange);
     for (let i = 0; i < 3; i++) {
       const ring = new THREE.Mesh(new THREE.RingGeometry(0.988, 1, 96).rotateX(-Math.PI / 2), groundMat('#f0d8a0', 0.5));
       const line = new THREE.Mesh(flatPlane, groundMat('#f0d8a0', 0.5));
-      ring.renderOrder = line.renderOrder = 3;
+      ring.renderOrder = line.renderOrder = RENDER_ORDER.rim;
       ring.visible = line.visible = false;
       this.towerRings.push(ring);
       this.towerLines.push(line);
       this.group.add(ring, line);
     }
-    this.chanRing.renderOrder = this.chanArc.renderOrder = 3;
+    this.chanRing.renderOrder = this.chanArc.renderOrder = RENDER_ORDER.rim;
     this.chanRing.visible = this.chanArc.visible = false;
     this.group.add(this.chanRing, this.chanArc); // particles.group is added to the scene by World
     this.vignette.frustumCulled = false;
-    this.vignette.renderOrder = 100;
+    this.vignette.renderOrder = RENDER_ORDER.screen;
     this.vignette.visible = false;
     this.group.add(this.vignette);
   }
@@ -409,7 +438,7 @@ export class Fx {
     if (!p) {
       const mat = groundMat(color, a0);
       const mesh = new THREE.Mesh(disc ? flatDisc : flatRing, mat);
-      mesh.renderOrder = 3;
+      mesh.renderOrder = RENDER_ORDER.rim;
       this.group.add(mesh);
       p = { mesh, mat, t0: 0, dur: 0, r0: 0, r1: 0, a0, active: false };
       this.pulses.push(p);
@@ -436,12 +465,17 @@ export class Fx {
         if (!settings.reduceMotion) this.pulse(src.x, src.y, src.team === state.myTeam ? REL.ownShot : REL.enemyShot, 40, 160, 300, now);
         // cast flourish in the ability's particle language (embers rise, sparks crackle, drops splash ...)
         const pk = src.champ ? abilityParticles(src.champ, ev.slot) : null;
-        if (pk) this.particles.emit(pk.kind, src.x, src.y, 50, pk.hue, this.particles.kind(pk.kind).burst * 0.6, now, undefined, 0.7);
+        if (pk) this.particles.emit(pk.kind, src.x, src.y, 50, pk.hue, this.particles.kind(pk.kind).burst * 0.6, now, undefined, 0.7, 'hit');
+        // ultimate (slot 3+): ring of sparks, light pillar and dust at the caster, in the ability's element hue
+        if (ev.slot >= 3 && !ev.recast) this.bus.trigger('ultimate', { x: src.x, y: src.y, h: 30, hue: pk?.hue, team: src.team === state.myTeam ? 'own' : 'enemy', slot: ev.slot, now });
         if (!ev.recast) this.addPreview(ev, state);
         break;
       }
       case 'death':
-        if (!settings.reduceMotion) this.pulse(ev.x, ev.y, '#c8c4bc', 30, 140, 600, now, true, 0.5);
+        if (!settings.reduceMotion) {
+          this.pulse(ev.x, ev.y, '#c8c4bc', 30, 140, 600, now, true, 0.5);
+          this.bus.trigger('death', { x: ev.x, y: ev.y, now });
+        }
         break;
       case 'damage': {
         // auto-attack impact at the target (LoL hit spark), coloured by damage type; champion fights only (waves stay calm)
@@ -451,11 +485,15 @@ export class Fx {
         if (!dst || (dst.kind !== Kind.Champion && src?.kind !== Kind.Champion)) break;
         const col = ev.type === 'magic' ? '#b98cff' : ev.type === 'true' ? '#ffffff' : ev.crit ? '#ffd24a' : '#ffb35c';
         this.pulse(state.x(dst), state.y(dst), col, dst.radius * 0.4, dst.radius * (ev.crit ? 1.6 : 1.15), ev.crit ? 260 : 170, now, false, 0.95);
+        if (!this.animatedHits) this.bus.trigger('hitFrame', { x: state.x(dst), y: state.y(dst), h: 70, team: src && src.team === state.myTeam ? 'own' : 'enemy', scale: ev.crit ? 1.6 : 1, now });
         break;
       }
       case 'level': {
         const e = state.byId.get(ev.eid);
-        if (e?.alive) this.levelUp(ev.eid, e.x, e.y, now);
+        if (e?.alive) {
+          this.levelUp(ev.eid, e.x, e.y, now);
+          if (!settings.reduceMotion) this.bus.trigger('levelUp', { x: e.x, y: e.y, now });
+        }
         break;
       }
     }
@@ -507,19 +545,64 @@ export class Fx {
     z.centre = shape.k === 'line' && hitAb?.line !== 'forward';
   }
 
+  /**
+   * Warning sparks along the rim of an enemy telegraph (A4): a few red crosses per second at random rim points, drawn
+   * below the telegraph rim (src/render/vfx/order.ts), so they add recognisability but can never cover it.
+   */
+  private warn(s: Shape, dt: number, now: number): void {
+    if (settings.reduceMotion || this.hWarn < 0) return;
+    let n = READ.telegraph.warnRate * dt;
+    const o = this.eo;
+    o.team = 'enemy';
+    o.count = o.hue = o.dx = o.dy = o.cls = o.radius = o.spread = undefined;
+    for (; n > 0; n--) {
+      if (n < 1 && Math.random() > n) break;
+      let x: number;
+      let y: number;
+      if (s.k === 'circle') {
+        const a = Math.random() * Math.PI * 2;
+        x = s.x + Math.cos(a) * s.r;
+        y = s.y + Math.sin(a) * s.r;
+      } else if (s.k === 'cone') {
+        const pick = Math.random();
+        const half = (s.halfAngleDeg * Math.PI) / 180;
+        const base = Math.atan2(s.dy, s.dx);
+        const a = pick < 0.5 ? base + (Math.random() * 2 - 1) * half : base + (pick < 0.75 ? half : -half);
+        const r = pick < 0.5 ? s.range : s.range * Math.random();
+        x = s.x + Math.cos(a) * r;
+        y = s.y + Math.sin(a) * r;
+      } else {
+        const len = Math.hypot(s.bx - s.ax, s.by - s.ay);
+        if (len <= 0) continue;
+        const ux = (s.bx - s.ax) / len;
+        const uy = (s.by - s.ay) / len;
+        const cap = Math.random() < 0.2;
+        const t = cap ? (Math.random() < 0.5 ? 0 : 1) : Math.random();
+        const side = cap ? Math.random() * 2 - 1 : Math.random() < 0.5 ? -1 : 1;
+        x = s.ax + (s.bx - s.ax) * t - uy * side * (s.width / 2);
+        y = s.ay + (s.by - s.ay) * t + ux * side * (s.width / 2);
+      }
+      this.particles.vfx.emit(this.hWarn, x, y, 6, now, o);
+    }
+  }
+
   update(state: ClientState, now: number, showRange: boolean): void {
     const snap = state.snap;
     // fractional sim tick of the displayed state (snapshot tick = sim tick + 1)
     const tick = snap ? snap.tick - 1 + state.alpha : 0;
     const ownCol = (team: number): string => (team === state.myTeam ? REL.ownShot : REL.enemyShot);
     const strongFor = (team: number): boolean => settings.enemySkillshotOutline && team !== state.myTeam;
+    const isEnemy = (team: number): boolean => team !== state.myTeam;
+    // readability: an enemy rim stays at least enemyRimMin opaque while it is shown (flash fade-outs excluded)
+    const rimAlpha = (team: number, a: number): number => (isEnemy(team) ? Math.max(a, READ.telegraph.enemyRimMin) : a);
     // resolve flash strength (reduce motion: softer, no bright fill burst)
     const flashFill = settings.reduceMotion ? 0.3 : 0.55;
     const zoneBurst = settings.reduceMotion ? 0.36 : 0.6;
     const dt = Math.min(0.1, Math.max(0, (now - this.lastNow) / 1000));
     this.lastNow = now;
     this.frameNo++;
-    this.particles.scale = settings.reduceMotion ? 0.35 : 1;
+    // emission thinning: reduce motion, and the low graphics preset (A4 performance budget)
+    this.particles.scale = settings.reduceMotion ? 0.35 : settings.graphics === 'low' ? 0.6 : 1;
 
     // projectiles + in-flight strips of line skillshots (exact width, to the end of range)
     let n = 0;
@@ -540,22 +623,39 @@ export class Fx {
           st.bx = pr.x + pr.dx * pr.left;
           st.by = pr.y + pr.dy * pr.left;
           st.width = pr.width;
-          if ((st.bx - x) * pr.dx + (st.by - y) * pr.dy > 0) this.strips[ns++]!.show(st, ownCol(pr.team), 1, 0.16, 0.75, false, strongFor(pr.team));
+          if ((st.bx - x) * pr.dx + (st.by - y) * pr.dy > 0) {
+            this.strips[ns++]!.show(st, ownCol(pr.team), 1, 0.16, rimAlpha(pr.team, 0.75), false, strongFor(pr.team), isEnemy(pr.team));
+            if (isEnemy(pr.team)) this.warn(st, dt, now);
+          }
         }
         // missile look by source (LoL: every unit has its own): visual only, the strip is the hitbox
         const st = missileStyle(pr, own, homing);
         // ability missiles leave a trail in their particle language and burst where they end
-        // D2: tower shots crackle (team hue), champion basic attacks leave a faint shard streak
-        const pk =
-          pr.champ && pr.slot !== undefined && pr.slot >= 0
-            ? abilityParticles(pr.champ, pr.slot)
-            : pr.srcKind === Kind.Tower || pr.srcKind === Kind.Nexus
-              ? { kind: 'spark' as const, hue: own ? 200 : 18 }
-              : null;
-        if (!pk && pr.srcKind === Kind.Champion) this.particles.emit('shard', x, y, st.height, own ? 45 : 25, this.particles.kind('shard').trail * 0.35 * dt, now, { dx: pr.dx, dy: pr.dy }, 0.3);
-        if (pk) {
-          this.particles.emit(pk.kind, x, y, st.height, pk.hue, this.particles.kind(pk.kind).trail * dt, now, { dx: pr.dx, dy: pr.dy }, 0.5);
-          this.trails.set(pr.id, { x, y, h: st.height, kind: pk.kind, hue: pk.hue, frame: this.frameNo });
+        // D2: tower shots crackle (A4: team-coloured lance trail), champion basic attacks leave a faint shard streak
+        const tower = pr.srcKind === Kind.Tower || pr.srcKind === Kind.Nexus;
+        const pk = pr.champ && pr.slot !== undefined && pr.slot >= 0 ? abilityParticles(pr.champ, pr.slot) : null;
+        const dir = this.dirScratch;
+        dir.dx = pr.dx;
+        dir.dy = pr.dy;
+        if (!pk && !tower && pr.srcKind === Kind.Champion) this.particles.emit('shard', x, y, st.height, own ? 45 : 25, this.particles.kind('shard').trail * 0.35 * dt, now, dir, 0.3);
+        if (pk || tower) {
+          if (pk) this.particles.emit(pk.kind, x, y, st.height, pk.hue, this.particles.kind(pk.kind).trail * dt, now, dir, 0.5);
+          else {
+            const o = this.eo;
+            o.count = LANCE_TRAIL * dt;
+            o.team = own ? 'own' : 'enemy';
+            o.dx = pr.dx;
+            o.dy = pr.dy;
+            o.hue = o.cls = o.radius = o.spread = undefined;
+            this.particles.vfx.emit(this.hLance, x, y, st.height, now, o);
+          }
+          let t = this.trails.get(pr.id);
+          if (!t) this.trails.set(pr.id, (t = { x, y, h: st.height, kind: pk?.kind ?? 'spark', hue: pk?.hue ?? 0, frame: 0, tower: null }));
+          t.x = x;
+          t.y = y;
+          t.h = st.height;
+          t.frame = this.frameNo;
+          t.tower = pk ? null : own ? 'own' : 'enemy';
         }
         if (n >= MAX_PROJ) continue;
         const w = Math.max(14, Math.min(pr.width, 140) * (homing ? 0.6 : 0.55)) * st.size;
@@ -578,8 +678,14 @@ export class Fx {
     for (const [id, t] of this.trails) {
       if (t.frame === this.frameNo) continue;
       this.trails.delete(id);
-      this.particles.emit(t.kind, t.x, t.y, t.h, t.hue, this.particles.kind(t.kind).burst, now);
+      if (t.tower) {
+        const o = this.eo;
+        o.count = o.hue = o.dx = o.dy = o.cls = o.radius = o.spread = undefined;
+        o.team = t.tower;
+        this.particles.vfx.emit(this.hTowerHit, t.x, t.y, t.h, now, o);
+      } else this.particles.emit(t.kind, t.x, t.y, t.h, t.hue, this.particles.kind(t.kind).burst, now, undefined, 1, 'hit');
     }
+    this.bus.clock = now;
     this.particles.update(now, dt);
     for (const m of [this.proj, this.halo]) {
       m.count = n;
@@ -610,8 +716,11 @@ export class Fx {
           (s as CircleShape).x = state.x(caster);
           (s as CircleShape).y = state.y(caster);
         }
-        if (flash >= 0) pv.views[i]!.show(s, col, 1, flashFill * flash, 0.9 * flash, false, strongFor(pv.team));
-        else pv.views[i]!.show(s, col, k, 0.14 + 0.2 * k, tel.approx ? 0.6 : 0.9, false, strongFor(pv.team));
+        if (flash >= 0) pv.views[i]!.show(s, col, 1, flashFill * flash, 0.9 * flash, false, strongFor(pv.team), isEnemy(pv.team));
+        else {
+          pv.views[i]!.show(s, col, k, 0.14 + 0.2 * k, rimAlpha(pv.team, tel.approx ? 0.6 : 0.9), false, strongFor(pv.team), isEnemy(pv.team));
+          if (isEnemy(pv.team)) this.warn(s, dt, now);
+        }
       }
     }
 
@@ -640,7 +749,8 @@ export class Fx {
       else if (tick <= end) fillA = tick - ev.at < FLASH ? zoneBurst - ((zoneBurst - 0.32) * (tick - ev.at)) / FLASH : 0.32;
       else fillA = (ev.until !== undefined ? 0.32 : zoneBurst) * (1 - (tick - end) / FLASH);
       const rimA = tick <= end ? 0.95 : 0.95 * (1 - (tick - end) / FLASH);
-      z.view.show(shape, col, k, fillA, rimA, z.centre, strongFor(ev.team));
+      z.view.show(shape, col, k, fillA, rimA, z.centre, strongFor(ev.team), isEnemy(ev.team));
+      if (isEnemy(ev.team) && tick <= end) this.warn(shape, dt, now);
       // ability particles over the active area (burst when it resolves, ambient while a persistent zone lasts)
       if (z.pk && tick <= end) {
         const kd = this.particles.kind(z.pk.kind);
@@ -660,7 +770,7 @@ export class Fx {
             px = shape.ax + (shape.bx - shape.ax) * t;
             py = shape.ay + (shape.by - shape.ay) * t;
           } else break;
-          this.particles.emit(z.pk.kind, px, py, 10, z.pk.hue, rate / 3, now, undefined, 0.5);
+          this.particles.emit(z.pk.kind, px, py, 10, z.pk.hue, rate / 3, now, undefined, 0.5, 'aura');
         }
       }
     }

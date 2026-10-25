@@ -12,6 +12,8 @@ import { isLanerRole, ROLES } from './metrics';
 // same runtime registration as tools/botSim.ts (Sev has no line in builds.ts yet)
 BUILDS.sev ??= sevBuild as (typeof BUILDS)[string];
 
+/** Version of the observer's metric set (games recorded with an older one lack newer metrics). */
+export const OBS_VERSION = 3;
 export type Brain = 'old' | 'new';
 export interface GameSpec {
   /** Pair label "x:ref" (same rank for both teams: "gold:gold"). */
@@ -59,6 +61,7 @@ export function playGame(spec: GameSpec, clock?: () => number): GameRaw {
   const gold = [0, 1].map((t) => res.stats.filter((s) => s.team === t).reduce((a, s) => a + s.goldEarned, 0));
   const killsTotal = res.stats.reduce((a, s) => a + s.kills, 0);
   for (const t of [0, 1]) {
+    add(t, 'obsVersion', OBS_VERSION, 0);
     add(t, 'killsGame', killsTotal, 1);
     add(t, 'gameLen', decided ? minutes : 0, decided ? 1 : 0);
     add(t, 'decided', decided ? 1 : 0, 1);

@@ -32,6 +32,8 @@ const IDLE_ORDER_TICKS = 45;
 const NV_WINDOW = 150; // 5 s
 const NV_GUARD = 30; // the last 1 s before the death is ignored
 const REACT_WINDOW = 60; // 2 s
+const OPENER_WINDOW = 90; // 3 s
+const VIS_WINDOW = 600; // 20 s
 const LANE_BY_ROLE: Record<string, number> = { top: 0, mid: 1, adc: 2, support: 2 };
 const LANE_NAMES = ['top', 'mid', 'bot'] as const;
 const ORDER_CMDS = new Set(['move', 'attack', 'attackMove', 'stop', 'cast', 'spell', 'item', 'recall', 'ward']);
@@ -93,6 +95,8 @@ interface Champ {
   lastOrderTick: number;
   lastOrder?: LastOrder;
   lastChampDmgTaken: number;
+  /** Opening attacker of the current fight (first enemy champion damage after >= 5 s of calm) and whether it was unseen. */
+  opener?: { t: number; blind: boolean };
   lastSkillCmd: number;
   pend: Stim[];
   idleSince: number;
@@ -117,7 +121,7 @@ export function createObserver(config: SimConfig): Observer {
   let champs: Champ[] = [];
   let bySlot = new Map<number, Champ>();
   let inited = false;
-  /** seen[team][enemySlot] ring of 256 ticks: did `team` see that champion at tick (index = tick & 255). */
+  /** seen[team][enemySlot] ring of 1024 ticks: did `team` see that champion at tick (index = tick & 1023). */
   const seenHist: Uint8Array[][] = [[], []];
   const lastSeen: number[][] = [[], []]; // team -> slot -> last tick seen
   const shots = new Map<number, Shot>();
@@ -162,7 +166,7 @@ export function createObserver(config: SimConfig): Observer {
     bySlot = new Map(champs.map((c) => [c.slot, c]));
     for (const t of [0, 1]) {
       for (const c of champs) {
-        seenHist[t]![c.slot] = new Uint8Array(256);
+        seenHist[t]![c.slot] = new Uint8Array(1024);
         lastSeen[t]![c.slot] = -1e9;
       }
     }
@@ -268,7 +272,13 @@ export function createObserver(config: SimConfig): Observer {
         const v = bySlot.get(slotOf(sim, ev.dst));
         if (!a || !v || a.team === v.team || ev.amount <= 0) continue;
         // ambush stimulus: first champion damage after 5 s without
-        if (T - v.lastChampDmgTaken > 150 && Unit.alive[v.eid]) stim(v, 'rtAmbush', T);
+        if (T - v.lastChampDmgTaken > 150 && Unit.alive[v.eid]) {
+          stim(v, 'rtAmbush', T);
+          const hist = seenHist[v.team]![a.slot]!;
+          let seen = false;
+          for (let k = 1; k <= OPENER_WINDOW && T - k >= 0; k++) if (hist[(T - k) & 1023]) seen = true;
+          v.opener = { t: T, blind: !seen };
+        }
         v.lastChampDmgTaken = T;
         const vx = Pos.x[v.eid]!;
         const vy = Pos.y[v.eid]!;
@@ -288,8 +298,14 @@ export function createObserver(config: SimConfig): Observer {
           if (kSlot >= 0 && bySlot.get(kSlot)!.team !== v.team) {
             const hist = seenHist[v.team]![kSlot]!;
             let seen = false;
-            for (let k = NV_GUARD; k <= NV_WINDOW + NV_GUARD && T - k >= 0; k++) if (hist[(T - k) & 255]) seen = true;
+            for (let k = NV_GUARD; k <= NV_WINDOW + NV_GUARD && T - k >= 0; k++) if (hist[(T - k) & 1023]) seen = true;
             add(v.team, 'deathsNoVision', seen ? 0 : 1, 1);
+            let vis = 0;
+            let win = 0;
+            for (let k = 1; k <= VIS_WINDOW && T - k >= 0; k++) (win++, (vis += hist[(T - k) & 1023]!));
+            add(v.team, 'killerVis', vis, win);
+            if (v.opener && T - v.opener.t <= 600) add(v.team, 'deathsAmbush', v.opener.blind ? 1 : 0, 1);
+            else add(v.team, 'deathsAmbush', 0, 1);
           }
           addRole(v.team, 'deathsPer10', v.role, 1, 0);
         } else if (ev.kind === Kind.Tower) {
@@ -442,7 +458,7 @@ export function createObserver(config: SimConfig): Observer {
       // vision history of the enemy team on this champion (+ appearance stimulus for the enemy bots)
       const enemy = 1 - c.team;
       const seenNow = alive && sees(sim, enemy, e);
-      seenHist[enemy]![c.slot]![T & 255] = seenNow ? 1 : 0;
+      seenHist[enemy]![c.slot]![T & 1023] = seenNow ? 1 : 0;
       if (seenNow) {
         if (T - lastSeen[enemy]![c.slot]! > 90) {
           for (const x of champs) {

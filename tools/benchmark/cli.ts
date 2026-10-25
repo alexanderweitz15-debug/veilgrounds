@@ -177,4 +177,11 @@ function reportMain(): void {
 if (mode === 'child') await runChild();
 else if (mode === 'report') reportMain();
 else if (mode === 'run') await runMain();
-else throw new Error(`unknown mode ${mode}; run | report`);
+else if (mode === 'compare') {
+  // candidate vs baseline on the same seeds: --base=baseline.json --new=mine.json [--out=compare.md] [--focus=ssHit,idleAll]
+  const { compareMarkdown } = await import('./compare');
+  const load = (f: string): GameRaw[] => (JSON.parse(fsMod.readFileSync(f, 'utf8')) as ResultFile).games;
+  const md = compareMarkdown(load(args.get('base')!), load(args.get('new')!), { focus: (args.get('focus') ?? '').split(',').filter(Boolean) });
+  if (args.get('out')) fsMod.writeFileSync(args.get('out')!, md);
+  else process.stdout.write(md);
+} else throw new Error(`unknown mode ${mode}; run | report | compare`);

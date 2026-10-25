@@ -52,6 +52,10 @@ if (ab) {
       ticks += r.ticks;
       if (r.winner === microTeam) wins++;
     }
+    // progress (partial results survive a killed run): cumulative after each seed
+    process.stdout.write(`-- after seed ${seed0 + g} (${(g + 1) * 2} games, wall ${((Date.now() - t0) / 1000).toFixed(0)} s)\n`);
+    report('  ON ', on, (g + 1) * 2);
+    report('  OFF', off, (g + 1) * 2);
   }
   const n = games * 2;
   process.stdout.write(`A/B ${rank} seeds ${seed0}..${seed0 + games - 1} x2 sides, ${minutes} min, avg length ${(ticks / n / 1800).toFixed(1)} min, micro wins ${wins}/${n}, wall ${((Date.now() - t0) / 1000).toFixed(0)} s\n`);

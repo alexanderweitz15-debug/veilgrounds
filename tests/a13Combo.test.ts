@@ -45,4 +45,24 @@ describe('combos from the hints', () => {
     // the cast made the bot busy: the next tick issues nothing
     expect(comboTick(n.v, bot.ctx, bot.mem, new Rng(1), cc)).toEqual([]);
   });
+
+  it('an AA token is thrown when the attack cycle is idle and the target in reach, then the next ability follows', () => {
+    const bot = new ScriptedBot(3, paramsFor('challenger', {}, 3), 5);
+    (bot.ctx as { utility?: boolean }).utility = true;
+    const me = champEnt(3, 3000, 3000);
+    const t = champEnt(8, 3400, 3000);
+    bot.node(snapshot({ tick: 3000, team: 0, entities: [me, t], me: hud(3) }));
+    const n = bot.node(snapshot({ tick: 3100, team: 0, entities: [me, t], me: hud(3) }));
+    const cc = { ultKillThreshold: 0.6, executeChance: 1 };
+    bot.mem.ext.trade = { serial: t.serial, id: t.id, kind: 'trade', start: 3100, trigger: 'test', combo: ['AA', 'W'], step: 0, stepAt: 3100, comboDone: false, flash: false, ignite: false, win: 0.6, kill: 0, death: 0 };
+    const a = comboTick(n.v, bot.ctx, bot.mem, new Rng(1), { ...cc });
+    expect(a.map((x) => x.cmd.t)).toEqual(['attack']);
+    const b = comboTick(n.v, bot.ctx, bot.mem, new Rng(1), { ...cc });
+    expect(b.map((x) => x.cmd.t)).toEqual(['cast']);
+    // mid wind-up: nothing
+    const mid = bot.node(snapshot({ tick: 3100, team: 0, entities: [champEnt(3, 3000, 3000, { atkPhase: 1 }), t], me: hud(3) }));
+    bot.mem.ext.trade.step = 0;
+    bot.mem.busyUntil = 0;
+    expect(comboTick(mid.v, bot.ctx, bot.mem, new Rng(1), { ...cc })).toEqual([]);
+  });
 });

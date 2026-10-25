@@ -121,7 +121,15 @@ export function comboTick(v: View, ctx: BotStatic, mem: BotMemory, rng: Rng, cc:
       tr.step++;
       continue;
     }
-    if (tok === 'AA') return []; // the decision layer orbwalks
+    if (tok === 'AA') {
+      // the auto of the combo (weave): thrown the moment the attack cycle is idle and the target is in reach; the
+      // next ability follows as soon as the wind-up is over. Out of reach / mid-cycle: the decision layer walks in.
+      if (v.self.atkPhase !== 0 || dst(v.self, t) > v.reach + t.radius) return [];
+      tr.step++;
+      tr.stepAt = T;
+      ROLLS.delete(mem);
+      return [{ cmd: { t: 'attack', target: t.id } }];
+    }
     const slot = SLOT_OF[tok as SlotKey];
     if (slot === undefined) {
       tr.step++;

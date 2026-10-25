@@ -87,9 +87,18 @@ export const motifParticle = (motif: string | undefined): ParticleKindId => (mot
 
 /** Particle kind + hue of ability `slot` of `champ` (null: no champion data). */
 export function abilityParticles(champ: string, slot: number): { kind: ParticleKindId; hue: number } | null {
-  const t = abilityTheme(champ, slot);
-  return t ? { kind: motifParticle(t.motif), hue: t.hue } : championData(champ) ? { kind: 'mote', hue: 48 } : null;
+  // memoised: Fx asks once per projectile and frame (static data, callers never mutate the result)
+  let per = PARTICLE_CACHE.get(champ);
+  if (!per) PARTICLE_CACHE.set(champ, (per = new Map()));
+  let r = per.get(slot);
+  if (r === undefined) {
+    const t = abilityTheme(champ, slot);
+    r = t ? { kind: motifParticle(t.motif), hue: t.hue } : championData(champ) ? { kind: 'mote', hue: 48 } : null;
+    per.set(slot, r);
+  }
+  return r;
 }
+const PARTICLE_CACHE = new Map<string, Map<number, { kind: ParticleKindId; hue: number } | null>>();
 
 const SLOT_OF: Record<string, number> = { q: 0, w: 1, e: 2, r: 3 };
 /** Particles of a hook ground-object tag `<champ>_<q|w|e|r|p>...` (passive objects: golden motes). */

@@ -7,7 +7,7 @@
   "tint": {
     "mode": "hue",
     "saturation": 0.95,
-    "lightness": 0.72,
+    "lightness": 0.55,
     "hueJitter": 8,
     "lightnessJitter": 0.06
   },

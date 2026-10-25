@@ -601,7 +601,8 @@ export class Fx {
     const dt = Math.min(0.1, Math.max(0, (now - this.lastNow) / 1000));
     this.lastNow = now;
     this.frameNo++;
-    this.particles.scale = settings.reduceMotion ? 0.35 : 1;
+    // emission thinning: reduce motion, and the low graphics preset (A4 performance budget)
+    this.particles.scale = settings.reduceMotion ? 0.35 : settings.graphics === 'low' ? 0.6 : 1;
 
     // projectiles + in-flight strips of line skillshots (exact width, to the end of range)
     let n = 0;

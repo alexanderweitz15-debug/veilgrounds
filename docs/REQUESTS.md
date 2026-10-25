@@ -36,3 +36,13 @@ Matches (105 von 400 Seeds enthalten Fenna als Bot). A1 hat das abgefangen (Fenn
 gezeichnet, der Rest bleibt gemalt, `console.warn`), das ist aber nur der Notbehelf: Fenna braucht ein Kit (oder bis dahin
 eine Sperre in Lobby und Bot-Auswahl). `tests/assetManifest.test.ts` führt `fenna` in `KNOWN_WITHOUT_ART`; Eintrag
 entfernen, sobald das Kit existiert.
+
+## R-A4-1 – A4 → A3 (Animation) und A8 (Game Feel): VFX-Trigger anschließen · offen
+
+`world.fx.bus` (`src/render/vfx/bus.ts`, Format: docs/VFX-FORMAT.md §5) ist die Abonnier-Schnittstelle der VFX.
+A3: wenn der Sprite-Treffer-Frame (`hitFrame`) und der Cast-Release-Frame (`release`) feststehen, dort
+`world.fx.bus.trigger('hitFrame' | 'release', { x, y, h, dx, dy, hue, team, slot, now })` aufrufen (Sim-Koordinaten, `team`
+relativ zum Betrachter: `'own' | 'enemy'`) und einmalig `world.fx.animatedHits = true` setzen, damit der sim-getriebene
+Auto-Angriffs-Funke nicht doppelt erscheint. A8: `world.fx.bus.on('impact' | 'hitFrame' | 'death', handler)` für Kamera-Ruck,
+Hit-Stop usw.; neue Effekte brauchen nur eine JSON-Datei und einen Eintrag in `src/render/vfx/bindings.json`.
+Der Aufruf liegt in `units.ts`/`world.ts`/`championSprites.ts` (nicht A4-Besitz), deshalb als Anfrage.

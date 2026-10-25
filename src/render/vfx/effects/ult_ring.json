@@ -1,13 +1,13 @@
 {
-  "_doc": "Ultimate: Ring aus Funken, der vom Wirkenden nach außen schießt.",
+  "_doc": "Ultimate: Ring aus Funken, der vom Wirkenden nach außen schießt (Alpha-Blend: Farbe bleibt auf hellem Boden erhalten).",
   "id": "ult_ring",
   "class": "ultimate",
-  "blend": "add",
+  "blend": "normal",
   "glyph": "dot",
   "tint": {
     "mode": "hue",
     "saturation": 0.95,
-    "lightness": 0.7,
+    "lightness": 0.52,
     "hueJitter": 8,
     "lightnessJitter": 0.06
   },

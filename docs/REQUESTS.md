@@ -36,3 +36,20 @@ Matches (105 von 400 Seeds enthalten Fenna als Bot). A1 hat das abgefangen (Fenn
 gezeichnet, der Rest bleibt gemalt, `console.warn`), das ist aber nur der Notbehelf: Fenna braucht ein Kit (oder bis dahin
 eine Sperre in Lobby und Bot-Auswahl). `tests/assetManifest.test.ts` führt `fenna` in `KNOWN_WITHOUT_ART`; Eintrag
 entfernen, sobald das Kit existiert.
+
+## R-A3a – A3 → A1 (Atlas-Loader/Cache, `src/render/atlasStrip.ts`): Frame-Layout in den Streifen-Schlüssel · offen
+
+`stripKey(id, master, frame, mirror)` enthält die Frame-Zahlen einer Id nicht. Heute reicht das, weil die Cache-Version der
+Hash des `sheets`-Chunks ist (jeder Build verwirft den Cache). Ändert A11/A26 `kit.frames` einer Id, ändert sich das
+Streifen-Layout; sobald die Cache-Version nicht mehr chunk-gehasht ist, würden veraltete Streifen falsch dekodiert.
+`layoutKey(frames)` (`src/render/anim/data.ts`, z. B. `'4.8.5.4.3'`) liefert den Fingerabdruck. Bitte additiv an
+`stripKey` hängen (`${id}@${master}-${frame}${mirror?'':'-m8'}#${layoutKey}`) in `atlas.ts`/`sheets.ts`, wo `framesOf` je Anim
+vorliegt. A3 hat die Loader-/Cache-Teile nicht angefasst.
+
+## R-A3b – A3 → Sim-Besitzer (`src/sim/snapshot.ts`): Rückruf je Entity im Snapshot · offen
+
+`SnapEntity` trägt keinen Rückruf-Zustand; `snap.me.recallLeft` gilt nur für den eigenen Champion. Der Rückruf-Pose (Cast-Frames
+0/3 gehalten) und die Events `recallStart`/`recallEnd` gibt es deshalb nur für den eigenen Champion. Bitte additiv
+`recalling?: true` an `SnapEntity` (nur sichtbare Champions, `Champ.recallAt[e] > sim.tick`); danach setzt A3 die Zeile
+`inp.recalling = e.recalling || e.id === this.recallEid` in `ChampionSprites.push` (eine Zeile). Enthüllt nichts, was die
+Sichtbarkeit nicht schon verrät (der Rückruf-Kanal ist in LoL für alle sichtbar).

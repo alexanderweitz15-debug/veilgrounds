@@ -10,7 +10,6 @@ export interface MicroParams {
     jukeCircle: number;
     minConfidence: { poke: number; fight: number };
     rangeShare: number;
-    circleStill: number;
   };
   spacing: { safeMargin: number; punishInside: number; minRanged: number };
   focus: {
@@ -32,9 +31,7 @@ export interface MicroParams {
     margin: number;
     holdTicks: number;
     minThreat: number;
-    lookaheadS: number;
     windupSlackTicks: number;
-    maxLineAlong: number;
     persistentZoneTicks: number;
     towerPenalty: number;
     enemyPenalty: number;

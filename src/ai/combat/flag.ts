@@ -12,7 +12,7 @@ import { utilityOn } from '../utility/flag';
 declare const process: { env?: Record<string, string | undefined> } | undefined;
 
 /** The parts of the micro layer that can be switched off singly (ablation measurements). */
-export type MicroPart = 'aim' | 'dodge' | 'combo' | 'spacing' | 'focus' | 'peel';
+export type MicroPart = 'aim' | 'dodge' | 'combo' | 'tick' | 'spacing' | 'focus' | 'peel';
 
 const env = (name: string): string | undefined => {
   try {

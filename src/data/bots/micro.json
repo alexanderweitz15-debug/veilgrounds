@@ -1,7 +1,7 @@
 {
   "note": "Tunables of the combat micro layer (src/ai/combat, A13). Rank differences enter ONLY through the profile fields reaction time, aim error and error rates (src/data/bots/profiles/*.json); nothing here depends on the rank. Distances in units, times in seconds unless the name says ticks.",
   "aim": {
-    "note": "Skillshot aim from the target's OBSERVED velocity (previous tick -> now). leadNoiseDivisor: sigma of the lead factor = profile.aimErrorDeg / divisor (a clean lead is 1.0). jukeLateral / jukeSpeed: assumed uncertainty of the target's path as a share of its lateral / total speed. minConfidence: do not throw below this hit confidence (poke = free lane harassment, fight = trade or fight, where the throw also forces the target to react). rangeShare: share of the ability range at which the intercept point may lie. circleStill: speed (units/s) below which a ground target counts as standing.",
+    "note": "Skillshot aim from the target's OBSERVED velocity (previous tick -> now). leadNoiseDivisor: sigma of the lead factor = profile.aimErrorDeg / divisor (a clean lead is 1.0). jukeLateral / jukeSpeed: assumed uncertainty of the target's path as a share of its lateral / total speed. minConfidence: do not throw below this hit confidence (poke = free lane harassment, fight = trade or fight, where the throw also forces the target to react). rangeShare: share of the ability range at which the intercept point may lie.",
     "leadNoiseDivisor": 14,
     "jukeLateral": 0.35,
     "jukeSpeed": 0.1,
@@ -10,17 +10,14 @@
       "poke": 0.3,
       "fight": 0.1
     },
-    "rangeShare": 0.97,
-    "circleStill": 40
+    "rangeShare": 0.97
   },
   "dodge": {
     "note": "Per-tick dodge of visible enemy casts (line skillshots from cast events, ground telegraphs from zone events). Reaction = the profile's reaction time (+ attention penalty); predictiveDodgePct reads the cast wind-up (reaction 0). There is no 'ignore x % of the threats' roll: the rank acts through reaction time, predictiveDodgePct and the attention model. margin: extra distance beyond the danger edge. hold: ticks the bot stops deciding after the dodge move so the next decision does not walk back into the missile. minThreat: ignore abilities with a lower hints threat. dashThreat: from this threat on (hard CC, ultimates) an escape dash / blink is used when walking out is too slow.",
     "margin": 25,
     "holdTicks": 3,
     "minThreat": 1,
-    "lookaheadS": 0.25,
     "windupSlackTicks": 6,
-    "maxLineAlong": 1500,
     "persistentZoneTicks": 15,
     "towerPenalty": 400,
     "enemyPenalty": 250,

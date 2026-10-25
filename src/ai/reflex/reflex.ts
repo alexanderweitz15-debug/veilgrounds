@@ -97,7 +97,7 @@ export function reflex(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rng,
     const dodged = microOn(ctx, 'dodge') ? dodgeStep(snap, ctx, mem, rng, v, entityIndex(snap.entities)) : [];
     if (dodged.length) return dodged;
     // the running trade's next combo ability the tick the previous cast is over (not at the next decision)
-    if (mem.ext.trade && !io.thinkIssued && microOn(ctx, 'combo')) {
+    if (mem.ext.trade && !io.thinkIssued && microOn(ctx, 'tick')) {
       const combo = comboTick(v, ctx, mem, rng, { ultKillThreshold: ctx.params.knobs.ultKillThreshold, executeChance: executeChance(ctx.params.skill) });
       if (combo.length) return combo;
     }

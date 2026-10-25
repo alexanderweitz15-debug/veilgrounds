@@ -38,6 +38,7 @@ export interface MicroParams {
     persistentZoneTicks: number;
     towerPenalty: number;
     enemyPenalty: number;
+    dashThreat: number;
   };
 }
 

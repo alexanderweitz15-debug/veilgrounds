@@ -103,7 +103,7 @@ describe('aim: castSlot geometry for the beta brain', () => {
     const ab = champ('mira').abilities[1]!; // W: line, 1400, speed 1600
     const me = champEnt(3, 3000, 3000);
     const standing = champEnt(8, 3900, 3000);
-    const crossing = champEnt(8, 3900, 3000, { px: 3900, py: 2988 }); // 360 u/s across
+    const crossing = champEnt(8, 3900, 3000, { px: 3900, py: 2976 }); // 720 u/s across (hopeless)
     const far = champEnt(8, 5200, 3000);
     const n = nodeOf(bot, [me, standing]);
     expect(aimLine(n.v, bot.ctx, new Rng(1), n.v.enemies[0] ?? standing, ab, 1400, 'poke')).not.toBeNull();
@@ -262,6 +262,32 @@ describe('dodge: line skillshots from visible casts', () => {
       moves += dodgeStep(snap, bot.ctx, bot.mem, bot.rng, n.v, entityIndex(snap.entities)).length;
     }
     expect(moves).toBe(0);
+  });
+});
+
+describe('dodge: escape dash when walking out is too slow', () => {
+  it('a hard-CC line (Tobin R, 400 wide) at close range is dodged with the dash of an escape champion, not by walking', () => {
+    let dashed = 0;
+    let walked = 0;
+    for (let seed = 1; seed <= 10; seed++) {
+      const bot = new ScriptedBot(3, paramsFor('challenger', {}, 3), seed); // blue adc mira: E is a 300 dash
+      (bot.ctx as { utility?: boolean }).utility = true;
+      const me = champEnt(3, 3000, 3000);
+      const caster = champEnt(8, 3500, 3000);
+      const cast: SimEvent = { e: 'cast', src: eidOf(8), slot: 3, x: 3000, y: 3000, rank: 1, at: 3008 };
+      for (let t = 3000; t < 3040; t++) {
+        const snap = snapshot({ tick: t, team: 0, entities: [me, caster], me: hud(3), events: t === 3000 ? [cast] : [] });
+        const n = bot.node(snap);
+        for (const a of dodgeStep(snap, bot.ctx, bot.mem, bot.rng, n.v, entityIndex(snap.entities))) {
+          if (a.cmd.t === 'cast') {
+            expect(a.cmd.slot).toBe(2);
+            dashed++;
+          } else walked++;
+        }
+      }
+    }
+    expect(dashed).toBeGreaterThan(0);
+    expect(walked).toBe(0);
   });
 });
 

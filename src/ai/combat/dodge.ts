@@ -27,6 +27,7 @@ import { sampleReactionMs } from '../profiles';
 import { attentionAt, reactionPenaltyMs } from '../humanize/attention';
 import { hintsOf } from '../../data/bots/hints';
 import { MICRO } from './params';
+import { ready } from '../bot/combat';
 
 type Vec = { x: number; y: number };
 
@@ -66,6 +67,7 @@ export interface DodgeStats {
   moved: number;
   infeasible: number;
   notNeeded: number;
+  dashed: number;
 }
 
 interface DodgeState {
@@ -76,7 +78,7 @@ interface DodgeState {
 const STATES = new WeakMap<BotMemory, DodgeState>();
 const stateOf = (mem: BotMemory): DodgeState => {
   let s = STATES.get(mem);
-  if (!s) STATES.set(mem, (s = { threats: new Map(), stats: { threats: 0, ignored: 0, moved: 0, infeasible: 0, notNeeded: 0 } }));
+  if (!s) STATES.set(mem, (s = { threats: new Map(), stats: { threats: 0, ignored: 0, moved: 0, infeasible: 0, notNeeded: 0, dashed: 0 } }));
   return s;
 };
 export const dodgeStats = (mem: BotMemory): DodgeStats => stateOf(mem).stats;
@@ -258,6 +260,22 @@ export function dodgeStep(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: R
     }
     const plan = chooseExit(t, st, v, ctx, T, hitAt, casterOf(t));
     if (!plan) {
+      // walking out is too slow: an escape dash / blink when the spell is worth it (hard CC or the ultimate)
+      const dash = t.threat >= MICRO.dodge.dashThreat ? dashExit(t, st, v, ctx, T, hitAt, casterOf(t)) : null;
+      if (dash) {
+        st.stats.dashed++;
+        acted = true;
+        out.push(dash.action);
+        mem.lastMove = null;
+        mem.cancelTags.add('orb');
+        mem.cancelTags.add('lh');
+        const ab = ctx.champ.abilities[dash.slot]!;
+        mem.busyFrom = T;
+        mem.busySlot = dash.slot;
+        mem.busyUntil = Math.max(mem.busyUntil, T + Math.ceil(ab.castTime * 30) + 1);
+        ctx.log.push({ tick: T, bot: ctx.slot, node: 'dodge', inputs: { ability: t.slot, left: hitAt - T, kind: t.kind, threat: t.threat, dashSlot: dash.slot }, chosen: 'dash', reason: 'walking out is too slow: escape dash' });
+        continue;
+      }
       st.stats.infeasible++;
       ctx.log.push({ tick: T, bot: ctx.slot, node: 'dodge', inputs: { ability: t.slot, left: hitAt - T, kind: t.kind }, chosen: 'none', reason: 'no exit reachable in time' });
       continue;
@@ -319,6 +337,42 @@ interface Exit {
   x: number;
   y: number;
   dist: number;
+}
+
+/** An own escape dash / blink (hints role 'escape', ready) that ends outside the danger area, or null. */
+function dashExit(t: Threat, st: DodgeState, v: View, ctx: BotStatic, tick: number, hitAt: number, caster: Vec | undefined): { action: BotAction; slot: 0 | 1 | 2 | 3 } | null {
+  const me = v.self;
+  const rad = me.radius;
+  const nav = ctx.map.nav;
+  const h = hintsOf(ctx.champ);
+  const enemies = v.snap.entities.filter((e) => e.kind === Kind.Champion && e.team !== ctx.team && e.alive);
+  let best: { x: number; y: number; slot: 0 | 1 | 2 | 3 } | null = null;
+  let bestCost = Infinity;
+  for (const slot of [0, 1, 2] as const) {
+    const a = h.abilities[slot]!;
+    if (!a.roles.includes('escape') || (a.aim !== 'dash' && a.aim !== 'blink') || a.range <= 0 || !ready(v, ctx, slot)) continue;
+    // the dash must start before the area resolves (a blink lands after its delay)
+    if (hitAt - tick - 1 < Math.ceil((a.castTime + (a.aim === 'blink' ? a.delay : 0)) * 30)) continue;
+    const ground = !!ctx.champ.abilities[slot]!.flags?.includes('ground_target');
+    for (let i = 0; i < DIRS; i++) {
+      const ang = (i * 2 * Math.PI) / DIRS;
+      const dir = { x: Math.cos(ang), y: Math.sin(ang) };
+      const s = exitDist(t, me, dir, rad, tick, caster);
+      if (s > a.range) continue;
+      const dist = ground ? s + STEP : a.range;
+      const p = { x: me.x + dir.x * dist, y: me.y + dir.y * dist };
+      if (!walkable(nav, p.x, p.y) || inside(t, p, rad, MICRO.dodge.margin, tick, caster)) continue;
+      let cost = dist;
+      if (towerCovering(v, p) && !towerCovering(v, me)) cost += MICRO.dodge.towerPenalty;
+      for (const e of enemies) if (dst(e, p) < dst(e, me) && dst(e, p) < 600) cost += MICRO.dodge.enemyPenalty;
+      for (const o of st.threats.values()) if (o !== t && !o.done && inside(o, p, rad, 0, tick, undefined)) cost += 500;
+      if (cost < bestCost) {
+        bestCost = cost;
+        best = { x: p.x, y: p.y, slot };
+      }
+    }
+  }
+  return best ? { action: { cmd: { t: 'cast', slot: best.slot, x: Math.round(best.x), y: Math.round(best.y) } }, slot: best.slot } : null;
 }
 
 function chooseExit(t: Threat, st: DodgeState, v: View, ctx: BotStatic, tick: number, hitAt: number, caster: Vec | undefined): Exit | null {

@@ -68,6 +68,7 @@ export interface DodgeStats {
   infeasible: number;
   notNeeded: number;
   dashed: number;
+  skipped: number;
 }
 
 interface DodgeState {
@@ -78,7 +79,7 @@ interface DodgeState {
 const STATES = new WeakMap<BotMemory, DodgeState>();
 const stateOf = (mem: BotMemory): DodgeState => {
   let s = STATES.get(mem);
-  if (!s) STATES.set(mem, (s = { threats: new Map(), stats: { threats: 0, ignored: 0, moved: 0, infeasible: 0, notNeeded: 0, dashed: 0 } }));
+  if (!s) STATES.set(mem, (s = { threats: new Map(), stats: { threats: 0, ignored: 0, moved: 0, infeasible: 0, notNeeded: 0, dashed: 0, skipped: 0 } }));
   return s;
 };
 export const dodgeStats = (mem: BotMemory): DodgeStats => stateOf(mem).stats;
@@ -246,6 +247,12 @@ export function dodgeStep(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: R
       continue;
     }
     if (!me.alive || (v.me.recallLeft > 0 && t.threat < 2)) continue;
+    // in a trade or hitting an enemy champion a plain damage skillshot is not worth the lost autos / combo: only hard
+    // CC and ultimates are dodged then (A/B games: dodging every poke mid-trade cost trade balance and kills)
+    if (t.threat < MICRO.dodge.fightMinThreat && (mem.ext.trade || v.enemies.some((e) => e.id === me.atkTarget))) {
+      st.stats.skipped++;
+      continue;
+    }
     // own spell wind-up / channel: the bot does not cancel it
     if (T < mem.busyUntil && T >= mem.busyFrom - 1) {
       st.stats.infeasible++;
@@ -288,7 +295,8 @@ export function dodgeStep(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: R
     mem.cancelTags.add('lh');
     // hold every other order until the missile / the area has resolved
     mem.busyFrom = T;
-    mem.busyUntil = Math.max(mem.busyUntil, hitAt + MICRO.dodge.holdTicks);
+    // the hold covers the walk out of the danger area (the missile passing by needs no more)
+    mem.busyUntil = Math.max(mem.busyUntil, T + Math.min(hitAt - T, Math.ceil((plan.dist / Math.max(100, v.me.stats.ms)) * 30)) + MICRO.dodge.holdTicks);
     mem.busySlot = -1;
     ctx.log.push({
       tick: T,

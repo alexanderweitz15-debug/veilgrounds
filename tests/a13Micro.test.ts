@@ -212,8 +212,10 @@ describe('dodge: line skillshots from visible casts', () => {
       // the destination lies outside the corridor (lateral offset > half width + radius)
       expect(Math.abs(move.y - 3000)).toBeGreaterThan(30 + s.me.radius);
       expect(Math.abs(move.x - 3000)).toBeLessThan(400);
-      // the arrival tick of the missile at 800 units: launch + 800 / 1800 s
-      expect(s.bot.mem.busyUntil).toBeGreaterThanOrEqual(s.T0 + 8 + Math.ceil((800 / 1800) * 30));
+      // the hold covers the walk out of the corridor (at least the ticks the sidestep needs), not longer than the missile
+      const walkTicks = Math.ceil((Math.abs(move.y - 3000) / 345) * 30);
+      expect(s.bot.mem.busyUntil).toBeGreaterThanOrEqual(at + Math.min(walkTicks, 5));
+      expect(s.bot.mem.busyUntil).toBeLessThanOrEqual(s.T0 + 8 + Math.ceil((800 / 1800) * 30) + 4);
       expect(at).toBeGreaterThanOrEqual(s.T0);
     }
     // 800 units: the wind-up (8 ticks) plus the flight leave ~21 ticks; a sidestep of ~120 units needs ~10 ticks at 345 u/s,
@@ -229,6 +231,25 @@ describe('dodge: line skillshots from visible casts', () => {
       moved += dodgeStats(s.bot.mem).moved;
     }
     expect(moved).toBe(0);
+  });
+
+  it('while trading, a plain damage skillshot is not dodged (the lost autos cost more); hard CC still is', () => {
+    let plain = 0;
+    let hard = 0;
+    for (let seed = 1; seed <= 12; seed++) {
+      for (const slot of [0, 3]) {
+        const s = lineScenario('challenger', seed, slot === 3 ? 1250 : 800);
+        s.bot.mem.ext.trade = { serial: 1, id: 1, kind: 'trade', start: 3000, trigger: 't', combo: ['AA'], step: 0, stepAt: 3000, comboDone: false, flash: false, ignite: false, win: 0.5, kill: 0, death: 0 };
+        const ev = { ...s.cast, slot } as SimEvent;
+        for (let t = s.T0; t < s.T0 + 40; t++) {
+          const n = s.tick(t, t === s.T0 ? [ev] : []).filter((a) => a.cmd.t === 'move' || a.cmd.t === 'cast').length;
+          if (slot === 0) plain += n;
+          else hard += n;
+        }
+      }
+    }
+    expect(plain).toBe(0); // Tobin Q: threat 1
+    expect(hard).toBeGreaterThan(0); // Tobin R: threat 3
   });
 
   it('a cast of a champion the team does not see produces no dodge (no information without sight)', () => {

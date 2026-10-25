@@ -37,6 +37,7 @@ export interface MicroParams {
     towerPenalty: number;
     enemyPenalty: number;
     dashThreat: number;
+    fightMinThreat: number;
   };
 }
 

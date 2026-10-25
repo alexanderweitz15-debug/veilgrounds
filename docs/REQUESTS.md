@@ -62,3 +62,14 @@ relativ zum Betrachter: `'own' | 'enemy'`) und einmalig `world.fx.animatedHits =
 Auto-Angriffs-Funke nicht doppelt erscheint. A8: `world.fx.bus.on('impact' | 'hitFrame' | 'death', handler)` für Kamera-Ruck,
 Hit-Stop usw.; neue Effekte brauchen nur eine JSON-Datei und einen Eintrag in `src/render/vfx/bindings.json`.
 Der Aufruf liegt in `units.ts`/`world.ts`/`championSprites.ts` (nicht A4-Besitz), deshalb als Anfrage.
+## R4 – A7 → UI-/i18n-Besitzer (src/i18n/*.json, src/ui/shop.ts): Beschriftung der neuen Item-Werte · offen
+
+Die Item-Engine (docs/ITEMS-FORMAT.md) kennt drei neue Item-Werte, die A12 für Anti-Heal/Anti-Tank/Anti-CC-Items nutzen wird:
+`armorPenPct` (Prozent-Rüstungsdurchdringung), `magicPen` (flache Magiedurchdringung), `tenacityPct` (Zähigkeit in Prozentpunkten).
+Der Shop zeigt Werte als `t('stat.<key>')`; ohne Eintrag erscheint der rohe Schlüssel. Bitte in `de.json`/`en.json` ergänzen
+(`stat.armorPenPct` „Rüstungsdurchdringung“ / „Armor penetration“, `stat.magicPen` „Magiedurchdringung“ / „Magic penetration“,
+`stat.tenacityPct` „Zähigkeit“ / „Tenacity“) und in `src/ui/shop.ts` `PCT` um `armorPenPct` und `tenacityPct` erweitern
+(Anzeige „+30 %“). Kein Live-Item nutzt die Werte heute, nichts ist kaputt; die Anfrage wird mit dem ersten A12-Item fällig.
+Außerdem (nur zur Kenntnis): Aktive mit Einheitenziel (`target: "enemyChampion"` / `"allyChampion"`) wählen die Einheit über die
+Item-Befehls-Koordinaten (`{ t: 'item', slot, x, y }`, nächste passende Einheit zum Punkt, sichtbar und in `range`). Der Controller
+schickt den Mauszeiger-Punkt bereits mit (`src/input/controller.ts`); eine Zielanzeige (Reichweitenring) wäre ein UI-Wunsch.

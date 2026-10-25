@@ -211,11 +211,16 @@ describe('VfxSystem caps and pooling', () => {
       }
     };
     burn(20000); // warm up the JIT
+    // The smallest heap growth over several rounds: a GC that lags behind inflates single rounds (loaded machine),
+    // but an allocation per call grows every round (60k calls x >= 50 bytes = 3 MB).
     const mem = (globalThis as unknown as { process: { memoryUsage(): { heapUsed: number } } }).process;
-    const before = mem.memoryUsage().heapUsed;
-    burn(200000);
-    const grown = mem.memoryUsage().heapUsed - before;
-    expect(grown).toBeLessThan(12 * 1024 * 1024); // 200k calls x 6 particles; per-call garbage would be tens of MB
+    const growth: number[] = [];
+    for (let r = 0; r < 6; r++) {
+      const before = mem.memoryUsage().heapUsed;
+      burn(60000);
+      growth.push(mem.memoryUsage().heapUsed - before);
+    }
+    expect(Math.min(...growth)).toBeLessThan(2 * 1024 * 1024);
   });
 });
 

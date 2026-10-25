@@ -92,3 +92,11 @@ dieselbe Instanz (`Particles.group`). Besitz-Dateien geändert: `fx.ts`, `partic
 - Additive Effekte auf hellem Boden werden weißlich; neue Farbtöne sind darum mittelhell (0,52–0,62) oder alpha-geblendet.
 - Float-Textur im Vertex-Shader (`texelFetch`) braucht WebGL2 (das Spiel setzt es ohnehin voraus).
 - `sevFx.ts` und die Pulse-Meshes sind nicht datengetrieben (oben begründet).
+
+## Verifikation
+
+`npx tsc --noEmit` sauber, `npx vite build` ok (Build der Endfassung: 35 s). Volle Suite einmal komplett
+(`npx vitest run`, 1745 s bei Load 21 auf 4 Kernen): 93/94 Dateien, 1054/1055 Tests grün; der eine Ausfall war mein
+Allokationstest (`emitting does not allocate per call`: 15,4 MB Heap-Wachstum gegen 12,6 MB Grenze, GC-Verzug unter Last).
+Danach auf „kleinstes Wachstum über 6 Runden" umgestellt, `tests/vfx.test.ts` neu grün (17/17); die volle Suite wurde
+danach nicht erneut gefahren (Regel: höchstens zweimal, der erste Lauf wurde bei 39 Dateien vom 30-min-Limit abgebrochen).

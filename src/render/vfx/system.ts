@@ -238,6 +238,11 @@ export class VfxSystem {
   private rng = 0x9e3779b9;
   private readonly col = new THREE.Color();
   private readonly tint = new THREE.Color();
+  /** Team tints parsed once per palette string (Color.set(string) runs a regex parse: ~110 bytes of garbage per emit). */
+  private readonly ownTint = new THREE.Color();
+  private readonly enemyTint = new THREE.Color();
+  private ownKey = '';
+  private enemyKey = '';
 
   constructor(defs: readonly EffectDef[] = EFFECTS) {
     this.fx = defs.map((d) => ({
@@ -328,9 +333,14 @@ export class VfxSystem {
     // tint of this call (hue tint varies per particle below)
     if (f.tintMode === 2) {
       const t = o?.team;
-      if (t === 'own') this.tint.set(REL.ownShot);
-      else if (t === 'enemy') this.tint.set(REL.enemyShot);
-      else this.tint.setRGB(1, 1, 1);
+      // REL changes with the colour-blind mode: re-parse only when the palette string changed
+      if (t === 'own') {
+        if (this.ownKey !== REL.ownShot) this.ownTint.set((this.ownKey = REL.ownShot));
+        this.tint.copy(this.ownTint);
+      } else if (t === 'enemy') {
+        if (this.enemyKey !== REL.enemyShot) this.enemyTint.set((this.enemyKey = REL.enemyShot));
+        this.tint.copy(this.enemyTint);
+      } else this.tint.setRGB(1, 1, 1);
     }
     const hue = o?.hue ?? 0;
     const data = layer.data;

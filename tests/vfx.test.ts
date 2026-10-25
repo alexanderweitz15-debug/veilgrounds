@@ -200,27 +200,38 @@ describe('VfxSystem caps and pooling', () => {
     expect(after[1]).toBe(arrays[1]);
   });
 
-  it('emitting does not allocate per call (hot path)', () => {
+  it('emitting allocates (almost) nothing per call (hot path)', async () => {
     const sys = new VfxSystem();
-    const o = { count: 6, hue: 30, team: 'own' as const, dx: 1, dy: 0 };
     const h = effectHandle('hit_spark');
-    const burn = (n: number): void => {
+    // 50 ms per call: particles die and new ones really spawn (with 1 ms steps the maxLive cap blocked most spawns)
+    const burn = (n: number, team: 'own' | 'enemy'): void => {
+      const o = { count: 6, hue: 30, team, dx: 1, dy: 0 };
       for (let i = 0; i < n; i++) {
-        sys.emit(h, 100, 100, 50, i, o);
-        if (i % 4 === 0) sys.update(i);
+        sys.emit(h, 100, 100, 50, i * 50, o);
+        if (i % 4 === 0) sys.update(i * 50);
       }
     };
-    burn(20000); // warm up the JIT
-    // The smallest heap growth over several rounds: a GC that lags behind inflates single rounds (loaded machine),
-    // but an allocation per call grows every round (60k calls x >= 50 bytes = 3 MB).
-    const mem = (globalThis as unknown as { process: { memoryUsage(): { heapUsed: number } } }).process;
-    const growth: number[] = [];
-    for (let r = 0; r < 6; r++) {
-      const before = mem.memoryUsage().heapUsed;
-      burn(60000);
-      growth.push(mem.memoryUsage().heapUsed - before);
+    burn(20000, 'own'); // warm up the JIT
+    expect(sys.live).toBeGreaterThan(0);
+    // A forced GC before each round makes the number deterministic (the old heuristic without GC flaked under load).
+    // Integrator (wave 1 gate): Color.set(paletteString) per emit cost ~110 bytes per call; team tints are now parsed
+    // once per palette string (~3 bytes per call left). The cap catches an object/array literal per call or particle.
+    // No @types/node in this project: typed dynamic imports (same trick as tools/botSim.ts).
+    const v8 = (await import('node:' + 'v8')) as { setFlagsFromString(f: string): void };
+    const vm = (await import('node:' + 'vm')) as { runInNewContext(code: string): unknown };
+    const proc = (globalThis as unknown as { process: { memoryUsage(): { heapUsed: number } } }).process;
+    v8.setFlagsFromString('--expose-gc');
+    const gc = vm.runInNewContext('gc') as () => void;
+    for (const team of ['own', 'enemy'] as const) {
+      const perCall: number[] = [];
+      for (let r = 0; r < 3; r++) {
+        gc();
+        const before = proc.memoryUsage().heapUsed;
+        burn(60000, team);
+        perCall.push((proc.memoryUsage().heapUsed - before) / 60000);
+      }
+      expect(Math.min(...perCall)).toBeLessThan(32);
     }
-    expect(Math.min(...growth)).toBeLessThan(2 * 1024 * 1024);
   });
 });
 

@@ -24,6 +24,10 @@ const RANGES: Partial<Record<keyof Settings, [number, number]>> = {
   uiScale: [80, 150],
   minimapScale: [80, 150],
   volume: [0, 1],
+  volumeSfx: [0, 1],
+  volumeUi: [0, 1],
+  volumeAmbient: [0, 1],
+  volumeMusic: [0, 1],
 };
 
 export function exportSettings(settings: Settings, binds: Record<Action, string>): string {

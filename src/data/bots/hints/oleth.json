@@ -1,0 +1,151 @@
+{
+  "id": "oleth",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "frontline",
+    "engage": 5,
+    "peel": 4,
+    "poke": 0,
+    "burst": 1
+  },
+  "keyRanges": {
+    "auto": 125,
+    "trade": 600,
+    "engage": 725,
+    "poke": 125,
+    "threat": 725,
+    "peel": 600
+  },
+  "combos": [
+    {
+      "id": "oleth_data1",
+      "kind": "allin",
+      "sequence": [
+        "E",
+        "Q",
+        "R"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "oleth_data2",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "E"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "oleth_data3",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "E"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "oleth_peel",
+      "kind": "peel",
+      "sequence": [
+        "E"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "target",
+      "roles": [
+        "burst"
+      ],
+      "range": 450,
+      "useRange": [
+        0,
+        450
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "self",
+      "roles": [
+        "peel"
+      ],
+      "range": 600,
+      "useRange": [
+        0,
+        600
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 600,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "peel"
+    },
+    {
+      "slot": "E",
+      "aim": "dash",
+      "roles": [
+        "escape",
+        "engage",
+        "cc"
+      ],
+      "range": 600,
+      "useRange": [
+        62.5,
+        725
+      ],
+      "speed": 1500,
+      "width": 100,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 4,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "R",
+      "aim": "circle",
+      "roles": [
+        "cc",
+        "ult"
+      ],
+      "range": 350,
+      "useRange": [
+        0,
+        322
+      ],
+      "speed": 0,
+      "width": 100,
+      "radius": 400,
+      "castTime": 0.3,
+      "delay": 0.7,
+      "cc": 4,
+      "damage": false,
+      "dodgeable": true,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

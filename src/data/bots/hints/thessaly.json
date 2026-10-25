@@ -1,0 +1,150 @@
+{
+  "id": "thessaly",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "carry",
+    "engage": 1,
+    "peel": 2,
+    "poke": 2,
+    "burst": 3
+  },
+  "keyRanges": {
+    "auto": 575,
+    "trade": 625,
+    "engage": 575,
+    "poke": 625,
+    "threat": 625,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "thessaly_data1",
+      "kind": "trade",
+      "sequence": [
+        "Q",
+        "E",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "thessaly_data2",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "thessaly_data3",
+      "kind": "allin",
+      "sequence": [
+        "E",
+        "Q",
+        "R"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "thessaly_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "target",
+      "roles": [
+        "poke"
+      ],
+      "range": 625,
+      "useRange": [
+        0,
+        625
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "self",
+      "roles": [
+        "sustain"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        725
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "cone",
+      "roles": [
+        "burst"
+      ],
+      "range": 500,
+      "useRange": [
+        0,
+        460
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 2,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "R",
+      "aim": "target",
+      "roles": [
+        "burst",
+        "ult"
+      ],
+      "range": 700,
+      "useRange": [
+        0,
+        700
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.3,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

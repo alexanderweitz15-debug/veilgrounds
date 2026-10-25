@@ -6,6 +6,8 @@ import intentsJson from './intents.json';
 import { compile, type BtNode } from '../bt/runtime';
 import { registry } from '../bt/leaves';
 import type { NodeCtx, NodeDef, NodeResult, Registry } from '../bt/types';
+import type { BotMemory } from '../bot/types';
+import { reflexState } from '../reflex/state';
 import { castSlot } from '../bot/combat';
 import { startTrade, tradeRunCore } from '../bot/trade';
 import { laneLeaf } from '../bot/brain';
@@ -23,9 +25,26 @@ const current = new WeakMap<object, IntentData | undefined>();
 const shoving = new WeakMap<object, { from: number; last: number }>();
 const dataOf = (n: NodeCtx): IntentData => current.get(n.mem) ?? {};
 
-/** Keep the wave state on crash while an intent pushes (chooseWave keeps a state for 3 s; refreshed each decision). */
+/** Bots whose reflex wave-state override was set by an intent (so the selector clears only its own). */
+const forcedWave = new WeakSet<object>();
+
+/**
+ * Keep the wave on crash while an intent pushes. The classic wave state (chooseWave, mem.ext.wave) and the reflex
+ * layer's wave state (src/ai/reflex/wave.ts chooseWaveState, which does not read mem.ext.wave) are both set: before
+ * this, push / plates / shove-before-recall / group intents asked for a crash that the laning leaf never saw.
+ */
 function crashWave(n: NodeCtx, reason: string): void {
   n.mem.ext.wave = { state: 'crash', at: n.v.tick, reason };
+  const st = reflexState(n.mem);
+  if (st.waveOverride === undefined || forcedWave.has(n.mem)) {
+    st.waveOverride = 'push';
+    forcedWave.add(n.mem);
+  }
+}
+
+/** Selector start of a decision: drop the wave state an earlier intent forced (the running intent sets it again). */
+export function clearForcedWave(mem: BotMemory): void {
+  if (forcedWave.delete(mem)) reflexState(mem).waveOverride = undefined;
 }
 
 /** Poke: one damaging ability on the enemy champion (§4.3 / §5 harass-poke). */

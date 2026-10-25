@@ -266,7 +266,7 @@ export function pushValue(w: World): CandidateValue | null {
         // §7.1 plates are worth more than their gold before 14:00 (tower progress, first tower 12-16 min)
         plates = Math.min(left, dmg / PLATE_HP) * G.plate * W.platePriority;
       }
-      structure = (dmg / Math.max(1, tower.maxHp)) * (G.tower.local + G.tower.team);
+      structure = (dmg / Math.max(1, tower.maxHp)) * (G.tower.local + G.tower.team) * closingMult(w.time);
     }
   }
   const wavePush = farmWithin(w, h);
@@ -346,7 +346,8 @@ export function stayDeathProb(w: World): number {
   const sd = VALUES.recall.stayDeath;
   const missing = 1 - v.hpPct;
   const foe = closestEnemy(w.n, 1400);
-  return clamp01(sd.hpBase * missing * missing + w.gankRisk * sd.gankRiskWeight * missing + (foe ? sd.enemyNearWeight * missing : 0));
+  const threat = Math.pow(missing, sd.threatPow);
+  return clamp01(sd.hpBase * missing * missing + (w.gankRisk * sd.gankRiskWeight + (foe ? sd.enemyNearWeight : 0)) * threat);
 }
 
 export function recallValue(w: World): CandidateValue | null {
@@ -441,6 +442,13 @@ function structureGold(depth: number): number {
   return G.nexusTower;
 }
 
+/** Closing multiplier of structure values (values.json closing): later in the game a structure is worth more. */
+export function closingMult(timeS: number): number {
+  const C = VALUES.closing;
+  const t = Math.max(0, Math.min(1, (timeS - C.fromS) / C.rampS));
+  return 1 + (C.mult - 1) * t;
+}
+
 export function groupValue(w: World): CandidateValue | null {
   const n = w.n;
   const d = n.ctx.teamAI?.desireFor(n.ctx.slot, w.tick);
@@ -448,7 +456,7 @@ export function groupValue(w: World): CandidateValue | null {
   const h = H.group;
   const target = { x: d.x, y: d.y };
   const depth = d.kind === 'defend_lane' ? 0 : n.ctx.teamAI.nextStructure(n, d.lane).depth;
-  let benefit = d.score * structureGold(depth) * (d.reason.startsWith('won skirmish') ? W.conversionCall : 1);
+  let benefit = d.score * structureGold(depth) * closingMult(w.time) * (d.reason.startsWith('won skirmish') ? W.conversionCall : 1);
   // in the own lane the laning leaf farms on the way (punish-absence / siege of the own lane): no worse than farm
   if (d.lane === w.lane) benefit += farmWithin(w, h);
   // §7.5: a side laner keeps farming until the group actually hits the structure

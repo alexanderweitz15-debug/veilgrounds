@@ -92,9 +92,16 @@
     "towerMitigation": 0.67
   },
 
+  "closing": {
+    "note": "A14: a structure is also a step to the Nexus (the only way a game ends), which the gold equivalents do not price. Structure value x mult(t): 1 before fromS, linear to mult over rampS, then mult.",
+    "fromS": 840,
+    "rampS": 480,
+    "mult": 2.5
+  },
+
   "recall": {
     "itemValuePerGold": 0.5,
-    "stayDeath": { "hpBase": 0.55, "gankRiskWeight": 0.6, "enemyNearWeight": 0.5 },
+    "stayDeath": { "hpBase": 0.55, "gankRiskWeight": 0.6, "enemyNearWeight": 0.5, "threatPow": 1 },
     "shoveFirst": { "iron": 0, "bronze": 0, "silver": 1, "challenger": 1 },
     "manaLowFrac": 0.15,
     "monsterClearRange": 900,

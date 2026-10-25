@@ -20,7 +20,7 @@ import { buildWorld, laneNow } from './world';
 import { lv } from '../ganks/common';
 import { errorActive, rollErrorEpisode } from '../errors';
 import { CANDIDATES, noteRunningGank } from './value';
-import { runIntent } from './intents';
+import { clearForcedWave, runIntent } from './intents';
 import { gazeTurnAway, sevQFake, sevUltChoice } from './sev';
 import type { IntentId, Scored, UtilityState } from './types';
 
@@ -106,6 +106,7 @@ function decide(n: NodeCtx, st: UtilityState): NodeResult {
   // lane-shaped team desires are weights now (§7.6): the group / catch-lane intents set the override when chosen
   n.mem.ext.laneOverride = null;
   n.mem.ext.splitting = false;
+  clearForcedWave(n.mem);
   const hold = committed(n, st);
   if (hold) {
     const r = runIntent(n, hold, undefined);

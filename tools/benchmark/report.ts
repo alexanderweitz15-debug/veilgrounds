@@ -38,7 +38,7 @@ function ladder(rows: AggRow[], brain: string, set: string): AggRow[] {
   return rows.filter((r) => r.brain === brain && r.set === set).sort((a, b) => rankIdx(a.x) - rankIdx(b.x) || a.ref.localeCompare(b.ref));
 }
 
-export type Verdict = { ok: boolean; notes: string[]; significant: boolean };
+export type Verdict = { ok: boolean; notes: string[]; significant: boolean; flat?: boolean };
 
 /** Monotonicity of a metric over the ranks of a ladder (all rows share the reference rank). */
 export function monotone(def: MetricDef, rows: AggRow[], key = def.id): Verdict {
@@ -46,6 +46,8 @@ export function monotone(def: MetricDef, rows: AggRow[], key = def.id): Verdict 
   let ok = true;
   let significant = false;
   const sign = def.better === 'down' ? -1 : 1;
+  const vals = rows.map((r) => r.est[key]?.value).filter((v): v is number => v !== undefined && Number.isFinite(v));
+  if (vals.length >= 2 && vals.every((v) => v === vals[0])) return { ok: true, notes: ['alle Werte gleich'], significant: false, flat: true };
   for (let i = 0; i + 1 < rows.length; i++) {
     const a = rows[i]!.est[key];
     const b = rows[i + 1]!.est[key];
@@ -53,7 +55,11 @@ export function monotone(def: MetricDef, rows: AggRow[], key = def.id): Verdict 
     const delta = sign * (b.value - a.value);
     if (delta > 0) continue;
     ok = false;
-    const noise = 1.96 * Math.sqrt((Number.isFinite(a.se) ? a.se : 0) ** 2 + (Number.isFinite(b.se) ? b.se : 0) ** 2);
+    if (!Number.isFinite(a.se) || !Number.isFinite(b.se)) {
+      notes.push(`${cap(rows[i]!.x)} -> ${cap(rows[i + 1]!.x)}: unbelegt (nur 1 Partie)`);
+      continue;
+    }
+    const noise = 1.96 * Math.sqrt(a.se ** 2 + b.se ** 2);
     const sig = -delta > noise;
     if (sig) significant = true;
     notes.push(`${cap(rows[i]!.x)} -> ${cap(rows[i + 1]!.x)}: ${sig ? 'signifikant' : 'im Rauschen'}`);
@@ -106,7 +112,7 @@ export function buildMarkdown(games: GameRaw[], meta: ReportMeta): string {
       const lad = ladderFor(rows, brain, def);
       const cells = ranks.map((rk) => fmt(def, lad.find((r) => r.x === rk)?.est[def.id]));
       const v = def.better ? monotone(def, lad) : { ok: true, notes: [], significant: false };
-      const flag = !def.better ? '-' : v.ok ? 'ja' : `**nein** (${v.notes.join('; ')})`;
+      const flag = !def.better ? '-' : v.flat ? 'ohne Signal (alle Werte gleich)' : v.ok ? 'ja' : `**nein** (${v.notes.join('; ')})`;
       o.push(`| ${def.label} [${def.set}] | ${def.better === 'up' ? 'steigt' : def.better === 'down' ? 'sinkt' : '-'} | ${cells.join(' | ')} | ${flag} |`);
     }
     o.push('');
@@ -127,7 +133,7 @@ export function buildMarkdown(games: GameRaw[], meta: ReportMeta): string {
         const d = scale(def, b.value) - scale(def, a.value);
         const se = Math.sqrt((Number.isFinite(a.se) ? scale(def, a.se) : 0) ** 2 + (Number.isFinite(b.se) ? scale(def, b.se) : 0) ** 2);
         const s = `${d >= 0 ? '+' : ''}${d.toFixed(digits(def))}`;
-        return Math.abs(d) > 1.96 * se ? `**${s}**` : s;
+        return se > 0 && Math.abs(d) > 1.96 * se ? `**${s}**` : s;
       });
       o.push(`| ${def.label}${unitSuffix(def)} | ${cells.join(' | ')} |`);
     }
@@ -212,7 +218,7 @@ th{background:var(--card)}.bad{color:var(--bad);font-weight:600}.ok{color:var(--
       h.push(`<tr><td>${esc(def.label)} <span class="mut">[${def.set}]</span></td><td>${def.better === 'up' ? 'steigt' : 'sinkt'}</td>${ranks.map((rk) => {
         const e = lad.find((r) => r.x === rk)?.est[def.id];
         return `<td title="${esc(fmtCi(def, e))} n=${e?.games ?? 0}">${esc(fmt(def, e))}</td>`;
-      }).join('')}<td class="${v.ok ? 'ok' : 'bad'}">${v.ok ? 'ja' : 'nein: ' + esc(v.notes.join('; '))}</td></tr>`);
+      }).join('')}<td class="${v.ok ? 'ok' : 'bad'}">${v.flat ? 'ohne Signal' : v.ok ? 'ja' : 'nein: ' + esc(v.notes.join('; '))}</td></tr>`);
     }
     h.push('</table></div>');
   }

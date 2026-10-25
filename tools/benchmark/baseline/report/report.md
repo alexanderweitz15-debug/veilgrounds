@@ -6,11 +6,19 @@ Stand: `ee6f8a7`.
 
 | Gehirn | Menge | Paar (Rang X vs Referenz) | Partien | Ø Dauer (min) |
 |---|---|---|---|---|
-| new | L | challenger:gold | 2 | 15.0 |
-| new | L | diamond:gold | 3 | 15.0 |
-| new | L | gold:gold | 3 | 15.0 |
-| new | L | iron:gold | 3 | 15.0 |
-| old | L | challenger:gold | 3 | 15.0 |
+| new | F | challenger:gold | 1 | 35.0 |
+| new | F | diamond:gold | 1 | 35.0 |
+| new | F | gold:gold | 1 | 35.0 |
+| new | F | iron:gold | 1 | 35.0 |
+| new | L | challenger:gold | 4 | 15.0 |
+| new | L | diamond:gold | 4 | 15.0 |
+| new | L | gold:gold | 4 | 15.0 |
+| new | L | iron:gold | 4 | 15.0 |
+| old | F | challenger:gold | 1 | 35.0 |
+| old | F | diamond:gold | 1 | 35.0 |
+| old | F | gold:gold | 1 | 35.0 |
+| old | F | iron:gold | 1 | 32.4 |
+| old | L | challenger:gold | 4 | 15.0 |
 | old | L | diamond:gold | 4 | 15.0 |
 | old | L | gold:gold | 4 | 15.0 |
 | old | L | iron:gold | 4 | 15.0 |
@@ -21,49 +29,49 @@ Menge L = kurze Partien (Lane-Metriken), Menge F = Partien bis zum Nexus oder Ze
 
 | Metrik | Erwartung | Iron | Gold | Diamond | Challenger | Monoton? |
 |---|---|---|---|---|---|---|
-| CS@10 [L] | steigt | 17.8 ±0.8 | 26.8 ±0.8 | 34.1 ±1.3 | 27.3 ±3.9 | **nein** (Diamond -> Challenger: im Rauschen) |
-| Idle-Anteil Laner (Hirn-Spec) [L] | sinkt | 10.1 ±0.9 | 10.8 ±0.8 | 10.2 ±0.4 | 10.4 ±1.6 | **nein** (Iron -> Gold: im Rauschen; Diamond -> Challenger: im Rauschen) |
-| Idle-Anteil breit (A2: kein Auftrag) [L] | sinkt | 11.7 ±0.9 | 12.8 ±0.5 | 14.9 ±0.6 | 16.5 ±1.8 | **nein** (Iron -> Gold: im Rauschen; Gold -> Diamond: signifikant; Diamond -> Challenger: im Rauschen) |
-| Angriffsauslastung Laner [L] | steigt | 30.0 ±1.0 | 28.5 ±1.2 | 29.0 ±1.4 | 25.3 ±1.9 | **nein** (Iron -> Gold: im Rauschen; Diamond -> Challenger: im Rauschen) |
-| Trade-Bilanz in der Lane [L] | steigt | 39.8 ±7.1 | 50.0 ±0.0 | 48.3 ±4.7 | 54.7 ±3.4 | **nein** (Gold -> Diamond: im Rauschen) |
-| Tode ohne Sicht [L] | sinkt | 0.0 ±0.0 | 0.0 ±0.0 | 0.0 ±0.0 | 0.0 ±0.0 | **nein** (Iron -> Gold: im Rauschen; Gold -> Diamond: im Rauschen; Diamond -> Challenger: im Rauschen) |
-| Tode nach Überfall aus dem Nebel [L] | sinkt | 0.0 ±0.0 | 0.0 ±0.0 | 0.0 ±0.0 | 0.0 ±0.0 | **nein** (Iron -> Gold: im Rauschen; Gold -> Diamond: im Rauschen; Diamond -> Challenger: im Rauschen) |
-| Skillshot-Trefferquote (auf Champions gezielt) [L] | steigt | 30.4 ±7.0 | 51.7 ±7.5 | 60.2 ±8.9 | 75.4 ±2.0 | ja |
-| Ausweichquote [L] | steigt | 18.5 ±4.9 | 17.4 ±3.9 | 24.0 ±6.0 | 7.7 ±4.1 | **nein** (Iron -> Gold: im Rauschen; Diamond -> Challenger: signifikant) |
-| Reaktionszeit (Median) [L] | sinkt | 450 ±16 | 500 ±14 | 500 ±37 | 367 ±37 | **nein** (Iron -> Gold: signifikant; Gold -> Diamond: im Rauschen) |
-| Recall abgeschlossen [L] | steigt | 75.5 ±1.6 | 78.3 ±1.1 | 69.0 ±2.2 | 72.3 ±6.6 | **nein** (Gold -> Diamond: signifikant) |
-| Gold ausgegeben pro abgeschlossenem Recall [L] | steigt | 272 ±26 | 502 ±16 | 529 ±50 | 508 ±134 | **nein** (Diamond -> Challenger: im Rauschen) |
-| Recall mit gecrashter Welle [L] | steigt | 4.8 ±1.7 | 11.0 ±0.9 | 10.5 ±2.8 | 14.8 ±2.6 | **nein** (Gold -> Diamond: im Rauschen) |
-| Recall mit Gegnerwelle am eigenen Turm [L] | sinkt | 8.0 ±1.9 | 7.6 ±2.6 | 11.8 ±5.6 | 9.8 ±2.2 | **nein** (Gold -> Diamond: im Rauschen) |
-| Partiedauer (entschieden) [F] | sinkt | - | - | - | - | ja |
-| Erster Turm (min) [F] | sinkt | - | - | - | - | ja |
-| Siegquote (Nexus) [F] | steigt | - | - | - | - | ja |
-| Siegquote (Nexus oder Gold-Vorsprung) [L] | steigt | 25.0 ±21.0 | 50.0 ±0.0 | 25.0 ±21.8 | 33.3 ±27.0 | **nein** (Gold -> Diamond: im Rauschen) |
-| Objective-Kontrolle gesamt [F] | steigt | 0.0 ±0.0 | 50.0 ±0.0 | 20.0 ±20.3 | 25.0 ±15.4 | **nein** (Gold -> Diamond: im Rauschen) |
+| CS@10 [L] | steigt | 17.8 ±0.8 | 26.8 ±0.8 | 34.1 ±1.3 | 30.3 ±4.1 | **nein** (Diamond -> Challenger: im Rauschen) |
+| Idle-Anteil Laner (Hirn-Spec) [L] | sinkt | 10.1 ±0.9 | 10.8 ±0.8 | 10.2 ±0.4 | 9.8 ±1.3 | **nein** (Iron -> Gold: im Rauschen) |
+| Idle-Anteil breit (A2: kein Auftrag) [L] | sinkt | 11.7 ±0.9 | 12.8 ±0.5 | 14.9 ±0.6 | 17.2 ±1.5 | **nein** (Iron -> Gold: im Rauschen; Gold -> Diamond: signifikant; Diamond -> Challenger: im Rauschen) |
+| Angriffsauslastung Laner [L] | steigt | 30.0 ±1.0 | 28.5 ±1.2 | 29.0 ±1.4 | 26.4 ±1.6 | **nein** (Iron -> Gold: im Rauschen; Diamond -> Challenger: im Rauschen) |
+| Trade-Bilanz in der Lane [L] | steigt | 39.8 ±7.1 | 50.0 ±0.0 | 48.3 ±4.7 | 48.9 ±6.1 | **nein** (Gold -> Diamond: im Rauschen) |
+| Tode ohne Sicht [L] | sinkt | 0.0 ±0.0 | 0.0 ±0.0 | 0.0 ±0.0 | 0.0 ±0.0 | ohne Signal (alle Werte gleich) |
+| Tode nach Überfall aus dem Nebel [L] | sinkt | 0.0 ±0.0 | 0.0 ±0.0 | 0.0 ±0.0 | 0.0 ±0.0 | ohne Signal (alle Werte gleich) |
+| Skillshot-Trefferquote (auf Champions gezielt) [L] | steigt | 30.4 ±7.0 | 51.7 ±7.5 | 60.2 ±8.9 | 66.7 ±8.5 | ja |
+| Ausweichquote [L] | steigt | 18.5 ±4.9 | 17.4 ±3.9 | 24.0 ±6.0 | 15.8 ±7.4 | **nein** (Iron -> Gold: im Rauschen; Diamond -> Challenger: im Rauschen) |
+| Reaktionszeit (Median) [L] | sinkt | 450 ±16 | 500 ±14 | 500 ±37 | 367 ±27 | **nein** (Iron -> Gold: signifikant; Gold -> Diamond: im Rauschen) |
+| Recall abgeschlossen [L] | steigt | 75.5 ±1.6 | 78.3 ±1.1 | 69.0 ±2.2 | 71.1 ±5.2 | **nein** (Gold -> Diamond: signifikant) |
+| Gold ausgegeben pro abgeschlossenem Recall [L] | steigt | 272 ±26 | 502 ±16 | 529 ±50 | 538 ±104 | ja |
+| Recall mit gecrashter Welle [L] | steigt | 4.8 ±1.7 | 11.0 ±0.9 | 10.5 ±2.8 | 12.7 ±2.7 | **nein** (Gold -> Diamond: im Rauschen) |
+| Recall mit Gegnerwelle am eigenen Turm [L] | sinkt | 8.0 ±1.9 | 7.6 ±2.6 | 11.8 ±5.6 | 11.4 ±2.2 | **nein** (Gold -> Diamond: im Rauschen) |
+| Partiedauer (entschieden) [F] | sinkt | 32.4 ±? | - | - | - | ja |
+| Erster Turm (min) [F] | sinkt | 22.3 ±? | 21.3 ±? | 18.7 ±? | 17.9 ±? | ja |
+| Siegquote (Nexus) [F] | steigt | 100.0 ±? | - | - | - | ja |
+| Siegquote (Nexus oder Gold-Vorsprung) [L] | steigt | 25.0 ±21.0 | 50.0 ±0.0 | 25.0 ±21.8 | 25.0 ±20.7 | **nein** (Gold -> Diamond: im Rauschen; Diamond -> Challenger: im Rauschen) |
+| Objective-Kontrolle gesamt [F] | steigt | 64.7 ±? | 50.0 ±? | 25.0 ±? | 42.9 ±? | **nein** (Iron -> Gold: unbelegt (nur 1 Partie); Gold -> Diamond: unbelegt (nur 1 Partie)) |
 
 ## Neues Gehirn (Beta, --brain=new): Kernmetriken je Rang
 
 | Metrik | Erwartung | Iron | Gold | Diamond | Challenger | Monoton? |
 |---|---|---|---|---|---|---|
-| CS@10 [L] | steigt | 24.2 ±1.4 | 28.4 ±2.6 | 28.1 ±0.9 | 31.0 ±5.0 | **nein** (Gold -> Diamond: im Rauschen) |
-| Idle-Anteil Laner (Hirn-Spec) [L] | sinkt | 4.5 ±1.6 | 6.2 ±0.2 | 7.2 ±1.0 | 7.7 ±1.0 | **nein** (Iron -> Gold: im Rauschen; Gold -> Diamond: im Rauschen; Diamond -> Challenger: im Rauschen) |
-| Idle-Anteil breit (A2: kein Auftrag) [L] | sinkt | 11.3 ±1.1 | 11.5 ±0.6 | 18.3 ±2.5 | 19.4 ±0.2 | **nein** (Iron -> Gold: im Rauschen; Gold -> Diamond: signifikant; Diamond -> Challenger: im Rauschen) |
-| Angriffsauslastung Laner [L] | steigt | 49.9 ±1.9 | 37.1 ±0.7 | 31.3 ±1.1 | 27.4 ±0.4 | **nein** (Iron -> Gold: signifikant; Gold -> Diamond: signifikant; Diamond -> Challenger: signifikant) |
-| Trade-Bilanz in der Lane [L] | steigt | 45.2 ±3.3 | 50.0 ±0.0 | 51.7 ±2.4 | 56.9 ±2.0 | ja |
-| Tode ohne Sicht [L] | sinkt | 0.0 ±0.0 | 0.0 ±0.0 | 0.0 ±0.0 | 0.0 ±0.0 | **nein** (Iron -> Gold: im Rauschen; Gold -> Diamond: im Rauschen; Diamond -> Challenger: im Rauschen) |
-| Tode nach Überfall aus dem Nebel [L] | sinkt | 0.0 ±? | 0.0 ±? | 0.0 ±0.0 | 0.0 ±? | **nein** (Iron -> Gold: im Rauschen; Gold -> Diamond: im Rauschen; Diamond -> Challenger: im Rauschen) |
-| Skillshot-Trefferquote (auf Champions gezielt) [L] | steigt | 35.4 ±1.3 | 43.6 ±6.3 | 65.5 ±2.3 | 69.2 ±5.9 | ja |
-| Ausweichquote [L] | steigt | 21.9 ±9.3 | 24.7 ±5.3 | 21.4 ±6.0 | 35.3 ±6.9 | **nein** (Gold -> Diamond: im Rauschen) |
-| Reaktionszeit (Median) [L] | sinkt | 500 ±18 | 500 ±26 | 433 ±49 | 400 ±36 | **nein** (Iron -> Gold: im Rauschen) |
-| Recall abgeschlossen [L] | steigt | 75.7 ±5.3 | 82.0 ±1.6 | 70.8 ±2.6 | 61.9 ±5.3 | **nein** (Gold -> Diamond: signifikant; Diamond -> Challenger: im Rauschen) |
-| Gold ausgegeben pro abgeschlossenem Recall [L] | steigt | 406 ±36 | 465 ±16 | 420 ±22 | 533 ±92 | **nein** (Gold -> Diamond: im Rauschen) |
-| Recall mit gecrashter Welle [L] | steigt | 11.8 ±1.5 | 13.8 ±1.9 | 15.6 ±5.5 | 35.3 ±8.0 | ja |
-| Recall mit Gegnerwelle am eigenen Turm [L] | sinkt | 1.5 ±1.1 | 6.3 ±0.5 | 6.5 ±1.0 | 3.9 ±3.8 | **nein** (Iron -> Gold: signifikant; Gold -> Diamond: im Rauschen) |
+| CS@10 [L] | steigt | 23.4 ±1.2 | 28.4 ±2.0 | 29.4 ±1.3 | 28.6 ±3.4 | **nein** (Diamond -> Challenger: im Rauschen) |
+| Idle-Anteil Laner (Hirn-Spec) [L] | sinkt | 4.9 ±1.2 | 6.1 ±0.2 | 7.0 ±0.7 | 8.5 ±1.0 | **nein** (Iron -> Gold: im Rauschen; Gold -> Diamond: im Rauschen; Diamond -> Challenger: im Rauschen) |
+| Idle-Anteil breit (A2: kein Auftrag) [L] | sinkt | 11.2 ±0.9 | 11.1 ±0.6 | 17.7 ±2.0 | 19.1 ±0.2 | **nein** (Gold -> Diamond: signifikant; Diamond -> Challenger: im Rauschen) |
+| Angriffsauslastung Laner [L] | steigt | 48.3 ±2.0 | 38.2 ±1.1 | 31.3 ±0.8 | 27.8 ±0.5 | **nein** (Iron -> Gold: signifikant; Gold -> Diamond: signifikant; Diamond -> Challenger: signifikant) |
+| Trade-Bilanz in der Lane [L] | steigt | 45.7 ±2.4 | 50.0 ±0.0 | 49.8 ±2.4 | 50.1 ±6.0 | **nein** (Gold -> Diamond: im Rauschen) |
+| Tode ohne Sicht [L] | sinkt | 0.0 ±0.0 | 0.0 ±0.0 | 0.0 ±0.0 | 0.0 ±0.0 | ohne Signal (alle Werte gleich) |
+| Tode nach Überfall aus dem Nebel [L] | sinkt | 0.0 ±0.0 | 0.0 ±0.0 | 0.0 ±0.0 | 0.0 ±0.0 | ohne Signal (alle Werte gleich) |
+| Skillshot-Trefferquote (auf Champions gezielt) [L] | steigt | 29.6 ±5.9 | 47.7 ±6.3 | 56.7 ±7.4 | 62.2 ±7.9 | ja |
+| Ausweichquote [L] | steigt | 33.3 ±11.7 | 22.0 ±4.6 | 22.9 ±4.9 | 27.6 ±6.7 | **nein** (Iron -> Gold: im Rauschen) |
+| Reaktionszeit (Median) [L] | sinkt | 567 ±46 | 500 ±33 | 433 ±37 | 400 ±25 | ja |
+| Recall abgeschlossen [L] | steigt | 76.3 ±3.8 | 77.2 ±4.0 | 73.2 ±3.1 | 62.4 ±3.2 | **nein** (Gold -> Diamond: im Rauschen; Diamond -> Challenger: signifikant) |
+| Gold ausgegeben pro abgeschlossenem Recall [L] | steigt | 356 ±47 | 479 ±17 | 431 ±19 | 474 ±58 | **nein** (Gold -> Diamond: im Rauschen) |
+| Recall mit gecrashter Welle [L] | steigt | 14.6 ±2.6 | 14.6 ±1.6 | 14.4 ±4.5 | 25.9 ±8.0 | **nein** (Gold -> Diamond: im Rauschen) |
+| Recall mit Gegnerwelle am eigenen Turm [L] | sinkt | 4.2 ±2.3 | 5.5 ±0.7 | 9.3 ±2.9 | 2.8 ±1.9 | **nein** (Iron -> Gold: im Rauschen; Gold -> Diamond: im Rauschen) |
 | Partiedauer (entschieden) [F] | sinkt | - | - | - | - | ja |
-| Erster Turm (min) [F] | sinkt | - | - | - | - | ja |
+| Erster Turm (min) [F] | sinkt | 27.1 ±? | 25.5 ±? | 25.0 ±? | 28.2 ±? | **nein** (Diamond -> Challenger: unbelegt (nur 1 Partie)) |
 | Siegquote (Nexus) [F] | steigt | - | - | - | - | ja |
-| Siegquote (Nexus oder Gold-Vorsprung) [L] | steigt | 0.0 ±0.0 | 50.0 ±0.0 | 33.3 ±26.8 | 50.0 ±35.0 | **nein** (Gold -> Diamond: im Rauschen) |
-| Objective-Kontrolle gesamt [F] | steigt | - | 50.0 ±0.0 | 25.0 ±? | - | **nein** (Gold -> Diamond: signifikant) |
+| Siegquote (Nexus oder Gold-Vorsprung) [L] | steigt | 0.0 ±0.0 | 50.0 ±0.0 | 25.0 ±20.6 | 25.0 ±21.9 | **nein** (Gold -> Diamond: im Rauschen; Diamond -> Challenger: im Rauschen) |
+| Objective-Kontrolle gesamt [F] | steigt | 0.0 ±? | 50.0 ±? | 66.7 ±? | 40.0 ±? | **nein** (Diamond -> Challenger: unbelegt (nur 1 Partie)) |
 
 ## Neu gegen Alt (gleiche Seeds)
 
@@ -71,25 +79,25 @@ Differenz Neu minus Alt je Rang; fett = außerhalb von 1,96 x Standardfehler der
 
 | Metrik | Iron | Gold | Diamond | Challenger |
 |---|---|---|---|---|
-| CS@10 | **+6.4** | +1.6 | **-6.0** | +3.7 |
-| Idle-Anteil Laner (Hirn-Spec) % | **-5.6** | **-4.6** | **-3.0** | -2.7 |
-| Idle-Anteil breit (A2: kein Auftrag) % | -0.4 | -1.3 | +3.3 | +2.8 |
-| Angriffsauslastung Laner % | **+19.9** | **+8.6** | +2.3 | +2.2 |
-| Trade-Bilanz in der Lane % | +5.4 | -0.0 | +3.4 | +2.2 |
+| CS@10 | **+5.6** | +1.6 | **-4.7** | -1.7 |
+| Idle-Anteil Laner (Hirn-Spec) % | **-5.2** | **-4.7** | **-3.2** | -1.3 |
+| Idle-Anteil breit (A2: kein Auftrag) % | -0.5 | **-1.7** | +2.7 | +1.9 |
+| Angriffsauslastung Laner % | **+18.3** | **+9.7** | +2.3 | +1.4 |
+| Trade-Bilanz in der Lane % | +5.9 | +0.0 | +1.5 | +1.2 |
 | Tode ohne Sicht % | +0.0 | +0.0 | +0.0 | +0.0 |
 | Tode nach Überfall aus dem Nebel % | +0.0 | +0.0 | +0.0 | +0.0 |
-| Skillshot-Trefferquote (auf Champions gezielt) % | +5.1 | -8.1 | +5.3 | -6.2 |
-| Ausweichquote % | +3.4 | +7.2 | -2.6 | **+27.6** |
-| Reaktionszeit (Median) ms | **+50** | +0 | -67 | +33 |
-| Recall abgeschlossen % | +0.2 | +3.8 | +1.8 | -10.4 |
-| Gold ausgegeben pro abgeschlossenem Recall | **+135** | -37 | **-109** | +25 |
-| Recall mit gecrashter Welle % | **+7.0** | +2.7 | +5.1 | **+20.5** |
-| Recall mit Gegnerwelle am eigenen Turm % | **-6.5** | -1.3 | -5.3 | -5.9 |
+| Skillshot-Trefferquote (auf Champions gezielt) % | -0.8 | -4.0 | -3.5 | -4.5 |
+| Ausweichquote % | +14.8 | +4.6 | -1.1 | +11.8 |
+| Reaktionszeit (Median) ms | **+117** | +0 | -67 | +33 |
+| Recall abgeschlossen % | +0.8 | -1.0 | +4.2 | -8.7 |
+| Gold ausgegeben pro abgeschlossenem Recall | +84 | -23 | -98 | -64 |
+| Recall mit gecrashter Welle % | **+9.8** | +3.6 | +3.9 | +13.3 |
+| Recall mit Gegnerwelle am eigenen Turm % | -3.8 | -2.1 | -2.6 | **-8.6** |
 | Partiedauer (entschieden) min | - | - | - | - |
-| Erster Turm (min) min | - | - | - | - |
+| Erster Turm (min) min | +4.8 | +4.2 | +6.3 | +10.3 |
 | Siegquote (Nexus) % | - | - | - | - |
-| Siegquote (Nexus oder Gold-Vorsprung) % | -25.0 | +0.0 | +8.3 | +16.7 |
-| Objective-Kontrolle gesamt % | - | +0.0 | +5.0 | - |
+| Siegquote (Nexus oder Gold-Vorsprung) % | -25.0 | +0.0 | +0.0 | +0.0 |
+| Objective-Kontrolle gesamt % | -64.7 | +0.0 | +41.7 | -2.9 |
 
 ## Definitionen
 

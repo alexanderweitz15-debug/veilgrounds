@@ -12,6 +12,7 @@
 //                       --mirror=1 every seed twice with the ranks swapped between the sides (cancels line-up / side bias).
 //   --seeds=1..4|1,2,5  sim seeds (default 1..4);  --minutes=15  limit per game;  --set=L|F  (L: lane set, F: full set)
 //   --variance=1        keep the per-game rank variance (default off, like botSim --variance=0)
+//   --upgrade=1         replay games of an existing --out file that an older observer version recorded
 //   --jobs=N            parallel child processes (default 2);  --out=file.json  results (written after every game;
 //                       an existing file is resumed: games already in it are skipped)
 // report options: --in=a.json,b.json  --out=dir  -> dir/report.html, dir/report.md, dir/results.json (merged)
@@ -19,7 +20,7 @@
 
 import type { Rank } from '../../src/ai/profiles/schema';
 import { RANKS } from '../../src/ai/profiles/schema';
-import { playGame, type GameRaw, type GameSpec } from './play';
+import { OBS_VERSION, playGame, type GameRaw, type GameSpec } from './play';
 import { buildHtml, buildMarkdown, type ReportMeta } from './report';
 
 declare const process: { argv: string[]; execPath: string; execArgv: string[]; pid: number; stderr: { write(s: string): void }; stdout: { write(s: string): void }; exit(code: number): never; cwd(): string };
@@ -115,7 +116,8 @@ async function runMain(): Promise<void> {
   const done: GameRaw[] = [];
   if (out && fsMod.existsSync(out)) {
     const prev = JSON.parse(fsMod.readFileSync(out, 'utf8')) as ResultFile;
-    done.push(...prev.games);
+    // --upgrade: drop games recorded by an older observer (they lack newer metrics) so they are played again
+    done.push(...prev.games.filter((g) => args.get('upgrade') !== '1' || (g.teams[0].ratio.obsVersion?.[0] ?? 0) >= OBS_VERSION));
   }
   const have = new Set(done.map((g) => specKey(g.spec)));
   const todo = specs.filter((s) => !have.has(specKey(s)));

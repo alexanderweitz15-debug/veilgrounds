@@ -61,6 +61,13 @@ describe('monotonicity verdict', () => {
     expect(real.ok).toBe(false);
     expect(real.significant).toBe(true);
   });
+  it('calls an all-equal series "no signal" and a single-game comparison "unbelegt", never "significant"', () => {
+    expect(monotone(def, [row('iron', 0, 0), row('gold', 0, 0), row('diamond', 0, 0)])).toMatchObject({ ok: true, flat: true });
+    const one = monotone(def, [row('iron', 25, NaN), row('gold', 19, NaN)]);
+    expect(one.ok).toBe(false);
+    expect(one.significant).toBe(false);
+    expect(one.notes[0]).toContain('unbelegt');
+  });
   it('honours the direction of "down" metrics', () => {
     const idle = METRIC_BY_ID.get('idle')!;
     const r = (x: string, v: number) => ({ ...row(x, v, 0.01), est: { idle: { value: v, se: 0.01, lo: v, hi: v, games: 8, den: 1000 } } });

@@ -7,7 +7,7 @@ import { playGame, type GameSpec } from '../tools/benchmark/play';
 // plain run (stateHash), and the same spec must give the same numbers twice. Short games keep the test cheap; the
 // observer code paths (commands, events, projectiles, per-champion state) are all exercised from the first minutes on.
 
-const spec = (over: Partial<GameSpec>): GameSpec => ({ pair: 'iron:gold', x: 'iron', ref: 'gold', seed: 3, flip: true, brain: 'new', minutes: 2.5, set: 'L', variance: false, ...over });
+const spec = (over: Partial<GameSpec>): GameSpec => ({ pair: 'iron:gold', x: 'iron', ref: 'gold', seed: 3, flip: true, brain: 'new', minutes: 2, set: 'L', variance: false, ...over });
 
 function plainHash(s: GameSpec): string {
   const config = botGameConfig(s.seed, s.x);

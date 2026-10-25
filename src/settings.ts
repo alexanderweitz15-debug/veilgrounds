@@ -37,6 +37,11 @@ export interface Settings {
   newBrain: boolean;
   /** Master volume 0..1 (procedural sound). */
   volume: number;
+  /** Channel volumes 0..1 on top of the master (src/audio/manager.ts buses): world sounds, UI feedback, ambience, music. */
+  volumeSfx: number;
+  volumeUi: number;
+  volumeAmbient: number;
+  volumeMusic: number;
   /** Last picked rune preset id per champion id (lobby). */
   runePresets: Record<string, string>;
   /** Minimap size in percent (80..150) on top of the HUD scale (C7). */
@@ -70,6 +75,10 @@ const DEFAULTS: Settings = {
   cameraLocked: false,
   fullscreenLock: true,
   volume: 0.6,
+  volumeSfx: 1,
+  volumeUi: 1,
+  volumeAmbient: 0.5,
+  volumeMusic: 0.5,
   botToxicity: true,
   newBrain: false,
   runePresets: {},

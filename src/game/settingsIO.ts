@@ -1,6 +1,6 @@
 // Settings export / import as JSON (C7, FEATURE-GAP 3.13): settings + keybinds in one file. Import accepts only known
 // keys with the type of their default (and known enum values), so a hand-edited or old file cannot break the client.
-import type { Settings } from '../settings';
+import { GRAPHICS_QUALITIES, type Settings } from '../settings';
 import type { Action } from '../input/keybinds';
 
 export const SETTINGS_FILE_VERSION = 1;
@@ -14,7 +14,7 @@ export interface SettingsFile {
 const ENUMS: Partial<Record<keyof Settings, readonly string[]>> = {
   lang: ['de', 'en'],
   colorMode: ['normal', 'deuteranopia', 'protanopia', 'tritanopia'],
-  graphics: ['low', 'medium', 'high'],
+  graphics: GRAPHICS_QUALITIES,
   hpBarStyle: ['segmented', 'thousands', 'plain'],
 };
 
@@ -24,6 +24,11 @@ const RANGES: Partial<Record<keyof Settings, [number, number]>> = {
   uiScale: [80, 150],
   minimapScale: [80, 150],
   volume: [0, 1],
+  renderScale: [50, 100],
+  fpsCap: [0, 500],
+  gfxParticles: [0, 150],
+  gfxPixelRatio: [0.5, 2],
+  gfxShadowMap: [1024, 4096],
 };
 
 export function exportSettings(settings: Settings, binds: Record<Action, string>): string {

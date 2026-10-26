@@ -2,7 +2,10 @@
 import { kvGet, kvSet } from './store/kv';
 
 export type ColorMode = 'normal' | 'deuteranopia' | 'protanopia' | 'tritanopia';
-export type GraphicsQuality = 'low' | 'medium' | 'high';
+export type GraphicsPreset = 'veryLow' | 'low' | 'medium' | 'high' | 'veryHigh';
+/** A preset, or 'custom' = the individual gfx* fields below decide. */
+export type GraphicsQuality = GraphicsPreset | 'custom';
+export const GRAPHICS_QUALITIES: readonly GraphicsQuality[] = ['veryLow', 'low', 'medium', 'high', 'veryHigh', 'custom'];
 
 export interface Settings {
   lang: 'de' | 'en';
@@ -22,6 +25,27 @@ export interface Settings {
   visualCues: boolean;
   /** Render quality: shadows, shadow filter, resolution, antialiasing. */
   graphics: GraphicsQuality;
+  /** Individual video options (used when graphics is 'custom'; the panel shows the preset's values otherwise). */
+  gfxShadows: boolean;
+  gfxShadowMap: number;
+  /** Full 17-tap shadow filter instead of the fast 5-tap one (next match). */
+  gfxSoftShadows: boolean;
+  /** Max device pixel ratio. */
+  gfxPixelRatio: number;
+  /** MSAA (next match). */
+  gfxAntialias: boolean;
+  /** Particle density in percent. */
+  gfxParticles: number;
+  /** Detailed ground texture, ground detail shader, more border trees (next match). */
+  gfxTerrainDetail: boolean;
+  /** Render scale in percent on top of the pixel ratio. */
+  renderScale: number;
+  /** Frame cap in fps, 0 = uncapped (display refresh). */
+  fpsCap: number;
+  /** FPS / frame-time overlay (key: fpsOverlay). */
+  showFps: boolean;
+  /** The 3 s auto-detect benchmark ran (false = it runs at the start of the next match). */
+  gfxAutoDetected: boolean;
   damageNumbers: boolean;
   /** A immediately attack-moves to the cursor instead of arming a left-click. */
   attackMoveOnCursor: boolean;
@@ -63,6 +87,17 @@ const DEFAULTS: Settings = {
   highContrast: false,
   visualCues: true,
   graphics: 'medium',
+  gfxShadows: true,
+  gfxShadowMap: 2048,
+  gfxSoftShadows: false,
+  gfxPixelRatio: 1,
+  gfxAntialias: true,
+  gfxParticles: 100,
+  gfxTerrainDetail: true,
+  renderScale: 100,
+  fpsCap: 0,
+  showFps: false,
+  gfxAutoDetected: false,
   damageNumbers: true,
   attackMoveOnCursor: false,
   castIndicator: true,
@@ -92,6 +127,8 @@ export async function loadSettings(): Promise<void> {
   // first start: follow the OS "reduce motion" preference
   if (saved?.reduceMotion === undefined) settings.reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (saved) Object.assign(settings, saved);
+  // saves from before the auto-detect: the player already has a graphics choice, no benchmark
+  if (saved && saved.gfxAutoDetected === undefined) settings.gfxAutoDetected = true;
   delete (settings as unknown as Record<string, unknown>).levelMod; // removed setting (old saves still carry it)
   // saves from before auto scaling: a customised scale stays manual
   if (saved && saved.uiScaleAuto === undefined && saved.uiScale !== undefined && saved.uiScale !== 100) settings.uiScaleAuto = false;

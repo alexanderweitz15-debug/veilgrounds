@@ -11,7 +11,7 @@ export type Action =
   | 'item1' | 'item2' | 'item3' | 'item4' | 'item5' | 'item6' | 'trinket'
   | 'scoreboard' | 'debug' | 'shop'
   | 'pingWheel' | 'pingMissing' | 'pingQuestion'
-  | 'targetChampionsOnly';
+  | 'targetChampionsOnly' | 'fpsOverlay';
 
 export const DEFAULT_BINDS: Record<Action, string> = {
   stop: 'KeyS',
@@ -45,6 +45,8 @@ export const DEFAULT_BINDS: Record<Action, string> = {
   pingQuestion: 'KeyH',
   /** LoL "target champions only" (hold): hover, clicks and casts ignore everything but champions. */
   targetChampionsOnly: 'Backquote',
+  /** FPS / frame-time overlay (setting showFps). */
+  fpsOverlay: 'F3',
 };
 
 export const ACTIONS = Object.keys(DEFAULT_BINDS) as Action[];

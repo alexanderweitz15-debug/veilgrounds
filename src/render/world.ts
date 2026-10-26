@@ -18,7 +18,7 @@ import { FogOfWar } from './fog';
 import { WardMarkers } from './wards';
 import type { ChampionAtlas } from './champions';
 import { settings } from '../settings';
-import { QUALITY, setFastPcf } from './quality';
+import { effectivePixelRatio, resolveQuality, setFastPcf } from './quality';
 import { WORLD_LIGHT } from './materials';
 import { disposeTree } from './dispose';
 import { pickUnit, type PickView } from '../input/picking';
@@ -43,13 +43,12 @@ export class World {
   private readonly up = new THREE.Vector3(0, Math.cos(PITCH), -Math.sin(PITCH));
   private w = 1;
   private h = 1;
-  private quality = settings.graphics;
 
   constructor(readonly canvas: HTMLCanvasElement, map: MapData) {
-    const q = QUALITY[this.quality] ?? QUALITY.medium;
+    const q = resolveQuality(settings);
     setFastPcf(q.fastPcf); // compiled into this renderer's programs
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: q.antialias, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, q.pixelRatio));
+    this.renderer.setPixelRatio(effectivePixelRatio(window.devicePixelRatio, q, settings.renderScale));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.scene.background = new THREE.Color(WORLD_LIGHT.haze);
@@ -71,25 +70,28 @@ export class World {
     this.scene.add(this.sun, this.sun.target);
 
     this.fog = new FogOfWar(map);
-    this.terrain = buildTerrain(map, this.renderer.capabilities.getMaxAnisotropy(), this.quality);
+    this.terrain = buildTerrain(map, this.renderer.capabilities.getMaxAnisotropy(), q.terrainDetail ? 'medium' : 'low');
     this.units = new Units(buildAtlas(), SUN_DIR);
     this.scene.add(this.terrain.group, this.structures.group, this.units.group, this.fx.group, this.ground.group, this.pings.group, this.wards.group, this.fx.particles.group);
     this.ground.particles = this.fx.particles;
+    this.fx.particles.density = q.particles;
   }
 
   /** Live part of the graphics quality setting: shadows on/off, shadow map size, render scale. */
   applyQuality(): void {
-    if (settings.graphics === this.quality) return;
-    this.quality = settings.graphics;
-    const q = QUALITY[this.quality] ?? QUALITY.medium;
+    const q = resolveQuality(settings);
     this.sun.castShadow = q.shadows;
+    this.fx.particles.density = q.particles;
     if (this.sun.shadow.mapSize.x !== q.shadowMap) {
       this.sun.shadow.mapSize.set(q.shadowMap, q.shadowMap);
       this.sun.shadow.map?.dispose();
       this.sun.shadow.map = null;
     }
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, q.pixelRatio));
-    this.renderer.setSize(this.w, this.h, false);
+    const ratio = effectivePixelRatio(window.devicePixelRatio, q, settings.renderScale);
+    if (ratio !== this.renderer.getPixelRatio()) {
+      this.renderer.setPixelRatio(ratio);
+      this.renderer.setSize(this.w, this.h, false);
+    }
   }
 
   resize(w: number, h: number): void {

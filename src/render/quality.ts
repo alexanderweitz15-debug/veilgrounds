@@ -5,23 +5,7 @@
 // low: no shadows, no MSAA | medium: shadows with a 5-tap PCF, DPR capped at 1 | high: original 17-tap PCF, 1.5x DPR.
 // Antialiasing and the PCF filter are fixed when the renderer is created (next match); the rest applies live.
 import * as THREE from 'three';
-import type { GraphicsQuality } from '../settings';
-
-export interface QualityPreset {
-  shadows: boolean;
-  shadowMap: number;
-  /** 5-tap instead of three's 17-tap PCF (each tap is a hardware 2x2 compare, so edges stay soft). */
-  fastPcf: boolean;
-  /** Max device pixel ratio (render scale). */
-  pixelRatio: number;
-  antialias: boolean;
-}
-
-export const QUALITY: Record<GraphicsQuality, QualityPreset> = {
-  low: { shadows: false, shadowMap: 1024, fastPcf: true, pixelRatio: 1, antialias: false },
-  medium: { shadows: true, shadowMap: 2048, fastPcf: true, pixelRatio: 1, antialias: true },
-  high: { shadows: true, shadowMap: 2048, fastPcf: false, pixelRatio: 1.5, antialias: true },
-};
+export * from './gfxPreset';
 
 const ORIGINAL_PCF = THREE.ShaderChunk.shadowmap_pars_fragment;
 const PCF17 = /shadow = \(\s*texture2DCompare\( shadowMap, shadowCoord\.xy \+ vec2\( dx0, dy0 \)[\s\S]*?\) \* \( 1\.0 \/ 17\.0 \);/;

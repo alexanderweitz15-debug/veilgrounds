@@ -1,7 +1,8 @@
 // Settings form (used in the main menu and the in-game Escape menu): language, camera, UI scale, toggles and
 // key rebinding. Rebuilds itself on language change.
 import { t } from '../i18n';
-import { DEFAULT_SETTINGS, settings, updateSettings, type Settings } from '../settings';
+import { DEFAULT_SETTINGS, GRAPHICS_QUALITIES, settings, updateSettings, type Settings } from '../settings';
+import { currentFields, matchPreset, presetFields } from '../render/gfxPreset';
 import { ACTIONS, applyBinds, binds, keyLabel, resetBinds, setBind, type Action } from '../input/keybinds';
 import { exportSettings, parseSettingsFile } from '../game/settingsIO';
 import { CAST_KEYS, CAST_MODES, type CastMode } from '../input/castMode';
@@ -48,7 +49,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     i.addEventListener('change', () => updateSettings({ [key]: i.checked } as Partial<Settings>));
     return i;
   };
-  const slider = (key: 'cameraSpeed' | 'uiScale' | 'volume' | 'minimapScale', min: number, max: number, step: number, fmt: (v: number) => string): HTMLElement => {
+  const slider = (key: 'cameraSpeed' | 'uiScale' | 'volume' | 'minimapScale' | 'renderScale', min: number, max: number, step: number, fmt: (v: number) => string): HTMLElement => {
     const wrap = document.createElement('span');
     wrap.className = 'slider';
     const i = document.createElement('input');
@@ -124,7 +125,53 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.newBrain'), check('newBrain'));
     row(t('set.volume'), slider('volume', 0, 1, 0.05, (v) => `${Math.round(v * 100)} %`));
     section(t('set.graphicsTitle'));
-    row(t('set.graphics'), select<Settings['graphics']>(settings.graphics, [['low', t('set.gfx.low')], ['medium', t('set.gfx.medium')], ['high', t('set.gfx.high')]], (v) => updateSettings({ graphics: v })));
+    row(t('set.graphics'), select<Settings['graphics']>(settings.graphics, GRAPHICS_QUALITIES.map((q): [Settings['graphics'], string] => [q, t(`set.gfx.${q}`)]), (v) => {
+      // a preset writes its values into the individual fields; 'custom' keeps what is shown
+      updateSettings(v === 'custom' ? { graphics: v, ...currentFields(settings) } : { graphics: v, ...presetFields(v) });
+      render();
+    }));
+    // individual options: the preset's values when a preset is chosen; changing one switches to 'custom' (or back to
+    // a preset when the values match one)
+    const f = currentFields(settings);
+    const setGfx = (patch: Partial<typeof f>): void => {
+      updateSettings({ ...patch, graphics: matchPreset({ ...f, ...patch }) });
+      render();
+    };
+    const gfxCheck = (key: 'gfxShadows' | 'gfxSoftShadows' | 'gfxAntialias' | 'gfxTerrainDetail'): HTMLInputElement => {
+      const i = document.createElement('input');
+      i.type = 'checkbox';
+      i.checked = f[key];
+      i.addEventListener('change', () => setGfx({ [key]: i.checked }));
+      return i;
+    };
+    const gfxNum = (key: 'gfxShadowMap' | 'gfxPixelRatio' | 'gfxParticles', opts: [number, string][]): HTMLSelectElement => {
+      const s = select<string>(String(f[key]), opts.map(([v, l]): [string, string] => [String(v), l]), (v) => setGfx({ [key]: Number(v) }));
+      return s;
+    };
+    row(t('set.gfx.shadows'), gfxCheck('gfxShadows'));
+    row(t('set.gfx.shadowMap'), gfxNum('gfxShadowMap', [[1024, '1024'], [2048, '2048'], [4096, '4096']]));
+    row(t('set.gfx.softShadows'), gfxCheck('gfxSoftShadows'));
+    row(t('set.gfx.pixelRatio'), gfxNum('gfxPixelRatio', [[0.75, '0.75×'], [1, '1×'], [1.5, '1.5×'], [2, '2×']]));
+    row(t('set.gfx.antialias'), gfxCheck('gfxAntialias'));
+    row(t('set.gfx.particles'), gfxNum('gfxParticles', [[0, '0 %'], [25, '25 %'], [50, '50 %'], [100, '100 %'], [125, '125 %']]));
+    row(t('set.gfx.terrain'), gfxCheck('gfxTerrainDetail'));
+    row(t('set.renderScale'), slider('renderScale', 50, 100, 5, (v) => `${v}%`));
+    row(t('set.fpsCap'), select<string>(String(settings.fpsCap), [['30', '30'], ['60', '60'], ['120', '120'], ['0', t('set.fpsCap.off')]], (v) => updateSettings({ fpsCap: Number(v) })));
+    row(t('set.showFps'), check('showFps'));
+    const detect = document.createElement('button');
+    detect.className = 'menu-btn';
+    detect.textContent = t('set.autoDetectBtn');
+    detect.addEventListener('click', () => {
+      updateSettings({ gfxAutoDetected: false });
+      render();
+    });
+    row(t('set.autoDetect'), detect);
+    if (!settings.gfxAutoDetected) {
+      const pending = document.createElement('p');
+      pending.className = 'settings-note';
+      pending.textContent = t('set.autoDetectPending');
+      root.appendChild(pending);
+    }
     const note = document.createElement('p');
     note.className = 'settings-note';
     note.textContent = t('set.graphicsNote');

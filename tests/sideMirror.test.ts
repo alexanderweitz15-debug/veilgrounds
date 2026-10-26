@@ -1,14 +1,15 @@
 // Side symmetry (docs/DECISIONS.md "Seiten-Fairness"): the map is point-mirrored for the structures and lanes, so a
-// game without champions must stay point-mirrored, (x, y) -> (16000 - x, 16000 - y), blue top lane <-> red bot lane.
+// game without champions must stay point-mirrored, (x, y) -> (size - x, size - y), blue top lane <-> red bot lane.
 // Each tick-order dependency (lower eids, i.e. blue spawns, acting first) used to break this within 90 s and pushed
 // blue's waves. Also: two identical champions trading autos die on the same tick.
 import { describe, expect, it } from 'vitest';
 import { query } from 'bitecs';
 import { createSim, step, type Sim } from '../src/sim/sim';
+import { MAP_SIZE } from '../src/sim/map';
 import { isMinion, isStructure } from '../src/sim/types';
 import { CX, CY, NO_RUNES, makeSim, place } from './combat-helpers';
 
-const S = 16000;
+const S = MAP_SIZE;
 
 /** Blue units without a point-mirrored red twin (same kind, position within 0.5, HP within 0.5). */
 function unmatched(sim: Sim): string[] {

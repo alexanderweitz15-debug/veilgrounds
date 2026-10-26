@@ -6,10 +6,11 @@ import { CHASE_LEASH, minionsSystem, noteAggression, recordCombat, spawnMinion }
 import { structureAt } from '../src/sim/systems/towers';
 import { kill } from '../src/sim/damage';
 import { computeVision } from '../src/sim/vision';
+import { MAP_SIZE } from '../src/sim/map';
 import type { Sim } from '../src/sim/sim';
 
-// Mid lane around (8000, 8000) is ~2260 away from both outer mid towers.
-const X = 8000;
+// Map centre on the mid diagonal: far from both outer mid towers (~1800 at map size 14900).
+const X = MAP_SIZE / 2;
 
 function run(sim: Sim): void {
   computeVision(sim);
@@ -22,7 +23,7 @@ describe('minion aggro', () => {
     const m = spawnMinion(sim, Kind.MinionMelee, 0, Lane.Mid, X, X);
     run(sim);
     expect(sim.c.Move.mode[m]).toBe(1);
-    expect(sim.paths.get(m)!.at(-1)).toEqual({ x: 14200, y: 14200 });
+    expect(sim.paths.get(m)!.at(-1)).toEqual(sim.map.sides[0].lanes.mid.at(-1));
     const before = sim.c.Pos.x[m]!;
     for (let i = 0; i < 30; i++) stepA(sim);
     expect(sim.c.Pos.x[m]!).toBeGreaterThan(before + 150);
@@ -170,12 +171,14 @@ describe('minion aggro', () => {
 
   it('attacks enemy structures when no units are around, never protected ones', () => {
     const sim = newSim(false);
-    const tower = structureAt(sim, 1, Kind.Tower, Lane.Mid, 0)!; // (9350, 9350)
-    const m = spawnMinion(sim, Kind.MinionCaster, 0, Lane.Mid, 9250, 9250);
+    const tower = structureAt(sim, 1, Kind.Tower, Lane.Mid, 0)!;
+    const tp = sim.c.Pos.x[tower.eid]!; // on the mid diagonal
+    const m = spawnMinion(sim, Kind.MinionCaster, 0, Lane.Mid, tp - 100, tp - 100);
     run(sim);
     expect(sim.c.Atk.target[m]).toBe(tower.eid);
-    const inner = structureAt(sim, 1, Kind.Tower, Lane.Mid, 1)!; // (10625, 10625), protected
-    const m2 = spawnMinion(sim, Kind.MinionCaster, 0, Lane.Mid, 10700, 10700);
+    const inner = structureAt(sim, 1, Kind.Tower, Lane.Mid, 1)!; // protected
+    const ip = sim.c.Pos.x[inner.eid]!;
+    const m2 = spawnMinion(sim, Kind.MinionCaster, 0, Lane.Mid, ip + 75, ip + 75);
     run(sim);
     expect(sim.c.Atk.target[m2]).not.toBe(inner.eid);
   });

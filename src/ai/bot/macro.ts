@@ -19,6 +19,7 @@ import treeData from '../../data/bots/tree.json';
 import { utilityOn } from '../utility/flag';
 import { recallMinionClear } from '../utility/world';
 import wardSpotsJson from '../../data/bots/wardSpots.json';
+import { scalePt } from '../../sim/map';
 
 const RECALL = treeData.params.recall;
 const WARD_EVERY = treeData.params.wardEveryS as Record<'support' | 'jungle' | 'laner', number>;
@@ -364,7 +365,8 @@ interface WardSpot extends Pt {
   roles: string[];
   obj?: string;
 }
-const SPOTS = (wardSpotsJson.spots as (Pt & { kind: WardSpot['kind']; roles: string[]; obj?: string })[]);
+// data/bots/wardSpots.json is authored in the map.json design space (16000): scaled once like the map itself
+const SPOTS = (wardSpotsJson.spots as (Pt & { kind: WardSpot['kind']; roles: string[]; obj?: string })[]).map((q) => scalePt(q));
 
 /**
  * Ward spots of the bot's team frame plus the map bushes (any role). Red reflects the data spots across the river

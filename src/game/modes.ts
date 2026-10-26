@@ -1,6 +1,7 @@
 // Game mode presets for the Phase 1 menu.
 import type { RuneChoice } from '../sim/items/runes';
 import { Lane, type PlayerSetup, type SimConfig, type TrainerOpts } from '../sim/types';
+import { scalePt } from '../sim/map';
 import { CHAMPION_DATA } from '../sim/champions';
 import { BUILDS } from '../ai/bot/builds';
 import type { Rank } from '../ai/profiles/schema';
@@ -10,10 +11,10 @@ import { scenarioConfig } from './scenarioConfig';
 export const MIRA_ID = 'mira';
 
 /**
- * Beside the blue fountain (r=650 at 900,900): >= 1100 from every blue lane path (minions acquire at 500 + spread, so
+ * Beside the blue fountain (design-space r=650 at 900,900; scaled by the map scale): >= 1100 from every blue lane path (minions acquire at 500 + spread, so
  * the own waves no longer stop to hit it at the base) and ~1500 from the nearest blue tower (nexus towers included).
  */
-export const SANDBOX_DUMMY = { x: 1700, y: 600 } as const;
+export const SANDBOX_DUMMY = scalePt({ x: 1700, y: 600 });
 
 export type ModeId = 'lane' | 'sandbox' | 'mock';
 

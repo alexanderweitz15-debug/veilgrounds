@@ -2,6 +2,7 @@
 // fog-of-war shader patch.
 import * as THREE from 'three';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { MAP_SIZE } from './coords';
 
 /** Fog texture (alpha = fogged), shared by every fog-patched material. Set by FogOfWar. */
 export const fogUniform: { value: THREE.Texture | null } = { value: null };
@@ -44,7 +45,7 @@ const FOW_VERT = `#include <project_vertex>
           fogWp = instanceMatrix * fogWp;
         #endif
         fogWp = modelMatrix * fogWp;
-        vFogUv = vec2(fogWp.x / 16000.0, -fogWp.z / 16000.0);`;
+        vFogUv = vec2(fogWp.x / ${MAP_SIZE.toFixed(1)}, -fogWp.z / ${MAP_SIZE.toFixed(1)});`;
 
 function patchFog(sh: THREE.WebGLProgramParametersWithUniforms): void {
   sh.uniforms.fogTex = fogUniform;

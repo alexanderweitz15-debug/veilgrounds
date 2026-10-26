@@ -1,7 +1,7 @@
 // Shared helpers of the Phase 5 trainers (src/sim/trainer/*). Deterministic: integer ticks, + - * / sqrt, sim.rng.
 
 import type { Sim } from '../sim';
-import { nearestWalkable } from '../map';
+import { nearestWalkable, scalePt } from '../map';
 import { canLevelSlot, levelAbility } from '../systems/abilities';
 import type { DodgeReport } from './dodgeMetrics';
 import { CUM_XP, grantXp, MAX_LEVEL } from '../systems/economy';
@@ -36,7 +36,7 @@ export interface TrainerHud {
 }
 
 /** Open, walkable area far from towers and camps (blue top corner) used by the dodge and kiting trainers. */
-export const ARENA = { x: 2000, y: 14000 } as const;
+export const ARENA = scalePt({ x: 2000, y: 14000 });
 
 /** Champion eid of the human player (first human slot), -1 if none. */
 export function humanEid(sim: Sim): number {

@@ -9,7 +9,7 @@ const u8 = (): Uint8Array => new Uint8Array(MAX_ENT);
 
 export function createComponents() {
   return {
-    /** Position in map units. Map is 16000 x 16000, origin bottom-left (Lichtwerk), y up. */
+    /** Position in map units. Map is `map.size` square (14900, src/data/map.json), origin bottom-left (Lichtwerk), y up. */
     Pos: { x: f64(), y: f64(), px: f64(), py: f64() /* previous tick, for render interpolation */ },
     /** Facing as unit vector (used for cast prediction by bots and sprite direction). */
     Face: { x: f64(), y: f64() },

@@ -8,10 +8,10 @@ import { kill } from '../src/sim/damage';
 import { step } from '../src/sim/sim';
 import { Kind, type SimEvent } from '../src/sim/types';
 import { LEVIATHAN_MAX_STACKS } from '../src/sim/systems/jungle';
-import raw from '../src/data/map.json';
+import { MAP_OBJECTIVES } from '../src/sim/map';
 import { makeSim, NO_RUNES } from './combat-helpers';
 
-const OBJ = raw.neutral.objectives;
+const OBJ = MAP_OBJECTIVES;
 
 function row(slot: number, team: number, champ: string, dead = false, level = 6): ScoreRow {
   return { slot, team, champ, level, kills: 0, deaths: 0, assists: 0, cs: 0, dead, itemValue: 0 };

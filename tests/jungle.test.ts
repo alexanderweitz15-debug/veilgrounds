@@ -8,7 +8,7 @@ import { CAMPS, CLOSED, KESSELBRUT_MAX_STACKS, MONSTER_AD_PER_LEVEL, MONSTER_HP_
 import { SPRUNG_DIST, leapLanding, plantState, type Plant } from '../src/sim/systems/plants';
 import { inventory } from '../src/sim/items/inventory';
 import { buildSnapshot } from '../src/sim/snapshot';
-import { lineWalkable, walkable } from '../src/sim/map';
+import { MAP_SIZE, lineWalkable, walkable } from '../src/sim/map';
 import { cosDeg, sinRad } from '../src/sim/vec';
 import { dealDamage, kill } from '../src/sim/damage';
 import { hasBuff } from '../src/sim/buffs';
@@ -261,7 +261,7 @@ describe('monster scaling and objectives', () => {
 
 describe('jungle plants', () => {
   const plants = (sim: Sim, type: string, side = 0): Plant[] =>
-    plantState(sim).plants.filter((p) => p.type === type && (side === 0 ? p.x + p.y < 16000 : p.x + p.y > 16000));
+    plantState(sim).plants.filter((p) => p.type === type && (side === 0 ? p.x + p.y < MAP_SIZE : p.x + p.y > MAP_SIZE));
   const popWith = (sim: Sim, me: number, p: Plant, fromX: number, fromY: number): void => {
     place(sim, me, fromX, fromY);
     steps(sim, 1);
@@ -316,8 +316,8 @@ describe('jungle plants', () => {
     const sim = makeSim();
     const nav = sim.map.nav;
     let spot: [number, number] | null = null;
-    for (let y = 2000; y < 14000 && !spot; y += 100) {
-      for (let x = 2000; x < 14000 && !spot; x += 100) {
+    for (let y = 2000; y < MAP_SIZE - 2000 && !spot; y += 100) {
+      for (let x = 2000; x < MAP_SIZE - 2000 && !spot; x += 100) {
         if (walkable(nav, x, y) && !walkable(nav, x + 400, y) && walkable(nav, x + 650, y) && walkable(nav, x + 100, y)) spot = [x, y];
       }
     }

@@ -2,6 +2,7 @@
 // jungler gank score (spec test 3), roam prerequisite (spec test 4).
 import { describe, expect, it } from 'vitest';
 import { Kind, type SimEvent } from '../src/sim/types';
+import { loadMap } from '../src/sim/map';
 import type { Rank } from '../src/ai/profiles/schema';
 import { escape } from '../src/ai/ganks/escape';
 import { laningSafety } from '../src/ai/ganks/risk';
@@ -34,8 +35,9 @@ describe('§4.1 laning safety tiers', () => {
 
 describe('spec test 2: escape Flash timing', () => {
   // blue top (Brom) 900 in front of its outer tower, 45 % HP, Flash up; enemy jungler (Grimald) + top (Isolde) on it
-  // own top outer tower stands at (1300, 11300): 900 behind the bot
-  const ME = { x: 1250, y: 12200 };
+  // own top outer tower (1300, 11300 in the 16000 design space, scaled with the map): 900 behind the bot
+  const OT = loadMap().sides[0].towers.top[0]!;
+  const ME = { x: OT.x - 50, y: OT.y + 900 };
   const ents = () => {
     const maxHp = champEnt(0, 0, 0).maxHp;
     return [champEnt(0, ME.x, ME.y, { hp: maxHp * 0.45 }), champEnt(6, ME.x + 450, ME.y + 350), champEnt(5, ME.x + 50, ME.y + 650)];

@@ -11,7 +11,7 @@ import { champions, grantGold } from '../systems/economy';
 import { buyItem } from '../items/inventory';
 import { refreshCooldowns } from '../systems/abilities';
 import { autoLevel, humanEid, place, raiseLevel, runSeconds, type TrainerHud } from './common';
-import { nearestWalkable } from '../map';
+import { MAP_SIZE, nearestWalkable } from '../map';
 import { reveal } from '../buffs';
 
 export interface ArenaState {
@@ -31,7 +31,7 @@ export interface ArenaState {
   maxRounds: number;
 }
 
-export const ARENA_CENTRE = { x: 8000, y: 8000 } as const;
+export const ARENA_CENTRE = { x: MAP_SIZE / 2, y: MAP_SIZE / 2 } as const;
 /** Arena boundary: champions are held inside this circle (like a wall), so nobody walks back to a tower. */
 export const ARENA_R = 700;
 const PAUSE = sec(3);

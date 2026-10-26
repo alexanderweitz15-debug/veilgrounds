@@ -33,30 +33,50 @@ export interface MapData {
   nav: NavGrid;
 }
 
-const S = raw.size;
+/**
+ * Map scale: map.json is authored in a 16000 design space (`designSize`); `size` is the playable edge. Every
+ * coordinate and length in map.json (wall vertices, bush / fountain radii, lanes, towers, camps, objectives, ward
+ * spots) is multiplied by K and rounded to whole units BEFORE the quarter swap and the point mirror, so S - x stays
+ * exact. Lengths in code (unit radii, ranges, speeds, clearances, scenario distances) do not scale. `size` must be a
+ * multiple of CELL (the nav grid needs an integer cell count).
+ */
+export const MAP_SIZE: number = raw.size;
+export const MAP_SCALE: number = raw.size / raw.designSize;
+const S = MAP_SIZE;
+const k = (v: number): number => Math.round(v * MAP_SCALE);
+/** Scale an authored point (design space) into map space. */
+export const scalePt = <T extends { x: number; y: number }>(p: T): T => ({ ...p, x: k(p.x), y: k(p.y) });
 const mirror = (p: Pt): Pt => ({ x: S - p.x, y: S - p.y });
 const swap = (p: Pt): Pt => ({ x: p.y, y: p.x });
-const pt = (a: number[] | Pt): Pt => (Array.isArray(a) ? { x: a[0]!, y: a[1]! } : { x: a.x, y: a.y });
+const pt = (a: number[] | Pt): Pt => (Array.isArray(a) ? { x: k(a[0]!), y: k(a[1]!) } : { x: k(a.x), y: k(a.y) });
+const circ = (c: Circle): Circle => ({ x: k(c.x), y: k(c.y), r: k(c.r) });
+
+/** Scaled neutral objective positions (map space), without building the nav grid. */
+export const MAP_OBJECTIVES = {
+  leviathan: pt(raw.neutral.objectives.leviathan),
+  kesselbrut: pt(raw.neutral.objectives.kesselbrut),
+  schleierwaechter: pt(raw.neutral.objectives.schleierwaechter),
+  nebelschleicher: raw.neutral.objectives.nebelschleicher.map(pt),
+};
 
 function buildSide(m: (p: Pt) => Pt): SideData {
   const b = raw.blue;
-  const lane = (k: LaneName): Pt[] => b.lanes[k].map((p) => m(pt(p)));
+  const lane = (kk: LaneName): Pt[] => b.lanes[kk].map((p) => m(pt(p)));
+  const tw = (kk: LaneName): Pt[] => b.towers[kk].map((p) => m(pt(p)));
+  const fountain = circ(b.fountain);
   return {
-    fountain: { ...m(b.fountain), r: b.fountain.r },
-    nexus: m(b.nexus),
-    nexusTowers: b.nexusTowers.map((p) => m(p)),
+    fountain: { ...m(fountain), r: fountain.r },
+    nexus: m(pt(b.nexus)),
+    nexusTowers: b.nexusTowers.map((p) => m(pt(p))),
     // Point mirroring maps blue top onto red bot; lane identity follows the physical lane, so swap names.
     lanes: m === mirror ? { top: lane('bot'), mid: lane('mid'), bot: lane('top') } : { top: lane('top'), mid: lane('mid'), bot: lane('bot') },
-    towers:
-      m === mirror
-        ? { top: b.towers.bot.map((p) => m(p)), mid: b.towers.mid.map((p) => m(p)), bot: b.towers.top.map((p) => m(p)) }
-        : { top: b.towers.top.map((p) => m(p)), mid: b.towers.mid.map((p) => m(p)), bot: b.towers.bot.map((p) => m(p)) },
+    towers: m === mirror ? { top: tw('bot'), mid: tw('mid'), bot: tw('top') } : { top: tw('top'), mid: tw('mid'), bot: tw('bot') },
     inhibitors:
       m === mirror
-        ? { top: m(b.inhibitors.bot), mid: m(b.inhibitors.mid), bot: m(b.inhibitors.top) }
-        : { top: m(b.inhibitors.top), mid: m(b.inhibitors.mid), bot: m(b.inhibitors.bot) },
-    camps: b.camps.map((c) => ({ ...c, ...m(c) })),
-    plants: b.plants.map((c) => ({ ...c, ...m(c) })),
+        ? { top: m(pt(b.inhibitors.bot)), mid: m(pt(b.inhibitors.mid)), bot: m(pt(b.inhibitors.top)) }
+        : { top: m(pt(b.inhibitors.top)), mid: m(pt(b.inhibitors.mid)), bot: m(pt(b.inhibitors.bot)) },
+    camps: b.camps.map((c) => ({ ...c, ...m(pt(c)) })),
+    plants: b.plants.map((c) => ({ ...c, ...m(pt(c)) })),
   };
 }
 
@@ -64,17 +84,16 @@ export function loadMap(): MapData {
   const id = (p: Pt): Pt => p;
   const quarterWalls = raw.quarter.walls.map((w) => w.map(pt));
   const blueWalls = [...quarterWalls, ...quarterWalls.map((w) => w.map(swap))];
-  const quarterBushes = raw.quarter.bushes.map((c) => ({ ...c }));
+  const quarterBushes = raw.quarter.bushes.map(circ);
   const blueBushes = [...quarterBushes, ...quarterBushes.map((c) => ({ ...swap(c), r: c.r }))];
   const walls = [...blueWalls, ...blueWalls.map((w) => w.map(mirror)), ...raw.neutral.walls.map((w) => w.map(pt))];
-  const bushes = [...blueBushes, ...blueBushes.map((c) => ({ ...mirror(c), r: c.r })), ...raw.neutral.bushes];
-  const o = raw.neutral.objectives;
+  const bushes = [...blueBushes, ...blueBushes.map((c) => ({ ...mirror(c), r: c.r })), ...raw.neutral.bushes.map(circ)];
   return {
     size: S,
     sides: [buildSide(id), buildSide(mirror)],
     walls,
     bushes,
-    objectives: { leviathan: o.leviathan, kesselbrut: o.kesselbrut, schleierwaechter: o.schleierwaechter, nebelschleicher: o.nebelschleicher },
+    objectives: { ...MAP_OBJECTIVES, nebelschleicher: MAP_OBJECTIVES.nebelschleicher.map((p) => ({ ...p })) },
     nav: buildNav(walls),
   };
 }

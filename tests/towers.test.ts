@@ -15,6 +15,7 @@ import {
 } from '../src/sim/systems/towers';
 import { noteAggression, spawnMinion } from '../src/sim/systems/minions';
 import { computeVision } from '../src/sim/vision';
+import { MAP_SIZE } from '../src/sim/map';
 import type { Sim } from '../src/sim/sim';
 
 /** Shots of `tower` until `m` dies. */
@@ -28,6 +29,8 @@ function shotsToKill(sim: Sim, tower: number, m: number): number {
   return n;
 }
 
+/** Mid point of the map (the mid lane runs along the diagonal through it). */
+const MID = MAP_SIZE / 2;
 const outer = (sim: Sim, team: number, lane: number): number => structureAt(sim, team, Kind.Tower, lane, 0)!.eid;
 
 describe('structures', () => {
@@ -49,16 +52,16 @@ describe('structures', () => {
     const sim = newSim(false);
     sim.tick = tick;
     const t = outer(sim, 0, Lane.Mid);
-    const melee = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Mid, 8000, 8000);
+    const melee = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Mid, MID, MID);
     // LoL: melee 3 shots (two shots leave 10 %: shot-shot-auto), caster 2 shots (auto-shot-auto)
     expect(shotsToKill(sim, t, melee)).toBe(3);
-    const siege = spawnMinion(sim, Kind.MinionSiege, 1, Lane.Mid, 8000, 8000);
+    const siege = spawnMinion(sim, Kind.MinionSiege, 1, Lane.Mid, MID, MID);
     const n = shotsToKill(sim, t, siege);
     expect(n).toBeGreaterThanOrEqual(6);
     expect(n).toBeLessThanOrEqual(7);
     // caster: one tower shot leaves 30 %; at 1:05 a level-1 ADC (60 AD) needs auto - shot - auto
-    const caster = spawnMinion(sim, Kind.MinionCaster, 1, Lane.Mid, 8000, 8000);
-    const adc = spawnChamp(sim, 0, 8000, 8000);
+    const caster = spawnMinion(sim, Kind.MinionCaster, 1, Lane.Mid, MID, MID);
+    const adc = spawnChamp(sim, 0, MID, MID);
     if (tick === 0) {
       dealDamage(sim, adc, caster, 60, 'phys', { isAuto: true });
       expect(sim.c.Unit.alive[caster]).toBe(1);
@@ -72,13 +75,13 @@ describe('structures', () => {
       dealDamage(sim, adc, caster, 60, 'phys', { isAuto: true });
       expect(sim.c.Unit.alive[caster]).toBe(0);
     }
-    const m2 = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Mid, 8000, 8000);
+    const m2 = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Mid, MID, MID);
     for (let i = 0; i < 2; i++) {
       const sh = towerShotDamage(sim, t, m2);
       dealDamage(sim, t, m2, sh.amount, sh.type, { raw: sh.raw });
     }
     expect(sim.c.Hp.cur[m2]).toBeCloseTo(sim.c.Hp.max[m2]! * 0.1);
-    const c2 = spawnMinion(sim, Kind.MinionCaster, 1, Lane.Mid, 8000, 8000);
+    const c2 = spawnMinion(sim, Kind.MinionCaster, 1, Lane.Mid, MID, MID);
     expect(shotsToKill(sim, t, c2)).toBe(2);
   });
 
@@ -211,10 +214,11 @@ describe('plates', () => {
 describe('tower targeting', () => {
   it('prefers minions, switches at once to a champion attacking an allied champion within 1400', () => {
     const sim = newSim(false);
-    const t = outer(sim, 0, Lane.Mid); // blue mid outer at (6650, 6650)
-    const minion = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Mid, 7150, 7150);
-    const enemy = spawnChamp(sim, 1, 7000, 7000);
-    const ally = spawnChamp(sim, 0, 6850, 6850);
+    const t = outer(sim, 0, Lane.Mid); // blue mid outer (offsets are along the mid diagonal, from the tower: map-scale independent)
+    const P = sim.c.Pos.x[t]!;
+    const minion = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Mid, P + 500, P + 500);
+    const enemy = spawnChamp(sim, 1, P + 350, P + 350);
+    const ally = spawnChamp(sim, 0, P + 200, P + 200);
     stepA(sim); // vision
     towersSystem.update(sim);
     expect(sim.c.Atk.target[t]).toBe(minion);
@@ -229,9 +233,10 @@ describe('tower targeting', () => {
   it('ignores champion fights further than 1400 away and shoots champions only without minions', () => {
     const sim = newSim(false);
     const t = outer(sim, 0, Lane.Mid);
-    const minion = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Mid, 7150, 7150);
-    const enemy = spawnChamp(sim, 1, 7000, 7000);
-    const ally = spawnChamp(sim, 0, 5250, 5250); // ~2000 from the tower
+    const P = sim.c.Pos.x[t]!;
+    const minion = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Mid, P + 500, P + 500);
+    const enemy = spawnChamp(sim, 1, P + 350, P + 350);
+    const ally = spawnChamp(sim, 0, P - 1400, P - 1400); // ~2000 from the tower
     stepA(sim);
     noteAggression(sim, enemy, ally);
     towersSystem.update(sim);

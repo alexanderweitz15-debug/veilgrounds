@@ -1,6 +1,7 @@
 {
   "name": "Der Schleierbruch",
-  "size": 16000,
+  "size": 14900,
+  "designSize": 16000,
   "note": "Blue (Lichtwerk) side only. 'quarter' entries describe blue's top-side quarter and are copied to blue's bot side by swapping x/y; everything blue is then point-mirrored (16000-x, 16000-y) for red (Aschehalle). 'neutral' entries are used as-is.",
   "blue": {
     "fountain": { "x": 900, "y": 900, "r": 650 },

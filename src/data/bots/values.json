@@ -168,6 +168,15 @@
     "tsukuyomiAllyRange": 1000
   },
 
+  "deception": {
+    "note": "Brain-deception (docs/agents/brain-deception.md): how easily a bot is fooled by what it sees, per rank (rank curves, percent / ms / s). decoy*: src/ai/humanize/deception.ts (Sev W clone, a Kind.Pet with the owner's look). fogFollow*: trade.ts, a low-HP all-in target slips out of sight.",
+    "decoyFooledPct": { "iron": 90, "bronze": 75, "silver": 60, "gold": 42, "platinum": 28, "emerald": 18, "diamond": 10, "master": 5, "grandmaster": 3, "challenger": 2 },
+    "decoySpotMs": { "iron": 3000, "bronze": 2500, "silver": 2000, "gold": 1200, "platinum": 800, "emerald": 500, "diamond": 300, "master": 200, "grandmaster": 150, "challenger": 100 },
+    "decoyLoseRealMs": { "iron": 2500, "bronze": 2000, "silver": 1500, "gold": 1000, "platinum": 600, "emerald": 400, "diamond": 250, "master": 150, "grandmaster": 100, "challenger": 50 },
+    "fogFollowS": { "iron": 0, "bronze": 0, "silver": 2.5, "challenger": 2.5 },
+    "fogFollowBushS": { "iron": 0, "silver": 0.5, "gold": 1, "diamond": 1.5, "challenger": 2 }
+  },
+
   "combat": {
     "focusHysteresis": 0.2,
     "commitLeaveWin": 0.25,

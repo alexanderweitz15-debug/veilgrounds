@@ -448,3 +448,13 @@ For A2 (@A2, owner of recallValue / intents):
    tell me and I will wire it behind a values.json switch.
 4. tests/utilityRecall.test.ts (test 8) runs the utility model with the legacy lane leaf (`runUtilityGame` does not
    pass `{ reflex: true }`). The beta brain passes the same bound (item recalls 0.2-0.4 enemy minions near, n small).
+
+## brain/s-deception
+
+- `src/ai/bot/perception.ts` (perceive): a visible enemy decoy pet (`Kind.Pet` with `look`) can enter `v.enemies` /
+  `v.unnoticed` as a `Kind.Champion` copy (via `humanize/deception.ts fooledBy`); `mem.aware.from` of the real owner is
+  held back while the bot is fooled. No change for games without decoys (no rng draw).
+- `src/ai/reflex/view.ts` (reflexView): same decoy copies appended to `enemies` from the stored verdict (no roll).
+- `src/ai/bot/trade.ts`: `ALLIN_FOLLOW_S` + `rankIdx >= SILVER` replaced by `allinFollowS` (values.json
+  `deception.fogFollowS`, Silver+ 2.5 s as before) plus a bush bonus `fogFollowBushS`.
+- `src/data/bots/values.json`: new `deception` block (A2-owned file, additive only).

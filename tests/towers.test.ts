@@ -246,4 +246,25 @@ describe('tower targeting', () => {
     towersSystem.update(sim);
     expect(sim.c.Atk.target[t]).toBe(enemy);
   });
+
+  it('drops the target when it leaves range; warming resets on a new target', () => {
+    const sim = newSim(false);
+    const t = outer(sim, 0, Lane.Mid);
+    const enemy = spawnChamp(sim, 1, 7000, 7000);
+    stepA(sim);
+    towersSystem.update(sim);
+    expect(sim.c.Atk.target[t]).toBe(enemy);
+    towerShotDamage(sim, t, enemy);
+    towerShotDamage(sim, t, enemy);
+    expect(sim.c.Tower.shotsOnSame[t]).toBe(2);
+    sim.c.Pos.x[enemy] = 9000; // far out of range
+    sim.c.Pos.y[enemy] = 9000;
+    towersSystem.update(sim);
+    expect(sim.c.Atk.target[t]).toBe(-1);
+    sim.c.Pos.x[enemy] = 7000;
+    sim.c.Pos.y[enemy] = 7000;
+    towersSystem.update(sim);
+    expect(sim.c.Atk.target[t]).toBe(enemy);
+    expect(sim.c.Tower.shotsOnSame[t]).toBe(0); // stacks gone after the retarget
+  });
 });

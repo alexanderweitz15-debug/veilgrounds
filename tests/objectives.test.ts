@@ -182,11 +182,11 @@ describe('objectives', () => {
   it('reads Snapshot.objectives (soul at the maximum, inhibitors sorted); zeros without it', () => {
     const tr = new ObjectiveTracker();
     tr.ingest(snap(10, [], ROWS()));
-    expect(tr.team(1)).toEqual({ leviathan: 0, soul: false, kesselbrut: 0, schleierLeft: 0, inhibRespawn: [] });
+    expect(tr.team(1)).toEqual({ leviathan: 0, soul: false, kesselbrut: 0, schleierLeft: 0, inhibRespawn: [], drakes: [], soulElem: -1, elderLeft: 0 });
     const objectives = { leviathan: [LEVIATHAN_MAX_STACKS, 1] as [number, number], kesselbrut: [3, 2] as [number, number], schleierLeft: [0, 95] as [number, number], inhibs: [{ team: 1, lane: 2 as const, left: 80 }, { team: 1, lane: 0 as const, left: 20 }] };
     tr.ingest({ ...snap(11, [], ROWS()), objectives });
     expect(tr.team(0)).toMatchObject({ leviathan: LEVIATHAN_MAX_STACKS, soul: true, kesselbrut: 3, inhibRespawn: [] });
-    expect(tr.team(1)).toEqual({ leviathan: 1, soul: false, kesselbrut: 2, schleierLeft: 95, inhibRespawn: [20, 80] });
+    expect(tr.team(1)).toEqual({ leviathan: 1, soul: false, kesselbrut: 2, schleierLeft: 95, inhibRespawn: [20, 80], drakes: [], soulElem: -1, elderLeft: 0 });
   });
 
   it('epic timers ignore non-epic monsters (no epic flag) near the pits', () => {

@@ -1076,5 +1076,13 @@
   "tutorial.step.tower.tip": "Bleibe nah bei deinen Dienern und greife den Turm an, wenn sie ihn beschäftigen.",
   "tutorial.step.summoners.title": "Beschwörerzauber",
   "tutorial.step.summoners.text": "Benutze einen Beschwörerzauber mit {d} oder {f}. Sie haben eine lange Abklingzeit.",
-  "tutorial.step.summoners.tip": "Die beiden Zauber stehen rechts neben den Fähigkeiten. Fahre mit der Maus darüber für Details."
+  "tutorial.step.summoners.tip": "Die beiden Zauber stehen rechts neben den Fähigkeiten. Fahre mit der Maus darüber für Details.",
+  "buff.uralt": "Uralt-Leviathan",
+  "buff.uralt.desc": "Treffer von Champions auf Gegner unter 20 % Leben richten diese hin",
+  "drake.glut": "Glut-Leviathan",
+  "drake.flut": "Flut-Leviathan",
+  "drake.fels": "Fels-Leviathan",
+  "drake.wind": "Wind-Leviathan",
+  "drake.arkan": "Arkan-Leviathan",
+  "drake.elder": "Uralt-Leviathan"
 }

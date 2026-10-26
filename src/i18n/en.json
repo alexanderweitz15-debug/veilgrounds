@@ -1076,5 +1076,13 @@
   "tutorial.step.tower.tip": "Stay close to your minions and attack the tower while they keep it busy.",
   "tutorial.step.summoners.title": "Summoner spells",
   "tutorial.step.summoners.text": "Use a summoner spell with {d} or {f}. They have a long cooldown.",
-  "tutorial.step.summoners.tip": "The two spells sit to the right of your abilities. Hover them for details."
+  "tutorial.step.summoners.tip": "The two spells sit to the right of your abilities. Hover them for details.",
+  "buff.uralt": "Ancient Leviathan",
+  "buff.uralt.desc": "Champion hits on enemies below 20 % health execute them",
+  "drake.glut": "Ember Leviathan",
+  "drake.flut": "Tide Leviathan",
+  "drake.fels": "Stone Leviathan",
+  "drake.wind": "Gale Leviathan",
+  "drake.arkan": "Arcane Leviathan",
+  "drake.elder": "Ancient Leviathan"
 }

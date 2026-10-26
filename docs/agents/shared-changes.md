@@ -617,3 +617,13 @@ Additive edits to shared files (all small):
 ## swarm/mech-minions
 
 - src/sim/systems/movement.ts: +1 import (`minionSpeed` from minions.ts) and one line in the step loop: `step *= minionSpeed(sim)[eid]` for minions in lane-walk mode (catch-up speed). Other units unaffected.
+
+## elemental-drakes (swarm/elemental-drakes)
+
+- `src/sim/snapshot.ts`: additive `SnapObjectives.drake?` (SnapDrake: kills, soul, soulType, cur, next, elder, elderLeft; absent until the first Leviathan spawned) and `SnapEntity.elem?` (element of the Leviathan monster).
+- `src/sim/items/inventory.ts`: `LEVIATHAN_PCT` (flat +6 % AD/AP per stack) removed; `bonusStats` now adds `drakeBonus` (per-element kill bonus + soul, src/data/drakes.json). Balance change: stacks no longer give a flat AD/AP bonus for every element.
+- `src/sim/damage.ts`: execute hook for mark `uralt` (enemy champions below `executePct`).
+- `src/sim/systems/jungle.ts`: `JungleState.drake`, element chosen at Leviathan spawn (uses sim.rng), elder stats/respawn 360 s once a soul is claimed.
+- `src/game/objectives.ts`: `TeamObjectives` + `drakes`, `soulElem`, `elderLeft`; elder respawn in `epicTimers`.
+- `src/i18n/{de,en}.json`: `buff.uralt(.desc)`, `drake.{glut,flut,fels,wind,arkan,elder}` appended.
+- `tests/objectives.test.ts`: two `toEqual` on `team()` got the three new fields.

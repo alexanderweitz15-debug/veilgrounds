@@ -22,6 +22,7 @@ import { addBuff, hasBuff } from '../buffs';
 import { heal } from '../damage';
 import { moveTo } from './input';
 import { champions, grantXp, reward } from './economy';
+import { ELDER, ELDER_ELEM, newDrakeState, noteKill, spawnElement, type DrakeState } from '../drakes';
 
 export interface MonsterDef {
   /** Sprite / name (Unit.variant). */
@@ -150,8 +151,10 @@ export interface Camp {
 
 interface JungleState {
   camps: Camp[];
-  /** Flussleviathan stacks per team. */
+  /** Flussleviathan stacks per team (= kills of that team, see `drake`). */
   leviathan: [number, number];
+  /** Elemental Leviathan rotation, kills per element, souls (src/sim/drakes.ts). */
+  drake: DrakeState;
   /** Kesselbrut stacks per team. */
   kesselbrut: [number, number];
   /** River-vision wards: eid, serial, expiry tick. */
@@ -170,7 +173,7 @@ export function jungleState(sim: Sim): JungleState {
     add('leviathan', 2, sim.map.objectives.leviathan.x, sim.map.objectives.leviathan.y);
     add('kesselbrut', 2, sim.map.objectives.kesselbrut.x, sim.map.objectives.kesselbrut.y);
     add('schleierwaechter', 2, sim.map.objectives.schleierwaechter.x, sim.map.objectives.schleierwaechter.y);
-    s = { camps, leviathan: [0, 0], kesselbrut: [0, 0], wards: [] };
+    s = { camps, leviathan: [0, 0], drake: newDrakeState(), kesselbrut: [0, 0], wards: [] };
     sim.state.jungle = s;
   }
   return s;
@@ -183,6 +186,9 @@ export function isEpicMonster(sim: Sim, eid: number): boolean {
   const serial = sim.c.Unit.serial[eid];
   return s.camps.some((c) => CAMPS[c.id].epic && c.members.some((m) => m.eid === eid && m.serial === serial));
 }
+
+/** Elemental Leviathan state (read-only; undefined before the jungle system initialised). */
+export const drakeState = (sim: Sim): DrakeState | undefined => (sim.state.jungle as JungleState | undefined)?.drake;
 
 export const leviathanStacks = (sim: Sim, team: number): number =>
   team === 0 || team === 1 ? ((sim.state.jungle as JungleState | undefined)?.leviathan[team] ?? 0) : 0;
@@ -218,7 +224,14 @@ function spawnCamp(sim: Sim, camp: Camp): void {
   const def = CAMPS[camp.id];
   const { Unit, Hp, Stats, Vision } = sim.c;
   camp.members = [];
-  for (const md of def.monsters) {
+  for (const md0 of def.monsters) {
+    let md = md0;
+    if (camp.id === 'leviathan') {
+      // element of this spawn (announced after the previous kill); the elder replaces the stats
+      const d = jungleState(sim).drake;
+      d.cur = spawnElement(sim.rng, d);
+      if (d.cur === ELDER_ELEM) md = { ...md0, hp: ELDER.hp, ad: ELDER.ad, radius: ELDER.radius, gold: ELDER.gold, xp: ELDER.xp, range: 125 + ELDER.radius / 2 };
+    }
     const [kh, ka] = monsterScale(sim, def, md);
     const p = nearestWalkable(sim.map.nav, camp.x + md.dx, camp.y + md.dy);
     const eid = spawnUnit(sim, Kind.Monster, Team.Neutral, p.x, p.y, md.radius);
@@ -397,9 +410,16 @@ export function onMonsterDeath(sim: Sim, victim: number, killer: number): void {
     const def = CAMPS[c.id];
     if (def.buff && idx === 0) addBuff(sim, champ, { kind: 'mark', id: def.buff, src: champ, ticks: BUFF_TICKS });
     if (c.id === 'nebelschleicher') riverVision(sim, team, Pos.x[victim]!, Pos.y[victim]!);
-    if (c.id === 'leviathan') {
+    if (c.id === 'leviathan' && (team === 0 || team === 1)) {
       const s = jungleState(sim);
-      s.leviathan[team as 0 | 1] = Math.min(LEVIATHAN_MAX_STACKS, s.leviathan[team as 0 | 1] + 1);
+      const elder = s.drake.cur === ELDER_ELEM;
+      noteKill(sim.rng, s.drake, team);
+      s.leviathan[team] = Math.min(LEVIATHAN_MAX_STACKS, s.drake.kills[team].length);
+      // Uralt-Leviathan: the killing team's living champions get the execute buff (damage.ts)
+      if (elder)
+        for (const p of champions(sim)) {
+          if (Unit.team[p] === team && Unit.alive[p]) addBuff(sim, p, { kind: 'mark', id: 'uralt', src: p, ticks: sec(ELDER.buffS) });
+        }
     }
     if (c.id === 'kesselbrut' && (team === 0 || team === 1)) {
       const s = jungleState(sim);
@@ -419,7 +439,7 @@ export function onMonsterDeath(sim: Sim, victim: number, killer: number): void {
   // last one down: start the respawn timer (victim is still "alive" until kill() despawns it)
   if (alive(sim, c).every((x) => x.eid === victim)) {
     const def = CAMPS[c.id];
-    c.spawnAt = sim.tick + sec(def.respawn);
+    c.spawnAt = sim.tick + sec(c.id === 'leviathan' && jungleState(sim).drake.elder ? ELDER.respawnS : def.respawn);
     if (def.lastSpawn !== undefined && c.spawnAt > sec(def.lastSpawn)) c.spawnAt = CLOSED;
     c.target = -1;
   }

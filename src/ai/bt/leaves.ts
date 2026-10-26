@@ -11,7 +11,7 @@ import type { NodeCtx, NodeDef, NodeResult, Registry } from './types';
 import { perceive as perceiveL } from '../perception';
 import { attachTracks } from './deps';
 import * as brain from '../bot/brain';
-import { diveDefence, disengage, tradeRun, tradeStart, tradeWindowScore } from '../bot/trade';
+import { attackedByChampion, diveDefence, disengage, pokeReact, tradeRun, tradeStart, tradeWindowScore } from '../bot/trade';
 import { holdTrades, followUp, pingRetreat, pingsIn, socialTick } from '../bot/social';
 import { joinFight, teamfight, teamfightNear } from '../bot/teamfight';
 import { hasObjectiveDesire, idleAfterShove, objective, recall, recallScore, splitPush, vision } from '../bot/macro';
@@ -51,6 +51,7 @@ export const registry = (): Registry => ({
     retreat: brain.retreat,
     dodge: brain.dodge,
     peel: brain.peel,
+    pokeReact,
     tradeRun,
     disengage,
     tradeStart,
@@ -73,6 +74,7 @@ export const registry = (): Registry => ({
   },
   conditions: {
     teamfightNear,
+    attackedByChampion,
     hasObjectiveDesire,
     recallScore,
   },

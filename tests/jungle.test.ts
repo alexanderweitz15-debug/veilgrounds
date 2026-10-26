@@ -272,7 +272,7 @@ describe('jungle plants', () => {
   it('grow at 1:30 as 1-HP neutral units only champions can pop; regrow after 5:00', () => {
     const sim = atSpawn();
     const all = plantState(sim).plants;
-    expect(all.length).toBe(12);
+    expect(all.length).toBe(18);
     for (const p of all) {
       expect(p.spawnAt).toBe(-1);
       expect(sim.c.Unit.kind[p.eid]).toBe(Kind.Plant);
@@ -327,14 +327,35 @@ describe('jungle plants', () => {
     expect(walkable(nav, land.x, land.y)).toBe(true);
   });
 
-  it('Honigfrucht heals and slows champions next to it', () => {
+  it('Honigfrucht drops pieces; walking over one heals, slows and removes it', () => {
     const sim = atSpawn();
     const me = mira(sim);
     const p = plants(sim, 'honigfrucht')[0]!;
     sim.c.Hp.cur[me] = 200;
     popWith(sim, me, p, p.x + 250, p.y);
-    expect(sim.c.Hp.cur[me]).toBeGreaterThan(200 + 60);
-    expect(hasBuff(sim, me, 'slow', 'honigfrucht')).toBe(true);
+    const pieces = plantState(sim).pieces;
+    expect(pieces.length).toBe(5);
+    const piece = pieces[0]!;
+    place(sim, me, sim.c.Pos.x[piece.eid]!, sim.c.Pos.y[piece.eid]!);
+    steps(sim, sec(1));
+    expect(sim.c.Hp.cur[me]).toBeGreaterThan(200 + 10);
+    expect(hasBuff(sim, me, 'slow', 'honigstueck')).toBe(true);
+    expect(plantState(sim).pieces.length).toBe(4);
+    steps(sim, sec(31));
+    expect(plantState(sim).pieces.length).toBe(0);
+  });
+
+  it('Mana-, Wind- and Schildfrucht give mana, speed and a shield', () => {
+    for (const type of ['manafrucht', 'windfrucht', 'schildfrucht']) {
+      const sim = atSpawn();
+      const me = mira(sim);
+      const p = plants(sim, type)[0]!;
+      sim.c.Mana.cur[me] = 0;
+      popWith(sim, me, p, p.x + 250, p.y);
+      if (type === 'manafrucht') expect(sim.c.Mana.cur[me]).toBeGreaterThan(50);
+      if (type === 'windfrucht') expect(hasBuff(sim, me, 'stat', 'windfrucht')).toBe(true);
+      if (type === 'schildfrucht') expect(hasBuff(sim, me, 'shield', 'schildfrucht')).toBe(true);
+    }
   });
 
   it('Spähfrucht reveals a cone away from the attacker for the popping team', () => {

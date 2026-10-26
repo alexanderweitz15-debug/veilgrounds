@@ -50,7 +50,13 @@
       { "type": "spaehfrucht", "x": 3500, "y": 10300 },
       { "type": "sprungfrucht", "x": 6650, "y": 3150 },
       { "type": "honigfrucht", "x": 8350, "y": 4400 },
-      { "type": "spaehfrucht", "x": 10300, "y": 3500 }
+      { "type": "spaehfrucht", "x": 10300, "y": 3500 },
+      { "type": "manafrucht", "x": 3800, "y": 11300 },
+      { "type": "windfrucht", "x": 5300, "y": 7200 },
+      { "type": "schildfrucht", "x": 5800, "y": 8800 },
+      { "type": "manafrucht", "x": 11300, "y": 3800 },
+      { "type": "windfrucht", "x": 7200, "y": 5300 },
+      { "type": "schildfrucht", "x": 8800, "y": 5800 }
     ]
   },
   "quarter": {

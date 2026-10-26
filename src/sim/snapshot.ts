@@ -24,6 +24,7 @@ import { seenItems } from './seenItems';
 import { sandboxFlags } from './trainer/sandbox';
 import { isEpicMonster, kesselbrutStacks, leviathanStacks } from './systems/jungle';
 import { inhibitorTimers } from './systems/towers';
+import { plantGrowth } from './systems/plants';
 
 export interface SnapEntity {
   id: number;
@@ -99,6 +100,8 @@ export interface SnapEntity {
   exposed?: true;
   /** Monster / plant type (types.ts VARIANTS): sprite and name. */
   variant?: Variant;
+  /** Plants and honey pieces only, while sprouting: growth progress 0..1 (absent once full-grown). */
+  grow?: number;
   /** Marks / stack counters on this unit (hook marks + 'mark' buffs): pips above the health bar. */
   marks?: SnapMark[];
   /** Next auto is empowered (armNextAuto or a hook state): weapon glow. */
@@ -350,6 +353,11 @@ function motionFields(sim: Sim, e: number, alive: boolean): { dash?: number; air
 }
 
 /** Reveal state of a visible unit: enemy under this team's reveal, or own unit revealed to the enemy. */
+const growField = (sim: Sim, e: number): { grow?: number } => {
+  const g = plantGrowth(sim, e);
+  return g === undefined ? {} : { grow: Math.round(g * 100) / 100 };
+};
+
 function revealFields(sim: Sim, e: number, team: number, alive: boolean): { revealed?: true; exposed?: true } {
   if (!alive || (team !== 0 && team !== 1)) return {};
   const t = sim.c.Unit.team[e]!;
@@ -421,6 +429,7 @@ export function snapshotEntities(sim: Sim, team: number): SnapEntity[] {
       ...motionFields(sim, e, alive),
       ...(k === Kind.Monster && isEpicMonster(sim, e) ? { epic: true as const } : {}),
       ...(Unit.variant[e] ? { variant: VARIANTS[Unit.variant[e]!] } : {}),
+      ...(k === Kind.Plant && alive ? growField(sim, e) : {}),
     });
   }
   // no eid leaks: an attack / chase target outside this view is masked

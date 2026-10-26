@@ -289,7 +289,8 @@ export class Overlay {
         const lay = barLayout(e, a.sx, a.sy + (barLift.get(e.id) ?? 0));
         if (!lay) {
           // plants (1 HP): no bar, only the name while hovered
-          if (e.kind === Kind.Plant) this.label(variantName(e.variant, e.kind), a.sx, a.sy - 2, '#f3e6c4');
+          // name + effect ("Windfrucht · Tempo"); honey pieces are drawn small and need no label
+          if (e.kind === Kind.Plant && e.variant !== 'honigstueck') this.label(`${variantName(e.variant, e.kind)} · ${t(`plant.hint.${e.variant}`)}`, a.sx, a.sy - 2, '#f3e6c4');
           continue;
         }
         const { champ, dummy, monster, bw, bh, x, y } = lay;

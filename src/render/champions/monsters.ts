@@ -878,6 +878,11 @@ export const MONSTER_SPRITE: Record<string, { id: string; scale: number }> = {
   mooswelpe: { id: 'mooswolf', scale: 0.6 },
   kaeferling: { id: 'hohlkaefer', scale: 0.56 },
   krabbling: { id: 'schattenkrabbe', scale: 0.58 },
+  // ponytail: new fruits reuse the three painted fruit sprites until own art is baked (swarm-plants.md open items)
+  manafrucht: { id: 'spaehfrucht', scale: 0.9 },
+  windfrucht: { id: 'sprungfrucht', scale: 0.9 },
+  schildfrucht: { id: 'honigfrucht', scale: 0.9 },
+  honigstueck: { id: 'honigfrucht', scale: 0.3 },
 };
 /** Sprites baked into the big atlas (higher resolution) and the camp atlas. */
 export const BIG_MONSTER_IDS = ['dornenbock', 'glutwaechter', 'leviathan', 'schleierwaechter'];

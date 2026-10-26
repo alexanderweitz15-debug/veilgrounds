@@ -506,3 +506,11 @@ If art/f-identity rewrites `push()`: the three hooks to keep are `castPoseActive
 
 Additive only: src/settings.ts (`voiceLines` + default), src/i18n/de.json + en.json (`set.voiceLines`), src/ui/settingsPanel.ts (1 row),
 src/ui/overlay.ts (VoiceBubbles field, onEvent call, draw call), src/ui/classicLobby.ts + practiceLobby.ts (import + `renderPickLine` after `renderShowcase`).
+
+## dodge-metrics (FEATURE-GAP 7.4)
+
+- `src/sim/systems/projectiles.ts`: `hit()` passes `payload, x, y` to `trainerShotHit` (one line; the dodge trainer needs the shot id and impact point).
+- `src/sim/trainer/common.ts`: `TrainerStat.fmt` gets `'ms'`; `TrainerHud` gets optional `dodge?: DodgeReport`.
+- `src/i18n/de.json` + `en.json`: 32 new keys each, `trainer.stat.{reaction,panic,unnecessary,hitRate}` and `trainer.dodge.*` (appended at the end, same keys in both).
+- `src/stats/history.ts`: `MatchRecord.trainer.metrics?` (optional, old records stay valid), new `trainerMetrics`, `trainerSeries`, `trainerTrend`, `withoutRun`.
+- `src/ui/trainer.css`: `.dg-*` classes appended.

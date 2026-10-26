@@ -1,0 +1,13 @@
+{
+  "_doc": "Dodge trainer measurements (src/sim/trainer/dodgeMetrics.ts). nearFactor: a shot that passes within nearFactor x (unit radius + half width) of the player but would not hit him counts as a near miss (a dodge of it is 'unnecessary'). zoneNear: same for ground zones (x zone radius + unit radius). panicGapTicks: move commands closer together than this belong to one panic episode. predictMaxTicks: look-ahead of the 'does this order leave the shot's path' prediction. speedBuckets / widthBuckets: upper bounds (exclusive) of the buckets of the hit-rate table, the last bucket is open. reviewCount: hits kept for the review list. logTicks / pathStep: player position log before an impact (ticks) and its sampling step for the review drawing.",
+  "nearFactor": 2.2,
+  "zoneNear": 1.5,
+  "panicGapTicks": 12,
+  "predictMaxTicks": 100,
+  "blinkSteps": 2.5,
+  "speedBuckets": [1100, 1400],
+  "widthBuckets": [100, 140],
+  "reviewCount": 10,
+  "logTicks": 45,
+  "pathStep": 3
+}

@@ -21,7 +21,8 @@ export interface MatchRecord extends MatchMetrics {
   kills: number;
   deaths: number;
   dmgChampPerMin: number;
-  trainer?: { kind: string; score: number; grade: string; scenario?: string };
+  /** metrics: per-trainer measurements (dodge: reactionMs, panic, unnecessary, hitRate; only those that were measured). */
+  trainer?: { kind: string; score: number; grade: string; scenario?: string; metrics?: Record<string, number> };
   calibration: RankCalibration;
 }
 
@@ -37,6 +38,16 @@ function sampleAt(samples: { t: number; v: number }[], t: number): number {
     if (t <= b.t) return a.v + ((b.v - a.v) * (t - a.t)) / Math.max(1e-9, b.t - a.t);
   }
   return samples[samples.length - 1]!.v;
+}
+
+/** Trainer-specific measurements of a finished run for the history (only values that were measured). */
+export function trainerMetrics(tr: NonNullable<MatchSummary['trainer']>): Record<string, number> | undefined {
+  const d = tr.dodge;
+  if (!d) return undefined;
+  const m: Record<string, number> = { panic: d.panic, unnecessary: d.unnecessary };
+  if (d.reactionMs >= 0) m.reactionMs = d.reactionMs;
+  if (d.hitRate >= 0) m.hitRate = d.hitRate;
+  return m;
 }
 
 /** Metrics of one finished match / trainer run from the post-game summary (client snapshots only). */
@@ -56,6 +67,7 @@ export function recordFromSummary(s: MatchSummary, at: number): MatchRecord {
   };
   const classic = s.mode === 'classic';
   const tr = s.trainer;
+  const trMetrics = tr ? trainerMetrics(tr) : undefined;
   return {
     id: `${at.toString(36)}-${s.champion}`,
     at,
@@ -66,7 +78,7 @@ export function recordFromSummary(s: MatchSummary, at: number): MatchRecord {
     kills: s.kills.length,
     deaths: s.deaths.length,
     dmgChampPerMin: s.dealtChamp.reduce((a, b) => a + b, 0) / min,
-    ...(tr ? { trainer: { kind: tr.kind, score: tr.score, grade: tr.grade, ...(tr.scenario ? { scenario: tr.scenario } : {}) } } : {}),
+    ...(tr ? { trainer: { kind: tr.kind, score: tr.score, grade: tr.grade, ...(tr.scenario ? { scenario: tr.scenario } : {}), ...(trMetrics ? { metrics: trMetrics } : {}) } } : {}),
     ...metrics,
     // only full games calibrate against the rank tables (trainer runs are not comparable)
     calibration: classic && s.duration >= 600 ? calibrateMatch(metrics) : {},
@@ -85,6 +97,37 @@ export function series(history: readonly MatchRecord[], metric: Metric, mode?: M
     .filter((r) => !mode || r.mode === mode)
     .map((r) => ({ at: r.at, v: metric === 'trainerScore' ? r.trainer?.score ?? NaN : r[metric] }))
     .filter((p) => Number.isFinite(p.v));
+}
+
+/** Values of one trainer measurement over the runs of a trainer, oldest first ('score' = the run score). */
+export function trainerSeries(history: readonly MatchRecord[], kind: string, key: string): number[] {
+  const out: number[] = [];
+  for (const r of history) {
+    if (r.trainer?.kind !== kind) continue;
+    const v = key === 'score' ? r.trainer.score : r.trainer.metrics?.[key];
+    if (v !== undefined && Number.isFinite(v)) out.push(v);
+  }
+  return out;
+}
+
+/** History without the record this run was just saved as (same kind, score and length, within windowMs of `run.at`). */
+export function withoutRun(history: readonly MatchRecord[], run: { kind: string; score: number; durationS: number; at: number }, windowMs = 120000): MatchRecord[] {
+  return history.filter((r) => !(r.trainer?.kind === run.kind && r.trainer.score === run.score && r.durationS === run.durationS && Math.abs(r.at - run.at) < windowMs));
+}
+
+export interface Trend {
+  /** Previous runs (oldest first, at most `n`) and this run's value (undefined = not measured). */
+  past: number[];
+  now: number | undefined;
+  /** now minus the mean of the past runs, undefined without both. */
+  delta: number | undefined;
+}
+
+/** Trend of one measurement: the last `n` earlier runs of the trainer against the current run. */
+export function trainerTrend(history: readonly MatchRecord[], kind: string, key: string, now: number | undefined, n = 8): Trend {
+  const past = trainerSeries(history, kind, key).slice(-n);
+  const delta = now !== undefined && past.length ? now - past.reduce((a, b) => a + b, 0) / past.length : undefined;
+  return { past, now, delta };
 }
 
 export interface Streaks {

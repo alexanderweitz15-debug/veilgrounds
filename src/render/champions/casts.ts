@@ -20,6 +20,7 @@ export const CAST_FAMILIES: Record<string, CastFamilies> = {
   brom: F('stomp', 'sweep', 'aabb'), // Q/W whirl and sap, E bough sweep, R root grab
   corvin: F('point', 'lob', 'abab'), // Q shot, W keg lobbed, E roll, R powder cone
   dagny: F('stomp', 'sweep', 'abab'), // Q/E kettle stance, W steam cone, R charge
+  fenna: F('forward', 'lob', 'abba'), // Q wingdust pushed, W flame chosen, E/R pools lobbed
   ferris: F('forward', 'raise', 'abbb'), // Q light bolt, W/E lantern lifted for allies, R beacon
   gorvam: F('draw', 'stomp', 'abab'), // Q hook drawn, W/R chain stomp, E chain lob
   grimald: F('point', 'stomp', 'abab'), // Q bite, W roar stomp, E net thrown, R charge
@@ -41,6 +42,7 @@ export const CAST_FAMILIES: Record<string, CastFamilies> = {
   sev: F('forward', 'raise', 'abab'), // Q fireball pushed, W blink, E gaze, R eye raised
   thessaly: F('point', 'raise', 'abaa'), // Q/E/R light pointed, W prism raised
   tobin: F('draw', 'lob', 'abba'), // Q harpoon drawn, W dash, E net lobbed, R wave
+  vargrim: F('stomp', 'raise', 'abab'), // Q/R lance stomp, W mist raised, E gallop
   vessa: F('point', 'stomp', 'abba'), // Q pounce, W/E howl stomp, R dash
   wren: F('forward', 'raise', 'babb'), // Q embers raised, W ash pushed, E wing dash, R firestorm called down
 };

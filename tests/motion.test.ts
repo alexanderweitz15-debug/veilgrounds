@@ -33,7 +33,7 @@ describe('motion specs', () => {
   it('run cadence follows movement speed and stride (feet do not slide): steps/s x 4 frames', () => {
     for (const id of MOTION_IDS) {
       const g = motionOf({ id, hold: 'relaxed' }).gait;
-      if (g.stride <= 0) continue; // hovering
+      if (g.stride <= 0 || g.style === 'gallop') continue; // hovering / hand-set gallop cadence
       const stepsPerSec = MS[id]! / (2 * g.stride * UNIT);
       const want = Math.max(9, Math.min(22, stepsPerSec * 4));
       expect(Math.abs(g.cadence - want)).toBeLessThan(0.2);

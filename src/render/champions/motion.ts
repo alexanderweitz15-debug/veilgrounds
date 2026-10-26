@@ -10,7 +10,7 @@ import type { Kit } from './types';
 /** world units per char unit on screen: kit.world / 180 x CHAMPION_SCALE (render/championSprites.ts) ~ 1.78 */
 export const UNIT = 1.78;
 
-export type GaitStyle = 'stride' | 'sprint' | 'march' | 'stomp' | 'shuffle' | 'waddle' | 'stalk' | 'skip' | 'swagger' | 'glide' | 'hover';
+export type GaitStyle = 'stride' | 'sprint' | 'march' | 'stomp' | 'shuffle' | 'waddle' | 'stalk' | 'skip' | 'swagger' | 'glide' | 'hover' | 'gallop';
 export type IdleStyle = 'breathe' | 'heave' | 'bounce' | 'rock' | 'scan' | 'poise' | 'still' | 'hover' | 'preen' | 'tick' | 'sway';
 
 export interface GaitSpec {
@@ -41,6 +41,12 @@ export interface GaitSpec {
   sway: number;
   /** run cycle frames per second (atlas.rate) */
   cadence: number;
+  /** upper body / arms / head lag behind the legs (rad): loose shoulders trail, stiff ones follow at once */
+  drag: number;
+  /** stride asymmetry: right stride x (1 + asym), left x (1 - asym) - a limp, a cane, a lead leg */
+  asym: number;
+  /** bounce shape: 1 = plain |sin|; < 1 sharp, light landings with a long float; > 1 flat, heavy plants */
+  impact: number;
 }
 
 export interface IdleSpec {
@@ -85,6 +91,9 @@ const G = (style: GaitStyle, stride: number, lift: number, bob: number, lean: nu
   hop: 0,
   sway: 1,
   cadence: 0, // filled by cadenceFor
+  drag: 0.35,
+  asym: 0,
+  impact: 1,
   ...o,
 });
 const I = (style: IdleStyle, breath: number, shift: number, roll: number, o: Partial<IdleSpec> = {}): IdleSpec => ({ style, breath, shift, roll, bob: 0, scan: 0.08, nod: 0.035, hands: 0.8, sway: 0.14, fps: 3.2, ...o });
@@ -100,7 +109,7 @@ export function cadenceFor(ms: number, stride: number): number {
 export const MS: Record<string, number> = {
   aurel: 335, brom: 340, corvin: 340, dagny: 340, ferris: 335, gorvam: 335, grimald: 340, hagen: 335, harrow: 345,
   ilvane: 335, isolde: 345, kaelen: 345, kiran: 335, lio: 340, lysa: 335, mira: 340, nyx: 340, oda: 335, oleth: 340,
-  ottilie: 340, renn: 340, seraphyne: 340, sev: 335, thessaly: 335, tobin: 335, vessa: 345, wren: 335,
+  ottilie: 340, renn: 340, seraphyne: 340, sev: 335, thessaly: 335, tobin: 335, vessa: 345, wren: 335, fenna: 335, vargrim: 345,
 };
 
 /** The 27 champions: gait + idle. Style names describe the read at game zoom; numbers are the pose amplitudes. */
@@ -136,9 +145,13 @@ const SPECS: Record<string, MotionSpec> = {
   hagen: { gait: G('waddle', 12, 6, 2.4, 0.08, 3.4, 0.1, 0.08, 0.6, { headBob: 0.02, sway: 0.8 }), idle: I('rock', 1.1, 3.0, 0.08, { nod: 0.02, hands: 0.4, fps: 2.8 }) },
   kiran: { gait: G('glide', 16, 8, 1.0, 0.1, 1.0, 0.02, 0.1, 0.3, { headBob: 0.0, sway: 0.9 }), idle: I('still', 0.7, 0.6, 0.01, { nod: 0.0, scan: 0.0, hands: 1.2, fps: 2.8 }) },
   oda: { gait: G('waddle', 12, 9, 3.0, 0.12, 3.0, 0.08, 0.1, 0.8, { hop: 0.6, headBob: 0.03 }), idle: I('bounce', 1.1, 1.6, 0.05, { bob: 1.2, scan: 0.12, nod: 0.04, fps: 3.4 }) },
+  // --- new champions (art pending): moth hovers and flutters, the ghost horse gallops (cadence set by hand: a gallop
+  // cycle covers ~90 world units of body travel per stance, see cavalry.ts)
+  fenna: { gait: G('hover', 0, 0, 1.4, 0.16, 0.6, 0.03, 0.08, 0.4, { headBob: 0.01, sway: 1.3, drag: 0.6 }), idle: I('hover', 0.7, 0.7, 0.025, { scan: 0.12, nod: 0.04, hands: 1.4, sway: 0.26, fps: 3 }) },
+  vargrim: { gait: G('gallop', 30, 0, 0, 0, 0, 0, 0, 0, { cadence: 10.7, drag: 0.5 }), idle: I('heave', 1.4, 1.0, 0.02, { nod: 0.03, scan: 0.05, fps: 3 }) },
   sev: { gait: G('glide', 18, 9, 1.0, 0.08, 0.8, 0.02, 0.08, 0.3, { headBob: 0.0, sway: 1.2 }), idle: I('still', 0.6, 0.5, 0.01, { nod: 0.01, scan: 0.06, hands: 1.0, sway: 0.18, fps: 2.6 }) },
 };
-for (const [id, s] of Object.entries(SPECS)) s.gait.cadence = cadenceFor(MS[id] ?? 340, s.gait.stride);
+for (const [id, s] of Object.entries(SPECS)) if (!s.gait.cadence) s.gait.cadence = cadenceFor(MS[id] ?? 340, s.gait.stride);
 
 /** Legacy buckets for kits without an entry (minions, carts): the pre-F run cycle. */
 const LEGACY: Record<NonNullable<Kit['gait']>, MotionSpec> = {

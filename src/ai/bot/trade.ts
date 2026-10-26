@@ -84,8 +84,16 @@ export const ALLIN_HORIZON_S = 6;
 /** An all-in ends when the target's HP has not dropped by 5 points for this long, or after ALLIN_MAX_S. */
 const ALLIN_STALL_S = 5;
 const ALLIN_MAX_S = 20;
-/** Target out of sight during an all-in on a low target: follow its last seen heading this long (bush / fog edge). */
-const ALLIN_FOLLOW_S = 2.5;
+/**
+ * Target out of sight during an all-in on a low target: follow its last seen heading this long (rank curve
+ * deception.fogFollowS; Iron/Bronze give up at once). A target that stepped into a bush is guessed at for
+ * fogFollowBushS more: a brush juke works on low ranks (docs/agents/brain-deception.md).
+ */
+const allinFollowS = (n: NodeCtx, p: { x: number; y: number }): number => {
+  const D = VALUES.deception;
+  const s = rankCurve(D.fogFollowS, n.ctx.params.skill);
+  return s > 0 && n.ctx.map.bushes.some((b) => dst(b, p) < b.r) ? s + rankCurve(D.fogFollowBushS, n.ctx.params.skill) : s;
+};
 
 /** Evaluate the trade window against the closest enemy (spec §6). Cached per decision tick. */
 const windowCache = new WeakMap<object, { tick: number; w: Window | null }>();
@@ -238,11 +246,11 @@ export function tradeRunCore(n: NodeCtx): NodeResult {
   const tr = n.mem.ext.trade;
   if (!tr) return 'failure';
   const t = n.v.enemies.find((e) => e.serial === tr.serial);
-  if (!t && tr.kind === 'allin' && (tr.lowHp ?? 1) < 0.4 && n.v.hpPct > 0.25 && tr.lastX !== undefined && rankIdx(n.ctx.profile.rank) >= SILVER) {
+  if (!t && tr.kind === 'allin' && (tr.lowHp ?? 1) < 0.4 && n.v.hpPct > 0.25 && tr.lastX !== undefined && allinFollowS(n, { x: tr.lastX, y: tr.lastY! }) > 0) {
     // a low target slipped out of sight (bush, fog edge): follow its heading a moment instead of dropping the kill
     tr.lostAt ??= n.v.tick;
-    if (n.v.tick - tr.lostAt <= ALLIN_FOLLOW_S * 30) {
-      const p = { x: tr.lastX, y: tr.lastY! };
+    const p = { x: tr.lastX, y: tr.lastY! };
+    if (n.v.tick - tr.lostAt <= allinFollowS(n, p) * 30) {
       if (!(n.mem.lastMove && dst(n.mem.lastMove, p) < 100)) n.out.push(moveCmd(p));
       n.mem.lastMove = { ...p, tick: n.v.tick };
       return 'running';

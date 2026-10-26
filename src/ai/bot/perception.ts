@@ -4,6 +4,7 @@
 import { Kind, isMinion } from '../../sim/types';
 import { sampleReactionMs } from '../profiles';
 import { reactionPenaltyMs } from '../humanize/attention';
+import { fooledBy, lostUntil } from '../humanize/deception';
 import type { Rng } from '../../sim/rng';
 import type { BotMemory, BotStatic, PlayerHud, SnapEntity, Snapshot } from './types';
 import { dst } from './geo';
@@ -57,8 +58,9 @@ export function perceive(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rn
     enemyStructures: [],
     snap,
   };
-  for (const e of snap.entities) {
-    if (!e.alive || e.id === me.eid) continue;
+  for (const e0 of snap.entities) {
+    if (!e0.alive || e0.id === me.eid) continue;
+    const e = fooledBy(e0, snap.tick, ctx, mem, rng) ?? e0; // Sev W clone: lower ranks take it for the champion
     const own = e.team === ctx.team;
     if (e.kind === Kind.Champion) {
       if (own) v.allies.push(e);
@@ -68,6 +70,7 @@ export function perceive(snap: Snapshot, ctx: BotStatic, mem: BotMemory, rng: Rn
           a = { from: snap.tick + ticksOfMs(sampleReactionMs(ctx.profile.behavior, rng) + reactionPenaltyMs(mem, snap.tick)), lastSeen: snap.tick, x: e.x, y: e.y };
           mem.aware.set(e.serial, a);
         }
+        if (e === e0) a.from = Math.max(a.from, lostUntil(mem, e.champ)); // fooled by a decoy: the real one is lost for a while
         a.lastSeen = snap.tick;
         a.x = e.x;
         a.y = e.y;

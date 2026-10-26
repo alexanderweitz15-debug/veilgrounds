@@ -6,6 +6,7 @@
 import { Kind, isMinion } from '../../sim/types';
 import type { BotMemory, BotStatic, SnapEntity, Snapshot } from '../bot/types';
 import type { View } from '../bot/perception';
+import { fooledBy } from '../humanize/deception';
 
 interface Groups {
   champs: [SnapEntity[], SnapEntity[]];
@@ -54,6 +55,11 @@ export function reflexView(snap: Snapshot, ctx: BotStatic, mem: BotMemory): View
   for (const e of g.champs[foe]) {
     const a = mem.aware.get(e.serial);
     (a && snap.tick >= a.from ? enemies : unnoticed).push(e);
+  }
+  // decoys the latest decision took for the champion (verdict rolled in think)
+  for (const e of snap.entities) {
+    const d = e.kind === Kind.Pet && e.team !== ctx.team ? fooledBy(e, snap.tick, ctx, mem, null) : null;
+    if (d && mem.aware.get(d.serial) && snap.tick >= mem.aware.get(d.serial)!.from) enemies.push(d);
   }
   return {
     tick: snap.tick,

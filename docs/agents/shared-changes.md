@@ -575,3 +575,13 @@ src/ui/overlay.ts (VoiceBubbles field, onEvent call, draw call), src/ui/classicL
 - src/sim/items/itemHooks.ts: `BAND` constant, `bandAt` field in `ItemEnt`, hook `dusk_band` (additive).
 - src/data/items.json: item `daemmerband` (appended). src/data/builds/fenna.json: standard core uses it (replaces frostkern).
 - tests/items.test.ts: legendary / total item counts are now `>=` (items are added in parallel).
+
+## brain/s-deception
+
+- `src/ai/bot/perception.ts` (perceive): a visible enemy decoy pet (`Kind.Pet` with `look`) can enter `v.enemies` /
+  `v.unnoticed` as a `Kind.Champion` copy (via `humanize/deception.ts fooledBy`); `mem.aware.from` of the real owner is
+  held back while the bot is fooled. No change for games without decoys (no rng draw).
+- `src/ai/reflex/view.ts` (reflexView): same decoy copies appended to `enemies` from the stored verdict (no roll).
+- `src/ai/bot/trade.ts`: `ALLIN_FOLLOW_S` + `rankIdx >= SILVER` replaced by `allinFollowS` (values.json
+  `deception.fogFollowS`, Silver+ 2.5 s as before) plus a bush bonus `fogFollowBushS`.
+- `src/data/bots/values.json`: new `deception` block (A2-owned file, additive only).

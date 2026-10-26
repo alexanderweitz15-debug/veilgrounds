@@ -454,3 +454,12 @@ For A2 (@A2, owner of recallValue / intents):
 - src/settings.ts: additive fields (gfx*, renderScale, fpsCap, showFps, gfxAutoDetected), `GraphicsQuality` widened (+veryLow, veryHigh, custom).
 - src/game/settingsIO.ts: graphics enum = GRAPHICS_QUALITIES (2 lines).
 - src/render/world.ts: quality applied via resolveQuality (3 lines).
+
+## gfx-settings-2 (2026-10-26)
+
+- src/input/keybinds.ts: new Action `fpsOverlay` (F3) + i18n `act.fpsOverlay`.
+- src/game/game.ts: frame limiter in `loop`, fps overlay element + F3 listener, first-start benchmark (about 35 lines).
+- src/game/settingsIO.ts: RANGES for renderScale, fpsCap, gfxParticles, gfxPixelRatio, gfxShadowMap.
+- src/ui/settingsPanel.ts: video section; slider key union + `renderScale`.
+- src/i18n: `set.gfx.*`, `set.renderScale`, `set.fpsCap*`, `set.showFps`, `set.autoDetect*`, `gfx.benchmark`, `act.fpsOverlay`.
+- src/render/particles.ts: `density` field.

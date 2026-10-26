@@ -24,6 +24,11 @@ const RANGES: Partial<Record<keyof Settings, [number, number]>> = {
   uiScale: [80, 150],
   minimapScale: [80, 150],
   volume: [0, 1],
+  renderScale: [50, 100],
+  fpsCap: [0, 500],
+  gfxParticles: [0, 150],
+  gfxPixelRatio: [0.5, 2],
+  gfxShadowMap: [1024, 4096],
 };
 
 export function exportSettings(settings: Settings, binds: Record<Action, string>): string {

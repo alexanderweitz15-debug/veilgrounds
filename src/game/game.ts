@@ -15,7 +15,10 @@ import { Overlay } from '../ui/overlay';
 import { Minimap } from '../ui/minimap';
 import { minimapPingFor } from './minimapPing';
 import { buildSettingsPanel } from '../ui/settingsPanel';
-import { onSettingsChange, settings } from '../settings';
+import { onSettingsChange, settings, updateSettings } from '../settings';
+import { actionFor } from '../input/keybinds';
+import { presetFields } from '../render/gfxPreset';
+import { Benchmark, FrameLimiter, pickPreset } from './gfxTune';
 import { t } from '../i18n';
 import { getChampionAtlas, getMinionAtlas, getMonsterAtlases } from '../render/sheets';
 import { SessionExtras, type ExitOpts, type SessionResult } from './session';
@@ -44,6 +47,16 @@ export class Game {
   /** EMA of the CPU time per frame part (ms), shown in the F9 panel. */
   private readonly perf = { input: 0, world: 0, overlay: 0, minimap: 0, hud: 0, total: 0 };
   private readonly offSettings: () => void;
+  private readonly limiter = new FrameLimiter();
+  /** First-start graphics benchmark: runs 3 s after the cover is gone while `gfxAutoDetected` is false (cap off). */
+  private bench: Benchmark | null = null;
+  private fpsEl!: HTMLElement;
+  private readonly onFpsKey = (e: KeyboardEvent): void => {
+    const el = e.target;
+    if (e.repeat || actionFor(e.code) !== 'fpsOverlay' || this.chat.typing || el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) return;
+    e.preventDefault();
+    updateSettings({ showFps: !settings.showFps });
+  };
   private readonly onResize = (): void => this.resize();
   private readonly beforeUnload = (e: BeforeUnloadEvent): void => {
     // Ctrl+W (level W) cannot be intercepted by pages; at least ask before the tab closes.
@@ -195,7 +208,13 @@ export class Game {
       this.hud.applyScale();
       this.world.applyQuality();
       setVolume(settings.volume);
+      this.fpsEl.hidden = !settings.showFps && !this.bench;
     });
+    this.fpsEl = document.createElement('div');
+    this.fpsEl.className = 'fps-overlay';
+    this.fpsEl.hidden = !settings.showFps;
+    this.root.appendChild(this.fpsEl);
+    window.addEventListener('keydown', this.onFpsKey);
     window.addEventListener('resize', this.onResize);
     // beforeunload only after a user gesture (Chrome blocks/logs the prompt for frames without one)
     window.addEventListener('pointerdown', this.armUnload, true);
@@ -293,8 +312,25 @@ export class Game {
 
   private readonly loop = (now: number): void => {
     this.raf = requestAnimationFrame(this.loop);
+    if (this.bench) {
+      const r = this.bench.add(now); // measures every rAF gap, so no frame cap meanwhile
+      if (r) this.finishBench(pickPreset(r));
+    } else if (!this.limiter.tick(now, settings.fpsCap)) return;
     this.frame(now);
   };
+
+  private startBench(): void {
+    this.bench = new Benchmark();
+    // 'high' for the measurement (shadows, shadow map, resolution and particles apply live); the result replaces it
+    updateSettings({ graphics: 'high', ...presetFields('high') });
+    this.fpsEl.textContent = t('gfx.benchmark');
+  }
+
+  private finishBench(preset: ReturnType<typeof pickPreset>): void {
+    this.bench = null;
+    this.fpsEl.textContent = '';
+    updateSettings({ graphics: preset, ...presetFields(preset), gfxAutoDetected: true });
+  }
 
   /** One client frame (also driven synchronously by the dev benchmark hook, see constructor). */
   private frame(now: number): void {
@@ -310,6 +346,7 @@ export class Game {
       this.cover = null;
       c.classList.add('done');
       window.setTimeout(() => c.remove(), 400);
+      if (!settings.gfxAutoDetected) this.startBench();
     }
     if (!this.focusedOnce) {
       const me = st.me();
@@ -350,6 +387,7 @@ export class Game {
       this.fpsAt = now;
       const s = st.snap;
       const info = this.world.renderer.info.render;
+      if (!this.bench) this.fpsEl.textContent = `${this.fps} FPS  ${(1000 / Math.max(1, this.fps)).toFixed(1)} ms  (CPU ${p.total.toFixed(1)} ms)`;
       this.hud.debugText.textContent =
         `FPS ${this.fps}  snaps/s ${this.snapRate}\n` +
         `tick ${s?.tick ?? '-'}  entities ${s?.entities.length ?? 0}  projectiles ${s?.projectiles.length ?? 0}\n` +
@@ -371,6 +409,7 @@ export class Game {
     this.minimap.dispose();
     this.chat.dispose();
     this.offSettings();
+    window.removeEventListener('keydown', this.onFpsKey);
     window.removeEventListener('resize', this.onResize);
     window.removeEventListener('beforeunload', this.beforeUnload);
     window.removeEventListener('pointerdown', this.armUnload, true);

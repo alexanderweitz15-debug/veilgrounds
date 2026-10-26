@@ -237,3 +237,7 @@
 .ping-slot { position: absolute; transform: translate(-50%, -50%); padding: 4px 8px; white-space: nowrap; font-family: var(--font-label, sans-serif); font-weight: 600; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: #e8e0cc; background: rgba(10,12,14,0.85); border: 1px solid #3c3c41; border-left: 3px solid var(--c); }
 .ping-slot.on { color: #fff; border-color: var(--c); background: rgba(30,32,36,0.95); }
 .killfeed .entry.ping { border-left-width: 4px; }
+
+/* FPS / frame-time overlay (setting showFps, key F3) and the graphics benchmark note */
+.fps-overlay { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); z-index: 60; padding: 2px 8px; font: 12px/1.4 monospace; color: #e8e0cc; background: rgba(10,12,14,0.7); pointer-events: none; }
+.fps-overlay:empty { display: none; }

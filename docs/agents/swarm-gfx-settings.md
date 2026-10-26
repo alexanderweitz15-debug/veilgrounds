@@ -1,40 +1,41 @@
-# swarm gfx-settings (PARTIAL - agent moved to brain-hp)
+# swarm gfx-settings (finished in `swarm/gfx-settings-2`)
 
-Branch `swarm/gfx-settings`. Foundation only; the UI, frame cap, overlay and auto-detect are NOT built.
+Continues the partial `swarm/gfx-settings` (settings fields, presets, resolveQuality); merged with main 5fc933b.
 
-## Done
+## Built
 
-- `src/settings.ts` (additive): `GraphicsPreset` (veryLow/low/medium/high/veryHigh), `GraphicsQuality` = preset | `'custom'`,
-  `GRAPHICS_QUALITIES`; fields `gfxShadows`, `gfxShadowMap`, `gfxSoftShadows`, `gfxPixelRatio`, `gfxAntialias`,
-  `gfxParticles` (percent), `gfxTerrainDetail`, `renderScale` (percent), `fpsCap` (0 = uncapped), `showFps`,
-  `gfxAutoDetected`. Defaults = medium preset. Old saves (no `gfxAutoDetected`) are marked detected (no benchmark).
-- `src/render/quality.ts`: 5 presets with new `particles` + `terrainDetail`; pure `presetFields`, `resolveQuality`
-  (preset table, or the gfx* fields for `'custom'`, clamped), `matchPreset`, `effectivePixelRatio` (dpr cap x renderScale).
-- `src/render/world.ts`: uses `resolveQuality`; render scale applied live (only resizes when the ratio changes);
-  terrain detail passed to `buildTerrain` as `'medium'|'low'` (terrain.ts untouched, next match).
-- `src/game/settingsIO.ts` (shared, 2 lines): graphics enum = `GRAPHICS_QUALITIES`.
+- Presets: veryLow / low / medium / high / veryHigh + `custom`. Pure logic moved to `src/render/gfxPreset.ts` (no three.js, so the
+  settings panel in the main bundle does not pull three into it); `src/render/quality.ts` re-exports it and keeps the PCF patch.
+  `currentFields` = what the panel shows (preset values unless `custom`).
+- `world.ts` applies `resolveQuality(settings)` live (shadows, shadow map, render scale = `effectivePixelRatio`, particle density);
+  `Particles.density` (new, separate from `scale` which fx.ts overwrites for reduce-motion) multiplies `emit`.
+- Settings panel, video section: preset select; individual toggles (shadows, shadow map, soft shadows, max pixel ratio, antialias,
+  particle density, detailed ground); changing one writes `graphics: matchPreset(fields)` (custom, or the preset again if the values
+  match); render scale slider 50-100; FPS cap select 30/60/120/unlimited; FPS overlay checkbox; "test at next match" button.
+- FPS cap: `FrameLimiter` in `src/game/gfxTune.ts`, used in `Game.loop` (not `frame()`, the bench hook calls that).
+- FPS / frame-time overlay: `showFps` setting + Action `fpsOverlay` (default F3, rebindable, `act.fpsOverlay`); `.fps-overlay` in
+  gamePanels.css; shows `FPS, frame ms, CPU ms`, updated once per second.
+- Auto-detect: `gfxAutoDetected` false (new installs, or the panel button) -> after the boot cover fades the game sets preset `high`,
+  measures rAF gaps for 3 s (1 s warm-up skipped, stalls >250 ms ignored, frame cap off meanwhile, overlay shows the note), then
+  `pickPreset({avgMs,p90Ms})` writes the preset + its fields. Old saves count as detected (no surprise benchmark).
+- settingsIO: RANGES for renderScale, fpsCap, gfxParticles, gfxPixelRatio, gfxShadowMap. i18n de + en.
 
-## Open
+## Files
 
-1. `src/render/particles.ts`: add `density` multiplier in `Particles.emit` (`count * scale * density`); world sets it from
-   `resolveQuality(settings).particles` (fx.ts overwrites `scale` every frame from reduceMotion, so do not reuse `scale`).
-2. settingsPanel video section: preset select (`veryLow..veryHigh, custom`; picking a preset writes `presetFields(p)`),
-   individual controls (write `graphics: matchPreset(fields)`), render scale slider (50..100, widen the `slider` key union),
-   fps cap select (30/60/120/unlimited), fps overlay checkbox, "auto-detect" button (`gfxAutoDetected:false` = benchmark at
-   next match start). settingsIO RANGES for `renderScale`, `fpsCap`, `gfxParticles`, `gfxPixelRatio`, `gfxShadowMap`.
-3. Frame cap in `game.ts` `loop` (not `frame()`, the bench hook calls that): pure limiter, `interval=1000/cap`, tolerance
-   `min(rafGapEMA/2, interval/2)`, `last += interval`, resync `last = now` after a stall. Tests: 16.67 ms rAF with cap 60 ->
-   all frames, cap 30 -> every 2nd, cap 0 -> all, 500 ms gap -> one render.
-4. FPS overlay: Action `fpsOverlay` (default F3) in keybinds.ts + `act.fpsOverlay` i18n; toggle `showFps` from a keydown
-   listener in game.ts (controller ignores unknown actions; do not route through controller, paused state blocks it).
-5. Auto-detect: in-game 3 s benchmark after the cover is gone (skip 1 s warm-up, cap off, preset temporarily `high`),
-   pure `pickPreset({avgMs, p90Ms})`: p90 <= 19.2 ms -> high (veryHigh only if avg <= 9.2 ms), else scale avg by preset cost
-   ratios (veryLow .3, low .48, medium .74, high 1, veryHigh 1.7) and take the highest with est <= 17.5 ms. rAF is vsync
-   bound, so a 60 Hz display cannot reveal headroom beyond `high`.
-6. i18n de+en keys (`set.gfx.*`, `set.fpsCap`, `set.renderScale`, `set.particles`, `set.terrainDetail`, `act.fpsOverlay`...).
-   Existing `set.gfx.low` text says "(ohne Schatten)" - still true.
-7. Tests (tests/quality.test.ts): preset mapping, resolveQuality custom/clamp, matchPreset, effectivePixelRatio, limiter.
+New: `src/render/gfxPreset.ts`, `src/game/gfxTune.ts`, `tests/quality.test.ts`.
+Edited: `src/render/quality.ts`, `world.ts`, `particles.ts`, `src/settings.ts`, `src/game/game.ts`, `settingsIO.ts`,
+`src/input/keybinds.ts`, `src/ui/settingsPanel.ts`, `src/ui/gamePanels.css`, `src/i18n/{de,en}.json`. Not touched: champions/**, championSprites.ts.
 
 ## Tests
 
-`tsc --noEmit` and settingsIO/i18n tests: see commit; no new test file yet.
+`npx vitest run tests/quality.test.ts tests/settingsIO.test.ts tests/i18n.test.ts`: all green (quality: presets round trip, custom clamp,
+matchPreset, effectivePixelRatio, limiter at 60/30 on 60 Hz and 144 Hz, jitter, 500 ms stall, benchmark pick/warm-up/hidden tab).
+`npx tsc --noEmit`: clean. No browser run (rules); the in-game benchmark and overlay are untested visually.
+
+## Open / decisions
+
+- The benchmark runs at `high`, but antialiasing, soft-shadow filter and ground detail are fixed at renderer/terrain creation, so they
+  stay at the previous (medium default) values during the test; cost ratios in `pickPreset` are rough estimates from the preset table.
+- rAF is vsync bound: a 60 Hz display never yields veryHigh (needs avg <= 9.2 ms, i.e. >= 108 Hz). Intended.
+- Closing the tab mid-benchmark leaves `graphics: 'high'` saved with `gfxAutoDetected: false`; the test reruns next match.
+- Frame cap uses rAF skipping, so caps above the display rate have no effect.

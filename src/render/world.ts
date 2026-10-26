@@ -74,12 +74,14 @@ export class World {
     this.units = new Units(buildAtlas(), SUN_DIR);
     this.scene.add(this.terrain.group, this.structures.group, this.units.group, this.fx.group, this.ground.group, this.pings.group, this.wards.group, this.fx.particles.group);
     this.ground.particles = this.fx.particles;
+    this.fx.particles.density = q.particles;
   }
 
   /** Live part of the graphics quality setting: shadows on/off, shadow map size, render scale. */
   applyQuality(): void {
     const q = resolveQuality(settings);
     this.sun.castShadow = q.shadows;
+    this.fx.particles.density = q.particles;
     if (this.sun.shadow.mapSize.x !== q.shadowMap) {
       this.sun.shadow.mapSize.set(q.shadowMap, q.shadowMap);
       this.sun.shadow.map?.dispose();

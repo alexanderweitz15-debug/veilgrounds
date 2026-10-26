@@ -99,6 +99,8 @@ export class Particles {
   private readonly c = new THREE.Color();
   /** Global emission scale (reduce motion: fewer particles). */
   scale = 1;
+  /** Graphics setting: emission multiplier (fx.ts overwrites `scale` every frame, so this is separate). */
+  density = 1;
 
   constructor() {
     for (const id of PARTICLE_KIND_IDS) {
@@ -127,7 +129,7 @@ export class Particles {
     const pool = this.pools.get(id);
     if (!pool) return;
     const k = pool.kind;
-    const n = count * this.scale;
+    const n = count * this.scale * this.density;
     const whole = Math.floor(n) + (Math.random() < n - Math.floor(n) ? 1 : 0);
     for (let i = 0; i < whole; i++) {
       this.c.setHSL(((hue + (Math.random() - 0.5) * 24) % 360 + 360) % 360 / 360, 0.95, (k.light + (Math.random() - 0.5) * 16) / 100);

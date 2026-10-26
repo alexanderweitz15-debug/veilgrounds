@@ -40,6 +40,14 @@ export async function kvGet<T>(key: string): Promise<T | undefined> {
   }
 }
 
+export async function kvDel(key: string): Promise<void> {
+  try {
+    await tx('readwrite', (s) => s.delete(key));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 export async function kvSet<T>(key: string, value: T): Promise<void> {
   try {
     await tx('readwrite', (s) => s.put(value, key));

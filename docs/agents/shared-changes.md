@@ -585,3 +585,12 @@ src/ui/overlay.ts (VoiceBubbles field, onEvent call, draw call), src/ui/classicL
 - `src/ai/bot/trade.ts`: `ALLIN_FOLLOW_S` + `rankIdx >= SILVER` replaced by `allinFollowS` (values.json
   `deception.fogFollowS`, Silver+ 2.5 s as before) plus a bush bonus `fogFollowBushS`.
 - `src/data/bots/values.json`: new `deception` block (A2-owned file, additive only).
+
+## 2026-10-26 · s2-replay (replay browser 6.6, post-game error list 6.3)
+
+Additive edits to shared files (all small):
+- `src/main.ts`: nav entry "Replays" (`replayBrowser`, `watchReplay`), `afterGame` saves `r.replay`, new `showPostGame` (passes the error list + "replay moment" jump to `renderPostGame`).
+- `src/ui/postGame.ts`: optional 5th parameter `errors` (renders `renderErrorList` above the Challenger-Geist block). S1 (death recap) edits this file too: keep both blocks.
+- `src/game/game.ts`: `GameOpts` (injected replay link, virtual clock, silent, bar mount); `exit()` waits (max 3 s) for the worker's replay of a decided game. `src/game/link.ts` `requestReplay`; `src/sim/protocol.ts` + `src/sim/worker.ts` `getReplay` / `rec.observe(sim)`.
+- `src/game/state.ts` `resetForSeek()`, `src/game/objectives.ts` `restoreEpicKills()`, `src/game/session.ts` `SessionResult.replay`, `src/store/kv.ts` `kvDel`.
+- `src/i18n/de.json` + `en.json`: keys `rp.*` (replay) and `pe.*` (error list).

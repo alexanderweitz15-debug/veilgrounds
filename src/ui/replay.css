@@ -1,0 +1,51 @@
+/* Replay browser + viewer bar (src/ui/replayBrowser.ts, src/ui/replayBar.ts). Own rp- classes. */
+.rp-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+.rp-item { display: grid; grid-template-columns: 4px 1fr auto; gap: 14px; align-items: center; padding: 10px 14px 10px 0; background: rgba(255, 255, 255, 0.03); border: 1px solid #2c2c31; }
+.rp-item .stripe { align-self: stretch; background: #a09b8c; }
+.rp-item.win .stripe { background: #7dcf8a; }
+.rp-item.loss .stripe { background: #e0604a; }
+.rp-item .main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+.rp-item .champ { font-family: var(--font-display, Georgia); font-size: 18px; color: var(--gold-hi, #f0e6d2); }
+.rp-item .res { font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; font-size: 12px; }
+.rp-item.win .res { color: #7dcf8a; }
+.rp-item.loss .res { color: #e0604a; }
+.rp-item .meta { color: var(--text-dim, #a09b8c); font-size: 13px; font-variant-numeric: tabular-nums; }
+.rp-item .row-buttons { display: flex; gap: 8px; }
+.rp-empty { color: var(--text-dim, #a09b8c); margin: 18px 0; }
+
+/* viewer: the normal game view plus the bar; the live-game overlays that make no sense in a replay are hidden */
+.game.rp-mode .gameover, .game.rp-mode .pause-overlay { display: none !important; }
+.rp-bar { position: absolute; left: 50%; top: 52px; transform: translateX(-50%); width: min(920px, calc(100% - 520px)); min-width: 560px; z-index: 30; box-sizing: border-box; padding: 8px 12px 10px; color: #e8e0cc; background: rgba(8, 12, 18, 0.9); border: 1px solid #3a3226; font-size: 13px; pointer-events: auto; user-select: none; }
+.rp-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rp-row + .rp-row { margin-top: 8px; }
+.rp-btn { background: transparent; border: 1px solid #5a4b2e; color: var(--gold, #c8aa6e); padding: 3px 9px; font: inherit; cursor: pointer; font-variant-numeric: tabular-nums; }
+.rp-btn:hover { background: rgba(200, 170, 110, 0.14); }
+.rp-btn.on { background: rgba(200, 170, 110, 0.28); color: var(--gold-hi, #f0e6d2); }
+.rp-btn.team0 { border-color: #3d6b94; }
+.rp-btn.team1 { border-color: #94463a; }
+.rp-btn.me::after { content: ' ★'; color: #e3c26a; }
+.rp-time { font-family: var(--font-display, Georgia); font-size: 17px; color: var(--gold-hi, #f0e6d2); font-variant-numeric: tabular-nums; min-width: 110px; }
+.rp-status { margin-left: auto; color: var(--text-dim, #a09b8c); font-size: 12px; }
+.rp-label { color: var(--text-dim, #a09b8c); text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
+.rp-track { position: relative; height: 26px; margin-top: 8px; background: rgba(255, 255, 255, 0.06); cursor: pointer; }
+.rp-track .idx { position: absolute; inset: 0 auto 0 0; background: rgba(200, 170, 110, 0.14); pointer-events: none; }
+.rp-track .done { position: absolute; inset: 0 auto 0 0; background: rgba(200, 170, 110, 0.3); pointer-events: none; }
+.rp-track .head { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #f0e6d2; pointer-events: none; box-shadow: 0 0 4px #000; }
+.rp-mark { position: absolute; top: 50%; width: 9px; height: 9px; margin: -5px 0 0 -5px; padding: 0; border: 1px solid rgba(0, 0, 0, 0.6); cursor: pointer; background: #a09b8c; transform: rotate(45deg); }
+.rp-mark.kill { border-radius: 50%; transform: none; }
+.rp-mark.own { background: #7dcf8a; }
+.rp-mark.enemy { background: #e0604a; }
+.rp-mark.mine { outline: 2px solid #e3c26a; z-index: 2; }
+.rp-mark.epic { width: 12px; height: 12px; margin: -6px 0 0 -6px; }
+.rp-mark:hover { filter: brightness(1.5); z-index: 3; }
+.rp-warn { color: #e0a04a; font-size: 12px; }
+.rp-hint { color: var(--text-dim, #a09b8c); font-size: 11px; margin-left: auto; }
+.rp-loading { position: absolute; inset: 0; display: grid; place-items: center; color: #e8e0cc; font-size: 22px; background: #0c0e12; z-index: 40; }
+
+/* post-game mistake list (src/ui/errorListView.ts) */
+.pe-box { margin-top: 18px; }
+.pe-h { margin: 12px 0 6px; color: var(--gold, #c8aa6e); font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; }
+.pe-list { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; display: grid; gap: 4px; }
+.pe-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 10px; align-items: center; padding: 4px 8px; background: rgba(255, 255, 255, 0.03); font-size: 13px; }
+.pe-row.att { opacity: 0.85; }
+.pe-t { font-variant-numeric: tabular-nums; color: var(--text-dim, #a09b8c); }

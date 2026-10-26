@@ -76,6 +76,7 @@ setInterval(() => {
     queued = [];
     rec!.record(sim.tick, inputs);
     step(sim, inputs);
+    rec!.observe(sim); // S2: replay markers + player pattern detector (read-only)
     const snap = buildSnapshot(sim, sim.config.players.find((p) => p.slot === slot)?.team ?? 0, slot);
     post({ type: 'snap', snap });
     // after posting (the client got its clone): the ghost reads the same snapshot, never the sim

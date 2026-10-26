@@ -78,6 +78,22 @@ export class ClientState {
   /** Jungle camp timers from what this team saw (jungleTracker.ts); minimap, world labels and the Jungle-Tracker panel read it. */
   readonly jungle = new JungleTracker();
 
+  /** Replay seek: forget everything derived from earlier snapshots (the next snapshot is not a successor of the last). */
+  resetForSeek(): void {
+    this.snap = null;
+    this.byId.clear();
+    this.prev2.clear();
+    this.phase.clear();
+    this.fired.length = 0;
+    this.known.clear();
+    this.seenAt.clear();
+    this.pings.length = 0;
+    this.kills = [0, 0];
+    this.towers = [0, 0];
+    this.winner = null;
+    this.base = Number.NaN;
+  }
+
   /** Ingest one snapshot; returns its events for the fx/HUD dispatch. */
   ingest(s: Snapshot, now: number): SimEvent[] {
     // positions two ticks back (= previous snapshot's px) for the interpolation buffer

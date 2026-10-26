@@ -7,6 +7,8 @@ import { t } from '../i18n';
 import { clock, formatStat } from './trainerHud';
 import { renderGhostReview } from './ghostReview';
 import { renderDodgeAnalysis, renderDodgeTrend } from './dodgeReview';
+import { renderErrorList } from './errorListView';
+import type { ErrorList } from '../stats/errorList';
 import { recordFromSummary } from '../stats/history';
 import { calibrateMatch, CATEGORY_IDS } from '../stats/rankCalibration';
 
@@ -129,7 +131,7 @@ function damageChart(parent: HTMLElement, d: MatchSummary): void {
 
 const sum = (a: number[]): number => a.reduce((p, v) => p + v, 0);
 
-export function renderPostGame(root: HTMLElement, d: MatchSummary, onBack: () => void, onRetry?: () => void): void {
+export function renderPostGame(root: HTMLElement, d: MatchSummary, onBack: () => void, onRetry?: () => void, errors?: { list: ErrorList; onJump?: (tick: number) => void }): void {
   root.textContent = '';
   root.classList.add('menu-screen', 'pg-screen');
   const panel = el('div', 'menu-panel pg-panel', root);
@@ -194,6 +196,7 @@ export function renderPostGame(root: HTMLElement, d: MatchSummary, onBack: () =>
     el('div', 'ttl', tl, t('post.timeline'));
     for (const o of d.objectives) el('span', `pg-obj ${o.own ? 'own' : 'enemy'}`, tl, `${clock(o.t)} ${t(`post.obj.${o.kind}`)}`);
   }
+  if (errors) renderErrorList(panel, errors.list, errors.onJump); // S2: bot errors + own patterns, each with a replay jump
   renderGhostReview(panel, d.ghost); // Challenger-Geist timeline
   const row = el('div', 'row-buttons', panel);
   el('button', 'menu-btn secondary', row, t('menu.quit')).addEventListener('click', onBack);

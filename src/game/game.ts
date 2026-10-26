@@ -27,8 +27,31 @@ import { getChampionAtlas, getMinionAtlas, getMonsterAtlases } from '../render/s
 import { SessionExtras, type ExitOpts, type SessionResult } from './session';
 import { withClientSettings } from './modes';
 
+/** Replay viewer (S2, src/replay/replayLink.ts): the same renderer / HUD fed by a replay link instead of a live sim. */
+export interface GameOpts {
+  /** Injected link (replay worker); commands sent to it are ignored. */
+  link?: SimLink;
+  /** Virtual game clock for ClientState / fx / animations (wall clock x replay speed, frozen while paused). */
+  clock?: (realNow: number) => number;
+  /** No sound from skipped / fast-forwarded events. */
+  silent?: () => boolean;
+  /** Mounts the replay bar into the game root. */
+  mount?: (root: HTMLElement, api: ReplayHost) => void;
+}
+
+export interface ReplayHost {
+  state: ClientState;
+  setPaused(p: boolean): void;
+  /** 'follow': camera locked on the viewed champion, 'free': camera is moved by the player. */
+  setCamera(mode: 'follow' | 'free'): void;
+  exit(): void;
+}
+
 export class Game {
   private readonly root: HTMLElement;
+  private readonly clock: (realNow: number) => number;
+  private replayCam: 'follow' | 'free' | null = null;
+  private exiting = false;
   private readonly state = new ClientState();
   private readonly link: SimLink;
   private readonly world: World;
@@ -81,8 +104,9 @@ export class Game {
    * world has no vision yet and would show one violet fog wash). */
   private cover: HTMLElement | null;
 
-  constructor(parent: HTMLElement, config: SimConfig | null, private readonly onExit: (r?: SessionResult) => void) {
-    if (config) config = withClientSettings(config, settings); // e.g. bot toxicity for trainer/duel bots too
+  constructor(parent: HTMLElement, config: SimConfig | null, private readonly onExit: (r?: SessionResult) => void, opts: GameOpts = {}) {
+    this.clock = opts.clock ?? ((n) => n);
+    if (config && !opts.link) config = withClientSettings(config, settings); // e.g. bot toxicity for trainer/duel bots too
     const map = loadMap();
     this.root = document.createElement('div');
     this.root.className = 'game';
@@ -134,15 +158,16 @@ export class Game {
       .then(() => getMonsterAtlases())
       .then((atlases) => this.world.setMonsterAtlases(atlases))
       .catch((e) => console.warn('monster atlases failed, keeping placeholder sprites', e));
-    this.link = config ? workerLink(config, 0) : mockLink();
+    this.link = opts.link ?? (config ? workerLink(config, 0) : mockLink());
     this.link.pause(true); // sim builds in the worker meanwhile but does not tick until the sprites are baked
     this.link.onBotDebug = (rows, tick) => this.hud.botDebug.update(rows, tick);
     this.link.onError = (msg) => this.showSimError(msg);
     this.link.onGhost = (m) => this.extras.setGhost(m); // Challenger-Geist timeline for the post-game screen
     this.link.onSnap = (s) => {
-      const now = performance.now();
+      const now = this.clock(performance.now());
       this.snapsThisSec++;
       this.extras.ingest(s); // Phase 5: post-game stats
+      const quiet = opts.silent?.() ?? false;
       for (const ev of this.state.ingest(s, now)) {
         this.world.onEvent(ev, this.state, now);
         this.overlay.onEvent(ev, this.state, now);
@@ -150,8 +175,9 @@ export class Game {
         this.chat?.onEvent(ev);
         this.surrender?.onEvent(ev);
         soundForEvent(ev, this.state);
+        if (!quiet) soundForEvent(ev, this.state);
       }
-      for (const e of this.state.fired) soundForFire(e);
+      if (!quiet) for (const e of this.state.fired) soundForFire(e);
     };
 
     this.hud = new Hud(
@@ -184,7 +210,7 @@ export class Game {
     );
     this.root.appendChild(this.hud.root);
     // Phase 5: trainer panel/result, sandbox+ panel, stats recorder (src/game/session.ts)
-    this.extras = new SessionExtras(this.root, config, (c) => this.link.send(c), (p) => this.setPaused(p), (o) => this.exit(o), (a) => this.input.setArmed(a));
+    this.extras = new SessionExtras(this.root, opts.link ? null : config,(c) => this.link.send(c), (p) => this.setPaused(p), (o) => this.exit(o), (a) => this.input.setArmed(a));
     this.minimap = new Minimap(
       map,
       (x, y) => {
@@ -256,8 +282,10 @@ export class Game {
     window.addEventListener('keydown', this.onFpsKey);
     window.addEventListener('resize', this.onResize);
     // beforeunload only after a user gesture (Chrome blocks/logs the prompt for frames without one)
-    window.addEventListener('pointerdown', this.armUnload, true);
-    window.addEventListener('keydown', this.armUnload, true);
+    if (!opts.link) {
+      window.addEventListener('pointerdown', this.armUnload, true);
+      window.addEventListener('keydown', this.armUnload, true);
+    }
     window.addEventListener('keydown', blockBrowserShortcuts, true);
     this.root.addEventListener('pointerdown', audioUnlock);
     window.addEventListener('keydown', audioUnlock);
@@ -266,7 +294,7 @@ export class Game {
     // Fullscreen + keyboard lock only from a click inside the RUNNING game (first snapshot received). Entering it
     // from the loading-screen click while the game was still starting froze the client for some players.
     const tryFullscreen = (): void => {
-      if (!settings.fullscreenLock) return;
+      if (!settings.fullscreenLock || opts.link) return;
       if (!this.state.snap) {
         return;
       }
@@ -275,6 +303,10 @@ export class Game {
     // every click in the running game re-enters fullscreen after the player left it (hold Esc); setting turns it off
     this.root.addEventListener('pointerdown', tryFullscreen);
     this.resize();
+    if (opts.mount) {
+      this.replayCam = 'follow';
+      opts.mount(this.root, { state: this.state, setPaused: (p) => this.setPaused(p), setCamera: (m) => (this.replayCam = m), exit: () => this.exit() });
+    }
     this.raf = requestAnimationFrame(this.loop);
     // benchmark hook (dev or ?bench): step frames synchronously (works in hidden tabs where rAF is paused)
     if (import.meta.env.DEV || location.search.includes('bench')) (window as unknown as { __vg?: unknown }).__vg = { frame: (now: number) => this.frame(now), world: this.world, perf: this.perf, state: this.state, link: this.link, hud: this.hud };
@@ -387,11 +419,12 @@ export class Game {
   }
 
   /** One client frame (also driven synchronously by the dev benchmark hook, see constructor). */
-  private frame(now: number): void {
+  private frame(realNow: number): void {
     const t0 = performance.now();
+    const now = this.clock(realNow);
     setListener(this.world.rig.tx, this.world.rig.ty);
-    const dt = Math.min(0.1, (now - this.lastFrame) / 1000);
-    this.lastFrame = now;
+    const dt = Math.min(0.1, (realNow - this.lastFrame) / 1000);
+    this.lastFrame = realNow;
     const st = this.state;
     st.beginFrame(now);
     if (this.cover && this.atlasReady && st.snap) {
@@ -412,6 +445,13 @@ export class Game {
     // dead: the camera is free (the lock would keep it on the corpse); Space still snaps to the death spot
     if (st.snap?.me?.dead) this.input.cameraPeekUntil = Math.max(this.input.cameraPeekUntil, now + 100);
     if (!this.minimap.dragging) this.input.update(dt, now);
+    if (this.replayCam) {
+      // replay viewer: 'follow' pins the camera on the viewed champion, 'free' suspends the camera lock
+      const v = st.me();
+      if (this.replayCam === 'follow') {
+        if (v) this.world.rig.focus(st.x(v), st.y(v));
+      } else this.input.cameraPeekUntil = now + 1000;
+    }
     // C8: the highlighted unit is the one a click hits (hover, or the predicted attack-move target while A is armed)
     const hoverId = this.input.highlight?.id ?? -1;
     const t1 = performance.now();
@@ -437,11 +477,11 @@ export class Game {
     p.total += (t5 - t0 - p.total) * k;
     // stats for the F9 panel
     this.frames++;
-    if (now - this.fpsAt >= 1000) {
+    if (realNow - this.fpsAt >= 1000) {
       this.fps = this.frames;
       this.snapRate = this.snapsThisSec;
       this.frames = this.snapsThisSec = 0;
-      this.fpsAt = now;
+      this.fpsAt = realNow;
       const s = st.snap;
       const info = this.world.renderer.info.render;
       if (!this.bench) this.fpsEl.textContent = `${this.fps} FPS  ${(1000 / Math.max(1, this.fps)).toFixed(1)} ms  (CPU ${p.total.toFixed(1)} ms)`;
@@ -457,7 +497,21 @@ export class Game {
   }
 
   exit(o: ExitOpts = {}): void {
+    if (this.exiting) return;
+    this.exiting = true;
     const result = this.extras.result(o);
+    // finished game (match decided / trainer run over): take the replay along before the worker goes (S2)
+    const decided = this.state.winner !== null || this.extras.over;
+    if (decided && this.link.requestReplay) {
+      const timeout = new Promise<undefined>((r) => setTimeout(r, 3000));
+      void Promise.race([this.link.requestReplay(), timeout]).then((replay) => {
+        if (replay) result.replay = replay;
+        this.finishExit(result);
+      });
+    } else this.finishExit(result);
+  }
+
+  private finishExit(result: SessionResult): void {
     this.extras.dispose();
     cancelAnimationFrame(this.raf);
     delete (window as unknown as { __vg?: unknown }).__vg;

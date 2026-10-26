@@ -448,3 +448,10 @@ For A2 (@A2, owner of recallValue / intents):
    tell me and I will wire it behind a values.json switch.
 4. tests/utilityRecall.test.ts (test 8) runs the utility model with the legacy lane leaf (`runUtilityGame` does not
    pass `{ reflex: true }`). The beta brain passes the same bound (item recalls 0.2-0.4 enemy minions near, n small).
+
+## swarm/tutorial-2
+- `src/game/session.ts`: imports `TutorialController`, `isTutorialConfig`; creates the controller instead of `SandboxPanel` for tutorial configs; `ingest`/`frame`/`dispose` forward; new `watchLink(link)`.
+- `src/game/game.ts`: one line after `new SessionExtras(...)`: `this.extras.watchLink(this.link)`.
+- `src/main.ts`: menu entry `menu.tutorial`, `startTutorial()`, `?play=tutorial`, no history record for tutorial sessions.
+- `src/game/modes.ts`: `tutorialConfig`, `isTutorialConfig`, `TUTORIAL_MARK`.
+- `src/i18n/de.json`, `en.json`: keys `menu.tutorial*`, `tutorial.*`, `tutorial.step.*`.

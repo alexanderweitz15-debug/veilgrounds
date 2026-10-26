@@ -141,6 +141,7 @@ export class Game {
     this.root.appendChild(this.hud.root);
     // Phase 5: trainer panel/result, sandbox+ panel, stats recorder (src/game/session.ts)
     this.extras = new SessionExtras(this.root, config, (c) => this.link.send(c), (p) => this.setPaused(p), (o) => this.exit(o), (a) => this.input.setArmed(a));
+    this.extras.watchLink(this.link); // tutorial only
     this.minimap = new Minimap(
       map,
       (x, y) => {

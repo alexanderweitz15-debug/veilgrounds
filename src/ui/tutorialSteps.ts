@@ -155,12 +155,16 @@ export const STEPS: StepDef[] = [
     keys: ['recall'],
     needs: { noCd: false, place: 'ownTower' },
     check: (v, m) => {
-      // started = the channel bar ran; done = it ended with the player in the fountain (an interrupted recall starts over)
-      if (v.me.recallLeft > 0) m.recallStarted = true;
-      else if (m.recallStarted) {
-        if (v.me.inFountain) return true;
-        m.recallStarted = false;
+      // started = the channel bar ran. It ran out (last bar value <= 0.2 s) = the teleport follows one tick later, done once
+      // the player is in the fountain; a bar that ends earlier was interrupted and the step starts over.
+      if (v.me.recallLeft > 0) {
+        m.recallStarted = true;
+        m.last.set('left', v.me.recallLeft);
+        return false;
       }
+      if (!m.recallStarted) return false;
+      if ((m.last.get('left') ?? 99) > 0.2) m.recallStarted = false;
+      else return v.me.inFountain;
       return false;
     },
   },
@@ -473,7 +477,10 @@ export class TutorialEngine {
     this.mem = null;
     this.phase = 'active';
     this.index = this.nextFrom(this.index + 1);
-    if (this.index >= this.steps.length) this.finish();
+    const next = this.steps[this.index];
+    if (!next) this.finish();
+    // start the step right away, from the last snapshot: what the player does before the next snapshot still counts
+    else if (this.view) this.begin(next, this.view);
     else this.changed();
   }
 

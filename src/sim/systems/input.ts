@@ -223,6 +223,5 @@ function ping(sim: Sim, eid: number, cmd: Extract<Command, { t: 'ping' }>): void
   // a target must be something the team actually sees (no info leak through pings)
   const target = cmd.target !== undefined && cmd.target >= 0 && Unit.alive[cmd.target] && sees(sim, Unit.team[eid]!, cmd.target) ? cmd.target : -1;
   const label = cleanPingLabel(cmd.label);
-  sim.events.push({ e: 'ping', slot: Unit.slot[eid]!, team: Unit.team[eid]!, kind: cmd.kind, x: Math.max(0, Math.min(16000, cmd.x)), y: Math.max(0, Math.min(16000, cmd.y)), target, ...(label ? { label } : {}) });
-  sim.events.push({ e: 'ping', slot: Unit.slot[eid]!, team: Unit.team[eid]!, kind: cmd.kind, x: Math.max(0, Math.min(sim.map.size, cmd.x)), y: Math.max(0, Math.min(sim.map.size, cmd.y)), target });
+  sim.events.push({ e: 'ping', slot: Unit.slot[eid]!, team: Unit.team[eid]!, kind: cmd.kind, x: Math.max(0, Math.min(sim.map.size, cmd.x)), y: Math.max(0, Math.min(sim.map.size, cmd.y)), target, ...(label ? { label } : {}) });
 }

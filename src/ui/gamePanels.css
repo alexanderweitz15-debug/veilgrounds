@@ -207,6 +207,20 @@
 .sb-team.enemy { flex-direction: row-reverse; }
 .sb-team-name { font: 700 12px 'Barlow Condensed', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--blue); }
 .sb-team.enemy .sb-team-name { color: var(--red); }
+/* FEATURE-GAP 1.7: rank badge before the bot name, Bot-Info column (ten compact bars, 2 x 5) and its toggle */
+.sb-rank { display: inline-block; width: 18px; height: 18px; margin-right: 5px; vertical-align: middle; background: center / contain no-repeat; }
+.score-table td.botinfo { padding: 2px 6px; }
+.sb-ps { display: inline-grid; grid-template-columns: repeat(5, 18px); gap: 3px 3px; vertical-align: middle; }
+.sb-ps-bar { position: relative; display: block; height: 6px; background: #0d1013; border: 1px solid #3c3c41; cursor: help; }
+.sb-ps-bar::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(200, 170, 110, 0.35); }
+.sb-ps-bar:hover { border-color: #c8aa6e; }
+.sb-ps-mark { position: absolute; top: -2px; bottom: -2px; width: 3px; left: calc(var(--v, 0.5) * (100% - 3px)); background: #f0e6d2; box-shadow: 0 0 0 1px #8c6c2a; }
+.sb-ps-bar.zero .sb-ps-mark { background: #a09b8c; box-shadow: none; }
+.panel.scoreboard .ttl { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sb-botinfo-toggle { padding: 1px 9px; background: none; border: 1px solid #3c3c41; border-radius: 0; cursor: pointer; color: #a09b8c;
+  font: 700 11px 'Barlow Condensed', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; }
+.sb-botinfo-toggle:hover, .sb-botinfo-toggle.on { color: #f0e6d2; border-color: #c8aa6e; }
+.sb-botinfo-toggle.on { background: rgba(200, 170, 110, 0.12); }
 .sb-obj-item { display: inline-flex; align-items: center; gap: 3px; cursor: help; color: #f1e6c8; font-variant-numeric: tabular-nums; }
 .sb-obj-item b { font-weight: 800; }
 .sb-ico { display: inline-block; width: 18px; height: 18px; background: center / cover no-repeat; }

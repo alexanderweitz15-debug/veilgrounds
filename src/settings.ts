@@ -77,6 +77,8 @@ export interface Settings {
   enemySkillshotOutline: boolean;
   /** Champion voice lines as text: speech bubbles in the match and the pick line in the lobby (src/ui/voiceBubbles.ts). */
   voiceLines: boolean;
+  /** Tab scoreboard: extra "Bot-Info" column with the ten playstyle mini-scales per bot (FEATURE-GAP 1.7). */
+  scoreBotInfo: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -117,6 +119,7 @@ const DEFAULTS: Settings = {
   enemySkillshotOutline: false,
   attackMoveNearCursor: true,
   voiceLines: true,
+  scoreBotInfo: false,
 };
 
 /** Default values (settings import validates keys and types against them). */

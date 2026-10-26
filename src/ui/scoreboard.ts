@@ -13,11 +13,13 @@ import { LEVIATHAN_MAX_STACKS } from '../sim/systems/jungle';
 import { champName, summonerName } from './names';
 import { itemAbbr } from './shop';
 import { t } from '../i18n';
-import { resolvePlaystyle } from '../ai/params';
+import { AXIS_LABELS, resolvePlaystyle, signed } from '../ai/params';
 import { scaleTitle } from './playstyleView';
 import { PLAYSTYLE_AXES } from '../ai/contract';
+import { tendencyText } from './botTendency';
+import { settings, updateSettings } from '../settings';
 import { setPortrait } from '../render/portraits';
-import { itemIcon, kesselbrutIcon, objectiveIcon, setIcon, summonerIcon } from './icons';
+import { itemIcon, kesselbrutIcon, objectiveIcon, rankIcon, setIcon, summonerIcon } from './icons';
 import { setTip } from './tooltip';
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?: HTMLElement, text?: string): HTMLElementTagNameMap[K] {
@@ -78,6 +80,19 @@ function styleTitle(setup: PlayerSetup | undefined): string {
   return [t('score.style'), ...PLAYSTYLE_AXES.map((a) => scaleTitle(a, ps[a]))].join('\n');
 }
 
+/** Bot-Info cell (FEATURE-GAP 1.7): ten compact bars (2 x 5), marker = axis value -5..+5; tooltip = axis + tendency in words. */
+function botInfoCell(parent: HTMLElement, setup: PlayerSetup | undefined): void {
+  if (!setup?.bot || setup.isHuman) return;
+  const ps = resolvePlaystyle(setup).playstyle;
+  const grid = el('span', 'sb-ps', parent);
+  for (const a of PLAYSTYLE_AXES) {
+    const bar = el('span', `sb-ps-bar${ps[a] === 0 ? ' zero' : ''}`, grid);
+    bar.style.setProperty('--v', String((ps[a] + 5) / 10));
+    el('span', 'sb-ps-mark', bar);
+    setTip(bar, `text:${t('score.botInfoAxis', { axis: AXIS_LABELS[a].name[settings.lang], text: tendencyText(a, ps[a], settings.lang), v: signed(ps[a]) })}`);
+  }
+}
+
 export class Scoreboard {
   /** Table structure (slots + champions); rows are built once and only their cells are updated. */
   private structKey = '';
@@ -102,7 +117,7 @@ export class Scoreboard {
     if (!snap || !this.root.classList.contains('open')) return;
     this.time = snap.time;
     const rows = snap.players ?? [];
-    const struct = `${snap.team}|${rows.map((p) => `${p.slot}:${p.champ}`).join(',')}`;
+    const struct = `${snap.team}|${settings.scoreBotInfo ? 1 : 0}|${rows.map((p) => `${p.slot}:${p.champ}`).join(',')}`;
     if (struct !== this.structKey) this.build(snap, struct);
     const enemy = snap.team === 0 ? 1 : 0;
     this.drawObjectives(this.obj[0], snap.team as 0 | 1, state);
@@ -216,7 +231,16 @@ export class Scoreboard {
     this.obj.length = 0;
     const r = this.root;
     r.textContent = '';
-    el('div', 'ttl', r, t('hud.scoreboardTitle'));
+    const ttl = el('div', 'ttl', r, t('hud.scoreboardTitle'));
+    // Bot-Info column toggle (off by default so the table stays compact)
+    const toggle = el('button', `sb-botinfo-toggle${settings.scoreBotInfo ? ' on' : ''}`, ttl, t('score.botInfo'));
+    toggle.type = 'button';
+    setTip(toggle, `text:${t('score.botInfoToggleTip')}`);
+    toggle.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      updateSettings({ scoreBotInfo: !settings.scoreBotInfo });
+    });
     const bar = el('div', 'sb-objectives', r);
     this.obj.push({ root: el('div', 'sb-team ally', bar), key: '' }, { root: el('div', 'sb-team enemy', bar), key: '' });
     const rows = snap.players ?? [];
@@ -224,7 +248,7 @@ export class Scoreboard {
       const own = team === snap.team;
       const tab = el('table', `score-table ${own ? 'ally' : 'enemy'}`, r);
       const hr = el('tr', '', el('thead', '', tab));
-      for (const h of ['score.champ', 'score.player', 'score.summoners', 'score.level', 'score.kda', 'score.cs', 'score.vision', 'score.damage', own ? 'score.gold' : 'score.itemValue', 'score.items'])
+      for (const h of ['score.champ', 'score.player', ...(settings.scoreBotInfo ? ['score.botInfo'] : []), 'score.summoners', 'score.level', 'score.kda', 'score.cs', 'score.vision', 'score.damage', own ? 'score.gold' : 'score.itemValue', 'score.items'])
         el('th', '', hr, t(h));
       const body = el('tbody', '', tab);
       for (const p of rows.filter((x) => x.team === team).sort((a, b) => a.slot - b.slot)) {
@@ -237,8 +261,16 @@ export class Scoreboard {
         const respawn = el('span', 'score-respawn', picWrap);
         ct.append(champName(p.champ));
         const setup = this.players.find((x) => x.slot === p.slot);
-        const name = el('td', 'name', tr, playerLabel(setup));
+        const name = el('td', 'name', tr);
+        // bots: rank badge in front of the name (procedural, icons.ts rankIcon)
+        if (setup?.bot && !setup.isHuman) {
+          const badge = el('span', 'sb-rank', name);
+          setIcon(badge, rankIcon(setup.bot.rank));
+          badge.title = t('score.rankTip', { rank: t(`rank.${setup.bot.rank}`) }); // native title: overrides the cell's style title
+        }
+        name.append(playerLabel(setup));
         name.title = styleTitle(setup);
+        if (settings.scoreBotInfo) botInfoCell(el('td', 'botinfo', tr), setup);
         const sumCell = el('td', 'sums', tr);
         // own team: a hidden third slot for Teleport (top laner after 1500 minion gold, B4)
         const spells = [...(setup?.summoners ?? []), ...(own && !setup?.summoners.includes('teleport') ? ['teleport'] : [])];

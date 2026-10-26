@@ -553,3 +553,10 @@ src/ui/overlay.ts (VoiceBubbles field, onEvent call, draw call), src/ui/classicL
 - src/ui/hud.ts: creates `JungleTrackerPanel` (toggle button + panel above the minimap), one-time setup in `update` (enabled only for mode 'classic', enemy jungler slots from `PlayerSetup.role`).
 - src/i18n de/en: `jungle.*` keys (appended at the end).
 - No settings.ts / controller.ts change: panel open state and the estimate option live in localStorage (`vg.jungle.open`, `vg.jungle.estimate`). No hotkey.
+
+## scoreboard-bots (FEATURE-GAP 1.7)
+
+- src/settings.ts: new `scoreBotInfo: boolean` (default false) in `Settings` + `DEFAULTS` (Tab scoreboard Bot-Info column).
+- src/i18n/de.json, en.json: `score.botInfo`, `score.botInfoToggleTip`, `score.botInfoAxis`, `score.rankTip`, and 50 keys
+  `tend.<axis>.<-2..2>` (tendency sentences per playstyle axis).
+- src/ui/icons.ts: new exported `rankIcon(rank)` appended at the end (additive).

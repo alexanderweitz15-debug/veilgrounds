@@ -1,7 +1,7 @@
 // combat-helpers first: it imports sim.ts before any system module (systems <-> sim import cycle).
 import { makeSim, mira, place, steps, cmd } from './combat-helpers';
 import { describe, expect, it } from 'vitest';
-import { buyItem, inventory, itemStats, quote, sellItem } from '../src/sim/items/inventory';
+import { buyItem, inventory, itemStats, quote, sellItem, undoDepth, undoLast } from '../src/sim/items/inventory';
 
 function setup() {
   const sim = makeSim();
@@ -102,5 +102,51 @@ describe('recursive recipes', () => {
     // a direct component wins over its sub-components
     const r2 = recipePrice(['spitzhacke', 'langschwert', null, null, null, null, null], storm);
     expect(r2.consumes).toEqual([0]);
+  });
+});
+
+describe('shop undo (G/B1)', () => {
+  it('undoes the last buy: inventory and gold as before, consumed components return', () => {
+    const { sim, me } = setup();
+    buyItem(sim, me, 'langschwert');
+    const g = sim.c.Champ.gold[me]!;
+    buyItem(sim, me, 'spitzhacke'); // consumes the Langschwert
+    expect(inventory(sim, me).filter(Boolean)).toEqual(['spitzhacke']);
+    expect(undoDepth(sim, me)).toBe(2);
+    expect(undoLast(sim, me)).toBe(true);
+    expect(inventory(sim, me).filter(Boolean)).toEqual(['langschwert']);
+    expect(sim.c.Champ.gold[me]).toBe(g);
+    expect(undoLast(sim, me)).toBe(true);
+    expect(inventory(sim, me).filter(Boolean)).toEqual([]);
+    expect(sim.c.Champ.gold[me]).toBe(10000);
+    expect(undoLast(sim, me)).toBe(false); // nothing left
+  });
+
+  it('undoes a sell (needs the sale gold) and goes through the input system', () => {
+    const { sim, me } = setup();
+    cmd(sim, { t: 'buy', item: 'langschwert' });
+    cmd(sim, { t: 'sell', slot: 0 });
+    expect(sim.c.Champ.gold[me]).toBe(10000 - 350 + 245);
+    cmd(sim, { t: 'undo' });
+    expect(inventory(sim, me)[0]).toBe('langschwert');
+    expect(sim.c.Champ.gold[me]).toBe(10000 - 350);
+    cmd(sim, { t: 'sell', slot: 0 });
+    sim.c.Champ.gold[me] = 100; // spent the sale gold: the sell cannot be taken back
+    expect(undoLast(sim, me)).toBe(false);
+  });
+
+  it('leaving the fountain or using an item ends the undo window', () => {
+    const { sim, me } = setup();
+    buyItem(sim, me, 'trank');
+    buyItem(sim, me, 'langschwert');
+    expect(undoDepth(sim, me)).toBe(2);
+    place(sim, me, 3000, 3000);
+    steps(sim, 1);
+    expect(undoDepth(sim, me)).toBe(0);
+    expect(undoLast(sim, me)).toBe(false);
+    const { sim: s2, me: m2 } = setup();
+    buyItem(s2, m2, 'trank');
+    cmd(s2, { t: 'item', slot: 0 });
+    expect(undoDepth(s2, m2)).toBe(0);
   });
 });

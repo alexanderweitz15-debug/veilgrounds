@@ -1,0 +1,21 @@
+<!doctype html>
+<!-- Icon contact sheet (G icon rework): all items + runes at 64 / 48 / 34 px.
+     Run: npx vite --config tools/scratch/vite.icons.config.mjs --port 4397   then open http://localhost:4397/iconSheet.html -->
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Veilgrounds icon sheet</title>
+  <style>
+    body { margin: 0; padding: 16px; background: #14111a; color: #d8d0bf; font: 13px 'Segoe UI', sans-serif; }
+    h2 { margin: 18px 0 6px; font-size: 15px; color: #f2dfa8; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+    .cell { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 72px; }
+    .cell span { font-size: 10px; color: #9a927e; text-align: center; line-height: 1.1; }
+    .ic { background-size: cover; border: 1px solid #000; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="./iconSheet.ts"></script>
+</body>
+</html>

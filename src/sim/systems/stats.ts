@@ -108,7 +108,11 @@ export function computeChampionStats(sim: Sim, eid: number, initial: boolean): v
   Stats.as[eid] = Math.min(AS_CAP, b.as * (1 + asBonus / 100));
   Stats.range[eid] = b.range + statMods(sim, eid, 'range')[1]; // flat range buffs
   Stats.windup[eid] = b.windup;
-  Stats.tenacity[eid] = Math.min(1, statMods(sim, eid, 'tenacity')[0] / 100);
+  Stats.tenacity[eid] = Math.min(1, (statMods(sim, eid, 'tenacity')[0] + (it.tenacity ?? 0)) / 100);
+  // G/V1: penetration from items (percent values in items.json are 0..100); hooks may adjust in onComputeStats
+  Stats.armorPenPct[eid] = Math.min(1, (it.armorPenPct ?? 0) / 100);
+  Stats.magicPenPct[eid] = Math.min(1, (it.magicPenPct ?? 0) / 100);
+  Stats.magicPen[eid] = it.magicPen ?? 0;
   const ms = softCapMs(finalMs(sim, eid, b.ms + (it.msFlat ?? 0)) * (1 + (it.msPct ?? 0) / 100));
   Stats.ms[eid] = !canMove(sim, eid) || movementLocked(sim, eid) ? 0 : ms;
   for (const h of passiveHooksOf(sim, eid)) h.onComputeStats?.(sim, eid);

@@ -2,12 +2,15 @@
 // Scratch (idea agent): headless measurements behind docs/IDEAS-FEEL-SHOP.md (pathfinding detours, command latency,
 // collision cost, wind-up quantisation, icon glyph collisions). Run: npx tsx tools/scratch/feelMeasure.ts
 import { createSim, step, type Sim } from '../../src/sim/sim';
-import { findPath, lineWalkable } from '../../src/sim/map';
+import { findPath } from '../../src/sim/map';
 import { spawnMinion } from '../../src/sim/systems/minions';
 import { Kind, type SimConfig } from '../../src/sim/types';
 import { windupTicks } from '../../src/sim/systems/attack';
 import { championData } from '../../src/sim/champions';
 import itemsJson from '../../src/data/items.json';
+
+// No @types/node in this repo (see tools/botSim.ts).
+declare const process: { stdout: { write(s: string): void } };
 
 const NO_RUNES = { keystone: 'none', minor: ['none', 'none', 'none'] as [string, string, string] };
 function makeSim(players: SimConfig['players']): Sim {
@@ -136,7 +139,7 @@ const dist = (a: { x: number; y: number }, b: { x: number; y: number }): number 
   run('durch eigene Welle (3 Nahkampf + 3 Caster, stehend)', (sim) => {
     const kinds = [Kind.MinionMelee, Kind.MinionMelee, Kind.MinionMelee, Kind.MinionCaster, Kind.MinionCaster, Kind.MinionCaster];
     kinds.forEach((k, i) => {
-      const e = spawnMinion(sim, k, 0, 'mid', 5900 + (i % 3) * 110, 8700 + Math.floor(i / 3) * 100);
+      const e = spawnMinion(sim, k, 0, 'mid' as never, 5900 + (i % 3) * 110, 8700 + Math.floor(i / 3) * 100);
       sim.c.Move.mode[e] = 0;
       sim.c.Atk.target[e] = -1;
     });
@@ -144,7 +147,7 @@ const dist = (a: { x: number; y: number }, b: { x: number; y: number }): number 
   run('durch gegnerische Welle (6 Minions, stehend)', (sim) => {
     const kinds = [Kind.MinionMelee, Kind.MinionMelee, Kind.MinionMelee, Kind.MinionCaster, Kind.MinionCaster, Kind.MinionCaster];
     kinds.forEach((k, i) => {
-      const e = spawnMinion(sim, k, 1, 'mid', 5900 + (i % 3) * 110, 8700 + Math.floor(i / 3) * 100);
+      const e = spawnMinion(sim, k, 1, 'mid' as never, 5900 + (i % 3) * 110, 8700 + Math.floor(i / 3) * 100);
       sim.c.Move.mode[e] = 0;
       sim.c.Atk.target[e] = -1;
       sim.c.Unit.radius[e] = sim.c.Unit.radius[e]!; // keep
@@ -177,7 +180,7 @@ const dist = (a: { x: number; y: number }, b: { x: number; y: number }): number 
 // ---------------------------------------------------------------- E. icon glyph collisions (rules copied from src/ui/icons.ts)
 {
   type It = { id: string; tier: string; stats: Record<string, number>; name: { de: string } };
-  const items = (itemsJson as { items: It[] }).items;
+  const items = (itemsJson as unknown as { items: It[] }).items;
   const rules: [RegExp, string][] = [
     [/stiefel/, 'boot'], [/trank/, 'potion'], [/ward/, 'eye'], [/zahn/, 'fang'], [/bogen/, 'bow'], [/krone/, 'crown'],
     [/dolch/, 'dagger'], [/beil|hacke/, 'axe'], [/schwert|klinge|stahl|brecher/, 'sword'], [/kettenhemd|weste|wallherz/, 'shield'],

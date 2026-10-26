@@ -19,6 +19,8 @@ export const itemById = (id: string): ItemData | undefined => BY_ID.get(id);
 export const ITEM_SLOTS = 6;
 export const TRINKET_SLOT = 6;
 export const SELL_RATIO = 0.7;
+/** Gold a sale returns (70 % of the full cost; +1e-9 keeps 350 * 0.7 = 244.999... at 245). */
+export const sellValue = (id: string): number => Math.floor((itemById(id)?.cost ?? 0) * SELL_RATIO + 1e-9);
 
 export type Inventory = (string | null)[];
 
@@ -96,10 +98,60 @@ export function quote(sim: Sim, eid: number, id: string): BuyQuote {
   return res();
 }
 
+// ------------------------------------------------------------------ undo ledger (G/B1, LoL shop "Rückgängig")
+
+/** One shop transaction: the inventory before it and the gold it moved (+ paid on a buy, - received on a sell). */
+interface LedgerEntry {
+  inv: Inventory;
+  gold: number;
+}
+export const UNDO_MAX = 10;
+
+function ledger(sim: Sim, eid: number): LedgerEntry[] {
+  let s = sim.state.undo as Map<number, LedgerEntry[]> | undefined;
+  if (!s) sim.state.undo = s = new Map();
+  let l = s.get(eid);
+  if (!l) s.set(eid, (l = []));
+  return l;
+}
+
+function record(sim: Sim, eid: number, inv: Inventory, gold: number): void {
+  const l = ledger(sim, eid);
+  l.push({ inv: [...inv], gold });
+  if (l.length > UNDO_MAX) l.shift();
+}
+
+/** Buys/sells that can still be reverted (snapshot `me.undo`). */
+export const undoDepth = (sim: Sim, eid: number): number => (sim.state.undo as Map<number, LedgerEntry[]> | undefined)?.get(eid)?.length ?? 0;
+
+/** Leaving the fountain or using an item ends the undo window (itemHooks.ts calls this). */
+export function clearUndo(sim: Sim, eid: number): void {
+  (sim.state.undo as Map<number, LedgerEntry[]> | undefined)?.get(eid)?.splice(0);
+}
+
+/**
+ * Revert the last buy or sell: the inventory returns to its state before it, the gold moves back. Only in the shop
+ * (fountain or dead); undoing a sell needs the sale gold to still be there.
+ */
+export function undoLast(sim: Sim, eid: number): boolean {
+  if (!canShop(sim, eid)) return false;
+  const l = ledger(sim, eid);
+  const e = l[l.length - 1];
+  if (!e) return false;
+  const gold = sim.c.Champ.gold[eid]! + e.gold;
+  if (gold < 0) return false; // sold, spent the gold elsewhere: cannot take the sale back
+  l.pop();
+  const inv = inventory(sim, eid);
+  for (let i = 0; i < inv.length; i++) inv[i] = e.inv[i] ?? null;
+  sim.c.Champ.gold[eid] = gold;
+  return true;
+}
+
 export function buyItem(sim: Sim, eid: number, id: string): boolean {
   const q = quote(sim, eid, id);
   if (!q.ok) return false;
   const inv = inventory(sim, eid);
+  record(sim, eid, inv, q.price);
   for (const s of q.consumes) inv[s] = null;
   const slot = inv.findIndex((x, i) => i < ITEM_SLOTS && x === null);
   inv[slot] = id;
@@ -111,8 +163,10 @@ export function sellItem(sim: Sim, eid: number, slot: number): boolean {
   const inv = inventory(sim, eid);
   const id = inv[slot];
   if (!id || !canShop(sim, eid)) return false;
+  const refund = sellValue(id);
+  record(sim, eid, inv, -refund);
   inv[slot] = null;
-  sim.c.Champ.gold[eid] = sim.c.Champ.gold[eid]! + Math.floor((itemById(id)?.cost ?? 0) * SELL_RATIO);
+  sim.c.Champ.gold[eid] = sim.c.Champ.gold[eid]! + refund;
   return true;
 }
 

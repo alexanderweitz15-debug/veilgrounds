@@ -7,7 +7,8 @@ import { Kind, VARIANTS, enemyOf, isStructure, type LaneId, type SimEvent, type 
 import { abilityHud, armedSlot, displaceProgress, ultChoiceOf, type AbilityHud } from './systems/abilities';
 import { CHAMPION_DATA, championHooks, champIdOf } from './champions';
 import type { ChampionVisuals, HintMarker, VisualShape } from './champions/hooks';
-import { inFountain, inventory, itemValue } from './items/inventory';
+import { inFountain, inventory, itemValue, undoDepth } from './items/inventory';
+import { bootsPriceMult } from './items/runeHooks';
 import { itemCooldownHud } from './items/itemHooks';
 import { champions, kda } from './systems/economy';
 import { airborneProgress, buffs, isRevealed } from './buffs';
@@ -155,6 +156,10 @@ export interface PlayerHud {
   /** Item active cooldown per slot (same indices as items; seconds, total 0 = no active). Agent I. */
   itemCds: { left: number; total: number }[];
   inFountain: boolean;
+  /** Shop undo stack depth (G/B1): buys/sells that can still be reverted. */
+  undo?: number;
+  /** Inspiration boots discount (G/B9): price multiplier the shop shows for boots; absent when 1. */
+  bootsMult?: number;
   marks: { id: string; left: number }[];
   /** Trinket (Agent J): charges / cooldown (seconds) and which trinket a swap would give right now (null = none). */
   trinket?: { id: TrinketId; charges: number; maxCharges: number; cdLeft: number; cdTotal: number; canSwap: TrinketId | null };
@@ -462,6 +467,8 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
       cc: ccLevel(sim, me),
       teleportLeft: teleportLeft(sim, me) / 30,
       inFountain: inFountain(sim, me),
+      undo: undoDepth(sim, me),
+      ...(bootsPriceMult(sim, me) !== 1 ? { bootsMult: bootsPriceMult(sim, me) } : {}),
       marks: buffs(sim, me).filter((b) => b.kind === 'mark' && b.until > sim.tick).map((b) => ({ id: b.id, left: (b.until - sim.tick) / 30 })),
       stats: { ad: Stats.ad[me]!, ap: Stats.ap[me]!, armor: Stats.armor[me]!, mr: Stats.mr[me]!, as: Stats.as[me]!, ms: Stats.ms[me]!, range: Stats.range[me]!, crit: Stats.crit[me]! },
     };

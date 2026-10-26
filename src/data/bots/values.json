@@ -116,7 +116,8 @@
     "noiseDistribution": "normal, sigma = profile utilityNoisePct / 100 x |score| (A3 field; fallback exchangeNoise(skill): Iron 0.40, Gold 0.20, Challenger 0.07 = spec §5)",
     "hysteresisSource": "BotParams.hysteresis (profile: Gold 0.25 .. Challenger 0.10)",
     "logNode": "intent",
-    "idleErrorEnemyRange": 1200
+    "idleErrorEnemyRange": 1200,
+    "forceWaveState": false
   },
 
   "style": {

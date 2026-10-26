@@ -71,7 +71,7 @@ export function farmValue(w: World): CandidateValue | null {
   const risk = w.gankRisk * w.deathCost * W.farmRisk;
   // staying in contact at low HP (minions, tower, a poke): the death the bot risks by not going home (§4.6)
   const exposure = stayDeathProb(w) * w.deathCost * W.exposureFarm;
-  return { benefit, cost: risk + exposure, horizonS: h, terms: { minions: near, presence, travelS: travel, gankRisk: w.gankRisk, risk, exposure } };
+  return { benefit, cost: risk + exposure, horizonS: h, terms: { minions: near, presence, travelS: travel, gankRisk: w.gankRisk, risk, exposure, stay: stayDeathProb(w) } };
 }
 
 // ------------------------------------------------------------------ poke (ability harass, §4.3 / §5)

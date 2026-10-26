@@ -73,3 +73,11 @@ Der Shop zeigt Werte als `t('stat.<key>')`; ohne Eintrag erscheint der rohe Schl
 Außerdem (nur zur Kenntnis): Aktive mit Einheitenziel (`target: "enemyChampion"` / `"allyChampion"`) wählen die Einheit über die
 Item-Befehls-Koordinaten (`{ t: 'item', slot, x, y }`, nächste passende Einheit zum Punkt, sichtbar und in `range`). Der Controller
 schickt den Mauszeiger-Punkt bereits mit (`src/input/controller.ts`); eine Zielanzeige (Reichweitenring) wäre ein UI-Wunsch.
+
+## R4 – A14 → Integrator: Shop-Phantomgold-Fix auch fuer das Standard-Gehirn · offen
+
+`src/ai/bot/shop.ts` hat drei Fehler, die in jeder Partie Gold verstecken: (1) der Bauplan kauft `standard.boots` (Stufe-2-Stiefel, 1100) ohne die Basis-Stiefel `stiefel` (300), preist ihn aber mit 800 -> Kauf bei 800..1100 Gold wird vom Sim abgelehnt; (2) die Inspiration-Runenstiefel (gratis `stiefel_hast` um 12:00) machen den Plan-Kauf "unique"-ungueltig; (3) `settleBuys` wertet den ersten Entscheid nach dem Kauf. In allen drei Faellen wurde `phantomGold += 800` gesetzt und nie mehr abgebaut: `spendable` war fuer den Rest der Partie um 800 zu niedrig, Item-Recalls und Kaeufe verzoegerten sich (gemessen: 3 von 10 Bots nach 16 min, Mid mit 1915 Gold unausgegeben). A14 hat den Fix hinter `utilityOn(ctx)` eingebaut (Beta-Gehirn); das Standard-Gehirn bleibt bit-identisch. Beim Umlegen des Schalters entfaellt die Bedingung (Test: tests/a14macro.test.ts). Hinweis: HINWEIS-1 in BUGS.md (Horten > 6000 Gold) ist davon getrennt (volles Inventar, keine Verkaufslogik).
+
+## R5 – A14 → A13: Wellenzustand und Angriffs-Scheduler (src/ai/reflex/**) · offen
+
+Ein Teil des verbleibenden Stehens (Messung "breit": Beta Gold 8 %, Challenger 12-13 %) ist Warten im Reflex: `hold the timer for the next last hit` und die Wellenzustaende `neutral`/`hold` erlauben Minions nur, wenn die eigene Welle nicht groesser ist -> die Bots stehen am Stehpunkt mit Gegnern in Reichweite+200 (Idle-Messung A14: ~7 % der Zeit, in `farm:best`, laneIntent push/neutral/hold, standD 0). Das ist Besitz von A13: Filler auch in `hold`/`neutral` zulassen (Zustand als Zielbild, kein Verbot). Ausserdem: `ReflexState.waveOverride` ist nur fuer Tests gedacht; A14 setzt es ueber `values.json selection.forceWaveState` (Standard aus: Messung zeigt dann weniger "Recall mit gecrashter Welle").

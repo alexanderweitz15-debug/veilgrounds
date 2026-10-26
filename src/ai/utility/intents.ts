@@ -35,6 +35,7 @@ const forcedWave = new WeakSet<object>();
  */
 function crashWave(n: NodeCtx, reason: string): void {
   n.mem.ext.wave = { state: 'crash', at: n.v.tick, reason };
+  if (!VALUES.selection.forceWaveState) return;
   const st = reflexState(n.mem);
   if (st.waveOverride === undefined || forcedWave.has(n.mem)) {
     st.waveOverride = 'push';

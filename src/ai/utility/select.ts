@@ -157,7 +157,9 @@ function decide(n: NodeCtx, st: UtilityState): NodeResult {
   // Baseline farm (A14, idle first): a lane presence whose risk term outweighs its benefit is still the thing to do -
   // the laning leaf already answers the risk with its position (gank-risk tier: further back, no push, near the
   // tower), standing still answers nothing. Without this the bot idled wherever it stood (also far from its lane).
-  const base = scored.find((s) => s.id === 'farm' && s.score <= 0 && s.value.benefit > 0);
+  // (Not when the cost is the bot's own low HP - stayDeath above the recall threshold: standing back is then the safe
+  // answer and the recall / retreat decide; Iron died more when it farmed on at low HP.)
+  const base = scored.find((s) => s.id === 'farm' && s.score <= 0 && s.value.benefit > 0 && (s.value.terms.stay ?? 0) <= VALUES.weights.recallStayDeathThreshold);
   if (base) {
     const r = runIntent(n, 'farm', base.value.data);
     if (r !== 'failure') {

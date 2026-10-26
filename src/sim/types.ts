@@ -78,8 +78,8 @@ export type Command =
   /** R choice (champions with ultChoices, e.g. Sev): permanent for the match; also allowed while dead. */
   | { t: 'ultChoice'; choice: 0 | 1 | 2 }
   | { t: 'recall' }
-  /** Team ping at a map point; target = entity eid for focus/objective pings. */
-  | { t: 'ping'; kind: PingKind; x: number; y: number; target?: number }
+  /** Team ping at a map point; target = entity eid for focus/objective pings; label = context text ("Leviathan in 1:23"). */
+  | { t: 'ping'; kind: PingKind; x: number; y: number; target?: number; label?: string }
   /** Team chat line (bots: spec §9; ref = decision log tick the line refers to). Team-only, like pings. */
   | { t: 'chat'; text: string; ref?: number; /** All chat (S1, 2.8): delivered to both teams. */ all?: boolean }
   /** Surrender vote (S1, 2.10; classic only): start a vote for the own team / cast the own vote (also while dead). */
@@ -160,7 +160,7 @@ export type SimEvent =
   | { e: 'wave'; lane: number; team: number; index: number }
   | { e: 'respawn'; eid: number }
   /** Team ping (only delivered to the pinging team). */
-  | { e: 'ping'; slot: number; team: number; kind: PingKind; x: number; y: number; target: number }
+  | { e: 'ping'; slot: number; team: number; kind: PingKind; x: number; y: number; target: number; label?: string }
   /** Team chat line (only delivered to the sender's team); `all` lines (S1, 2.8) go to both teams. */
   | { e: 'chat'; slot: number; team: number; text: string; ref?: number; all?: boolean }
   /** Surrender vote of `team` (S1, 2.10; team-only). Every phase carries the full tally. `denied`: the start was refused (`reason`). */

@@ -2,6 +2,7 @@
 import type { SnapEntity, Snapshot } from '../sim/snapshot';
 import { Kind, TICK_HZ, type PingKind, type SimEvent } from '../sim/types';
 import { ObjectiveTracker } from './objectives';
+import { CampTimers } from './campTimers';
 
 const TICK_MS = 1000 / TICK_HZ;
 /** Moves longer than this in one tick are teleports/respawns: snap, do not sweep across the map. */
@@ -46,7 +47,7 @@ export class ClientState {
   towers: [number, number] = [0, 0];
   winner: number | null = null;
   /** Live team pings (newest last), kept for PING_KEEP_MS. */
-  pings: { id: number; kind: PingKind; x: number; y: number; slot: number; target: number; at: number }[] = [];
+  pings: { id: number; kind: PingKind; x: number; y: number; slot: number; target: number; at: number; label?: string }[] = [];
   private pingSeq = 0;
   paused = false;
   /** Interpolation factor for the current frame (0..1), set by beginFrame. */
@@ -71,6 +72,8 @@ export class ClientState {
   readonly seenAt = new Map<number, number>();
   /** Respawn timers, Leviathan/Kesselbrut/Schleierwaechter, inhibitor respawns of both teams (scoreboard, C2). */
   readonly objectives = new ObjectiveTracker();
+  /** Respawn timers of the normal camps seen cleared (context pings). */
+  readonly camps = new CampTimers();
 
   /** Ingest one snapshot; returns its events for the fx/HUD dispatch. */
   ingest(s: Snapshot, now: number): SimEvent[] {
@@ -104,8 +107,9 @@ export class ClientState {
         const scorer = ev.team === 0 ? 1 : 0;
         if (ev.kind === Kind.Champion && ev.team <= 1) this.kills[scorer]++;
         if (ev.kind === Kind.Tower && ev.team <= 1) this.towers[scorer]++;
+        if (ev.kind === Kind.Monster && !ev.epic) this.camps.noteDeath(ev.x, ev.y, s.tick - 1);
       } else if (ev.e === 'gameOver') this.winner = ev.winner;
-      else if (ev.e === 'ping' && !this.muted.has(ev.slot)) this.pings.push({ id: ++this.pingSeq, kind: ev.kind, x: ev.x, y: ev.y, slot: ev.slot, target: ev.target, at: now });
+      else if (ev.e === 'ping' && !this.muted.has(ev.slot)) this.pings.push({ id: ++this.pingSeq, kind: ev.kind, x: ev.x, y: ev.y, slot: ev.slot, target: ev.target, at: now, ...(ev.label ? { label: ev.label } : {}) });
     }
     this.objectives.ingest(s, (eid) => this.known.get(eid));
     return s.events;

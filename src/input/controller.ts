@@ -8,6 +8,8 @@ import { settings, updateSettings } from '../settings';
 import { actionFor, type Action } from './keybinds';
 import { castModeFor } from './castMode';
 import { PingWheel } from '../ui/pingWheel';
+import type { PingSender } from '../game/pingSender';
+import { missingAt, objectiveAt, type PingCtx, type PingReq } from '../game/contextPing';
 import { Kind, type PingKind } from '../sim/types';
 import { ATTACK_CURSOR } from '../ui/cursors';
 import { attackMoveTarget } from './attackMove';
@@ -37,6 +39,12 @@ export interface InputHost {
   menuOpen(): boolean;
   /** Left click on a unit (eid) or the ground (null): target frame (C3). */
   select?(eid: number | null): void;
+  /** Ping door with the spam limit; without it pings go straight to the link (tests, mocks). */
+  pings?: PingSender;
+  /** Timers / lanes for context pings (src/game/contextPing.ts). */
+  pingCtx?(): PingCtx;
+  /** Map point under a screen position when it is over the minimap (ping wheel on the minimap). */
+  minimapAt?(cx: number, cy: number): [number, number] | null;
 }
 
 export class InputController {
@@ -78,6 +86,7 @@ export class InputController {
   private readonly wheel: PingWheel;
   /** Ground point where the ping wheel was opened (pings land there, like LoL). */
   private wheelAt: { x: number; y: number } | null = null;
+  private wheelOnMap = false;
 
   constructor(private readonly host: InputHost, private readonly el: HTMLElement) {
     const on = <K extends keyof WindowEventMap>(t: EventTarget, type: K, fn: (e: WindowEventMap[K]) => void, opts?: AddEventListenerOptions): void => {
@@ -168,8 +177,9 @@ export class InputController {
       if (e.altKey && !this.armed) {
         // Alt+click: danger on ground, focus on an enemy, objective on a big monster
         const h = this.hover;
-        const big = h && h.kind === Kind.Monster && h.radius >= 120;
-        const kind: PingKind = big ? 'objective' : h && h.team !== this.host.state.myTeam && h.team <= 1 ? 'focus' : 'danger';
+        const obj = h?.kind === Kind.Monster || !h ? this.objectivePing(g.x, g.y) : null; // pit / camp / epic monster: with its timer
+        if (obj) return void this.pingReq(obj);
+        const kind: PingKind = h && h.team !== this.host.state.myTeam && h.team <= 1 ? 'focus' : 'danger';
         this.ping(kind, h && kind !== 'danger' ? h.x : g.x, h && kind !== 'danger' ? h.y : g.y, kind !== 'danger' ? h?.id : undefined);
         return;
       }
@@ -327,13 +337,16 @@ export class InputController {
         this.host.togglePanel('shop');
         return;
       case 'pingWheel': {
-        this.wheelAt = this.cursorGround();
+        // over the minimap the wheel pings the map point under the cursor, else the ground point
+        const mm = this.host.minimapAt?.(this.mouseX, this.mouseY);
+        this.wheelAt = mm ? { x: mm[0], y: mm[1] } : this.cursorGround();
+        this.wheelOnMap = !!mm;
         if (this.wheelAt) this.wheel.show(this.mouseX, this.mouseY);
         return;
       }
       case 'pingMissing': {
         const g = this.cursorGround();
-        if (g) this.ping('missing', g.x, g.y);
+        if (g) this.missing(g.x, g.y, this.hover);
         return;
       }
       case 'pingQuestion': {
@@ -393,7 +406,30 @@ export class InputController {
   }
 
   private ping(kind: PingKind, x: number, y: number, target?: number): void {
-    this.send(target !== undefined ? { t: 'ping', kind, x, y, target } : { t: 'ping', kind, x, y });
+    this.pingReq(target !== undefined ? { kind, x, y, target } : { kind, x, y });
+  }
+
+  private pingReq(req: PingReq): void {
+    if (this.host.pings) this.host.pings.ping(req);
+    else this.send({ t: 'ping', ...req });
+  }
+
+  /** "Achtung" on a pit or camp reads as its timer. */
+  private pingAtObjective(at: { x: number; y: number }): PingReq | null {
+    const c = this.host.pingCtx?.();
+    return c ? objectiveAt(c, at.x, at.y, this.wheelOnMap ? null : this.hover) : null;
+  }
+
+  private objectivePing(x: number, y: number): PingReq | null {
+    const c = this.host.pingCtx?.();
+    return c ? objectiveAt(c, x, y, this.hover) : null;
+  }
+
+  /** "Missing": on the hovered enemy champion, else on the lane under (x, y). */
+  private missing(x: number, y: number, hover: SnapEntity | null): void {
+    const c = this.host.pingCtx?.();
+    if (c) this.pingReq(missingAt(c, x, y, hover));
+    else this.ping('missing', x, y);
   }
 
   private keyUp(e: KeyboardEvent): void {
@@ -407,8 +443,11 @@ export class InputController {
     if (action === 'pingWheel' && this.wheel.isOpen) {
       const kind = this.wheel.pick(this.mouseX, this.mouseY);
       this.wheel.hide();
-      if (this.wheelAt) this.ping(kind, this.wheelAt.x, this.wheelAt.y);
+      const at = this.wheelAt;
       this.wheelAt = null;
+      if (!at) return;
+      if (kind === 'missing') this.missing(at.x, at.y, this.wheelOnMap ? null : this.hover);
+      else this.pingReq((kind === 'alert' ? this.pingAtObjective(at) : null) ?? { kind, x: at.x, y: at.y });
       return;
     }
     if (action === 'centerCamera') this.centerHeld = false;

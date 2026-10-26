@@ -8,6 +8,7 @@ import type { ScoreRow, Snapshot } from '../sim/snapshot';
 import type { PlayerSetup } from '../sim/types';
 import type { TeamObjectives } from '../game/objectives';
 import { SummonerTimers } from '../game/summonerTimers';
+import { cooldownPingText } from '../game/pingText';
 import { LEVIATHAN_MAX_STACKS } from '../sim/systems/jungle';
 import { champName, summonerName } from './names';
 import { itemAbbr } from './shop';
@@ -90,6 +91,8 @@ export class Scoreboard {
     private readonly players: readonly PlayerSetup[],
     /** Team chat line (enemy summoner timer started: "Wren Sprung 12:34", like LoL). */
     private readonly say: (text: string) => void = () => {},
+    /** Alt+click on an enemy summoner spell: "Blitz nicht bereit (2:10)" as a labelled ping (src/game/pingText.ts). */
+    private readonly ctxPing: (label: string) => void = () => {},
   ) {
     root.textContent = '';
   }
@@ -250,6 +253,7 @@ export class Scoreboard {
             root.addEventListener('mousedown', (e) => {
               e.stopPropagation();
               e.preventDefault();
+              if (e.altKey) return this.ctxPing(cooldownPingText(summonerName(id), this.timers.left(p.slot, i, this.time)?.left ?? null));
               if (this.timers.toggle(p.slot, i, id, this.time)) {
                 const left = this.timers.left(p.slot, i, this.time);
                 if (left) this.say(t('chat.sumTimer', { champ: champName(p.champ), spell: summonerName(id), at: mmss(this.time + left.left) }));

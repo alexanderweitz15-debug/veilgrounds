@@ -539,3 +539,9 @@ src/ui/overlay.ts (VoiceBubbles field, onEvent call, draw call), src/ui/classicL
 | src/ui/chat.ts, src/game/game.ts | C | `/ff` starts the vote; `SurrenderPanel` mounted | 2.10 |
 | src/ui/deathRecap.ts, style.css | C | hint line `.dr-hint` | 1.14 |
 | src/i18n/de.json, en.json | - | `ff.*`, `recap.hint.*`; removed `chat.ffNo` | 2.10, 1.14 |
+
+## swarm/pings
+
+| P-1 | 2026-10-26 | src/ai/bot/social.ts (`pingsIn`, `pingRetreat`) | Additive: a "back" ping (Zurueck ziehen) is heard up to 4000 units away (danger 2500), lasts 8 s, is never counter-pinged "ok", and makes `pingRetreat` walk towards the own fountain wherever the ping is. Danger behaviour unchanged. | Bots must back off on "Zurueck"/"Gefahr" (task swarm/pings). | applied on swarm/pings-2 |
+| P-2 | 2026-10-26 | src/sim/types.ts, src/sim/systems/input.ts | Additive: optional `label?: string` on the `ping` command and `ping` event; label cleaned by `cleanPingLabel` (src/sim/pingRules.ts); PING_WINDOW/PING_MAX moved to pingRules.ts (same values 4 s / 6). | Context pings carry text. | applied |
+| P-3 | 2026-10-26 | src/i18n/de.json, en.json | Added keys `pingctx.*` (+ ping texts), same keys in both. | Context ping texts. | applied |

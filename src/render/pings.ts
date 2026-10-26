@@ -3,26 +3,11 @@
 import * as THREE from 'three';
 import type { ClientState } from '../game/state';
 import type { PingKind } from '../sim/types';
-import { PING_COLOR } from '../ui/pingWheel';
+import { PING_COLOR, PING_ICON } from '../ui/pingWheel';
+import { PING_MS, pingFrame } from './pingAnim';
 import { settings } from '../settings';
 
-export const PING_MS = 3000;
-
-const ICON: Record<PingKind, string> = {
-  alert: '!',
-  danger: '⚠',
-  onMyWay: '➜',
-  back: '↶',
-  missing: '?',
-  vision: '◉',
-  help: '✚',
-  group: '⚑',
-  focus: '◎',
-  objective: '★',
-  ok: '✓',
-  question: '?',
-  myBad: '✗',
-};
+export { PING_MS };
 
 const iconTex = new Map<PingKind, THREE.Texture>();
 /** Round badge with the kind's glyph, cached per kind. */
@@ -44,11 +29,45 @@ function iconTexture(kind: PingKind): THREE.Texture {
   g.font = `900 ${S * 0.56}px "Segoe UI Symbol", "Segoe UI", system-ui, sans-serif`;
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.fillText(ICON[kind], S / 2, S / 2 + 4);
+  g.fillText(PING_ICON[kind], S / 2, S / 2 + 4);
   tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   iconTex.set(kind, tex);
   return tex;
+}
+
+const labelTex = new Map<string, THREE.CanvasTexture>();
+/** Text plate under the badge ("Leviathan in 1:23"), cached per text + colour. Returns the texture and its aspect. */
+function labelTexture(text: string, color: string): { tex: THREE.CanvasTexture; aspect: number } {
+  const key = `${color}|${text}`;
+  let tex = labelTex.get(key);
+  const H = 64;
+  const font = `700 ${H * 0.55}px "Segoe UI", system-ui, sans-serif`;
+  const c = (tex?.image as HTMLCanvasElement | undefined) ?? document.createElement('canvas');
+  if (!tex) {
+    const g = c.getContext('2d')!;
+    g.font = font;
+    const w = Math.ceil(g.measureText(text).width) + 36;
+    c.width = w;
+    c.height = H;
+    g.font = font;
+    g.fillStyle = 'rgba(14, 12, 18, 0.88)';
+    g.beginPath();
+    g.roundRect(2, 2, w - 4, H - 4, 14);
+    g.fill();
+    g.lineWidth = 4;
+    g.strokeStyle = color;
+    g.stroke();
+    g.fillStyle = '#f2ead6';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(text, w / 2, H / 2 + 2);
+    tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    if (labelTex.size > 40) labelTex.clear();
+    labelTex.set(key, tex);
+  }
+  return { tex, aspect: c.width / c.height };
 }
 
 interface Marker {
@@ -59,6 +78,8 @@ interface Marker {
   mat: THREE.MeshBasicMaterial;
   waveMat: THREE.MeshBasicMaterial;
   iconMat: THREE.SpriteMaterial;
+  /** Context text plate (only pings with a label). */
+  label?: { sprite: THREE.Sprite; mat: THREE.SpriteMaterial; aspect: number };
 }
 
 export class PingMarkers {
@@ -87,35 +108,45 @@ export class PingMarkers {
         m.icon.position.set(p.x, 420, -p.y);
         m.icon.renderOrder = 10;
         this.group.add(m.ring, m.wave, m.beam, m.icon);
+        if (p.label) {
+          const { tex, aspect } = labelTexture(p.label, col);
+          const lm = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
+          const sprite = new THREE.Sprite(lm);
+          sprite.position.set(p.x, 250, -p.y);
+          sprite.renderOrder = 11;
+          this.group.add(sprite);
+          m.label = { sprite, mat: lm, aspect };
+        }
         this.live.set(p.id, m);
       }
       const ms = now - p.at;
-      const age = ms / PING_MS;
-      const fade = age < 0.7 ? 1 : Math.max(0, 1 - (age - 0.7) / 0.3);
-      // pop in, then breathe
-      const pop = Math.min(1, ms / 160);
-      const breathe = calm ? 1 : 1 + 0.08 * Math.sin(ms / 110);
-      const s = (0.6 + 0.4 * pop) * breathe;
-      m.ring.scale.set(s, 1, s);
-      m.mat.opacity = 0.85 * fade;
-      // expanding shock rings: three pulses in the first 1.5 s
-      const wk = (ms % 500) / 500;
-      const waveOn = !calm && ms < 1500;
-      m.wave.visible = waveOn;
-      if (waveOn) {
-        m.wave.scale.setScalar(120 + 380 * wk);
-        m.waveMat.opacity = 0.9 * (1 - wk);
+      const f = pingFrame(p.kind, ms, calm);
+      m.ring.scale.set(f.ringScale, 1, f.ringScale);
+      m.mat.opacity = 0.85 * f.fade;
+      m.wave.visible = f.waveOn;
+      if (f.waveOn) {
+        m.wave.scale.setScalar(f.waveR);
+        m.waveMat.opacity = f.waveOpacity;
       }
-      m.beam.scale.set(1, Math.max(0.01, 1 - age * 1.2), 1);
-      const bob = calm ? 0 : Math.sin(ms / 220) * 14;
-      m.icon.position.y = 420 + bob;
-      const is = 190 * (0.5 + 0.5 * pop) * (calm ? 1 : 1 + 0.05 * Math.sin(ms / 110));
+      m.beam.scale.set(1, f.beamScale, 1);
+      m.icon.position.y = 420 + f.iconDy;
+      const is = 190 * f.iconScale;
       m.icon.scale.set(is, is, 1);
-      m.iconMat.opacity = fade;
+      m.iconMat.rotation = f.iconRot;
+      m.iconMat.opacity = f.fade;
+      if (m.label) {
+        const h = 95 * Math.min(1, 0.4 + ms / 200);
+        m.label.sprite.scale.set(h * m.label.aspect, h, 1);
+        m.label.mat.opacity = f.fade;
+      }
     }
     for (const [id, m] of this.live) {
       if (seen.has(id)) continue;
       this.group.remove(m.ring, m.wave, m.beam, m.icon);
+      if (m.label) {
+        this.group.remove(m.label.sprite);
+        m.label.mat.dispose(); // the cached text texture stays
+      }
       m.mat.dispose();
       m.waveMat.dispose();
       m.iconMat.dispose();

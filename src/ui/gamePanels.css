@@ -241,3 +241,6 @@
 /* FPS / frame-time overlay (setting showFps, key F3) and the graphics benchmark note */
 .fps-overlay { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); z-index: 60; padding: 2px 8px; font: 12px/1.4 monospace; color: #e8e0cc; background: rgba(10,12,14,0.7); pointer-events: none; }
 .fps-overlay:empty { display: none; }
+.ping-glyph { display: inline-block; margin-right: 6px; color: var(--c); font-size: 15px; letter-spacing: 0; }
+.ping-centre { padding: 2px 9px; border-radius: 50%; font-size: 15px; color: var(--c); }
+.ping-centre.on { box-shadow: 0 0 10px var(--c); }

@@ -65,15 +65,15 @@ export function pingsIn(n: NodeCtx): NodeResult {
     switch (ev.kind) {
       case 'danger':
       case 'back': {
-        if (near > 2500) break;
+        if (near > (ev.kind === 'back' ? 4000 : 2500)) break; // "back" is a team call: heard further away
         const reason = n.v.enemies.some((e) => dst(e, ev) < 1500);
         // Challenger checks the call: nothing visible and low gank risk -> "all ok" counter ping
         const risk = n.ctx.lane ? n.pv.gankRisk[n.ctx.lane] ?? 0 : 0;
-        if (ri >= CHALLENGER && !reason && risk < 0.3) {
+        if (ev.kind === 'danger' && ri >= CHALLENGER && !reason && risk < 0.3) {
           emitPing(n, 'ok', n.v.self.x, n.v.self.y, undefined, 'danger ping without visible reason');
           break;
         }
-        ext.pings.push({ ...memo, until: n.v.tick + 6 * 30 });
+        ext.pings.push({ ...memo, until: n.v.tick + (ev.kind === 'back' ? 8 : 6) * 30 });
         break;
       }
       case 'onMyWay':
@@ -111,11 +111,15 @@ export function pingsIn(n: NodeCtx): NodeResult {
 /** Serial of the enemy a teammate asked to focus (or -1). */
 export const focusSerial = (n: NodeCtx): number => n.mem.ext.pings.find((p) => p.kind === 'focus' && p.until > n.v.tick)?.target ?? -1;
 
-/** Danger/back ping obeyed: leave the zone for a few seconds. */
+/**
+ * Danger/back ping obeyed. Danger: leave the pinged zone for a few seconds. Back ("Zurück ziehen"): fall back towards
+ * the own fountain wherever the ping is, 8 s (the whole team is asked to disengage, not just those at the spot).
+ */
 export function pingRetreat(n: NodeCtx): NodeResult {
-  const p = n.mem.ext.pings.find((x) => (x.kind === 'danger' || x.kind === 'back') && x.until > n.v.tick && dst(x, n.v.self) < 1800);
+  const p = n.mem.ext.pings.find((x) => x.until > n.v.tick && (x.kind === 'back' || (x.kind === 'danger' && dst(x, n.v.self) < 1800)));
   if (!p) return 'failure';
-  const [ux, uy] = unit(p, n.v.self);
+  // back: away from the fight = towards home; danger: away from the ping
+  const [ux, uy] = p.kind === 'back' ? unit(n.v.self, n.ctx.map.sides[n.ctx.team].fountain) : unit(p, n.v.self);
   const to = { x: n.v.self.x + ux * 600, y: n.v.self.y + uy * 600 };
   if (n.mem.ext.lastMode !== 'pingRetreat') n.log('pingRetreat', 'leave', `${p.kind} ping`, { from: p.slot });
   n.mem.ext.lastMode = 'pingRetreat';

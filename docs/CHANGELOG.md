@@ -4,6 +4,31 @@ Ein Eintrag pro abgeschlossener Aufgabe: **was**, **warum**, **wie getestet**. N
 
 ---
 
+## 2026-10-26 · Welle 1 + Gehirn (A3, A4, A5, A6, A7, A13, A14) · Integrator-Zusammenfassung
+
+Details, Messwerte und offene Punkte je Agent: `docs/agents/wave1-a<nr>.md`.
+
+- **A3 Animation:** Zustandsmaschine je Einheit (Ausholen/Treffer/Ausklingen, Cast je Art, Recall, Zucken, Tod),
+  Angriffstempo skaliert die Animation, Cast-Abbruch durch CC sichtbar, Animations-Events; Format `docs/ANIM-FORMAT.md`.
+- **A4 VFX:** GPU-Partikel datengetrieben (20 Effekte, `docs/VFX-FORMAT.md`), harte Obergrenzen, gegnerische Telegraphs
+  immer oben; CPU je Frame ~0,2 ms -> ~0,01 ms, Draw-Calls 6 -> 2. Integrator-Fix: Teamfarbe wurde je Effekt neu geparst
+  (~110 Byte Müll je Aufruf -> ~3), Allokationstest deterministisch.
+- **A5 Audio:** Busse SFX/UI/Ambient/Musik mit Reglern, räumlicher Sound, Stimmenlimit (global 20), Trigger-API; `docs/AUDIO.md`.
+- **A6 Benchmark:** `tools/benchmark` (run/report/compare, ~15 Kennzahlen, Bootstrap-Fehler), Baseline beider Gehirne
+  `docs/BENCHMARK-BASELINE.md` (dünn: 4 Partien je Rang).
+- **A7 Item-Engine:** Items vollständig datengetrieben (11 Auslöser, 17 Effekte, Validator); alle 47 Items bit-genau
+  unverändert (93 Golden-Tests, 84 Prüfpunkte in Bot-Partien); `docs/ITEMS-FORMAT.md`.
+- **A13 Gehirn Kampf (nur Beta):** Bot-Hints je Champion (generiert, `src/data/bots/hints/`), Zielvorhersage, Ausweichen,
+  Fokus/Peel. Combo-Executor und Spacing sind standardmäßig **aus**, weil sie in den Messungen des Agents schlechter waren.
+- **A14 Gehirn Makro (nur Beta):** Leerlauf zuerst (Farm-/Ward-Fallback, Leerlauf-Gründe im Log), Wellenzustände steuern
+  die Reflex-Schicht, Shop-Phantomgold-Fix; letzter Stand als WIP gesichert.
+- **Nicht erfüllt:** A13/A14 brachen am Nutzungslimit ab, **ohne** Abschlussmessung gegen die Baseline. Gemergt auf
+  Nutzerwunsch, weil nur das Beta-Gehirn betroffen ist (Standard aus).
+
+**Wie getestet:** volle Suite 111 Dateien / 1398 Tests grün; tsc sauber; Standard-Gehirn bit-identisch (bot-sim Gold,
+Seeds 7-8, 12 min, CSV vor/nach dem Brain-Merge byte-gleich); Browser-A/B Produktionsbuild vor/nach A3+A4: gleiche
+Startzeit, alle Atlanten fertig.
+
 
 ## 2026-10-24 · A2 · Simulations-Bugs (Wave 0), Branch feat/a2-sim-bugs
 

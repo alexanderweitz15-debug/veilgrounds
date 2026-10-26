@@ -866,5 +866,21 @@
   "recap.hint.burst": "The damage came in under 2 s: a Challenger keeps an escape or a dash ready before entering range.",
   "recap.hint.magic": "Mostly magic damage: a Challenger would have bought magic resist early.",
   "recap.hint.phys": "Mostly physical damage: a Challenger would have bought armor early.",
-  "recap.hint.default": "A Challenger would have kept distance to the killer and checked the minimap for positions."
+  "recap.hint.default": "A Challenger would have kept distance to the killer and checked the minimap for positions.",
+  "jungle.title": "Jungle tracker",
+  "jungle.btn": "Jungle",
+  "jungle.tip": "Camp timers from what your team has seen",
+  "jungle.own": "Own side",
+  "jungle.enemy": "Enemy side",
+  "jungle.river": "River",
+  "jungle.riverTop": "top",
+  "jungle.riverBottom": "bottom",
+  "jungle.pending": "spawns in {s}",
+  "jungle.cleared": "back in {s}",
+  "jungle.empty": "seen empty, back by {s} at the latest",
+  "jungle.estimate": "Show estimate (enemy jungler seen nearby)",
+  "jungle.estimate.row": "Estimate: taken, back ~{s}",
+  "jungle.up": "up",
+  "jungle.seen": "up (seen {s} ago)",
+  "jungle.unknown": "? (not seen)"
 }

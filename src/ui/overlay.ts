@@ -14,6 +14,7 @@ import { barLayout, barLift } from './hpBarGeom';
 import { stackBars, type BarRect } from '../render/barLayout';
 import { drawCcGlyph } from '../render/ccGlyphs';
 import { pickBody, type PickView } from '../input/picking';
+import { campLabel } from '../game/jungleTracker';
 
 /** Hover highlight colour: attack colour on anything hostile, ally / own colour otherwise. */
 function hoverColor(state: ClientState, e: SnapEntity): string {
@@ -262,6 +263,29 @@ export class Overlay {
     ctx.fillText(text, x, y);
   }
 
+  /** Jungle-Tracker timers at the camps ("1:42", "~1:42", "~1:42?" estimate, "?" unseen); same data as the minimap. */
+  private drawJungleLabels(state: ClientState, world: World): void {
+    if (!state.jungle.enabled) return;
+    const ctx = this.ctx;
+    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    for (const c of state.jungle.camps()) {
+      const text = campLabel(c);
+      if (!text) continue;
+      const p = world.rig.project(c.x, c.y, 60, this.w, this.h);
+      if (p.behind || p.sx < -40 || p.sx > this.w + 40 || p.sy < -40 || p.sy > this.h + 40) continue;
+      ctx.globalAlpha = c.state === 'unknown' ? 0.55 : 0.95;
+      ctx.strokeStyle = 'rgba(12,10,8,0.9)';
+      ctx.strokeText(text, p.sx, p.sy);
+      ctx.fillStyle = c.state === 'estimate' ? '#ffb15a' : '#fff6da';
+      ctx.fillText(text, p.sx, p.sy);
+    }
+    ctx.globalAlpha = 1;
+  }
+
   draw(state: ClientState, world: World, now: number, hoverId: number): void {
     const ctx = this.ctx;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
@@ -400,5 +424,6 @@ export class Overlay {
     this.floaters = keep;
     if (snap) this.cues.draw(ctx, state, world, this.w, this.h, now);
     if (snap) this.voice.draw(ctx, state, world, this.w, this.h, now);
+    if (snap) this.drawJungleLabels(state, world);
   }
 }

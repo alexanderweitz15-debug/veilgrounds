@@ -18,6 +18,7 @@ import { fitMinimap } from './display';
 import { DeathBar } from './deathBar';
 import { TargetFrame, drawChips, unitChips } from './targetFrame';
 import { BotDebugPanel } from './botDebug';
+import { JungleTrackerPanel } from './jungleTrackerPanel';
 import { setPortrait } from '../render/portraits';
 import { Announcer } from './announce';
 import { DeathRecap } from './deathRecap';
@@ -119,6 +120,11 @@ export class Hud {
   private readonly kesselNum: HTMLElement;
   private kesselSeen = -1;
   private readonly epics: HTMLElement | null;
+  /** Jungle-Tracker panel + toggle button (src/ui/jungleTrackerPanel.ts); classic matches only. */
+  private readonly jungle = new JungleTrackerPanel();
+  private jungleSetup = false;
+  private readonly jungleMode: boolean;
+  private readonly junglers: PlayerSetup[];
   private epicKey = '';
   private readonly feed: HTMLElement;
   private readonly respawn: HTMLElement;
@@ -188,6 +194,9 @@ export class Hud {
     this.clock = el('span', 'clock', top, '00:00');
     // epic monster timers under the top bar (classic schedule only; C3)
     this.epics = mode === 'classic' ? el('div', 'obj-timers', r) : null;
+    this.jungleMode = mode === 'classic';
+    this.junglers = players.filter((p) => p.role === 'jungle');
+    r.appendChild(this.jungle.root);
 
     // ---- kill feed
     this.feed = el('div', 'killfeed', r);
@@ -439,6 +448,13 @@ export class Hud {
     this.score.update(state);
     this.deathBar.update(state);
     this.drawEpicTimers(state);
+    if (!this.jungleSetup) {
+      // enemy junglers feed the optional estimate; modes without a jungle hide the tracker
+      this.jungleSetup = true;
+      state.jungle.enabled = this.jungleMode;
+      state.jungle.setJunglers(this.junglers.filter((p) => p.team !== state.myTeam).map((p) => p.slot));
+    }
+    this.jungle.update(state, now);
     this.target.update(state);
     const me = snap.me;
     toggle(this.noChamp, 'open', !me);

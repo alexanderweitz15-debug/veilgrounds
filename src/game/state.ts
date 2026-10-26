@@ -3,6 +3,7 @@ import type { SnapEntity, Snapshot } from '../sim/snapshot';
 import { Kind, TICK_HZ, type PingKind, type SimEvent } from '../sim/types';
 import { ObjectiveTracker } from './objectives';
 import { CampTimers } from './campTimers';
+import { JungleTracker } from './jungleTracker';
 
 const TICK_MS = 1000 / TICK_HZ;
 /** Moves longer than this in one tick are teleports/respawns: snap, do not sweep across the map. */
@@ -74,6 +75,8 @@ export class ClientState {
   readonly objectives = new ObjectiveTracker();
   /** Respawn timers of the normal camps seen cleared (context pings). */
   readonly camps = new CampTimers();
+  /** Jungle camp timers from what this team saw (jungleTracker.ts); minimap, world labels and the Jungle-Tracker panel read it. */
+  readonly jungle = new JungleTracker();
 
   /** Ingest one snapshot; returns its events for the fx/HUD dispatch. */
   ingest(s: Snapshot, now: number): SimEvent[] {
@@ -112,6 +115,7 @@ export class ClientState {
       else if (ev.e === 'ping' && !this.muted.has(ev.slot)) this.pings.push({ id: ++this.pingSeq, kind: ev.kind, x: ev.x, y: ev.y, slot: ev.slot, target: ev.target, at: now, ...(ev.label ? { label: ev.label } : {}) });
     }
     this.objectives.ingest(s, (eid) => this.known.get(eid));
+    this.jungle.ingest(s, (eid) => this.known.get(eid));
     return s.events;
   }
 

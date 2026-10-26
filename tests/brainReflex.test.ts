@@ -177,7 +177,10 @@ describe('reflex layer: window collisions (test 3)', () => {
     const lost = (rank: Rank): { coll: number; cs: number } => {
       let coll = 0;
       let cs = 0;
-      for (const seed of [4, 5]) {
+      // ponytail: 2 seeds (4, 5) gave diamond 10 vs gold 4 after the 14900 map shifted every wave; over seeds 4-9 it is
+      // diamond 20 vs gold 18 collisions at 600 vs 556 CS (same ~3.3 % per CS), so the gap was sample noise, not a
+      // behaviour change. 6 seeds averages it out (about 3 min).
+      for (const seed of [4, 5, 6, 7, 8, 9]) {
         const g = runLaneAlone(rank, { seed });
         coll += g.stats[0]!.csLoss.window_collision;
         cs += g.stats[0]!.cs;

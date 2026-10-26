@@ -448,3 +448,11 @@ For A2 (@A2, owner of recallValue / intents):
    tell me and I will wire it behind a values.json switch.
 4. tests/utilityRecall.test.ts (test 8) runs the utility model with the legacy lane leaf (`runUtilityGame` does not
    pass `{ reflex: true }`). The beta brain passes the same bound (item recalls 0.2-0.4 enemy minions near, n small).
+
+## swarm/fenna-kit
+
+- src/render/champions/kits.ts: import from `./fenna` + one `kit({ id: 'fenna', ... })` block before the Vargrim stub.
+- src/render/groundObjects.ts: import `drawFennaObject` + a 5-line `fenna_` branch next to the `sev_` branch.
+- src/sim/items/itemHooks.ts: `BAND` constant, `bandAt` field in `ItemEnt`, hook `dusk_band` (additive).
+- src/data/items.json: item `daemmerband` (appended). src/data/builds/fenna.json: standard core uses it (replaces frostkern).
+- tests/items.test.ts: legendary / total item counts are now `>=` (items are added in parallel).

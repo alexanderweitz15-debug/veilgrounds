@@ -9,6 +9,7 @@ import { REL } from './palette';
 import { abilityHue, markEmitters, tagParticles } from './abilityTheme';
 import type { Particles } from './particles';
 import { drawSevObject } from './sevFx';
+import { drawFennaObject } from './fennaFx';
 
 type Shape = NonNullable<SnapObject['shape']>;
 
@@ -236,6 +237,11 @@ export class GroundObjects {
       const fol = o.follow !== undefined ? state.byId.get(o.follow) : undefined;
       const end = { x: fol ? state.x(fol) : o.x2 ?? o.x, y: fol ? state.y(fol) : o.y2 ?? o.y };
       if (drawSevObject(o, now, { part: p, disc: GEO.disc, ring: GEO.ring, thin: GEO.thin, plane: GEO.plane, strip, end })) return void v.hideFrom(n);
+    }
+    if (o.tag.startsWith('fenna_')) {
+      const fol = o.follow !== undefined ? state.byId.get(o.follow) : undefined;
+      const end = { x: fol ? state.x(fol) : o.x2 ?? o.x, y: fol ? state.y(fol) : o.y2 ?? o.y };
+      if (drawFennaObject(o, now, { part: p, disc: GEO.disc, ring: GEO.ring, thin: GEO.thin, plane: GEO.plane, strip, end })) return void v.hideFrom(n);
     }
     switch (shape) {
       case 'blade': {

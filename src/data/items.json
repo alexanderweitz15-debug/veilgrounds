@@ -1102,6 +1102,40 @@
         "support"
       ],
       "unique": "boots"
+    },
+    {
+      "id": "daemmerband",
+      "name": {
+        "de": "Dämmerband",
+        "en": "Duskband"
+      },
+      "tier": "legendary",
+      "cost": 2700,
+      "from": [
+        "hueterlampe",
+        "lehrlingsstab"
+      ],
+      "stats": {
+        "ap": 45,
+        "haste": 20,
+        "healShieldPowerPct": 8,
+        "manaRegenPct": 50
+      },
+      "tags": [
+        "support",
+        "ap"
+      ],
+      "passive": {
+        "name": {
+          "de": "Bandfunke",
+          "en": "Bond Spark"
+        },
+        "desc": {
+          "de": "Schilde und Heilung, die du auf eine andere Champion legst, geben ihr 1,5 s +12 % Bewegung (pro Verbündeter alle 6 s).",
+          "en": "Shields and heals you give another champion grant her +12% move speed for 1.5 s (once per ally every 6 s)."
+        },
+        "hook": "dusk_band"
+      }
     }
   ]
 }

@@ -12,3 +12,7 @@ Tests: tests/summonersBarrier.test.ts (10 pass), tests/summonersWards.test.ts (1
 Open / lead decision:
 - Bots never carry Barrier/Ghost: runner.ts SUMMONERS role table unchanged (would shift bot calibration). One-line switch if wanted (e.g. adc `['sprung','barriere']`).
 - "Lethal damage" is approximated by an HP line (no HP history in View/BotMemory).
+
+## Continuation (swarm/summoners-2)
+- Merged main 5fc933b. Removed the untested WIP Torrik champion files (src/sim/champions/torrik.ts, src/data/champions/torrik.json): unregistered, out of scope (champion follow-up skipped).
+- Re-verified: summonersBarrier + summonersWards (24 pass), i18n.test + brainReflex.test (pass), `tsc --noEmit` clean.

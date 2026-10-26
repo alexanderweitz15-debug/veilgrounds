@@ -680,7 +680,7 @@ const UPDATE: Record<ScenarioId, (sim: Sim, s: ScenarioState, k: Tick) => void> 
     if (s.next > 0) for (const ev of sim.events) if (ev.e === 'death' && ev.team === 0 && ev.kind >= Kind.MinionMelee && ev.kind <= Kind.MinionSuper) s.n.lost!++;
     if (k.meDied) return finish(sim, s, false, 'died');
     const recalling = Champ.recallAt[s.me]! > 0;
-    const f = fountain(sim, 0);
+    const f = sim.map.sides[0]!.fountain;
     const home = dist(sim, s.me, f) <= f.r + 50;
     if (recalling && s.next === 0) {
       // recall started: remember how the wave looked (and restart the loss count)

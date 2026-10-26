@@ -135,6 +135,8 @@ export function addBuff(sim: Sim, eid: number, init: BuffInit): boolean {
   const i = e.list.findIndex((o) => o.id === b.id && o.kind === b.kind && o.stat === b.stat && o.src === b.src);
   if (i >= 0) {
     if (b.kind === 'shield') sim.c.Hp.shield[eid] = Math.max(0, sim.c.Hp.shield[eid]! - e.list[i]!.amount);
+    // LoL: a shorter re-application of the same CC never shortens the running one (durations run in parallel, longest wins)
+    if (CC.has(b.kind)) b.until = Math.max(b.until, e.list[i]!.until);
     e.list[i] = b;
   } else {
     e.list.push(b);

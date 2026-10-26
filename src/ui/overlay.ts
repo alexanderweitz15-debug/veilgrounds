@@ -106,7 +106,7 @@ export class Overlay {
    * Crowd control above the HP bar (LoL: status text over the unit): strongest effect as a coloured chip; the own
    * champion also gets a draining CC timer bar under its HP bar.
    */
-  private drawCc(e: SnapEntity, x: number, y: number, bw: number, bh: number, champ: boolean, mine: boolean, tick: number): void {
+  private drawCc(e: SnapEntity, x: number, y: number, bw: number, bh: number, champ: boolean, tick: number): void {
     const mask = e.cc ?? 0;
     const hit = CC_ORDER.find(([bit]) => mask & bit);
     if (!hit) return;
@@ -127,7 +127,7 @@ export class Overlay {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(text, x + bw / 2 + (icon + 2) / 2, cy);
-    if (mine && e.ccEnd !== undefined && e.ccEnd > tick) {
+    if (e.ccEnd !== undefined && e.ccEnd > tick) {
       let tm = this.ccTimer.get(e.id);
       if (!tm || tm.end !== e.ccEnd) this.ccTimer.set(e.id, (tm = { end: e.ccEnd, total: Math.max(1, e.ccEnd - tick) }));
       ctx.fillStyle = 'rgba(12,10,8,0.85)';
@@ -360,7 +360,7 @@ export class Overlay {
           ctx.fillText(name, x + bw / 2, y - 5);
         }
         if (monster && e.id === hoverId) this.label(variantName(e.variant, e.kind), a.sx, y - 5, '#f3e6c4');
-        if (e.cc) this.drawCc(e, x, y, bw, bh, champ, e.id === myEid, snap.tick);
+        if (e.cc) this.drawCc(e, x, y, bw, bh, champ, snap.tick);
         if (e.marks?.length || e.emp) this.drawMarks(e, x, y, bw, bh);
         if (dummy) {
           ctx.fillStyle = '#fff';

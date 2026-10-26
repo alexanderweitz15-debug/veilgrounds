@@ -594,3 +594,7 @@ Additive edits to shared files (all small):
 - `src/game/game.ts`: `GameOpts` (injected replay link, virtual clock, silent, bar mount); `exit()` waits (max 3 s) for the worker's replay of a decided game. `src/game/link.ts` `requestReplay`; `src/sim/protocol.ts` + `src/sim/worker.ts` `getReplay` / `rec.observe(sim)`.
 - `src/game/state.ts` `resetForSeek()`, `src/game/objectives.ts` `restoreEpicKills()`, `src/game/session.ts` `SessionResult.replay`, `src/store/kv.ts` `kvDel`.
 - `src/i18n/de.json` + `en.json`: keys `rp.*` (replay) and `pe.*` (error list).
+
+## mech-cc
+- src/sim/buffs.ts `addBuff`: re-applying the same CC (same id/kind/src) keeps the longer remaining duration (was: replaced).
+- src/ui/overlay.ts `drawCc`: CC remaining-time bar under the health bar now for every unit with CC (was own champion only); param `mine` removed.

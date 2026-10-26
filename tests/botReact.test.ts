@@ -24,9 +24,9 @@ function scene(champ: string, hpf: number, newBrain: boolean): number {
   while (sim.tick < WARMUP_S * 30) step(sim, bots.tick(sim));
   const bx = Pos.x[bot]!;
   const by = Pos.y[bot]!;
-  const dl = Math.hypot(8000 - bx, 8000 - by) || 1;
-  const ux = (8000 - bx) / dl; // human stands 600 toward the map centre
-  const uy = (8000 - by) / dl;
+  const dl = Math.hypot(sim.map.size / 2 - bx, sim.map.size / 2 - by) || 1;
+  const ux = (sim.map.size / 2 - bx) / dl; // human stands 600 toward the map centre
+  const uy = (sim.map.size / 2 - by) / dl;
   place(sim, me, bx + ux * 600, by + uy * 600);
   Hp.cur[bot] = Hp.max[bot]! * hpf;
   let dmgBack = 0;

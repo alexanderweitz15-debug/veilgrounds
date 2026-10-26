@@ -598,3 +598,10 @@ Additive edits to shared files (all small):
 ## mech-cc
 - src/sim/buffs.ts `addBuff`: re-applying the same CC (same id/kind/src) keeps the longer remaining duration (was: replaced).
 - src/ui/overlay.ts `drawCc`: CC remaining-time bar under the health bar now for every unit with CC (was own champion only); param `mine` removed.
+
+## swarm/tutorial-2
+- `src/game/session.ts`: imports `TutorialController`, `isTutorialConfig`; creates the controller instead of `SandboxPanel` for tutorial configs; `ingest`/`frame`/`dispose` forward; new `watchLink(link)`.
+- `src/game/game.ts`: one line after `new SessionExtras(...)`: `this.extras.watchLink(this.link)`.
+- `src/main.ts`: menu entry `menu.tutorial`, `startTutorial()`, `?play=tutorial`, no history record for tutorial sessions.
+- `src/game/modes.ts`: `tutorialConfig`, `isTutorialConfig`, `TUTORIAL_MARK`.
+- `src/i18n/de.json`, `en.json`: keys `menu.tutorial*`, `tutorial.*`, `tutorial.step.*`.

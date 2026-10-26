@@ -56,6 +56,7 @@ function mainMenu(): void {
     { name: t('menu.classic'), desc: t('menu.classicDesc'), meta: t('menu.classicMeta'), onSelect: () => classicLobby() },
     { name: t('menu.lane'), desc: t('menu.laneDesc'), meta: t('menu.laneMeta'), onSelect: () => lobby('lane') },
     { name: t('menu.sandbox'), desc: t('menu.sandboxDesc'), meta: t('menu.sandboxMeta'), onSelect: () => lobby('sandbox') },
+    { name: t('menu.tutorial'), desc: t('menu.tutorialDesc'), meta: t('menu.tutorialMeta'), onSelect: () => void startTutorial() },
     { name: t('menu.trainer'), desc: t('menu.trainerDesc'), meta: t('menu.trainerMeta'), onSelect: () => trainerMenu() },
     ...(new URLSearchParams(location.search).has('dev') ? [{ name: t('menu.mock'), desc: t('menu.mockDesc'), kind: 'dev' as const, onSelect: () => start(null) }] : []),
   ];
@@ -169,6 +170,12 @@ async function trainerLobby(mode: TrainerMode): Promise<void> {
   renderPracticeLobby(s, `${t('lobby.title')} – ${t(`trainer.mode.${mode}`)}`, trainerMenu, (p) => start(trainerConfig(setup, p)), trainerOptions(setup));
 }
 
+/** Interactive tutorial (sandbox sim with step cards), Mira with her saved rune page. */
+async function startTutorial(): Promise<void> {
+  const { MIRA_ID, tutorialConfig, runesFromPreset } = await loadPlay();
+  start(tutorialConfig(runesFromPreset(MIRA_ID, settings.runePresets[MIRA_ID])));
+}
+
 /** Post-game analysis for classic games and trainer runs (not for short or sandbox sessions). */
 function afterGame(config: SimConfig | null, r?: SessionResult): void {
   if (!config || !r) return mainMenu();
@@ -176,7 +183,7 @@ function afterGame(config: SimConfig | null, r?: SessionResult): void {
   if (r.replay && r.replay.ticks >= 1800) void import('./replay/store').then((m) => m.saveReplay(r.replay!)).catch(() => undefined);
   if (r.retry) return start({ ...structuredClone(config), seed: (Math.random() * 2 ** 31) | 0 });
   // match history for the training plan (IndexedDB; no-op when unavailable)
-  if (r.summary.duration >= 60) void import('./stats/history').then((h) => h.saveRecord(h.recordFromSummary(r.summary, Date.now()))).catch(() => undefined);
+  if (r.summary.duration >= 60 && config.trainer?.scenario !== 'tutorial') void import('./stats/history').then((h) => h.saveRecord(h.recordFromSummary(r.summary, Date.now()))).catch(() => undefined);
   const auto = (config.mode === 'classic' || config.mode === 'laneOnly') && r.summary.duration >= 60;
   if (!r.analysis && !auto) return mainMenu();
   showPostGame(config, r);
@@ -208,7 +215,7 @@ void (async () => {
   setTimeout(() => void loadGame(), 1500); // warm the game chunk while the menu is shown
   document.documentElement.lang = settings.lang;
   const q = new URLSearchParams(location.search);
-  // dev shortcuts: ?mock, ?play=lane|sandbox
+  // dev shortcuts: ?mock, ?play=lane|sandbox|tutorial
   if (q.has('mock')) start(null);
   else if (q.get('play') === 'classic') start((await loadClassicLobby()).buildClassicConfig());
   else if (q.has('play')) {
@@ -217,7 +224,8 @@ void (async () => {
     if (TRAINER_MODES.includes(play as TrainerMode)) {
       const { defaultSetup } = await loadTrainerMenu();
       start(trainerConfig(defaultSetup(play as TrainerMode), { champion: MIRA_ID, summoners: ['sprung', 'heilen'], runes: runesFromPreset(MIRA_ID, settings.runePresets[MIRA_ID]) }));
-    } else if (play === 'lane' || play === 'sandbox') start(configFor(play, runesFromPreset(MIRA_ID, settings.runePresets[MIRA_ID])));
+    } else if (play === 'tutorial') await startTutorial();
+    else if (play === 'lane' || play === 'sandbox') start(configFor(play, runesFromPreset(MIRA_ID, settings.runePresets[MIRA_ID])));
     else mainMenu();
   } else mainMenu();
 })();

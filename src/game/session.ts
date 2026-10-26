@@ -5,6 +5,9 @@ import type { Command, SimConfig } from '../sim/types';
 import { MatchStats, type MatchSummary } from './matchStats';
 import { TrainerPanel } from '../ui/trainerHud';
 import { SandboxPanel } from '../ui/sandboxPanel';
+import { TutorialController } from '../ui/tutorial';
+import { isTutorialConfig } from './modes';
+import type { SimLink } from './link';
 import type { GhostMoment } from '../ai/ghost';
 import { t } from '../i18n';
 
@@ -27,6 +30,7 @@ export class SessionExtras {
   readonly stats: MatchStats;
   private readonly trainer: TrainerPanel | null = null;
   private readonly sandbox: SandboxPanel | null = null;
+  private readonly tutorial: TutorialController | null = null;
   private finished = false;
   private ghost: GhostMoment[] | null = null;
 
@@ -47,11 +51,18 @@ export class SessionExtras {
         quit: () => exit({}),
       }, config.mode === 'scenario' ? { title: t(`scenario.${config.trainer?.scenario}.name`), hint: t(`scenario.${config.trainer?.scenario}.goal`) } : undefined);
     }
-    if (config?.mode === 'sandbox') this.sandbox = new SandboxPanel(root, (op, value) => send({ t: 'cheat', op, ...(value !== undefined ? { value } : {}) }), arm);
+    if (isTutorialConfig(config)) this.tutorial = new TutorialController(root, send, () => exit({}));
+    else if (config?.mode === 'sandbox') this.sandbox = new SandboxPanel(root, (op, value) => send({ t: 'cheat', op, ...(value !== undefined ? { value } : {}) }), arm);
   }
 
   ingest(s: Snapshot): void {
     this.stats.ingest(s);
+    this.tutorial?.ingest(s);
+  }
+
+  /** Tutorial: lets the step engine see the player's commands. */
+  watchLink(link: SimLink): void {
+    this.tutorial?.watchLink(link);
   }
 
   /** Trainer run finished: the sim stays paused behind the result dialog (F10 must not resume it). */
@@ -61,6 +72,7 @@ export class SessionExtras {
 
   frame(snap: Snapshot | null): void {
     this.sandbox?.update(snap?.me);
+    this.tutorial?.frame();
     if (this.trainer?.update(snap?.trainer) && !this.finished) {
       this.finished = true;
       this.pause(true); // the run is over: freeze the sim behind the result dialog
@@ -81,5 +93,6 @@ export class SessionExtras {
   dispose(): void {
     this.trainer?.dispose();
     this.sandbox?.dispose();
+    this.tutorial?.dispose();
   }
 }

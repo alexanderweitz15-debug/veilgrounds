@@ -85,6 +85,8 @@ export interface Settings {
   voiceLines: boolean;
   /** Tab scoreboard: extra "Bot-Info" column with the ten playstyle mini-scales per bot (FEATURE-GAP 1.7). */
   scoreBotInfo: boolean;
+  /** S3 "LoL telegraphs": enemy skillshots show only the projectile plus a thin outline, no ground strip / fill (own unchanged). */
+  lolTelegraphs: boolean;
 }
 
 const DEFAULTS: Settings = {
@@ -125,6 +127,7 @@ const DEFAULTS: Settings = {
   levelUpMod: 'ctrlOrShift',
   hpBarStyle: 'segmented',
   enemySkillshotOutline: false,
+  lolTelegraphs: false,
   attackMoveNearCursor: true,
   voiceLines: true,
   scoreBotInfo: false,

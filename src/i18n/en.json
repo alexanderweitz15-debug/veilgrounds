@@ -20,6 +20,7 @@
   "set.hpBar.thousands": "Every 1000 HP only",
   "set.hpBar.plain": "None",
   "set.enemySkillshotOutline": "Stronger outline for enemy skillshots",
+  "set.lolTelegraphs": "LoL telegraphs: enemy skillshots only as the projectile with a thin outline",
   "set.minimapScale": "Minimap size",
   "set.minimapLeft": "Minimap on the left",
   "set.ioTitle": "Back up settings",

@@ -150,8 +150,7 @@ function build(spec: string): Tip | null {
     case 'rune':
       return runeTip(a);
     case 'text': {
-      const [title = '', ...body] = spec.slice(5).split('
-'); // first line = title, the rest = body paragraphs
+      const [title = '', ...body] = spec.slice(5).split(/\r?\n/); // first line = title, the rest = body paragraphs
       return { icon: null, title, meta: [], body };
     }
     case 'timed': {

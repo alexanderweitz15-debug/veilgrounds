@@ -58,8 +58,7 @@ export function unitChips(e: SnapEntity, tick: number, marks: { id: string; left
   for (const m of [...marks, ...(e.buffs ?? [])]) {
     if (seen.has(m.id)) continue;
     seen.add(m.id);
-    out.push({ key: `mark:${m.id}`, label: t(`buff.${m.id}`), left: m.left, kind: 'mark', tip: timedTip(`text:${t(`buff.${m.id}`)}
-${t(`buff.${m.id}.desc`)}`, m.left) });
+    out.push({ key: `mark:${m.id}`, label: t(`buff.${m.id}`), left: m.left, kind: 'mark', tip: timedTip(`text:${t(`buff.${m.id}`)}\n${t(`buff.${m.id}.desc`)}`, m.left) });
   }
   return out;
 }

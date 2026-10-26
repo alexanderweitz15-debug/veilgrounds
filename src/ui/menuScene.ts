@@ -61,6 +61,7 @@ export function startMenuScene(canvas: HTMLCanvasElement): () => void {
     world.rig.focus(fx - 650, fy - 50); // action right of the mode list, above the news box
     state.beginFrame(now);
     world.frame(state, now, -1, false);
+    canvas.classList.add('ready'); // first frame is on the canvas: fade it in over the placeholder gradient
   };
   const loop = (now: number): void => {
     frame(now);

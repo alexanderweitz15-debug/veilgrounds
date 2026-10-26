@@ -57,7 +57,7 @@ export class Announcer {
     parent.appendChild(this.root);
   }
 
-  private push(title: string, tone: AnnounceTone, prio: number, sub = ''): void {
+  push(title: string, tone: AnnounceTone, prio: number, sub = ''): void {
     // routine kill callouts are dropped when more important news is waiting
     if (prio === 0 && this.queue.length >= 2) return;
     this.queue.push({ title, sub, tone, prio });

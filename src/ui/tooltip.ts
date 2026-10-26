@@ -149,8 +149,16 @@ function build(spec: string): Tip | null {
       return summonerTip(a);
     case 'rune':
       return runeTip(a);
-    case 'text':
-      return { icon: null, title: spec.slice(5), meta: [], body: [] };
+    case 'text': {
+      const [title = '', ...body] = spec.slice(5).split(/\r?\n/); // first line = title, the rest = body paragraphs
+      return { icon: null, title, meta: [], body };
+    }
+    case 'timed': {
+      // `timed:<seconds>:<inner spec>`: the inner tooltip plus the remaining time (buff chips)
+      const tip = build(spec.slice(spec.indexOf(':', 6) + 1));
+      if (tip) tip.foot = t('buff.left', { s: a });
+      return tip;
+    }
     default:
       return null;
   }

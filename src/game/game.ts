@@ -137,6 +137,7 @@ export class Game {
         swapTrinket: (id) => this.link.send({ t: 'trinket', id }),
         say: (text) => this.chat.say(text),
         ultChoice: (choice) => this.link.send({ t: 'ultChoice', choice }),
+        focusCamera: (where) => this.focusDeadCamera(where),
       },
       config?.mode === 'kite' || !config, // sandbox: one merged panel (src/ui/sandboxPanel.ts)
       config?.players ?? [],
@@ -183,7 +184,7 @@ export class Game {
         world: this.world,
         state: this.state,
         link: this.link,
-        togglePause: () => this.setPaused(!this.state.paused),
+        togglePause: () => this.togglePause(),
         togglePanel: (p: Panel, on?: boolean) => this.hud.togglePanel(p, on),
         openMenu: () => this.openMenu(),
         useItem: (i) => this.hud.flashItem(i),
@@ -239,6 +240,21 @@ export class Game {
     quit.addEventListener('click', () => this.exit());
     box.appendChild(quit);
     this.root.appendChild(box);
+  }
+
+  /** Player's F10 / Pause key: toggle, then announce (banner + chat line); the trainer-result freeze stays silent. */
+  private togglePause(): void {
+    const was = this.state.paused;
+    this.setPaused(!was);
+    if (this.state.paused !== was) this.chat.system(this.hud.announcePause(this.state.paused));
+  }
+
+  /** Dead: free camera onto the death spot (own corpse) or the own fountain. */
+  private focusDeadCamera(where: 'death' | 'fountain'): void {
+    const me = this.state.me();
+    const f = loadMap().sides[this.state.myTeam as 0 | 1].fountain;
+    if (where === 'fountain') this.world.rig.focus(f.x, f.y);
+    else if (me) this.world.rig.focus(this.state.x(me), this.state.y(me));
   }
 
   private setPaused(p: boolean): void {
@@ -322,6 +338,8 @@ export class Game {
         this.focusedOnce = true;
       }
     }
+    // dead: the camera is free (the lock would keep it on the corpse); Space still snaps to the death spot
+    if (st.snap?.me?.dead) this.input.cameraPeekUntil = Math.max(this.input.cameraPeekUntil, now + 100);
     if (!this.minimap.dragging) this.input.update(dt, now);
     // C8: the highlighted unit is the one a click hits (hover, or the predicted attack-move target while A is armed)
     const hoverId = this.input.highlight?.id ?? -1;

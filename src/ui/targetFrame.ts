@@ -25,14 +25,18 @@ const CC_ORDER = Object.keys(CC_BIT) as (keyof typeof CC_BIT)[];
 export interface Chip {
   key: string;
   label: string;
-  /** Seconds left (CC / marks), absent for auras without a known duration. */
+  /** Seconds left (CC / buffs / marks), absent for auras without a known duration. */
   left?: number;
   icon?: string | null;
   kind: 'cc' | 'buff' | 'mark';
+  /** Tooltip spec (src/ui/tooltip.ts); wrapped in `timed:` while `left` is known. */
   tip: string;
 }
 
-/** CC + ability-buff chips of a visible unit (+ jungle/objective marks of the own champion). */
+/** Tooltip spec with the remaining whole seconds as footer. */
+const timedTip = (spec: string, left: number | undefined): string => (left === undefined ? spec : `timed:${Math.ceil(left)}:${spec}`);
+
+/** CC + ability-buff chips of a visible unit (+ jungle/objective buffs and the own marks). */
 export function unitChips(e: SnapEntity, tick: number, marks: { id: string; left: number }[] = []): Chip[] {
   const out: Chip[] = [];
   if (e.cc) {
@@ -40,31 +44,47 @@ export function unitChips(e: SnapEntity, tick: number, marks: { id: string; left
     for (const c of CC_ORDER) {
       if (!(e.cc & CC_BIT[c])) continue;
       const label = c === 'slow' && e.slow ? `${t(`cc.${c}`)} ${Math.round(e.slow)} %` : t(`cc.${c}`);
-      out.push({ key: `cc:${c}`, label, ...(left !== undefined ? { left } : {}), kind: 'cc', tip: label });
+      out.push({ key: `cc:${c}`, label, ...(left !== undefined ? { left } : {}), kind: 'cc', tip: timedTip(`text:${label}`, left) });
     }
   }
   for (const id of e.auras ?? []) {
     const [champ, key] = id.split('_') as [string, string | undefined];
     const slot = SLOT_OF[key ?? ''];
     const name = slot !== undefined ? abilityInfo(champ, slot, id).name : champName(champ);
-    out.push({ key: `aura:${id}`, label: name, icon: slot !== undefined ? abilityIcon(champ, slot) : null, kind: 'buff', tip: `${champName(champ)}: ${name}` });
+    const left = e.auraLeft?.[id];
+    out.push({ key: `aura:${id}`, label: name, ...(left !== undefined ? { left } : {}), icon: slot !== undefined ? abilityIcon(champ, slot) : null, kind: 'buff', tip: timedTip(slot !== undefined ? `ability:${champ}:${slot}:-1` : key === 'p' ? `passive:${champ}` : `text:${champName(champ)}: ${name}`, left) });
   }
-  for (const m of marks) out.push({ key: `mark:${m.id}`, label: t(`buff.${m.id}`), left: m.left, kind: 'mark', tip: `${t(`buff.${m.id}`)}\n${t(`buff.${m.id}.desc`)}` });
+  const seen = new Set<string>();
+  for (const m of [...marks, ...(e.buffs ?? [])]) {
+    if (seen.has(m.id)) continue;
+    seen.add(m.id);
+    out.push({ key: `mark:${m.id}`, label: t(`buff.${m.id}`), left: m.left, kind: 'mark', tip: timedTip(`text:${t(`buff.${m.id}`)}\n${t(`buff.${m.id}.desc`)}`, m.left) });
+  }
   return out;
 }
 
-/** Render chips into `root` (rebuilt only when the visible content changed). Returns the new key. */
+/** Render chips into `root`, reusing the nodes of unchanged chips (a hovered tooltip survives the per-second update). Returns the new key. */
 export function drawChips(root: HTMLElement, chips: Chip[], prevKey: string): string {
   const key = chips.map((c) => `${c.key}:${c.left === undefined ? '' : Math.ceil(c.left)}`).join(',');
   if (key === prevKey) return key;
-  root.textContent = '';
-  for (const c of chips) {
-    const b = el('div', `chip buff-mark ${c.kind} ${c.key.split(':')[1] ?? ''}`, root);
-    if (c.icon) setIcon(el('span', 'chip-ico', b), c.icon);
-    el('span', 'chip-lbl', b, c.label);
-    if (c.left !== undefined) el('span', 'chip-t', b, `${Math.ceil(c.left)}s`);
-    setTip(b, `text:${c.tip}`);
-  }
+  const old = new Map<string, HTMLElement>();
+  for (const n of Array.from(root.children) as HTMLElement[]) old.set(n.dataset.k!, n);
+  chips.forEach((c, i) => {
+    let b = old.get(c.key);
+    old.delete(c.key);
+    if (!b) {
+      b = el('div', `chip buff-mark ${c.kind} ${c.key.split(':')[1] ?? ''}`);
+      b.dataset.k = c.key;
+      if (c.icon) setIcon(el('span', 'chip-ico', b), c.icon);
+      el('span', 'chip-lbl', b);
+      el('span', 'chip-t', b);
+    }
+    (b.querySelector('.chip-lbl') as HTMLElement).textContent = c.label;
+    (b.querySelector('.chip-t') as HTMLElement).textContent = c.left === undefined ? '' : `${Math.ceil(c.left)}s`;
+    setTip(b, c.tip);
+    if (root.children[i] !== b) root.insertBefore(b, root.children[i] ?? null);
+  });
+  for (const n of old.values()) n.remove();
   return key;
 }
 

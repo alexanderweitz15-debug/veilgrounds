@@ -260,6 +260,11 @@ html.minimap-left .game .chat-box { bottom: calc(292px * var(--mm, 1) + 56px); }
 .pause-overlay .big, .gameover .big { font-size: 56px; font-weight: 900; letter-spacing: 4px; color: #f3d98c; text-shadow: 0 0 20px #000; }
 .gameover:not(.win) .big { color: #e07a6a; }
 .pause-overlay .hint { color: #cdbf9e; }
+.pause-overlay .by { font-size: 22px; color: #e8dcc0; text-shadow: 0 0 8px #000; }
+.pause-overlay .by:empty { display: none; }
+.respawn .cam-row { display: flex; gap: 8px; margin-top: 6px; justify-content: center; }
+.item.flash-fail { animation: itemfail 0.4s; }
+@keyframes itemfail { from { background: #7a2a24; box-shadow: inset 0 0 0 2px #e0705a; } }
 .panel.open { display: block; position: absolute; background: var(--panel); border: 2px solid var(--brass-dim); border-radius: 6px; padding: 14px 18px; pointer-events: auto; }
 .panel.scoreboard.open { top: 56px; left: 50%; transform: translateX(-50%); min-width: 480px; text-align: center; }
 .panel.shop.open { top: 12%; left: 12%; width: 420px; height: 300px; }

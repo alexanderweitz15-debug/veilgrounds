@@ -467,3 +467,17 @@ If art/f-identity rewrites `push()`: the three hooks to keep are `castPoseActive
 - `ITEM_GLYPHS` table + `badgeGlyph()`; `itemIcon` / `runeIcon` read `src/data/itemIcons.json` (`src/ui/iconTable.ts`).
   Ability / summoner / passive / stat / objective icons untouched. New items need a row in itemIcons.json
   (tests/itemIcons.test.ts fails otherwise).
+
+## ui-polish
+
+- `src/sim/snapshot.ts` (additive): `SnapEntity.auraLeft?: Record<string, number>` (seconds left per aura id) and
+  `SnapEntity.buffs?: SnapMark[]` (jungle / objective mark buffs without champion prefix, champions only). `auras`,
+  `marks` unchanged.
+- `src/ui/tooltip.ts`: new spec `timed:<s>:<inner spec>` (inner tooltip + footer "Noch s s"); spec `text:` now splits
+  at newlines (first line title, rest body).
+- `src/i18n/de.json`, `en.json`: new keys `buff.left`, `castFail.item.*`, `hud.you`, `hud.pausedBy`, `hud.deadCam.*`,
+  `ann.paused/pausedBy/resumed`, `chat.paused/resumed`; values changed: `hud.pausedHint` (now takes `{key}`),
+  `hud.deadCamHint` (Space = death spot).
+- `src/ui/menu.css`, `src/ui/style.css`: small additive rules (menu placeholder gradient + canvas fade, pause "by" line,
+  respawn camera buttons, failed item flash).
+- `HudHooks.focusCamera?` added (game.ts implements it). `Announcer.push` is public now.

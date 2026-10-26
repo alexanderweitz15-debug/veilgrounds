@@ -25,6 +25,7 @@ import { abilityIcon, itemIcon, kesselbrutIcon, objectiveIcon, passiveIcon, setI
 import { KESSELBRUT_MAX_STACKS, KESSELBRUT_STRUCT_PCT } from '../sim/systems/jungle';
 import { setTip } from './tooltip';
 import { play } from '../audio/sfx';
+import { castFailText } from './castFailText';
 
 const KILLFEED_MS = 9000;
 
@@ -76,6 +77,8 @@ export interface HudHooks {
   say?(text: string): void;
   /** R choice (Sev): the picked card (src/ui/ultChoice.ts). */
   ultChoice?(choice: 0 | 1 | 2): void;
+  /** Dead: put the free camera on the death spot or on the own fountain (respawn overlay buttons; FEATURE-GAP 1.11). */
+  focusCamera?(where: 'death' | 'fountain'): void;
 }
 
 type TrinketHud = NonNullable<NonNullable<ClientState['snap']>['me']>['trinket'];
@@ -115,6 +118,10 @@ export class Hud {
   private readonly recall: HTMLElement;
   private readonly recallFill: HTMLElement;
   private readonly pause: HTMLElement;
+  private readonly pauseBy: HTMLElement;
+  private readonly pauseHint: HTMLElement;
+  /** Name shown as "paused by" (the human's champion; no profile name in the sim setup). */
+  private readonly humanName: string;
   private readonly over: HTMLElement;
   private readonly overTitle: HTMLElement;
   private readonly armedHint: HTMLElement;
@@ -154,6 +161,8 @@ export class Hud {
   constructor(hooks: HudHooks, sandbox: boolean, players: readonly PlayerSetup[] = [], mode?: string) {
     const r = this.root;
     this.say = (text) => hooks.say?.(text);
+    const human = players.find((p) => p.isHuman);
+    this.humanName = human ? champName(human.champion) : t('hud.you');
     // ---- top bar
     const top = el('div', 'hud-top', r);
     this.kills = [el('span', 'k blue', top, '0'), el('span', 'k red', top, '0')];
@@ -247,6 +256,12 @@ export class Hud {
     el('div', 'lbl', this.respawn, t('hud.respawnLbl'));
     this.respawnNum = el('div', 'num', this.respawn);
     this.respawnHint = el('div', 'hint', this.respawn);
+    // free camera while dead: jump to the death spot or watch the fountain you will respawn in (Space = death spot)
+    const camRow = el('div', 'cam-row', this.respawn);
+    for (const where of ['death', 'fountain'] as const) {
+      const b = el('button', 'btn small', camRow, t(`hud.deadCam.${where}`));
+      b.addEventListener('mousedown', (e) => (e.stopPropagation(), hooks.focusCamera?.(where)));
+    }
     this.recap = new DeathRecap(r);
     this.announcer = new Announcer(r, mode);
     this.recall = el('div', 'recall', r);
@@ -255,7 +270,8 @@ export class Hud {
     this.noChamp = el('div', 'nochamp', r, t('hud.noChampion'));
     this.pause = el('div', 'pause-overlay', r);
     el('div', 'big', this.pause, t('hud.paused'));
-    el('div', 'hint', this.pause, t('hud.pausedHint'));
+    this.pauseBy = el('div', 'by', this.pause);
+    this.pauseHint = el('div', 'hint', this.pause);
     this.over = el('div', 'gameover', r);
     this.overTitle = el('div', 'big', this.over);
     el('button', 'btn', this.over, t('menu.quit')).addEventListener('click', () => hooks.quit());
@@ -315,21 +331,36 @@ export class Hud {
     setText(this.armedHint, a === 'attackMove' ? t('hud.attackMoveArmed') : a ? t('hud.teleportArmed') : '');
   }
 
-  flashItem(i: number): void {
+  flashItem(i: number, fail = false): void {
     const s = this.items[i];
     if (!s) return;
-    s.classList.remove('flash');
+    const cls = fail ? 'flash-fail' : 'flash';
+    s.classList.remove(cls);
     void s.offsetWidth;
-    s.classList.add('flash');
+    s.classList.add(cls);
+  }
+
+  /**
+   * F10 pause / resume with a banner (LoL "paused by X"). Called for the player's own toggle only, not for the
+   * trainer-result freeze. Returns the line for the chat log.
+   */
+  announcePause(paused: boolean): string {
+    this.announcer.push(t(paused ? 'ann.paused' : 'ann.resumed'), 'neutral', 2, paused ? t('ann.pausedBy', { name: this.humanName }) : '');
+    setText(this.pauseBy, paused ? t('hud.pausedBy', { name: this.humanName }) : '');
+    return t(paused ? 'chat.paused' : 'chat.resumed', { name: this.humanName });
   }
 
   onEvent(ev: SimEvent, state: ClientState, now: number): void {
     this.announcer.onEvent(ev, state);
     this.recap.onEvent(ev, state);
-    if (ev.e === 'castFail' && ev.src === state.snap?.me?.eid && ev.reason !== 'busy') {
+    const me = state.snap?.me;
+    if (ev.e === 'castFail' && me && ev.src === me.eid && ev.reason !== 'busy') {
       // LoL: "Nicht genug Mana" / "Außer Reichweite" … over the ability bar, with a short error tone (debounced)
-      const msg = t(`castFail.${ev.reason}`);
-      setText(this.castFail, msg);
+      const id = ev.item ? me.items?.[ev.slot] : null;
+      const abil = me.abilities[ev.summoner ? 4 + ev.slot : ev.slot];
+      const label = ev.item ? (id ? itemName(id) : '') : abil ? (ev.summoner ? summonerName(abil.id) : abilityInfo(this.champ, ultDisplaySlot(ev.slot, abil.ultChoice?.chosen), abil.id).name) : '';
+      if (ev.item) this.flashItem(ev.slot, true);
+      setText(this.castFail, castFailText(ev, me, state.byId.get(me.eid)?.mana ?? 0, label, t));
       this.castFail.classList.remove('show');
       void this.castFail.offsetWidth;
       this.castFail.classList.add('show');
@@ -374,6 +405,7 @@ export class Hud {
     while (this.feedEntries.length && now - this.feedEntries[0]!.at > KILLFEED_MS) this.feedEntries.shift()!.node.remove();
     this.announcer.update(state, now);
     toggle(this.pause, 'open', state.paused);
+    setText(this.pauseHint, t('hud.pausedHint', { key: keyLabel(binds.pause) }));
     if (state.winner !== null) {
       toggle(this.over, 'open', true);
       setText(this.overTitle, state.winner === state.myTeam ? t('hud.victory') : t('hud.defeat'));

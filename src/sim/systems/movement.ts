@@ -10,6 +10,7 @@ import { isRef } from '../sim';
 import { MAX_ENT } from '../ecs';
 import { fearSource, hasBuff } from '../buffs';
 import { isDisplacing } from './abilities';
+import { minionSpeed } from './minions';
 
 /** Chase path is recomputed once the target moved this far from the path's end (no eid-phased timer: mirror-symmetric). */
 const REPATH_DIST = 100;
@@ -48,6 +49,7 @@ export const movementSystem: System = {
       const eid = ents[i]!;
       if (!Unit.alive[eid] || Move.mode[eid] === 0 || Atk.phase[eid] === 1) continue;
       let step = Stats.ms[eid]! * DT;
+      if (Move.mode[eid] === 1 && isMinion(Unit.kind[eid]!)) step *= minionSpeed(sim)[eid]!; // catch-up (minions.ts)
       if (step <= 0) continue;
       const sx = Pos.x[eid]!;
       const sy = Pos.y[eid]!;

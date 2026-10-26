@@ -535,6 +535,7 @@
   "set.reduceMotion": "Bewegung und Blitzeffekte reduzieren",
   "set.highContrast": "Hoher Kontrast (HUD)",
   "set.visualCues": "Visuelle Hinweise für Geräusche (Pfeile, Turmbeschuss, Untertitel)",
+  "set.voiceLines": "Sprüche der Champions als Sprechblasen (im Spiel und bei der Auswahl)",
   "cue.towerFire": "Unter Turmbeschuss!",
   "cue.wave": "Vasallenwelle erscheint",
   "cue.plateWon": "Turmplatte erobert",

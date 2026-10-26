@@ -535,6 +535,7 @@
   "set.reduceMotion": "Reduce motion and flashes",
   "set.highContrast": "High contrast (HUD)",
   "set.visualCues": "Visual cues for sounds (arrows, tower fire, captions)",
+  "set.voiceLines": "Champion voice lines as speech bubbles (in game and on pick)",
   "cue.towerFire": "Under tower fire!",
   "cue.wave": "Minion wave spawning",
   "cue.plateWon": "Tower plate taken",

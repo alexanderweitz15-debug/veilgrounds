@@ -183,6 +183,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.reduceMotion'), check('reduceMotion'));
     row(t('set.highContrast'), check('highContrast'));
     row(t('set.visualCues'), check('visualCues'));
+    row(t('set.voiceLines'), check('voiceLines'));
     const h = document.createElement('h3');
     h.textContent = t('set.keybinds');
     root.appendChild(h);

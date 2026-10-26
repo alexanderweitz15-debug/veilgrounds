@@ -1,0 +1,920 @@
+{
+  "aurel": {
+    "pick": {
+      "de": "Ich bin pünktlich. Ihr seid zu früh.",
+      "en": "I'm punctual. You're early."
+    },
+    "move1": {
+      "de": "Pünktlich bleiben.",
+      "en": "Staying on time."
+    },
+    "move2": {
+      "de": "Tick. Tack.",
+      "en": "Tick. Tock."
+    },
+    "attack": {
+      "de": "Eine Sekunde, bitte.",
+      "en": "One second, please."
+    },
+    "ability": {
+      "de": "Zahnrad greift.",
+      "en": "Gear engaged."
+    },
+    "kill": {
+      "de": "Abgelaufen.",
+      "en": "Expired."
+    },
+    "death": {
+      "de": "Die Uhr ging nach.",
+      "en": "The clock was slow."
+    },
+    "recall": {
+      "de": "Aufziehen.",
+      "en": "Winding up."
+    }
+  },
+  "brom": {
+    "pick": {
+      "de": "Brom. Ich fälle Bäume. Heute eben andere.",
+      "en": "Brom. I fell trees. Today, other things."
+    },
+    "move1": {
+      "de": "Weiter geht's.",
+      "en": "On we go."
+    },
+    "move2": {
+      "de": "Holz hackt sich nicht selbst.",
+      "en": "Wood won't chop itself."
+    },
+    "attack": {
+      "de": "Noch ein Schlag.",
+      "en": "One more swing."
+    },
+    "ability": {
+      "de": "Ausholen!",
+      "en": "Winding up!"
+    },
+    "kill": {
+      "de": "Liegt.",
+      "en": "Down it goes."
+    },
+    "death": {
+      "de": "Hm. Morsch war ich wohl selber.",
+      "en": "Hm. Seems I was the rotten one."
+    },
+    "recall": {
+      "de": "Axt schärfen. Dauert.",
+      "en": "Sharpening the axe. Takes a while."
+    }
+  },
+  "corvin": {
+    "pick": {
+      "de": "Sechs Schuss. Reicht meistens.",
+      "en": "Six shots. Usually enough."
+    },
+    "move1": {
+      "de": "Ich geh vor. Du lädst nach.",
+      "en": "I'll go first. You reload."
+    },
+    "move2": {
+      "de": "Pulver trocken halten.",
+      "en": "Keep the powder dry."
+    },
+    "attack": {
+      "de": "Peng.",
+      "en": "Bang."
+    },
+    "ability": {
+      "de": "Zündschnur brennt.",
+      "en": "Fuse is lit."
+    },
+    "kill": {
+      "de": "Abgerechnet.",
+      "en": "Settled."
+    },
+    "death": {
+      "de": "Ladehemmung. Natürlich jetzt.",
+      "en": "Jammed. Of course, now."
+    },
+    "recall": {
+      "de": "Pulver trocknen.",
+      "en": "Drying the powder."
+    }
+  },
+  "dagny": {
+    "pick": {
+      "de": "Kessel geflickt. Kopf auch, beinahe.",
+      "en": "Kettle patched. Head too, almost."
+    },
+    "move1": {
+      "de": "Dampf auf dem Kessel.",
+      "en": "Steam's up."
+    },
+    "move2": {
+      "de": "Langsam, aber heiß.",
+      "en": "Slow, but hot."
+    },
+    "attack": {
+      "de": "Das hat eine Beule verdient.",
+      "en": "That deserves a dent."
+    },
+    "ability": {
+      "de": "Ventil auf!",
+      "en": "Valve open!"
+    },
+    "kill": {
+      "de": "Durchgekocht.",
+      "en": "Boiled through."
+    },
+    "death": {
+      "de": "Druck zu hoch. Wusste ich.",
+      "en": "Pressure too high. Knew it."
+    },
+    "recall": {
+      "de": "Zurück an die Esse.",
+      "en": "Back to the forge."
+    }
+  },
+  "ferris": {
+    "pick": {
+      "de": "Einer muss ja das Licht halten.",
+      "en": "Someone has to hold the light."
+    },
+    "move1": {
+      "de": "Folgt dem Licht.",
+      "en": "Follow the light."
+    },
+    "move2": {
+      "de": "Ich geh voran. Mit Laterne.",
+      "en": "I'll lead. Lantern in hand."
+    },
+    "attack": {
+      "de": "Nur ein Funke.",
+      "en": "Just a spark."
+    },
+    "ability": {
+      "de": "Licht an!",
+      "en": "Lights up!"
+    },
+    "kill": {
+      "de": "Dunkel bei dir, was?",
+      "en": "Dark over there, isn't it?"
+    },
+    "death": {
+      "de": "Docht abgebrannt.",
+      "en": "Wick burned down."
+    },
+    "recall": {
+      "de": "Öl nachfüllen.",
+      "en": "Refilling the oil."
+    }
+  },
+  "gorvam": {
+    "pick": {
+      "de": "Kette ist geölt. Ich nicht.",
+      "en": "The chain is oiled. I'm not."
+    },
+    "move1": {
+      "de": "Ketten rasseln.",
+      "en": "Chains rattling."
+    },
+    "move2": {
+      "de": "Ich komm. Ihr hört mich ja.",
+      "en": "Coming. You can hear me."
+    },
+    "attack": {
+      "de": "Schwer genug?",
+      "en": "Heavy enough?"
+    },
+    "ability": {
+      "de": "Festmachen!",
+      "en": "Make fast!"
+    },
+    "kill": {
+      "de": "Ladung gelöscht.",
+      "en": "Cargo unloaded."
+    },
+    "death": {
+      "de": "Kette gerissen. Passiert.",
+      "en": "Chain snapped. Happens."
+    },
+    "recall": {
+      "de": "Feierabend. Für fünf Minuten.",
+      "en": "Clocking off. For five minutes."
+    }
+  },
+  "grimald": {
+    "pick": {
+      "de": "Fallen sind gestellt. Wo, verrate ich nicht.",
+      "en": "Traps are set. Where, I won't say."
+    },
+    "move1": {
+      "de": "Leise. Die Fallen schlafen.",
+      "en": "Quiet. The traps are sleeping."
+    },
+    "move2": {
+      "de": "Hier lang. Aber nicht du.",
+      "en": "This way. Not you, though."
+    },
+    "attack": {
+      "de": "Zähne zeigen.",
+      "en": "Showing teeth."
+    },
+    "ability": {
+      "de": "Schnapp!",
+      "en": "Snap!"
+    },
+    "kill": {
+      "de": "Ins Netz gegangen.",
+      "en": "Netted."
+    },
+    "death": {
+      "de": "In die eigene Falle. Klassiker.",
+      "en": "Into my own trap. Classic."
+    },
+    "recall": {
+      "de": "Fallen kontrollieren.",
+      "en": "Checking the traps."
+    }
+  },
+  "hagen": {
+    "pick": {
+      "de": "Die Glocke wiegt mehr als ihr alle zusammen.",
+      "en": "The bell weighs more than all of you together."
+    },
+    "move1": {
+      "de": "Der Turm kommt mit.",
+      "en": "The belfry comes along."
+    },
+    "move2": {
+      "de": "Aus dem Weg. Die Glocke naht.",
+      "en": "Make way. The bell approaches."
+    },
+    "attack": {
+      "de": "Bimm.",
+      "en": "Ding."
+    },
+    "ability": {
+      "de": "Läuten!",
+      "en": "Ringing!"
+    },
+    "kill": {
+      "de": "Ausgeläutet.",
+      "en": "Rung out."
+    },
+    "death": {
+      "de": "Wer hat am Seil gezogen?",
+      "en": "Who pulled the rope?"
+    },
+    "recall": {
+      "de": "Zurück in den Turm.",
+      "en": "Back to the belfry."
+    }
+  },
+  "harrow": {
+    "pick": {
+      "de": "Dreißig Jahre Belagerung. Ich kenne jedes Tor.",
+      "en": "Thirty years of sieges. I know every gate."
+    },
+    "move1": {
+      "de": "Marsch. Langsam, aber stetig.",
+      "en": "March. Slow but steady."
+    },
+    "move2": {
+      "de": "Das Tor wartet nicht. Doch.",
+      "en": "The gate won't wait. It will."
+    },
+    "attack": {
+      "de": "Noch ein Stoß.",
+      "en": "Another shove."
+    },
+    "ability": {
+      "de": "Mauer her!",
+      "en": "Bring the wall!"
+    },
+    "kill": {
+      "de": "Tor offen.",
+      "en": "Gate open."
+    },
+    "death": {
+      "de": "Meine Knie. Schon wieder.",
+      "en": "My knees. Again."
+    },
+    "recall": {
+      "de": "Zurück ins Lager. Suppe.",
+      "en": "Back to camp. Soup."
+    }
+  },
+  "ilvane": {
+    "pick": {
+      "de": "Ich webe. Ihr stolpert. So ist die Arbeitsteilung.",
+      "en": "I weave. You trip. That is the division of labour."
+    },
+    "move1": {
+      "de": "Der Faden führt.",
+      "en": "The thread leads."
+    },
+    "move2": {
+      "de": "Ich spinn mir was zurecht.",
+      "en": "I'll weave something up."
+    },
+    "attack": {
+      "de": "Kleiner Stich.",
+      "en": "A small stitch."
+    },
+    "ability": {
+      "de": "Faden gespannt.",
+      "en": "Thread drawn taut."
+    },
+    "kill": {
+      "de": "Sauber vernäht.",
+      "en": "Neatly stitched."
+    },
+    "death": {
+      "de": "Na gut. Da war ein Knoten drin.",
+      "en": "Fine. There was a knot in it."
+    },
+    "recall": {
+      "de": "Ich hole neues Garn.",
+      "en": "Fetching more yarn."
+    }
+  },
+  "isolde": {
+    "pick": {
+      "de": "Glas ist geduldig. Ich nicht.",
+      "en": "Glass is patient. I'm not."
+    },
+    "move1": {
+      "de": "Vorsicht, zerbrechlich.",
+      "en": "Careful, fragile."
+    },
+    "move2": {
+      "de": "Gleich wird's scharf.",
+      "en": "It'll be sharp soon."
+    },
+    "attack": {
+      "de": "Frisch geschliffen.",
+      "en": "Freshly ground."
+    },
+    "ability": {
+      "de": "Ins Glas geblasen.",
+      "en": "Blown into glass."
+    },
+    "kill": {
+      "de": "Zerbrochen. Kommt in den Scherbeneimer.",
+      "en": "Shattered. Into the shard bin."
+    },
+    "death": {
+      "de": "Zu heiß abgekühlt.",
+      "en": "Cooled too fast."
+    },
+    "recall": {
+      "de": "Zurück an den Ofen.",
+      "en": "Back to the furnace."
+    }
+  },
+  "kaelen": {
+    "pick": {
+      "de": "Lieferung kommt. Schneller als gewünscht.",
+      "en": "Delivery incoming. Sooner than you'd like."
+    },
+    "move1": {
+      "de": "Unterwegs. Immer.",
+      "en": "On route. Always."
+    },
+    "move2": {
+      "de": "Pakete warten nicht.",
+      "en": "Parcels don't wait."
+    },
+    "attack": {
+      "de": "Express.",
+      "en": "Express."
+    },
+    "ability": {
+      "de": "Eilzustellung!",
+      "en": "Rush delivery!"
+    },
+    "kill": {
+      "de": "Zustellung erfolgt.",
+      "en": "Package delivered."
+    },
+    "death": {
+      "de": "Falsche Adresse. Meine eigene.",
+      "en": "Wrong address. My own."
+    },
+    "recall": {
+      "de": "Zurück ins Depot.",
+      "en": "Back to the depot."
+    }
+  },
+  "kiran": {
+    "pick": {
+      "de": "Ich lese Garn. Deins ist kurz.",
+      "en": "I read yarn. Yours is short."
+    },
+    "move1": {
+      "de": "Der Faden zieht mich.",
+      "en": "The thread pulls me."
+    },
+    "move2": {
+      "de": "Ich weiß, wohin. Fast.",
+      "en": "I know where. Almost."
+    },
+    "attack": {
+      "de": "Kleiner Knoten.",
+      "en": "A little knot."
+    },
+    "ability": {
+      "de": "Faden gezogen.",
+      "en": "Thread pulled."
+    },
+    "kill": {
+      "de": "Abgeschnitten.",
+      "en": "Snipped."
+    },
+    "death": {
+      "de": "Das hab ich nicht kommen sehen. Peinlich.",
+      "en": "Didn't see that coming. Embarrassing."
+    },
+    "recall": {
+      "de": "Neues Knäuel holen.",
+      "en": "Fetching a new skein."
+    }
+  },
+  "lio": {
+    "pick": {
+      "de": "Der Meister sagt, ich soll weniger zünden. Der Meister ist nicht hier.",
+      "en": "The master says I should light fewer fires. The master isn't here."
+    },
+    "move1": {
+      "de": "Wo brennt's? Hier, gleich.",
+      "en": "Where's the fire? Here, soon."
+    },
+    "move2": {
+      "de": "Nicht rennen, hüpfen!",
+      "en": "Not running, skipping!"
+    },
+    "attack": {
+      "de": "Funke!",
+      "en": "Spark!"
+    },
+    "ability": {
+      "de": "Oh, das wird warm!",
+      "en": "Oh, this'll get warm!"
+    },
+    "kill": {
+      "de": "Puff.",
+      "en": "Poof."
+    },
+    "death": {
+      "de": "Feuchter Zunder.",
+      "en": "Damp tinder."
+    },
+    "recall": {
+      "de": "Feuersteine nachkaufen.",
+      "en": "Buying more flint."
+    }
+  },
+  "lysa": {
+    "pick": {
+      "de": "Ich nähe. Mit Abstand.",
+      "en": "I sew. From a distance."
+    },
+    "move1": {
+      "de": "Leise, ich näh gerade.",
+      "en": "Quiet, I'm sewing."
+    },
+    "move2": {
+      "de": "Stich für Stich.",
+      "en": "Stitch by stitch."
+    },
+    "attack": {
+      "de": "Piks.",
+      "en": "Prick."
+    },
+    "ability": {
+      "de": "Faden einfädeln.",
+      "en": "Threading the needle."
+    },
+    "kill": {
+      "de": "Abgenäht.",
+      "en": "Sewn shut."
+    },
+    "death": {
+      "de": "Faden gerissen.",
+      "en": "Thread snapped."
+    },
+    "recall": {
+      "de": "Nadeln nachfüllen.",
+      "en": "Restocking needles."
+    }
+  },
+  "mira": {
+    "pick": {
+      "de": "Sehne neu, Pfeile gezählt. Fast.",
+      "en": "New string, arrows counted. Almost."
+    },
+    "move1": {
+      "de": "Weg frei, ich ziele.",
+      "en": "Clear the way, I'm aiming."
+    },
+    "move2": {
+      "de": "Abstand ist Technik.",
+      "en": "Distance is technique."
+    },
+    "attack": {
+      "de": "Treffer. Hoffentlich.",
+      "en": "A hit. Hopefully."
+    },
+    "ability": {
+      "de": "Pfeil im Anschlag.",
+      "en": "Arrow nocked."
+    },
+    "kill": {
+      "de": "Zwei Pfeile. Einer hätte gereicht.",
+      "en": "Two arrows. One would have done."
+    },
+    "death": {
+      "de": "Das war ... nicht eingeplant.",
+      "en": "That was ... not in the plan."
+    },
+    "recall": {
+      "de": "Kurz zur Werkbank.",
+      "en": "Back to the workbench."
+    }
+  },
+  "nyx": {
+    "pick": {
+      "de": "Mach das Licht aus. Danke.",
+      "en": "Turn off the light. Thanks."
+    },
+    "move1": {
+      "de": "Schatten mit Beinen.",
+      "en": "A shadow with legs."
+    },
+    "move2": {
+      "de": "Still. Ich bin schon da.",
+      "en": "Quiet. I'm already there."
+    },
+    "attack": {
+      "de": "Pssst.",
+      "en": "Shh."
+    },
+    "ability": {
+      "de": "Dunkel wird's.",
+      "en": "It's getting dark."
+    },
+    "kill": {
+      "de": "Ausgeknipst.",
+      "en": "Snuffed."
+    },
+    "death": {
+      "de": "Wer hat hier Licht gemacht?",
+      "en": "Who turned the light on?"
+    },
+    "recall": {
+      "de": "Kurz im Schrank warten.",
+      "en": "Waiting in the cupboard for a bit."
+    }
+  },
+  "oda": {
+    "pick": {
+      "de": "Zwei Eimer. Einer für euch, einer für die anderen.",
+      "en": "Two buckets. One for you, one for them."
+    },
+    "move1": {
+      "de": "Ich komm mit dem Eimer.",
+      "en": "On my way with the bucket."
+    },
+    "move2": {
+      "de": "Nichts verschütten.",
+      "en": "Don't spill."
+    },
+    "attack": {
+      "de": "Nur ein Spritzer.",
+      "en": "Just a splash."
+    },
+    "ability": {
+      "de": "Wasser marsch!",
+      "en": "Water on!"
+    },
+    "kill": {
+      "de": "Weggespült.",
+      "en": "Washed away."
+    },
+    "death": {
+      "de": "Eimer leer.",
+      "en": "Bucket's empty."
+    },
+    "recall": {
+      "de": "Zum Brunnen.",
+      "en": "To the well."
+    }
+  },
+  "oleth": {
+    "pick": {
+      "de": "Der Orden schickt mich. Der Orden schickt immer mich.",
+      "en": "The order sends me. The order always sends me."
+    },
+    "move1": {
+      "de": "Der Orden rückt vor.",
+      "en": "The order advances."
+    },
+    "move2": {
+      "de": "Mir nach. Im Gleichschritt.",
+      "en": "Follow me. In step."
+    },
+    "attack": {
+      "de": "Zur Ordnung.",
+      "en": "To order."
+    },
+    "ability": {
+      "de": "Im Namen der Regel!",
+      "en": "By the rule!"
+    },
+    "kill": {
+      "de": "Ermahnt.",
+      "en": "Admonished."
+    },
+    "death": {
+      "de": "Ich melde das dem Konvent.",
+      "en": "I'll report this to the convent."
+    },
+    "recall": {
+      "de": "Zurück zur Andacht. Kurz.",
+      "en": "Back to prayers. Briefly."
+    }
+  },
+  "ottilie": {
+    "pick": {
+      "de": "Hark und ich. Er macht die Arbeit, ich die Ansagen.",
+      "en": "Hark and me. He does the work, I give the orders."
+    },
+    "move1": {
+      "de": "Bei Fuß, Hark.",
+      "en": "Heel, Hark."
+    },
+    "move2": {
+      "de": "Hark hat was gerochen.",
+      "en": "Hark smelled something."
+    },
+    "attack": {
+      "de": "Fass, Hark.",
+      "en": "Sic 'em, Hark."
+    },
+    "ability": {
+      "de": "Los, Hark, los!",
+      "en": "Go, Hark, go!"
+    },
+    "kill": {
+      "de": "Apportiert.",
+      "en": "Fetched."
+    },
+    "death": {
+      "de": "Hark, hol Hilfe. Nicht den Stock.",
+      "en": "Hark, get help. Not the stick."
+    },
+    "recall": {
+      "de": "Futterpause.",
+      "en": "Feeding break."
+    }
+  },
+  "renn": {
+    "pick": {
+      "de": "Sieben Klingen. Eine pro Jahr Dienst. Dann bin ich gegangen.",
+      "en": "Seven blades. One per year of service. Then I left."
+    },
+    "move1": {
+      "de": "Weiter. Nie zurückschauen.",
+      "en": "Onward. Never look back."
+    },
+    "move2": {
+      "de": "Ich war nie hier.",
+      "en": "I was never here."
+    },
+    "attack": {
+      "de": "Eine Klinge.",
+      "en": "One blade."
+    },
+    "ability": {
+      "de": "Klinge frei!",
+      "en": "Blade away!"
+    },
+    "kill": {
+      "de": "Eine weniger.",
+      "en": "One fewer."
+    },
+    "death": {
+      "de": "Hätte ich zählen sollen.",
+      "en": "Should have counted."
+    },
+    "recall": {
+      "de": "Klingen einsammeln.",
+      "en": "Collecting blades."
+    }
+  },
+  "seraphyne": {
+    "pick": {
+      "de": "Ich leite nur weiter. Wohin, entscheide ich.",
+      "en": "I just conduct it. Where to is my call."
+    },
+    "move1": {
+      "de": "Sturm zieht auf.",
+      "en": "A storm is rolling in."
+    },
+    "move2": {
+      "de": "Die Luft knistert.",
+      "en": "The air crackles."
+    },
+    "attack": {
+      "de": "Funken schlagen.",
+      "en": "Striking sparks."
+    },
+    "ability": {
+      "de": "Einschlag in drei, zwei ...",
+      "en": "Strike in three, two ..."
+    },
+    "kill": {
+      "de": "Geerdet.",
+      "en": "Grounded."
+    },
+    "death": {
+      "de": "Kurzschluss.",
+      "en": "Short circuit."
+    },
+    "recall": {
+      "de": "Aufladen.",
+      "en": "Recharging."
+    }
+  },
+  "sev": {
+    "pick": {
+      "de": "Ihr seht nur, was ich euch zeige.",
+      "en": "You only see what I show you."
+    },
+    "move1": {
+      "de": "Die Krähen führen.",
+      "en": "The crows lead."
+    },
+    "move2": {
+      "de": "Nicht umdrehen.",
+      "en": "Don't turn around."
+    },
+    "attack": {
+      "de": "Ein Blick genügt.",
+      "en": "One look is enough."
+    },
+    "ability": {
+      "de": "Sieh hin.",
+      "en": "Look."
+    },
+    "kill": {
+      "de": "Du hast zu lange hingesehen.",
+      "en": "You looked too long."
+    },
+    "death": {
+      "de": "Auch Krähen ... fallen.",
+      "en": "Even crows ... fall."
+    },
+    "recall": {
+      "de": "Die Krähen tragen mich.",
+      "en": "The crows carry me."
+    }
+  },
+  "thessaly": {
+    "pick": {
+      "de": "Ich prüfe Gläser. Und Leute.",
+      "en": "I inspect lenses. And people."
+    },
+    "move1": {
+      "de": "Weiter zur nächsten Prüfung.",
+      "en": "On to the next inspection."
+    },
+    "move2": {
+      "de": "Scharf stellen.",
+      "en": "Focusing."
+    },
+    "attack": {
+      "de": "Kurzer Befund.",
+      "en": "Brief finding."
+    },
+    "ability": {
+      "de": "Strahl gebündelt.",
+      "en": "Beam focused."
+    },
+    "kill": {
+      "de": "Durchgefallen.",
+      "en": "Failed inspection."
+    },
+    "death": {
+      "de": "Messfehler. Eindeutig.",
+      "en": "Measurement error. Clearly."
+    },
+    "recall": {
+      "de": "Linsen polieren.",
+      "en": "Polishing lenses."
+    }
+  },
+  "tobin": {
+    "pick": {
+      "de": "Leine los. Oder fest. Kommt drauf an.",
+      "en": "Line loose. Or tight. Depends."
+    },
+    "move1": {
+      "de": "Wind von achtern.",
+      "en": "Wind astern."
+    },
+    "move2": {
+      "de": "Kurs gehalten.",
+      "en": "Holding course."
+    },
+    "attack": {
+      "de": "Gleich zappelt was.",
+      "en": "Something's about to wriggle."
+    },
+    "ability": {
+      "de": "Harpune frei!",
+      "en": "Harpoon away!"
+    },
+    "kill": {
+      "de": "Eingeholt.",
+      "en": "Reeled in."
+    },
+    "death": {
+      "de": "Über Bord.",
+      "en": "Overboard."
+    },
+    "recall": {
+      "de": "Zurück in den Hafen.",
+      "en": "Back to harbour."
+    }
+  },
+  "vessa": {
+    "pick": {
+      "de": "Spuren lesen ist leicht. Leute lesen auch.",
+      "en": "Reading tracks is easy. So is reading people."
+    },
+    "move1": {
+      "de": "Die Spur ist frisch.",
+      "en": "The trail is fresh."
+    },
+    "move2": {
+      "de": "Nase vorn.",
+      "en": "Nose forward."
+    },
+    "attack": {
+      "de": "Zähne.",
+      "en": "Teeth."
+    },
+    "ability": {
+      "de": "Sprung!",
+      "en": "Pounce!"
+    },
+    "kill": {
+      "de": "Erlegt.",
+      "en": "Bagged."
+    },
+    "death": {
+      "de": "Falsche Fährte.",
+      "en": "Wrong trail."
+    },
+    "recall": {
+      "de": "Zurück zum Lager. Fell trocknen.",
+      "en": "Back to camp. Drying the pelt."
+    }
+  },
+  "wren": {
+    "pick": {
+      "de": "Ich mache Kohle. Manchmal aus Leuten.",
+      "en": "I make charcoal. Sometimes out of people."
+    },
+    "move1": {
+      "de": "Rauch zieht ab.",
+      "en": "Smoke's drifting off."
+    },
+    "move2": {
+      "de": "Der Meiler wartet.",
+      "en": "The kiln is waiting."
+    },
+    "attack": {
+      "de": "Glut.",
+      "en": "Ember."
+    },
+    "ability": {
+      "de": "Es brennt.",
+      "en": "It's burning."
+    },
+    "kill": {
+      "de": "Asche zu Asche. Ordnung muss sein.",
+      "en": "Ashes to ashes. Tidy."
+    },
+    "death": {
+      "de": "Zu viel Rauch.",
+      "en": "Too much smoke."
+    },
+    "recall": {
+      "de": "Meiler prüfen.",
+      "en": "Checking the kiln."
+    }
+  }
+}

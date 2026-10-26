@@ -1,0 +1,15 @@
+/* Pick line of the selected champion in the lobbies (src/ui/voiceBubbles.ts renderPickLine). */
+.voice-pick {
+  margin: 6px 0 10px;
+  padding: 7px 12px;
+  border-left: 3px solid #c9a24a;
+  background: rgba(18, 14, 10, 0.55);
+  color: #f1e6c8;
+  font-style: italic;
+  font-size: 14px;
+  animation: voice-pick-in 0.35s ease-out;
+}
+@keyframes voice-pick-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}

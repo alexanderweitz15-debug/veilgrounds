@@ -501,3 +501,8 @@ If art/f-identity rewrites `push()`: the three hooks to keep are `castPoseActive
 
 - src/ai/bot/brain.ts `utilitySpells`: +2 lines `push(n, barrierStep(...))`, `push(n, ghostStep(...))`; import extended. Steps live in src/ai/bot/spells.ts (additive); `exhaustStep` now prefers the enemy whose `atkTarget` is the protected unit (score -300). No new BotMemory fields, rng drawn only when Barrier fires (same pattern as cleanseStep).
 - src/data/summoners.json: +`barriere` (no i18n json keys; names live in the json, tooltip text in src/ui/tooltip.ts SUMMONER_DESC).
+
+## voice-lines (swarm/voice-lines)
+
+Additive only: src/settings.ts (`voiceLines` + default), src/i18n/de.json + en.json (`set.voiceLines`), src/ui/settingsPanel.ts (1 row),
+src/ui/overlay.ts (VoiceBubbles field, onEvent call, draw call), src/ui/classicLobby.ts + practiceLobby.ts (import + `renderPickLine` after `renderShowcase`).

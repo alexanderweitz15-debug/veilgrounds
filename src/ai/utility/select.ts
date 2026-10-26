@@ -11,6 +11,7 @@
 import type { NodeCtx, NodeResult } from '../bt/types';
 import { exchangeNoise } from '../exchange';
 import { teamfightNear } from '../bot/teamfight';
+import { wardDue } from '../bot/macro';
 import { roamActive } from '../roams/roam';
 import { gankActive } from '../ganks/jungle';
 import { VALUES, styleFactor } from './values';
@@ -19,7 +20,7 @@ import { buildWorld, laneNow } from './world';
 import { lv } from '../ganks/common';
 import { errorActive, rollErrorEpisode } from '../errors';
 import { CANDIDATES, noteRunningGank } from './value';
-import { runIntent } from './intents';
+import { clearForcedWave, runIntent } from './intents';
 import { gazeTurnAway, sevQFake, sevUltChoice } from './sev';
 import type { IntentId, Scored, UtilityState } from './types';
 
@@ -105,6 +106,7 @@ function decide(n: NodeCtx, st: UtilityState): NodeResult {
   // lane-shaped team desires are weights now (§7.6): the group / catch-lane intents set the override when chosen
   n.mem.ext.laneOverride = null;
   n.mem.ext.splitting = false;
+  clearForcedWave(n.mem);
   const hold = committed(n, st);
   if (hold) {
     const r = runIntent(n, hold, undefined);
@@ -152,10 +154,47 @@ function decide(n: NodeCtx, st: UtilityState): NodeResult {
     enter(n, st, s.id, s.value.horizonS);
     return r;
   }
+  // Baseline farm (A14, idle first): a lane presence whose risk term outweighs its benefit is still the thing to do -
+  // the laning leaf already answers the risk with its position (gank-risk tier: further back, no push, near the
+  // tower), standing still answers nothing. Without this the bot idled wherever it stood (also far from its lane).
+  // (Not when the cost is the bot's own low HP - stayDeath above the recall threshold: standing back is then the safe
+  // answer and the recall / retreat decide; Iron died more when it farmed on at low HP.)
+  const base = scored.find((s) => s.id === 'farm' && s.score <= 0 && s.value.benefit > 0 && (s.value.terms.stay ?? 0) <= VALUES.weights.recallStayDeathThreshold);
+  if (base) {
+    const r = runIntent(n, 'farm', base.value.data);
+    if (r !== 'failure') {
+      const inputs: Record<string, number | string | boolean> = { horizonS: r2(base.value.horizonS), benefit: r2(base.value.benefit), cost: r2(base.value.cost), baseline: true };
+      for (const [k, v] of Object.entries(base.value.terms)) inputs[`t_${k}`] = r2(v);
+      if (skipped.length) inputs.skipped = skipped.join(',');
+      n.log(INTENT_NODE, 'farm', 'baseline: risk handled by position', inputs, scores);
+      enter(n, st, 'farm', base.value.horizonS);
+      return r;
+    }
+    skipped.push('farm');
+  }
+  // A due ward makes the laning leaf yield (it returns failure for the vision node); when the ward candidate scored
+  // below the lane's farm the bot used to stand there ('wait'): the classic order lane -> vision applies.
+  if (wardDue(n)) {
+    const r = runIntent(n, 'ward', undefined);
+    if (r !== 'failure') {
+      n.log(INTENT_NODE, 'ward', 'ward due: the lane yields', { skipped: skipped.join(',') }, scores);
+      enter(n, st, 'ward', VALUES.horizons.ward);
+      return r;
+    }
+  }
   // nothing positive and runnable: idle, with every score in the log (test 7). 'none' = all candidates <= 0;
   // 'wait' = a positive candidate had nothing to do (e.g. farm waiting for the wave) - listed in `skipped`
   const allNeg = scored.every((s) => s.score <= 0);
-  n.log(INTENT_NODE, allNeg ? 'none' : 'wait', allNeg ? 'all candidates <= 0' : 'no runnable intent', skipped.length ? { skipped: skipped.join(',') } : {}, scores);
+  const why: Record<string, number | string | boolean> = skipped.length ? { skipped: skipped.join(',') } : {};
+  // the reason of an idle decision (§5 "Farm -0,8: GankRisk 0,9"): the terms of the best candidate
+  const top0 = scored[0];
+  if (top0) {
+    why.best = top0.id;
+    why.benefit = r2(top0.value.benefit);
+    why.cost = r2(top0.value.cost);
+    for (const [k, v] of Object.entries(top0.value.terms)) why[`t_${k}`] = r2(v);
+  }
+  n.log(INTENT_NODE, allNeg ? 'none' : 'wait', allNeg ? 'all candidates <= 0' : 'no runnable intent', why, scores);
   enter(n, st, 'none', 0);
   runIntent(n, 'none', undefined);
   return 'running';

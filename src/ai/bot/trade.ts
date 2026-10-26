@@ -481,6 +481,45 @@ function execute(n: NodeCtx, tr: TradeState, t: SnapEntity, ex: ExchangeResult):
   orbwalkAttack(n, t, interval);
 }
 
+/** Enemy auto range that counts as "hits me" for the poke reaction (champion reach + margin). */
+const POKE_REACH = 800;
+
+/** The lone enemy champion that is auto-attacking the bot right now (no trade running), else null. */
+function attacker(n: NodeCtx): SnapEntity | null {
+  if (n.mem.ext.trade || n.ctx.mode === 'arena' || n.v.me.dead) return null;
+  const foes = n.v.enemies.filter((e) => dst(e, n.v.self) < 1300);
+  if (foes.length !== 1) return null; // fights with several enemies: retreat / teamfight logic
+  const a = foes[0]!;
+  return a.atkTarget === n.v.me.eid && dst(a, n.v.self) <= POKE_REACH ? a : null;
+}
+
+/** Tree condition (behind a `reaction` node = the rank's reaction time): an enemy champion is hitting the bot. */
+export const attackedByChampion = (n: NodeCtx): boolean => attacker(n) !== null;
+
+/**
+ * Answer to being attacked by an enemy champion (user bug "Gegner bleiben still stehen oder rennen rein"): without it
+ * the bot kept farming / walked to a minion next to the attacker. Exchange favours the bot -> trade back; otherwise
+ * step back out of the attacker's reach. Both brains (tree node before utilitySelect). ponytail: fixed 350 step away,
+ * no wall / tower aware retreat point (the sim pathing handles walls).
+ */
+export function pokeReact(n: NodeCtx): NodeResult {
+  const t = attacker(n);
+  if (!t) return 'failure';
+  const w = tradeWindow(n);
+  if (w && w.score > 0) return tradeStart(n);
+  if (w && w.ex.winProb > 0.5 && w.ex.deathProb < 0.5 && w.failed.every((f) => f === 'winProb' || f === 'trigger')) {
+    return startTrade(n, w.target, allInWanted(n, w.exK) ? 'allin' : 'trade', 'retaliate', w.ex, w.exK, 0.5);
+  }
+  const [ux, uy] = unit(t, n.v.self);
+  const p = { x: n.v.self.x + ux * 350, y: n.v.self.y + uy * 350 };
+  cancelOrbwalk(n);
+  n.out.push(moveCmd(p));
+  n.mem.lastMove = { ...p, tick: n.v.tick };
+  n.mem.mode = 'lane';
+  n.log('pokeReact', 'step_back', 'attacked by a champion, exchange not favourable', { target: t.slot }, { hp: n.v.hpPct });
+  return 'running';
+}
+
 /** Disengage after a trade: orbwalk back behind the own wave toward the own tower (kiting axis = quality). */
 export function disengage(n: NodeCtx): NodeResult {
   if (n.v.tick >= n.mem.ext.disengageUntil) return 'failure';

@@ -41,6 +41,7 @@
     "sturmgewand": { "glyph": "stormRobe", "hue": 205, "sat": 45, "accent": "bolt", "accentHue": 52 },
     "lebenswurzel": { "glyph": "root", "hue": 120, "sat": 35, "accent": "leaf", "accentHue": 110 },
     "hueterstab": { "glyph": "sunStaff", "hue": 190, "sat": 55, "accent": "sun", "accentHue": 48 },
+    "daemmerband": { "glyph": "ring", "hue": 190, "sat": 55, "accent": "wing", "accentHue": 280 },
     "zeitglas": { "glyph": "hourglass", "hue": 272, "sat": 45, "accent": "gear", "accentHue": 42 },
     "kettenrelais": { "glyph": "relayRing", "hue": 30, "sat": 18, "accent": "shield", "accentHue": 190 },
     "stiefel": { "glyph": "bootFlat", "hue": 32, "sat": 35 },

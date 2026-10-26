@@ -135,6 +135,40 @@
       "en": "Back to the forge."
     }
   },
+  "fenna": {
+    "pick": {
+      "de": "Wo Licht ist, bin ich nicht weit.",
+      "en": "Where there is light, I am not far."
+    },
+    "move1": {
+      "de": "Dem Schein nach.",
+      "en": "Follow the glow."
+    },
+    "move2": {
+      "de": "Leise Flügel.",
+      "en": "Quiet wings."
+    },
+    "attack": {
+      "de": "Staub in die Augen.",
+      "en": "Dust in your eyes."
+    },
+    "ability": {
+      "de": "Halt dich am Band.",
+      "en": "Hold on to the bond."
+    },
+    "kill": {
+      "de": "Die Flamme hat gewählt.",
+      "en": "The flame has chosen."
+    },
+    "death": {
+      "de": "Das Licht ... geht aus.",
+      "en": "The light ... fades."
+    },
+    "recall": {
+      "de": "Zurück in die Dämmerung.",
+      "en": "Back into the dusk."
+    }
+  },
   "ferris": {
     "pick": {
       "de": "Einer muss ja das Licht halten.",
@@ -847,6 +881,40 @@
     "recall": {
       "de": "Zurück in den Hafen.",
       "en": "Back to harbour."
+    }
+  },
+  "vargrim": {
+    "pick": {
+      "de": "Hört ihr die Hufe?",
+      "en": "Do you hear the hooves?"
+    },
+    "move1": {
+      "de": "Galopp!",
+      "en": "Gallop!"
+    },
+    "move2": {
+      "de": "Der Nebel reitet mit.",
+      "en": "The mist rides with me."
+    },
+    "attack": {
+      "de": "Niedergeritten.",
+      "en": "Ridden down."
+    },
+    "ability": {
+      "de": "Sturm voraus!",
+      "en": "Storm ahead!"
+    },
+    "kill": {
+      "de": "Unter die Hufe.",
+      "en": "Under the hooves."
+    },
+    "death": {
+      "de": "Das Ross ... stürzt.",
+      "en": "The steed ... falls."
+    },
+    "recall": {
+      "de": "Heim zum Stall.",
+      "en": "Home to the stable."
     }
   },
   "vessa": {

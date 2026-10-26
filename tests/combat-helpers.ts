@@ -1,9 +1,11 @@
-// Shared setup for Agent B combat tests. Open ground at (6000, 8750): walkable +-1500 in x, +-800 in y, far from towers.
+// Shared setup for Agent B combat tests. Open ground at design (6000, 8750): walkable +-1500 in x, +-800 in y (design
+// units, times MAP_SCALE on the 14900 map), far from towers.
 import { createSim, step, type Sim } from '../src/sim/sim';
+import { MAP_SCALE } from '../src/sim/map';
 import type { Command, SimConfig } from '../src/sim/types';
 
-export const CX = 6000;
-export const CY = 8750;
+export const CX = Math.round(6000 * MAP_SCALE);
+export const CY = Math.round(8750 * MAP_SCALE);
 
 /** Empty rune page (unknown rune ids are ignored): kit/engine tests run without Prägungen unless they pass a page. */
 export const NO_RUNES = { keystone: 'none', minor: ['none', 'none', 'none'] as [string, string, string] };

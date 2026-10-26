@@ -1,6 +1,7 @@
 // combat-helpers first: it imports sim.ts before any system module (systems <-> sim import cycle).
 import { makeSim, mira, place, steps } from './combat-helpers';
 import { describe, expect, it } from 'vitest';
+import { MAP_SCALE } from '../src/sim/map';
 import { JungleTracker, campLabel, campSites, inVision, ESTIMATE_CLEAR_S } from '../src/game/jungleTracker';
 import { buildSnapshot, type SnapEntity, type Snapshot } from '../src/sim/snapshot';
 import { kill } from '../src/sim/damage';
@@ -24,8 +25,8 @@ const units = (m: Record<number, string>) => (eid: number) => (m[eid] ? { varian
 describe('jungle tracker', () => {
   it('tracks 6 camps per side and both river scuttlers, red side mirrored', () => {
     expect(campSites()).toHaveLength(14);
-    expect(RED.x).toBe(16000 - BLUE.x);
-    expect(RED.y).toBe(16000 - BLUE.y);
+    expect(RED.x).toBeCloseTo(16000 * MAP_SCALE - BLUE.x, 6);
+    expect(RED.y).toBeCloseTo(16000 * MAP_SCALE - BLUE.y, 6);
   });
 
   it('counts down to the first spawn from the public schedule, unseen camps show "?" afterwards', () => {

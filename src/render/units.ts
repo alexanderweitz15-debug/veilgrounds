@@ -348,6 +348,7 @@ export class Units {
       }
     }
     if (snap && champs) this.phantoms(state, champs, myEid, now);
+    if (snap && champs) this.riders(state, champs, now);
     champs?.end(now);
     minions?.end(now);
     for (const b of this.monsters) b.end(now);
@@ -388,6 +389,19 @@ export class Units {
         champs.push(fake, id, o.x, o.y, flicker, now);
       });
     }
+  }
+
+  /** Vargrim R: the spectral riders (snapshot objects `vargrim_rider`, x2/y2 = heading point) as dimmed, galloping Vargrim sprites. */
+  private riders(state: ClientState, champs: ChampionSprites, now: number): void {
+    (state.snap?.objects ?? []).forEach((o, i) => {
+      if (o.tag !== 'vargrim_rider') return;
+      const dx = (o.x2 ?? o.x + 1) - o.x;
+      const dy = (o.y2 ?? o.y) - o.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const fake = { id: -9100 - i, serial: -9100 - i, kind: Kind.Champion, champ: 'vargrim', team: state.myTeam, fx: dx / d, fy: dy / d, atkPhase: 0, moving: true, alive: true, radius: 65 } as unknown as SnapEntity;
+      const id = champs.idFor(fake);
+      if (id) champs.push(fake, id, o.x, o.y, 0.55 + 0.12 * Math.sin(now / 80 + i * 2.1), now);
+    });
   }
 
   private ring(state: ClientState, e: SnapEntity, myEid: number, i: number): number {

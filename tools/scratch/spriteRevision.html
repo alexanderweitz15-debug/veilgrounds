@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8" /><title>Sprite revision lab</title>
+<style>body{margin:0;background:#202226;color:#ddd;font:12px sans-serif}canvas{display:block;margin:0}</style></head>
+<body>
+<div id="out"></div>
+<script type="module">
+  // Contact sheets for the sprite revision (docs/style/revision). Dev server: tools/scratch/vite.lab.config.ts
+  //   ?mode=champs | minions | monsters | anims[&ids=a,b&dir=SE]
+  //   window.save('revision/<name>.jpg')   POST the canvas to docs/style/<name>
+  //   window.bakeAll()                      worker-pool bake times of a match (10 champs + Hark, minions, monsters)
+  // ?before = the committed renderer (snapshot in tools/scratch/champsBefore) for side-by-side checks
+  const q = new URLSearchParams(location.search);
+  const { renderMaster, renderCell, drawChampionFrame, championKit, framesOf, hitOf, ANIMS, CHAMPION_IDS, DIR_YAW, MINION_IDS, BIG_MONSTER_IDS, CAMP_MONSTER_IDS, buildChampionAtlasAsync } = await import(q.has('before') ? '/tools/scratch/champsBefore/index.ts' : '/src/render/champions/index.ts');
+  const mode = q.get('mode') ?? 'champs';
+  const out = document.getElementById('out');
+  const CHAMPS = [...CHAMPION_IDS.filter((i) => i !== 'hark'), 'hark'];
+  const nameOf = (id) => championKit(id)?.name?.split(' ')[0] ?? id;
+  const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; out.appendChild(c); return c; };
+  const ground = (g, x, y, w, h, i) => { g.fillStyle = i % 2 ? '#56653f' : '#8f7b52'; g.fillRect(x, y, w, h); };
+  const label = (g, s, x, y) => { g.fillStyle = '#e8d25a'; g.font = '600 15px sans-serif'; g.textAlign = 'left'; g.fillText(s, x, y); };
+  const dir = q.get('dir') ?? 'SE';
+
+  // big previews (master res) + game size (exact atlas downsample) + 64 px black silhouettes
+  function sheet(ids, { master, cell, big = 200, cols = 9, title }) {
+    const gcols = Math.max(1, Math.floor((cols * big) / (cell + 6)));
+    const rowsBig = Math.ceil(ids.length / cols);
+    const rowsGame = Math.ceil(ids.length / gcols);
+    const SIL = 64;
+    const scols = Math.floor((cols * big) / (SIL + 10));
+    const rowsSil = Math.ceil(ids.length / scols);
+    const W = cols * big;
+    const H = 30 + rowsBig * (big + 18) + 30 + rowsGame * (cell + 8) + 30 + rowsSil * (SIL + 8);
+    const c = mk(W, H);
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.fillStyle = '#1b1c20'; g.fillRect(0, 0, W, H);
+    label(g, `${title} — Vorschau (Master ${master}px)`, 8, 20);
+    let y0 = 30;
+    ids.forEach((id, i) => {
+      const x = (i % cols) * big, y = y0 + Math.floor(i / cols) * (big + 18);
+      ground(g, x + 2, y + 2, big - 4, big - 4, Math.floor(i / cols) + i);
+      drawChampionFrame(g, id, 'idle', dir, 0, x, y - 6, big, Math.max(256, master));
+      g.fillStyle = '#e8e2d6'; g.font = '600 13px sans-serif'; g.textAlign = 'center'; g.fillText(nameOf(id), x + big / 2, y + big + 12);
+    });
+    y0 += rowsBig * (big + 18) + 6;
+    label(g, `Spielgröße: Atlas-Zelle ${cell}px (Master ${master} → ${cell - 2})`, 8, y0 + 16); y0 += 24;
+    const gw = W / gcols;
+    ids.forEach((id, i) => {
+      const x = (i % gcols) * gw, y = y0 + Math.floor(i / gcols) * (cell + 8);
+      ground(g, x, y, gw, cell + 8, i);
+      g.drawImage(renderCell({ id, anim: 'idle', dir, frame: 0, cell: 0 }, master, cell), Math.round(x + (gw - cell) / 2), y + 4);
+    });
+    y0 += rowsGame * (cell + 8) + 6;
+    label(g, '64-px-Silhouetten', 8, y0 + 16); y0 += 24;
+    const sw = W / scols;
+    const tmp = document.createElement('canvas'); tmp.width = tmp.height = master;
+    ids.forEach((id, i) => {
+      const x = (i % scols) * sw, y = y0 + Math.floor(i / scols) * (SIL + 8);
+      g.fillStyle = '#d9d4c8'; g.fillRect(x + 2, y, sw - 4, SIL + 6);
+      const src = renderMaster(id, 'idle', DIR_YAW[dir], 0, master);
+      const t = tmp.getContext('2d', { willReadFrequently: true });
+      t.clearRect(0, 0, master, master); t.drawImage(src, 0, 0);
+      t.globalCompositeOperation = 'source-in'; t.fillStyle = '#111'; t.fillRect(0, 0, master, master); t.globalCompositeOperation = 'source-over';
+      g.drawImage(tmp, x + (sw - SIL) / 2, y + 3, SIL, SIL);
+    });
+  }
+
+  // every frame of every anim (game-size cells), hit frame marked
+  function anims(ids, { master = 192, cell = 128 } = {}) {
+    const S = cell;
+    const cols = ANIMS.map((a) => [a, Math.max(...ids.map((id) => framesOf(id, a)))]);
+    const total = cols.reduce((s, [, n]) => s + n, 0) + cols.length - 1;
+    const c = mk(90 + total * S, 24 + ids.length * S);
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.fillStyle = '#56653f'; g.fillRect(0, 0, c.width, c.height);
+    g.font = '600 13px sans-serif';
+    let x = 90;
+    for (const [a, n] of cols) { g.fillStyle = '#fff'; g.fillText(a, x + 4, 16); x += (n + 1) * S; }
+    ids.forEach((id, r) => {
+      const y = 24 + r * S;
+      g.fillStyle = '#fff'; g.fillText(nameOf(id), 4, y + S / 2);
+      let x = 90;
+      for (const [a, n] of cols) {
+        for (let f = 0; f < framesOf(id, a); f++) {
+          if (a === 'attack' && f === hitOf(id)) { g.fillStyle = 'rgba(255,90,60,0.35)'; g.fillRect(x + f * S, y, S, S); }
+          g.drawImage(renderCell({ id, anim: a, dir, frame: f, cell: 0 }, master, cell), x + f * S + 1, y + 1);
+        }
+        x += (n + 1) * S;
+      }
+    });
+  }
+
+  // close-up: master render x2 and the game cell x3 (pixelated) side by side
+  function zoom(ids, anim = 'idle', fr = 0) {
+    const M = 192, C = 112;
+    const c = mk(ids.length * 380, 380 + 340);
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.fillStyle = '#5a6a44'; g.fillRect(0, 0, c.width, c.height);
+    ids.forEach((id, i) => {
+      g.imageSmoothingEnabled = true;
+      g.drawImage(renderMaster(id, anim, DIR_YAW[dir], fr, M), i * 380, 0, 380, 380);
+      g.imageSmoothingEnabled = false;
+      g.drawImage(renderCell({ id, anim, dir, frame: fr, cell: 0 }, M, C), i * 380 + 25, 380, 330, 330);
+    });
+  }
+
+  // worker-pool bake times; before = the pre-revision snapshot (tools/scratch/champsBefore, from 6f071df)
+  window.bakeAll = async (before = false) => {
+    const m = await import(before ? '/tools/scratch/champsBefore/index.ts' : '/src/render/champions/index.ts');
+    const wurl = before ? '/tools/scratch/champsBefore/worker.ts' : '/src/render/spriteWorker.ts';
+    const worker = () => new Worker(new URL(wurl, location.href), { type: 'module' });
+    const t = async (ids, o) => { const t0 = performance.now(); const a = await m.buildChampionAtlasAsync(ids, { ...o, worker }); return Math.round(performance.now() - t0); };
+    return {
+      champs: await t(['brom', 'corvin', 'gorvam', 'hagen', 'ilvane', 'mira', 'oleth', 'ottilie', 'renn', 'vessa'], { master: 192, frame: 128, autoHark: true }),
+      minions: await t(m.MINION_IDS, { master: 144, frame: 96, autoHark: false }),
+      big: await t(m.BIG_MONSTER_IDS, { master: 320, frame: 200, autoHark: false }),
+      camp: await t(m.CAMP_MONSTER_IDS, { master: 192, frame: 128, autoHark: false }),
+    };
+  };
+  // interleaved before/after runs (same machine load for both)
+  window.bakeCompare = async (n = 3) => {
+    const runs = { before: [], after: [] };
+    for (let i = 0; i < n; i++) { runs.before.push(await window.bakeAll(true)); runs.after.push(await window.bakeAll(false)); }
+    const mean = (l, k) => Math.round(l.reduce((s, r) => s + r[k], 0) / l.length);
+    const out = {};
+    for (const k of ['champs', 'minions', 'big', 'camp']) out[k] = { before: mean(runs.before, k), after: mean(runs.after, k), pct: Math.round((mean(runs.after, k) / mean(runs.before, k) - 1) * 100) };
+    return out;
+  };
+  window.save = async (name, quality = 0.88, idx = 0) => {
+    const c = document.querySelectorAll('canvas')[idx];
+    const blob = await new Promise((r) => c.toBlob(r, name.endsWith('.png') ? 'image/png' : 'image/jpeg', quality));
+    return (await fetch('/__save?name=' + encodeURIComponent(name), { method: 'POST', body: blob })).text();
+  };
+
+  const t0 = performance.now();
+  const ids = q.get('ids')?.split(',');
+  if (mode === 'champs') sheet(ids ?? CHAMPS, { master: 192, cell: 112, title: 'Champions + Hark' });
+  else if (mode === 'minions') sheet(ids ?? MINION_IDS, { master: 144, cell: 96, cols: 8, big: 220, title: 'Minions' });
+  else if (mode === 'monsters') {
+    sheet(ids ?? CAMP_MONSTER_IDS, { master: 192, cell: 128, cols: 9, big: 200, title: 'Camp-Monster' });
+    sheet(BIG_MONSTER_IDS, { master: 320, cell: 200, cols: 4, big: 450, title: 'Große Monster' });
+  } else if (mode === 'zoom') zoom(ids ?? ['brom', 'mira', 'renn', 'vessa'], q.get('anim') ?? 'idle', Number(q.get('f') ?? 0));
+  else if (mode === 'anims') anims(ids ?? ['brom', 'renn', 'vessa', 'mira', 'grimald', 'isolde', 'oleth', 'hark'], { master: Number(q.get('master') ?? 192), cell: Number(q.get('cell') ?? 112) });
+  window.renderMs = Math.round(performance.now() - t0);
+  window.ready = true;
+</script>
+</body>
+</html>

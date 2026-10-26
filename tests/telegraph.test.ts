@@ -388,4 +388,28 @@ describe('Fx telegraph rendering (smoke)', () => {
     frame(snap(400, [], 0), 1);
     expect(visible()).toBe(2); // instanced projectile meshes only
   });
+
+  it('setting lolTelegraphs: enemy strip is a thin outline without fill, own stays as is', async () => {
+    const { Fx } = await import('../src/render/fx');
+    const { ClientState } = await import('../src/game/state');
+    const { settings, updateSettings } = await import('../src/settings');
+    updateSettings({ lolTelegraphs: true });
+    try {
+      const fx = new Fx();
+      const state = new ClientState();
+      const s = {
+        tick: 100, time: 3, team: 0, me: null, objects: [], players: [], events: [], entities: [],
+        projectiles: [{ id: 9, kind: 1, team: 1, x: 2000, y: 1000, px: 1950, py: 1000, dx: 1, dy: 0, width: 60, left: 400 }],
+      };
+      state.ingest(s as never, 0);
+      state.alpha = 0.5;
+      fx.update(state, 0, false);
+      const vis = fx.group.children.filter((c) => c.visible && Math.abs(c.scale.x - 425) < 1e-6);
+      expect(vis.some((c) => Math.abs(c.scale.z - 4) < 1e-6)).toBe(true); // thin long side
+      expect(vis.some((c) => Math.abs(c.scale.z - 60) < 1e-6)).toBe(false); // no fill strip
+      expect(settings.lolTelegraphs).toBe(true);
+    } finally {
+      updateSettings({ lolTelegraphs: false });
+    }
+  });
 });

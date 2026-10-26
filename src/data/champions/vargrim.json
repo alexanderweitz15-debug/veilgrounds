@@ -1,0 +1,154 @@
+{
+  "id": "vargrim",
+  "name": "Vargrim Nebelhuf",
+  "title": { "de": "der Nebelreiter", "en": "the Mist Rider" },
+  "roles": ["jungle", "top"],
+  "archetype": "cavalry_juggernaut",
+  "botBias": { "aggression": 2, "tempo": 1 },
+  "trainingPurpose": {
+    "de": "Gegen Tempo-Bruiser kiten, Sturmritt-Aufbau lesen (wer 3 s ungestört rennt, schlägt hart zu), Furcht-Ult aus dem Nebel erkennen.",
+    "en": "Kite a speed bruiser, read the Storm Gallop build-up (3 s of free running hits hard), spot the fear ultimate coming out of the mist."
+  },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 655,
+    "hpGrowth": 106,
+    "hpRegen": 8,
+    "hpRegenGrowth": 0.8,
+    "mana": 280,
+    "manaGrowth": 42,
+    "manaRegen": 7,
+    "manaRegenGrowth": 0.65,
+    "ad": 60,
+    "adGrowth": 3.4,
+    "armor": 36,
+    "armorGrowth": 4.4,
+    "mr": 32,
+    "mrGrowth": 2.05,
+    "as": 0.67,
+    "asGrowth": 2.5,
+    "range": 175,
+    "ms": 345,
+    "windup": 0.22,
+    "radius": 70
+  },
+  "passive": {
+    "name": { "de": "Hufschlag", "en": "Hoofbeat" },
+    "desc": {
+      "de": "Vargrim erhält 6 % seines Lauftempos als Bonus-Angriffsschaden. Je schneller der Ritt, desto härter die Lanze.",
+      "en": "Vargrim gains bonus attack damage equal to 6% of his move speed. The faster the ride, the harder the lance."
+    },
+    "hooks": ["vargrim_gallop"]
+  },
+  "abilities": [
+    {
+      "id": "vargrim_q",
+      "name": { "de": "Lanzenwirbel", "en": "Lance Whirl" },
+      "desc": {
+        "de": "Nach 0,25 s wirbelt er die Lanze im Kreis (350): 50/75/100/125/150 (+30 % AD, +55 % Bonus-AD) physisch. Jeder getroffene Gegner (max. 3) verkürzt die Abklingzeit um 0,6 s. Ein Treffer auf Champion oder Monster gibt einen Wirbel-Stack (max. 3, 4 s): +15 % Schaden pro Stack.",
+        "en": "After 0.25 s he spins the lance in a circle (350): 50/75/100/125/150 (+30% AD, +55% bonus AD) physical. Each enemy hit (max 3) reduces the cooldown by 0.6 s. Hitting a champion or monster gives a Whirl stack (max 3, 4 s): +15% damage per stack."
+      },
+      "type": "self",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 0,
+      "cooldown": [5, 4.75, 4.5, 4.25, 4],
+      "cost": [28, 30, 32, 34, 36],
+      "costType": "mana",
+      "radius": 350,
+      "effects": [
+        { "kind": "hook", "id": "vargrim_q_rampage" },
+        { "kind": "damage", "type": "phys", "amount": { "base": [50, 75, 100, 125, 150], "ad": 0.3, "bonusAd": 0.55 } },
+        { "kind": "hook", "id": "vargrim_q_refund" }
+      ]
+    },
+    {
+      "id": "vargrim_w",
+      "name": { "de": "Schreckensnebel", "en": "Dread Mist" },
+      "desc": {
+        "de": "4 s Nebel um ihn (450): Gegner darin nehmen alle 0,5 s Schaden, insgesamt 24/36/48/60/72 (+25 % Bonus-AD) magisch pro Sekunde. Vargrim heilt sich um 25 % des Schadens an Champions, um 12 % an Vasallen und Monstern.",
+        "en": "4 s of mist around him (450): enemies inside take damage every 0.5 s, 24/36/48/60/72 (+25% bonus AD) magic per second in total. Vargrim heals for 25% of the damage dealt to champions, 12% to minions and monsters."
+      },
+      "type": "self",
+      "castTime": 0,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [18, 17, 16, 15, 14],
+      "cost": 50,
+      "costType": "mana",
+      "radius": 450,
+      "duration": 4,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [24, 36, 48, 60, 72], "bonusAd": 0.25 } },
+        { "kind": "hook", "id": "vargrim_w_dread" }
+      ]
+    },
+    {
+      "id": "vargrim_e",
+      "name": { "de": "Sturmritt", "en": "Storm Gallop" },
+      "desc": {
+        "de": "Vargrim galoppiert los: Lauftempo wächst in 3 s auf +40 %. Der nächste Angriff innerhalb von 4 s schleudert das Ziel 300 zurück und trifft mit 35/60/85/110/135 (+60 % Bonus-AD) physisch, bis zu +100 % Schaden je nach zurückgelegter Strecke (1.000).",
+        "en": "Vargrim breaks into a gallop: move speed grows to +40% over 3 s. His next attack within 4 s knocks the target back 300 and deals 35/60/85/110/135 (+60% bonus AD) physical, up to +100% damage depending on the distance travelled (1,000)."
+      },
+      "type": "self",
+      "castTime": 0,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [19, 18, 17, 16, 15],
+      "cost": 40,
+      "costType": "mana",
+      "duration": 4,
+      "effects": [
+        { "kind": "hook", "id": "vargrim_e_next_auto" },
+        { "kind": "damage", "type": "phys", "amount": { "base": [35, 60, 85, 110, 135], "bonusAd": 0.6 } },
+        { "kind": "knockback", "distance": 300 }
+      ]
+    },
+    {
+      "id": "vargrim_r",
+      "name": { "de": "Geisterlegion", "en": "Spectral Legion" },
+      "desc": {
+        "de": "Nach 0,35 s ruft Vargrim drei Geisterreiter und stürmt bis zu 1.000 zur Zielposition. Die Reiter schlagen jeden Gegner auf dem Weg einmal (35 % des Ultschadens). Am Ziel (Radius 300): 140/230/320 (+100 % Bonus-AD) magisch und Furcht 1,25/1,5/1,75 s (kürzer bei kurzem Ritt).",
+        "en": "After 0.35 s Vargrim calls three spectral riders and charges up to 1,000 to the target point. The riders strike every enemy on the way once (35% of the ultimate's damage). At the target (radius 300): 140/230/320 (+100% bonus AD) magic and fear for 1.25/1.5/1.75 s (shorter on a short ride)."
+      },
+      "type": "dash",
+      "castTime": 0.35,
+      "movesWhileCasting": false,
+      "range": 1000,
+      "cooldown": [110, 95, 80],
+      "cost": 100,
+      "costType": "mana",
+      "speed": 1700,
+      "distance": 1000,
+      "radius": 300,
+      "duration": [1.25, 1.5, 1.75],
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [140, 230, 320], "bonusAd": 1 } },
+        { "kind": "hook", "id": "vargrim_r_legion" }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3: Q, W und E zusammen räumen das Lager in Sekunden. Level 6: die Geisterlegion macht jeden Gank zur Furcht-Falle.",
+    "en": "Level 3: Q, W and E together clear a camp in seconds. Level 6: the Spectral Legion turns every gank into a fear trap."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Lanzenstoß", "en": "Lance Charge" }, "sequence": ["E", "AA", "Q"] },
+    { "name": { "de": "Nebelwirbel", "en": "Mist Spin" }, "sequence": ["W", "Q", "AA", "Q"] },
+    { "name": { "de": "Legion im Nebel", "en": "Legion in the Mist" }, "sequence": ["E", "R", "W", "Q"] }
+  ],
+  "scores": { "engage": 4, "peel": 1, "range": 1, "scaling": 3, "waveclear": 4, "mobility": 4 },
+  "voiceLines": {
+    "pick": { "de": "Der Nebel kennt meinen Hufschlag.", "en": "The mist knows my hoofbeat." },
+    "firstBlood": { "de": "Zu langsam. Wieder.", "en": "Too slow. Again." },
+    "kill": { "de": "Reiter fragen nicht, wer im Weg steht.", "en": "Riders don't ask who is in the way." },
+    "death": { "de": "Das Pferd ... lief weiter.", "en": "The horse ... kept running." },
+    "recall": { "de": "Zurück in den Stall der Toten.", "en": "Back to the stable of the dead." },
+    "taunt": { "de": "Lauf. Das macht es nur länger.", "en": "Run. It only makes it longer." }
+  },
+  "silhouette": "centaur-like spectral warlord: armored rider torso with a horned helm on a ghostly horse body, long lance couched forward, chains and teal-green ghost flames streaming from mane and hooves"
+}

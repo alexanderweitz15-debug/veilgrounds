@@ -672,5 +672,13 @@
   "plan.streak.win": "Win streak {n} (best {best})",
   "plan.streak.cs": "{n}× CS improved",
   "plan.streak.days": "{n} days in a row",
-  "plan.empty": "No entries yet."
+  "plan.empty": "No entries yet.",
+  "buff.uralt": "Ancient Leviathan",
+  "buff.uralt.desc": "Champion hits on enemies below 20 % health execute them",
+  "drake.glut": "Ember Leviathan",
+  "drake.flut": "Tide Leviathan",
+  "drake.fels": "Stone Leviathan",
+  "drake.wind": "Gale Leviathan",
+  "drake.arkan": "Arcane Leviathan",
+  "drake.elder": "Ancient Leviathan"
 }

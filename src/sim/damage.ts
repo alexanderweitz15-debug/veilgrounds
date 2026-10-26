@@ -6,7 +6,8 @@ import { MAX_ENT } from './ecs';
 import { despawn } from './sim';
 import { Kind, isStructure, sec, type DamageType } from './types';
 import { onDeath } from './systems/economy';
-import { damageDealtMult, damageTakenMult, healMult, statMods } from './buffs';
+import { damageDealtMult, damageTakenMult, hasBuff, healMult, statMods } from './buffs';
+import { ELDER } from './drakes';
 import { passiveHooksOf } from './champions';
 import { KESSELBRUT_STRUCT_PCT, isEpicMonster, kesselbrutStacks } from './systems/jungle';
 import { petOwner } from './summons';
@@ -116,6 +117,8 @@ export function dealDamage(sim: Sim, src: number, dst: number, amount: number, t
     Hp.shield[dst] = Hp.shield[dst]! - absorbed;
     const toHp = dmg - absorbed;
     Hp.cur[dst] = Hp.cur[dst]! - toHp;
+    // Uralt-Leviathan buff: enemy champions below the execute threshold die to the next hit of the holder
+    if (src >= 0 && Hp.cur[dst]! > 0 && Unit.kind[src] === Kind.Champion && Unit.kind[dst] === Kind.Champion && Unit.team[src] !== Unit.team[dst] && Hp.cur[dst]! < Hp.max[dst]! * (ELDER.executePct / 100) && hasBuff(sim, src, 'mark', 'uralt')) Hp.cur[dst] = 0;
     if (src >= 0) {
       LastHit.eid[dst] = src;
       LastHit.serial[dst] = Unit.serial[src]!;

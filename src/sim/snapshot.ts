@@ -3,7 +3,7 @@
 import { query } from 'bitecs';
 import type { Sim } from './sim';
 import { pointVisible, sees } from './vision';
-import { Kind, VARIANTS, enemyOf, isStructure, type LaneId, type SimEvent, type Variant } from './types';
+import { Kind, VARIANTS, enemyOf, variantIndex, isStructure, type LaneId, type SimEvent, type Variant } from './types';
 import { abilityHud, armedSlot, displaceProgress, ultChoiceOf, type AbilityHud } from './systems/abilities';
 import { CHAMPION_DATA, championHooks, champIdOf } from './champions';
 import type { ChampionVisuals, HintMarker, VisualShape } from './champions/hooks';
@@ -22,7 +22,7 @@ import { teleportLeft } from './summoners';
 import { trainerHud, type TrainerHud } from './trainer';
 import { seenItems } from './seenItems';
 import { sandboxFlags } from './trainer/sandbox';
-import { isEpicMonster, kesselbrutStacks, leviathanStacks } from './systems/jungle';
+import { drakeState, isEpicMonster, kesselbrutStacks, leviathanStacks } from './systems/jungle';
 import { inhibitorTimers } from './systems/towers';
 
 export interface SnapEntity {
@@ -93,6 +93,8 @@ export interface SnapEntity {
   air?: number;
   /** Monster of an epic objective (Leviathan, Kesselbrut, Schleierwaechter), B6. */
   epic?: true;
+  /** Elemental Leviathan: element index (drakes.json `elements`; elements.length = Uralt-Leviathan). */
+  elem?: number;
   /** Enemy unit under a reveal of this team (Mira W, Nyx seed / R, Tobin E, Spaehfrucht, Siegelward / Suchfeuer). */
   revealed?: true;
   /** Own unit currently revealed to the enemy team (LoL "revealed" indicator; own wards under enemy true sight). */
@@ -236,6 +238,26 @@ export interface SnapObjectives {
   schleierLeft: [number, number];
   /** Destroyed inhibitors: seconds until respawn. */
   inhibs: { team: number; lane: LaneId; left: number }[];
+  /** Elemental Leviathans (src/data/drakes.json; element = index into its `elements`, `elder` = elements.length). */
+  drake?: SnapDrake;
+}
+
+/** Public state of the elemental Leviathans. */
+export interface SnapDrake {
+  /** Element of every Leviathan each team killed (index = team). */
+  kills: [number[], number[]];
+  /** Soul element each team owns (-1 = none). */
+  soul: [number, number];
+  /** Soul (map) element, revealed after the second kill (-1 = not yet). */
+  soulType: number;
+  /** Element of the current / last spawn (-1 = none yet). */
+  cur: number;
+  /** Announced element of the next spawn, known after the first kill (-1 = not yet); elements.length = elder. */
+  next: number;
+  /** A soul was claimed: the pit holds the Uralt-Leviathan from now on. */
+  elder: boolean;
+  /** Seconds left of the Uralt-Leviathan buff (max over the team's alive holders; 0 = none). */
+  elderLeft: [number, number];
 }
 
 /** One own true-sight area (stealth rules, wards.ts). */
@@ -325,15 +347,36 @@ function seenRow(sim: Sim, team: number, slot: number): { items?: (string | null
   return s ? { items: [...s.items], itemsSeen: s.tick } : {};
 }
 
+const LEVIATHAN_VARIANT = variantIndex('leviathan');
+
 /** Public objective state (both teams). Read-only. */
 function objectiveState(sim: Sim): SnapObjectives {
   const left: [number, number] = [0, 0];
+  const elderLeft: [number, number] = [0, 0];
   for (const e of champions(sim)) {
     const t = sim.c.Unit.team[e]!;
     if (sim.c.Unit.alive[e] !== 1 || (t !== 0 && t !== 1)) continue;
-    for (const b of buffs(sim, e)) if (b.kind === 'mark' && b.id === 'schleierwaechter' && b.until > sim.tick) left[t] = Math.max(left[t], (b.until - sim.tick) / 30);
+    for (const b of buffs(sim, e)) {
+      if (b.kind !== 'mark' || b.until <= sim.tick) continue;
+      if (b.id === 'schleierwaechter') left[t] = Math.max(left[t], (b.until - sim.tick) / 30);
+      else if (b.id === 'uralt') elderLeft[t] = Math.max(elderLeft[t], (b.until - sim.tick) / 30);
+    }
   }
+  const d = drakeState(sim);
   return {
+    ...(d && d.cur >= 0 // absent until the first Leviathan spawned
+      ? {
+          drake: {
+            kills: [[...d.kills[0]], [...d.kills[1]]] as [number[], number[]],
+            soul: [...d.soul] as [number, number],
+            soulType: d.total >= 2 ? d.soulType : -1,
+            cur: d.cur,
+            next: d.total >= 1 ? d.next : -1,
+            elder: d.elder,
+            elderLeft,
+          },
+        }
+      : {}),
     leviathan: [leviathanStacks(sim, 0), leviathanStacks(sim, 1)],
     kesselbrut: [kesselbrutStacks(sim, 0), kesselbrutStacks(sim, 1)],
     schleierLeft: left,
@@ -420,6 +463,7 @@ export function snapshotEntities(sim: Sim, team: number): SnapEntity[] {
       ...revealFields(sim, e, team, alive),
       ...motionFields(sim, e, alive),
       ...(k === Kind.Monster && isEpicMonster(sim, e) ? { epic: true as const } : {}),
+      ...(Unit.variant[e] === LEVIATHAN_VARIANT && (drakeState(sim)?.cur ?? -1) >= 0 ? { elem: drakeState(sim)!.cur } : {}),
       ...(Unit.variant[e] ? { variant: VARIANTS[Unit.variant[e]!] } : {}),
     });
   }

@@ -7,6 +7,7 @@
 import type { ScoreRow, Snapshot } from '../sim/snapshot';
 import { Kind, type SimEvent } from '../sim/types';
 import { CAMPS, LEVIATHAN_MAX_STACKS } from '../sim/systems/jungle';
+import { ELDER } from '../sim/drakes';
 import raw from '../data/map.json';
 
 const OBJ = raw.neutral.objectives;
@@ -20,6 +21,11 @@ export interface TeamObjectives {
   /** Leviathan stacks (0..LEVIATHAN_MAX_STACKS); `soul` once the maximum is reached. */
   leviathan: number;
   soul: boolean;
+  /** Element index of every Leviathan this team killed (drakes.json order), `soulElem` = its soul element (-1 = none). */
+  drakes: number[];
+  soulElem: number;
+  /** Seconds left of the Uralt-Leviathan execute buff (0 = none). */
+  elderLeft: number;
   /** Kesselbrut stacks (public for both teams). */
   kesselbrut: number;
   /** Seconds left of the Schleierwaechter buff (0 = none). */
@@ -82,7 +88,7 @@ export class ObjectiveTracker {
       out.push({ kind, left: this.tick >= at ? null : (at - this.tick) / TICK_HZ });
     };
     const lev = CAMPS.leviathan;
-    add('leviathan', this.epicKill.leviathan >= 0 ? this.epicKill.leviathan + lev.respawn * TICK_HZ : lev.first * TICK_HZ);
+    add('leviathan', this.epicKill.leviathan >= 0 ? this.epicKill.leviathan + (this.snap?.objectives?.drake?.elder ? ELDER.respawnS : lev.respawn) * TICK_HZ : lev.first * TICK_HZ);
     const kb = CAMPS.kesselbrut;
     if (this.tick < (kb.until ?? Infinity) * TICK_HZ && this.grubRespawnAt !== Infinity) add('kesselbrut', this.grubRespawnAt >= 0 ? this.grubRespawnAt : kb.first * TICK_HZ);
     const sw = CAMPS.schleierwaechter;
@@ -112,9 +118,13 @@ export class ObjectiveTracker {
   team(team: 0 | 1): TeamObjectives {
     const o = this.snap?.objectives;
     const lev = o?.leviathan[team] ?? 0;
+    const dr = o?.drake;
     return {
       leviathan: lev,
       soul: lev >= LEVIATHAN_MAX_STACKS,
+      drakes: dr?.kills[team] ?? [],
+      soulElem: dr?.soul[team] ?? -1,
+      elderLeft: dr?.elderLeft[team] ?? 0,
       kesselbrut: o?.kesselbrut[team] ?? 0,
       schleierLeft: o?.schleierLeft[team] ?? 0,
       inhibRespawn: (o?.inhibs ?? []).filter((x) => x.team === team).map((x) => x.left).sort((a, b) => a - b),

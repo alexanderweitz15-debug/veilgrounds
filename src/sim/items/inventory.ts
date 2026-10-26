@@ -9,7 +9,8 @@ import type { Sim } from '../sim';
 import type { ItemData, ItemStat } from './schema';
 import { hasBuff } from '../buffs';
 import { dist2 } from '../vec';
-import { leviathanStacks } from '../systems/jungle';
+import { drakeState } from '../systems/jungle';
+import { drakeBonus } from '../drakes';
 import { bootsPriceMult, runeStats } from './runeHooks';
 
 export const ITEMS = itemsJson.items as unknown as ItemData[];
@@ -161,9 +162,6 @@ export function applySecondaryStats(sim: Sim, eid: number, it: Partial<Record<Bo
 /** Dornenbock buff: ~15 % CDR (haste 18) and doubled mana regen. */
 export const DORNENBOCK_HASTE = 18;
 export const DORNENBOCK_MANA_REGEN_PCT = 100;
-/** Flussleviathan: permanent team stack, +6 % AD and AP each. */
-export const LEVIATHAN_PCT = 6;
-
 /** Items + runes + jungle buffs; stats.ts folds these into the champion stat computation. */
 export function bonusStats(sim: Sim, eid: number): Partial<Record<BonusStat, number>> {
   const out: Partial<Record<BonusStat, number>> = itemStats(sim, eid);
@@ -172,10 +170,7 @@ export function bonusStats(sim: Sim, eid: number): Partial<Record<BonusStat, num
     out.haste = (out.haste ?? 0) + DORNENBOCK_HASTE;
     out.manaRegenPct = (out.manaRegenPct ?? 0) + DORNENBOCK_MANA_REGEN_PCT;
   }
-  const stacks = leviathanStacks(sim, sim.c.Unit.team[eid]!);
-  if (stacks > 0) {
-    out.adPct = (out.adPct ?? 0) + LEVIATHAN_PCT * stacks;
-    out.apPct = (out.apPct ?? 0) + LEVIATHAN_PCT * stacks;
-  }
+  // elemental Leviathan kills + soul of the team (src/data/drakes.json)
+  for (const [k, v] of Object.entries(drakeBonus(drakeState(sim), sim.c.Unit.team[eid]!)) as [BonusStat, number][]) out[k] = (out[k] ?? 0) + v;
   return out;
 }

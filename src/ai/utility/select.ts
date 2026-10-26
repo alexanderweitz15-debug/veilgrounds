@@ -20,7 +20,7 @@ import { lv } from '../ganks/common';
 import { errorActive, rollErrorEpisode } from '../errors';
 import { CANDIDATES, noteRunningGank } from './value';
 import { runIntent } from './intents';
-import { gazeTurnAway, sevQFake, sevUltChoice } from './sev';
+import { gazeTurnAway, sevUltChoice } from './sev';
 import type { IntentId, Scored, UtilityState } from './types';
 
 const C = VALUES.combat;
@@ -96,9 +96,7 @@ export function utilitySelect(n: NodeCtx): NodeResult {
   // Sev rules (values.json sev): R choice by enemy comp; look away from an enemy Sev's Bannblick
   sevUltChoice(n);
   if (gazeTurnAway(n)) return 'running';
-  const r = decide(n, st);
-  sevQFake(n);
-  return r;
+  return decide(n, st);
 }
 
 function decide(n: NodeCtx, st: UtilityState): NodeResult {

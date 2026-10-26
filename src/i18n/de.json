@@ -653,6 +653,8 @@
   "plan.minutes": "{m} min",
   "plan.start": "Starten",
   "plan.standings": "Einstufung je Kategorie",
+  "post.rankCalib": "Rang-Einschätzung dieser Partie (Zielwerte Tabelle A)",
+  "post.rankNext": "nächster Rang ab {v}",
   "plan.cat.farming": "Farmen",
   "plan.cat.economy": "Gold",
   "plan.cat.survival": "Überleben",

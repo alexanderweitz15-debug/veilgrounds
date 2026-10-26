@@ -83,6 +83,8 @@ export interface ChampStats {
   idleTicks: number;
   /** Idle ticks by the bot's latest decision-log entry at the start of the idle stretch (node:chosen). */
   idleReasons: Record<string, number>;
+  /** in_range_no_attack losses to 15:00 by the bot's state at the minion's death: mode | lane intent | distance | attack. */
+  noAtkReasons: Record<string, number>;
   /** Hits on enemy champions outside a trade / all-in (auto / ability damage instances). */
   harassAutos: number;
   harassSpells: number;
@@ -164,6 +166,8 @@ interface LanerTrack {
   idle: string | null;
   /** Last tick the §9 attention probe reported the bot distracted. */
   distractedAt: number;
+  /** Tick the laner came back to its lane after a trip (recall, heal, death, roam). */
+  backAt: number;
 }
 
 interface PendingLoss {
@@ -172,6 +176,8 @@ interface PendingLoss {
   cause: CsCause | null;
   period: number;
   early: boolean;
+  /** Bot state at the death tick (in_range_no_attack diagnostic). */
+  why: string;
 }
 
 export interface HarnessOptions extends RunnerOptions {
@@ -222,6 +228,7 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
     utilNum: 0,
     idleTicks: 0,
     idleReasons: {},
+    noAtkReasons: {},
     harassAutos: 0,
     harassSpells: 0,
     harassAutos14: 0,
@@ -257,7 +264,7 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
   // ---- rework metric state
   const laners: LanerTrack[] = stats
     .filter((s) => LANER_LANE[s.role] !== undefined && botBySlot.has(s.slot))
-    .map((s) => ({ s, lane: LANER_LANE[s.role]!, trip: null, atkOn: new Map(), dmgOn: new Map(), lh: [], idle: null, distractedAt: -1e9 }));
+    .map((s) => ({ s, lane: LANER_LANE[s.role]!, trip: null, atkOn: new Map(), dmgOn: new Map(), lh: [], idle: null, distractedAt: -1e9, backAt: -1e9 }));
   const lanerBySlot = new Map(laners.map((l) => [l.s.slot, l]));
   const pending: PendingLoss[] = [];
   const lastCmd = new Map<number, number>();
@@ -285,6 +292,7 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
       // window collision: the bot got another lane last hit around the same time (two windows, one attack timer)
       const near = p.laner.lh.some((t) => Math.abs(t - p.tick) <= p.period + 3);
       cause = near ? 'window_collision' : 'in_range_no_attack';
+      if (cause === 'in_range_no_attack' && p.early) p.laner.s.noAtkReasons[p.why] = (p.laner.s.noAtkReasons[p.why] ?? 0) + 1;
     }
     p.laner.s.csLoss[cause]++;
     if (p.early) p.laner.s.csLoss15[cause]++;
@@ -373,7 +381,7 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
             l.lh.push(T);
             continue;
           }
-          pending.push({ laner: l, tick: T, cause: lossCause(l, me, ev.eid, ev.x, ev.y, ev.killer, ev.killerKind ?? -1, T), period: 30 / Math.max(0.1, Stats.as[me]!), early });
+          pending.push({ laner: l, tick: T, cause: lossCause(l, me, ev.eid, ev.x, ev.y, ev.killer, ev.killerKind ?? -1, T), period: 30 / Math.max(0.1, Stats.as[me]!), early, why: noAtkWhy(l, me, ev.x, ev.y) });
         }
       } else if (ev.e === 'death' && ev.kind === Kind.Champion) {
         const vSlot = slotOf(ev.eid);
@@ -435,12 +443,18 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
       const me = sim.slots[l.s.slot]!;
       const b = botBySlot.get(l.s.slot)!;
       const alive = !!Unit.alive[me];
-      if (reflexState(b.mem).attention?.(T)?.distracted) l.distractedAt = T;
+      // probe the previous tick: the runner already advanced the attention state there (no mutation from the harness)
+      if (reflexState(b.mem).attention?.(T - 1)?.distracted) l.distractedAt = T - 1;
       if (!alive) l.trip = 'dead';
       else if (Champ.recallAt[me]! > 0 && l.trip !== 'dead' && l.trip !== 'heal') l.trip = 'recall'; // recalling = leaving, even next to the wave
       else if (T % 15 === 0) {
-        const nearLane = units.some((u) => isMinion(Unit.kind[u]!) && Unit.lane[u] === l.lane && Math.hypot(Pos.x[u]! - Pos.x[me]!, Pos.y[u]! - Pos.y[me]!) < ABSENT_R);
-        if (nearLane && IN_LANE_MODES.has(b.mem.mode)) l.trip = null;
+        // back on the lane = near an enemy minion of the lane (meeting the own next wave on the way back is still the
+        // trip: the enemy minions dying at the front meanwhile are absence losses, not in_range_no_attack)
+        const nearLane = units.some((u) => isMinion(Unit.kind[u]!) && Unit.lane[u] === l.lane && Unit.team[u] !== l.s.team && Math.hypot(Pos.x[u]! - Pos.x[me]!, Pos.y[u]! - Pos.y[me]!) < ABSENT_R);
+        if (nearLane && IN_LANE_MODES.has(b.mem.mode)) {
+          if (l.trip !== null) l.backAt = T;
+          l.trip = null;
+        }
         else if (!nearLane && l.trip === null && (Champ.recallAt[me]! > 0 || !IN_LANE_MODES.has(b.mem.mode))) l.trip = Champ.recallAt[me]! > 0 ? 'recall' : tripOfMode(b.mem.mode);
       }
       if (!alive || T < UTIL_FROM || T >= UTIL_TO || Champ.recallAt[me]! > 0) {
@@ -491,6 +505,19 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
   }
   while (pending.length) finalize(pending.shift()!);
 
+  function noAtkWhy(l: LanerTrack, me: number, x: number, y: number): string {
+    const b = botBySlot.get(l.s.slot)!;
+    const it = reflexState(b.mem).intent;
+    const d = Math.hypot(Pos.x[me]! - x, Pos.y[me]! - y);
+    const reach = Stats.range[me]! + Unit.radius[me]!;
+    const db = d <= reach + 100 ? 'reach' : d <= reach + 500 ? 'near' : d <= ABSENT_R ? 'mid' : 'far';
+    const intent = it ? (it.farm ? it.wave : 'nofarm') : 'none';
+    const tgt = Atk.target[me]!;
+    const atk = Atk.phase[me] === 0 ? 'free' : tgt >= 0 && Unit.kind[tgt] === Kind.Champion ? 'atkChamp' : 'atk';
+    const back = sim.tick - l.backAt < 20 * 30 ? '|back<20s' : '';
+    return `${b.mem.mode}|${intent}|${db}|${atk}${back}`;
+  }
+
   /** Cause known at the death tick (null: decided 40 ticks later, window collision vs no attack). */
   function lossCause(l: LanerTrack, me: number, m: number, x: number, y: number, killer: number, killerKind: number, T: number): CsCause | null {
     if (!Unit.alive[me]) return 'absent_dead';
@@ -505,9 +532,10 @@ export function runBotGame(config: SimConfig, maxTicks: number, onTick?: (sim: S
     if (killerKind === Kind.Champion) return 'ally_took';
     if ((l.atkOn.get(m) ?? -1e9) >= T - 45 || (l.dmgOn.get(m) ?? -1e9) >= T - 90) return 'timing_miss';
     const b = botBySlot.get(l.s.slot)!;
-    // a minion that dies within 2 s after an attention window: its last-hit plan was dropped while distracted (§9)
-    if (T - l.distractedAt <= DISTRACTED_TAIL || b.mem.ext.lh.roll.get(m)?.skip) return 'distracted';
     const reach = Stats.range[me]! + Unit.radius[me]! + 250;
+    // a minion in reach that dies within 2 s after an attention window: its last-hit plan was dropped while
+    // distracted (§9); out of reach the loss is positioning, not attention
+    if ((d <= reach && T - l.distractedAt <= DISTRACTED_TAIL) || b.mem.ext.lh.roll.get(m)?.skip) return 'distracted';
     if (d > reach) {
       for (const s of stats) {
         if (s.team === l.s.team) continue;

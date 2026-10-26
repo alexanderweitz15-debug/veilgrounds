@@ -161,9 +161,6 @@
     "gazeTag": "sev_e_gaze",
     "gazeTurnPct": { "iron": 15, "gold": 55, "diamond": 85, "challenger": 95 },
     "turnAwayDist": 250,
-    "qFakePct": { "iron": 0, "gold": 0, "platinum": 30, "diamond": 45, "challenger": 60 },
-    "fakeDelayTicks": 6,
-    "fakeTargetRadius": 900,
     "tsukuyomiLowHp": 0.4,
     "tsukuyomiAllyRange": 1000
   },

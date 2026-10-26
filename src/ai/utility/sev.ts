@@ -2,8 +2,6 @@
 // only. Data in values.json `sev`; rank enters through rank curves.
 //   1 R choice by the enemy composition (lobby knowledge): Amaterasu vs tanks / healers, Tsukuyomi vs squishy carries,
 //     Susanoo when behind or brawling (sent before R is learned, otherwise the sim picks from botUltChoice).
-//   2 Q fake (Platinum+ by rank curve): against a moving target the Q is recast inside its 0.4 s wind-up (the sim's
-//     sev_q_fake_cancel: refund, 2 s cooldown) - the dodge is baited, the real Q follows.
 //   3 Bannblick counterplay for enemy bots: during Sev's eye contact (gaze line `sev_e_gaze` following the bot) the
 //     bot turns away (moves away from Sev), chance by rank curve.
 //   6 Tsukuyomi (R choice 2) roots Sev while it suppresses: only with an ally near the target or on a low target.
@@ -55,19 +53,6 @@ export function gazeTurnAway(n: NodeCtx): boolean {
   n.mem.lastMove = null;
   n.log('sev', 'turn_away', 'Bannblick eye contact: look away', { dist: Math.round(d) });
   return true;
-}
-
-/** After a decision: a Sev Q cast at a moving target is followed by the fake recast inside the wind-up (rank curve). */
-export function sevQFake(n: NodeCtx): void {
-  if (n.ctx.champ.id !== 'sev') return;
-  const q = n.out.find((a) => a.cmd.t === 'cast' && a.cmd.slot === 0 && !a.delay);
-  const cmd = q?.cmd;
-  if (!cmd || cmd.t !== 'cast') return;
-  const t = n.v.enemies.find((e) => dst(e, { x: cmd.x, y: cmd.y }) < S.fakeTargetRadius);
-  if (!t || (t.x === t.px && t.y === t.py)) return;
-  if (!n.rng.chance(rankCurve(S.qFakePct, n.ctx.params.skill) / 100)) return;
-  n.out.push({ cmd: { ...cmd }, delay: S.fakeDelayTicks });
-  n.log('sev', 'q_fake', 'moving target: fake the Q inside the wind-up', { target: t.slot });
 }
 
 /** Tsukuyomi (chosen R index tsukuyomi) only with an ally near the target or on a low target. */

@@ -193,9 +193,8 @@ describe('Gorvam', () => {
     const gap = sim.c.Pos.x[t]! - sim.c.Pos.x[m]!;
     expect(gap).toBeLessThan(sim.c.Unit.radius[t]! + sim.c.Unit.radius[m]! + 5);
   });
-  it('recast during the wind-up cancels: no projectile, mana back, 2 s cooldown', () => {
-    const { sim, m } = setup('gorvam');
-    const mana = sim.c.Mana.cur[m]!;
+  it('pressing Q again during the wind-up does not cancel it (spam = cast)', () => {
+    const { sim } = setup('gorvam');
     cmd(sim, cast(0, CX + 1000, CY));
     cmd(sim, cast(0, CX + 1000, CY));
     let projectiles = 0;
@@ -203,9 +202,7 @@ describe('Gorvam', () => {
       step(sim);
       projectiles += query(sim.world, [sim.c.Proj]).length;
     }
-    expect(projectiles).toBe(0);
-    expect(sim.c.Mana.cur[m]).toBeGreaterThanOrEqual(mana);
-    expect(cooldownLeft(sim, m, 0)).toBe(sec(2) - 21);
+    expect(projectiles).toBeGreaterThan(0);
   });
 });
 

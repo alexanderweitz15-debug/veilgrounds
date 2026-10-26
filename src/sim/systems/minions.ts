@@ -17,6 +17,8 @@ import { LANES, findPath, lineWalkable, type Pt } from '../map';
 import { dist2, nearer } from '../vec';
 import { sees } from '../vision';
 import { nextWaveInfo } from './waves';
+import { MAX_ENT } from '../ecs';
+import waveData from '../../data/minionWave.json';
 
 /** Minions deal 60 % damage to champions and structures (spec §2). */
 export const MINION_DMG_VS_CHAMP_STRUCT = 0.6;
@@ -191,12 +193,22 @@ export function setLanePath(sim: Sim, eid: number): void {
 function walkLane(sim: Sim, m: number): void {
   const path = sim.paths.get(m);
   if (sim.c.Move.mode[m] !== 1 || !path || path.length === 0) return setLanePath(sim, m);
-  if (path.length > 1) {
-    const { Pos, Unit } = sim.c;
-    const g = laneGeo(sim, Unit.team[m]!, Unit.lane[m]! as LaneId);
-    if (laneProgress(g, path[0]!.x, path[0]!.y) < laneProgress(g, Pos.x[m]!, Pos.y[m]!)) path.shift();
-  }
+  const { Pos, Unit } = sim.c;
+  const g = laneGeo(sim, Unit.team[m]!, Unit.lane[m]! as LaneId);
+  const d = laneProgress(g, Pos.x[m]!, Pos.y[m]!);
+  if (path.length > 1 && laneProgress(g, path[0]!.x, path[0]!.y) < d) path.shift();
+  // catch-up: far behind the own wave front, or pulled off the lane -> faster (read by movement.ts)
+  const gap = waveFronts(sim)[Unit.team[m]! * 3 + Unit.lane[m]!]! - d;
+  let bonus = Math.min(1, Math.max(0, (gap - waveData.catchupGapStart) / waveData.catchupGapRamp)) * waveData.catchupMaxBonus;
+  const p = lanePoint(g, d);
+  if (dist2(Pos.x[m]!, Pos.y[m]!, p.x, p.y) > OFF_LANE * OFF_LANE) bonus = Math.max(bonus, waveData.offLaneBonus);
+  minionSpeed(sim)[m] = 1 + bonus;
 }
+
+/** Walk-speed multiplier per minion (1 unless catching up); written here, read by the movement system. */
+export const minionSpeed = (sim: Sim): Float32Array => (sim.state.minionSpeed ??= new Float32Array(MAX_ENT).fill(1)) as Float32Array;
+/** Furthest lane progress per (team * 3 + lane) among own minions, refreshed each tick by minionsSystem. */
+const waveFronts = (sim: Sim): Float64Array => (sim.state.waveFronts ??= new Float64Array(6)) as Float64Array;
 
 // ---------------------------------------------------------------- aggression ledger
 // The attack/damage events of a tick are produced after the towers/minions systems ran and are cleared at the
@@ -398,6 +410,7 @@ function nearest(sim: Sim, m: number, list: number[], range = AGGRO_RANGE): numb
  */
 export function updateMinionAggro(sim: Sim, m: number, lists: [TargetLists, TargetLists], calls: Call[]): void {
   const { Atk, Pos, Unit, Move } = sim.c;
+  minionSpeed(sim)[m] = 1;
   const st = aggroState(sim);
   const team = Unit.team[m]!;
   let cur = Atk.target[m]!;
@@ -469,6 +482,14 @@ export const minionsSystem: System = {
     const units = query(sim.world, [Unit]);
     const calls = gatherCalls(sim, units);
     const lists = targetLists(sim, units);
+    const fronts = waveFronts(sim);
+    fronts.fill(0);
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i]!;
+      if (!Unit.alive[u] || !isMinion(Unit.kind[u]!) || Unit.lane[u]! > 2) continue;
+      const k = Unit.team[u]! * 3 + Unit.lane[u]!;
+      fronts[k] = Math.max(fronts[k]!, laneProgress(laneGeo(sim, Unit.team[u]!, Unit.lane[u]! as LaneId), sim.c.Pos.x[u]!, sim.c.Pos.y[u]!));
+    }
     for (let i = 0; i < units.length; i++) {
       const m = units[i]!;
       if (Unit.alive[m] && isMinion(Unit.kind[m]!)) updateMinionAggro(sim, m, lists, calls);

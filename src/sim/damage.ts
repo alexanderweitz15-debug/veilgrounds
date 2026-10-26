@@ -4,7 +4,7 @@
 import type { Sim } from './sim';
 import { MAX_ENT } from './ecs';
 import { despawn } from './sim';
-import { Kind, isStructure, sec, type DamageType } from './types';
+import { Kind, VARIANTS, isStructure, sec, type DamageType } from './types';
 import { onDeath } from './systems/economy';
 import { damageDealtMult, damageTakenMult, healMult, statMods } from './buffs';
 import { passiveHooksOf } from './champions';
@@ -174,6 +174,7 @@ export function kill(sim: Sim, victim: number, killer: number): void {
   sim.events.push({
     e: 'death', eid: victim, kind: Unit.kind[victim]!, team: Unit.team[victim]!, killer, x: Pos.x[victim]!, y: Pos.y[victim]!,
     ...(vChamp !== undefined ? { champ: vChamp } : {}),
+    ...(Unit.kind[victim] === Kind.Plant ? { variant: VARIANTS[Unit.variant[victim]!] } : {}),
     ...(killer >= 0 ? { killerKind: Unit.kind[killer]!, killerTeam: Unit.team[killer]! } : {}),
     ...(kChamp !== undefined ? { killerChamp: kChamp } : {}),
     ...(Unit.kind[victim] === Kind.Monster && isEpicMonster(sim, victim) ? { epic: true as const } : {}),

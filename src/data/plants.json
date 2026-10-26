@@ -1,0 +1,30 @@
+{
+  "note": "Jungle plants (src/sim/systems/plants.ts). Times in seconds, distances in map units, percentages in points. All effects hit every living champion (both teams) within r of the popped plant.",
+  "firstS": 90,
+  "respawnS": 300,
+  "radius": 45,
+  "growS": 1.2,
+  "sprung": { "r": 380, "dist": 650, "leapS": 0.5, "extra": 500 },
+  "honig": {
+    "pieces": 5,
+    "ringMin": 130,
+    "ringMax": 250,
+    "lifeS": 30,
+    "pickupR": 55,
+    "heal": 12,
+    "healPct": 0.018,
+    "slow": 20,
+    "slowS": 1
+  },
+  "spaeh": {
+    "s": 10,
+    "points": [
+      [450, 380],
+      [900, 480],
+      [1350, 560]
+    ]
+  },
+  "mana": { "r": 320, "pct": 0.35, "min": 60 },
+  "wind": { "r": 320, "ms": 35, "s": 4 },
+  "schild": { "r": 320, "amount": 80, "pctMaxHp": 0.1, "s": 5 }
+}

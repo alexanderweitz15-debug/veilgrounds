@@ -48,7 +48,8 @@ export const MONSTER_TYPES = [
   'kesselbrut',
 ] as const;
 export type MonsterType = (typeof MONSTER_TYPES)[number];
-export const PLANT_TYPES = ['sprungfrucht', 'honigfrucht', 'spaehfrucht'] as const;
+/** 'honigstueck' = a piece dropped by a popped Honigfrucht (walk over it to eat); never placed on the map. Append only. */
+export const PLANT_TYPES = ['sprungfrucht', 'honigfrucht', 'spaehfrucht', 'manafrucht', 'windfrucht', 'schildfrucht', 'honigstueck'] as const;
 export type PlantType = (typeof PLANT_TYPES)[number];
 /** Unit.variant indexes this list (0 = none). Order is part of determinism/replays: append only. */
 export const VARIANTS = ['', ...MONSTER_TYPES, ...PLANT_TYPES] as const;
@@ -132,6 +133,8 @@ export type SimEvent =
   | { e: 'damage'; src: number; dst: number; amount: number; type: DamageType; crit?: boolean; /** Basic attack (render-only info: death recap). */ auto?: true; /** Hit flash (B5): champion hits, others max 4/s per target. */ flash?: true }
   | {
       e: 'death'; eid: number; kind: number; team: number; killer: number; x: number; y: number;
+      /** Jungle plants only: the fruit type (pop effect colour); the victim has left the snapshot by then. */
+      variant?: string;
       /** Victim champion id (champions only). */
       champ?: string;
       /** Killer unit kind/team (killer >= 0 in the sim; the eid itself may be fog-masked to -1 in snapshots). */

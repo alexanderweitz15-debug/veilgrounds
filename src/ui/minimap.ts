@@ -270,7 +270,7 @@ export class Minimap {
 /** Seconds a vanished enemy champion stays on the minimap at its last seen position (fading out). */
 const GHOST_S = 45;
 
-const PLANT_FILL: Record<string, string> = { sprungfrucht: '#f08a3a', honigfrucht: '#f2cf4a', spaehfrucht: '#6fb6f0' };
+const PLANT_FILL: Record<string, string> = { sprungfrucht: '#f08a3a', honigfrucht: '#f2cf4a', spaehfrucht: '#6fb6f0', manafrucht: '#4a7ae0', windfrucht: '#8fe0c0', schildfrucht: '#e8e8f0' };
 
 type Epic = 'leviathan' | 'kesselbrut' | 'schleierwaechter';
 const EPIC_FILL: Record<Epic, string> = { leviathan: '#3f9fb4', kesselbrut: '#8a5cc8', schleierwaechter: '#5a3a8e' };

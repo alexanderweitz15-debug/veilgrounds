@@ -605,3 +605,11 @@ Additive edits to shared files (all small):
 - `src/main.ts`: menu entry `menu.tutorial`, `startTutorial()`, `?play=tutorial`, no history record for tutorial sessions.
 - `src/game/modes.ts`: `tutorialConfig`, `isTutorialConfig`, `TUTORIAL_MARK`.
 - `src/i18n/de.json`, `en.json`: keys `menu.tutorial*`, `tutorial.*`, `tutorial.step.*`.
+
+## 2026-10-26 · plants (swarm/plants)
+
+- src/sim/types.ts: `PLANT_TYPES` + manafrucht, windfrucht, schildfrucht, honigstueck (appended; VARIANTS order kept). Death `SimEvent` gets optional `variant` (plants only, set in damage.ts).
+- src/sim/snapshot.ts: `SnapEntity.grow` (plants / honey pieces while sprouting, 0..1).
+- src/data/map.json: 3 more plants per quarter (6 per side) (manafrucht, windfrucht, schildfrucht); jungle.test count 12 -> 24.
+- src/data/plants.json (new): all plant values. src/i18n de/en: unit.* names + `plant.hint.*`.
+- src/ui/overlay.ts (label "Name · Effekt", none for honey pieces), src/ui/minimap.ts (PLANT_FILL), src/render/champions/monsters.ts (MONSTER_SPRITE aliases for the new types).

@@ -99,6 +99,9 @@ function profileScreen(): void {
   void Promise.all([import('./ui/profileScreen'), import('./stats/history')]).then(async ([{ renderProfile }, h]) => {
     const history = await h.loadHistory().catch(() => []);
     if (s.isConnected) renderProfile(s, history, mainMenu);
+  });
+}
+
 /** Replay browser (S2): saved games, watch / delete. */
 function replayBrowser(): void {
   const s = screen();

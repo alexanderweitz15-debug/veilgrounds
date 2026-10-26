@@ -439,3 +439,23 @@ Measure: console lines `champion atlas: ... in N ms` (sheets.ts) cold vs warm, 1
 | src/ai/bot/social.ts | A3 | `allChatReply(n)` called from `socialTick` (additive): an enemy bot may answer the human's all-chat line; uses the 45 s chat throttle, no new BotExt field | 2.8 |
 | src/data/bots/chat.json | A3 | 9 new lines, `cat: "allReply"` (low/mid/high, 2 toxic) | 2.8 |
 | src/data/bots/allchat.json (new) | A3 | reply chance per band, reaction delay | 2.8 |
+
+## 2026-10-23 · A1 -> A2 Phase 3 (shove-and-recall coordination; no shared-file edit)
+
+Measured with the beta brain (reflex + utility), Gold, 4 x 14 min, seeds 1-4, main e55cbbd + A1 55d4395 (harness
+attribution fixed, see a1.md "csLossByCause attribution fixes"). Lane minions to 15:00: last-hit 28.5 %,
+absent_recall 21.7 %, absent_heal 12.5 %, absent_dead 9.2 %, in-lane losses (in_range + timing + collision) 15 %,
+distracted 7.2 %. Absence (44 %) is the CS/min 5.0 blocker; the reflex side is 15 %.
+
+For A2 (@A2, owner of recallValue / intents):
+1. Recall count: 8.4-8.8 recalls per laner by 14:00 at Gold (201 / 24 laners in 4 games, 423 / 48 in 8 games). Diamond
+   (test-8 game, seeds 2/3): of the laner recall commands 16-30 are HP-driven (`t_hp` > 0), 3-8 item recalls. The HP
+   term (stayDeathProb > recallStayDeathThreshold) fires far more often than the item term - check
+   `stayDeath.hpBase` / threshold.
+2. absent_heal includes the uRecall walk-off (mode `home`, "enemy minions near: walk off before recalling") because
+   the harness maps mode `home` to a heal trip; it is recall cost in practice.
+3. The reflex wave state does not read `mem.ext.wave = crash` (your crashWave). Honouring it was measured and gave no
+   gain (a1.md "Phase 3"); the reflex keeps its own push rules. If you want push intents to force the push state,
+   tell me and I will wire it behind a values.json switch.
+4. tests/utilityRecall.test.ts (test 8) runs the utility model with the legacy lane leaf (`runUtilityGame` does not
+   pass `{ reflex: true }`). The beta brain passes the same bound (item recalls 0.2-0.4 enemy minions near, n small).

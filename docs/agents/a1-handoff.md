@@ -22,7 +22,11 @@ docs/agents/plan-api.md (contract + "Changes" 1-12), docs/agents/a1.md (numbers,
    (now ~3.6). Diagnosis in a1.md "Phase 2"; the harass part is distance (enemy laner rarely near), the rest needs
    Phase 3/4 (A2). Plates dropped with reflex on (supervisor: 4.0 -> 2.25): structures are a filler only in the
    push state now - check the push conditions after a crash.
-3. Open items in a1.md.
+3. Phase 3 (23 Oct): CS loss attribution fixed (a1.md "csLossByCause attribution fixes"); absence is 44 % of the
+   lane minions at Gold, the reflex side 15 %. Coordination items for A2 in shared-changes.md "A1 -> A2 Phase 3"
+   (recall count 8.4-8.8 per laner by 14:00, HP-term recalls dominate). Honouring A2's crash request in the reflex
+   wave state was measured (8 games) and dropped - no gain.
+4. Open items in a1.md.
 
 ## How to measure
 

@@ -1,0 +1,43 @@
+{
+  "champion": "vargrim",
+  "template": "jg_bruiser",
+  "starter": [
+    "jaegerzahn"
+  ],
+  "standard": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "schwarze_kette",
+      "blutkrone",
+      "lebenswurzel",
+      "wallherz"
+    ]
+  },
+  "vsAD": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "schwarze_kette",
+      "wallherz",
+      "blutkrone",
+      "lebenswurzel"
+    ]
+  },
+  "vsAP": {
+    "boots": "stiefel_mr",
+    "core": [
+      "schwarze_kette",
+      "sturmgewand",
+      "blutkrone",
+      "lebenswurzel"
+    ]
+  },
+  "runes": {
+    "keystone": "praezision",
+    "minor": [
+      "angriffstempo",
+      "blutdurst",
+      "adaptiv"
+    ]
+  },
+  "note": "Component order follows items.json \"from\"; Diamond+ bots reorder components situationally (spec §5)."
+}

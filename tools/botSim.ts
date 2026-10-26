@@ -363,6 +363,15 @@ function buildReport(): string {
   out.push('|---|---|');
   for (const [k, t] of Object.entries(idle).sort((a, b) => b[1] - a[1]).slice(0, 12)) out.push(`| ${k} | ${r1((100 * t) / it)} % |`);
   out.push('');
+  out.push('## in_range_no_attack by bot state at the death (laners, to 15:00: mode | lane intent | distance | attack)');
+  out.push('');
+  const noAtk: Record<string, number> = {};
+  for (const x of laners) for (const [k, t] of Object.entries(x.s.noAtkReasons ?? {})) noAtk[k] = (noAtk[k] ?? 0) + t;
+  const nt = Object.values(noAtk).reduce((a, b) => a + b, 0) || 1;
+  out.push('| State | Share |');
+  out.push('|---|---|');
+  for (const [k, t] of Object.entries(noAtk).sort((a, b) => b[1] - a[1]).slice(0, 15)) out.push(`| ${k} | ${r1((100 * t) / nt)} % |`);
+  out.push('');
   out.push('## Per role (CS/min @15, attack util, idle share)');
   out.push('');
   out.push('| Role | CS/min @15 | CS/min end | Util | Idle |');

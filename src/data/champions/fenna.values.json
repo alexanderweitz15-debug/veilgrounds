@@ -1,0 +1,22 @@
+{
+  "_doc": "Tunables of the fenna hooks (src/sim/champions/fenna.ts) that the generic ability schema cannot hold. Ability numbers live in fenna.json.",
+  "bond": {
+    "tautRange": 1150,
+    "breakRange": 1600,
+    "rebindRange": 1000,
+    "rebindDelaySec": 3,
+    "crossHalfWidth": 40,
+    "crossRadiusFrac": 0.3,
+    "slowPctByLevel": [25, 40],
+    "slowSec": 1,
+    "icdSec": 4,
+    "mirror": 0.4
+  },
+  "dust": { "allySeek": 900, "enemySeekChampion": 700, "enemySeekUnit": 450, "bounceRange": 800, "bounceSpeed": 1900, "bounceDmgMult": 1.15 },
+  "cocoon": {
+    "durationSec": [1.75, 2, 2.25],
+    "heal": { "base": [120, 200, 280], "ap": 0.5 },
+    "enemySlowPct": 25
+  },
+  "pool": { "everyTicks": 3, "refreshTicks": 8 }
+}

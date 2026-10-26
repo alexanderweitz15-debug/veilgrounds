@@ -1,5 +1,5 @@
 // Sev Aschenblick hooks (Fassung 3, docs/champions/sev.md). Contract: ./hooks.ts, behaviour list: docs/champion-hooks.md.
-// Passive Rabenblick (Gaze stacks -> genjutsu stun), Q Feuerball (fake recast, explosion, burning ground), W Krähendoppel
+// Passive Rabenblick (Gaze stacks -> genjutsu stun), Q Feuerball (explosion, burning ground), W Krähendoppel
 // (blink + crow clone decoy that bursts), E Bannblick (eye contact: stun if facing Sev, else slow), R = choice of
 // Amaterasu (uncleansable black flames, jump on death) / Susanoo (shield, sweeps, thrust recast) / Tsukuyomi
 // (suppression, Sev rooted, missing-HP execute). All numbers live in sev.json except the hook constants below.
@@ -9,7 +9,7 @@ import type { Sim } from '../sim';
 import { CHAMP_ABILITY_DMG_MULT, Kind, sec } from '../types';
 import { addBuff, buffs, hasBuff, removeBuffs } from '../buffs';
 import { dealDamage } from '../damage';
-import { cancelCast, closeRecast, effectAmount, enemiesInRadius, enemiesOnSegment, openRecast, rv, ultChoiceOf } from '../systems/abilities';
+import { closeRecast, effectAmount, enemiesInRadius, enemiesOnSegment, openRecast, rv, ultChoiceOf } from '../systems/abilities';
 import { extendPet, petOwner, petTag, petsOf, removePet, spawnPet } from '../summons';
 import type { ChampionHooks, ChampionVisuals, EffectCtx, UnitMark, VisualObject } from './hooks';
 import { ctxFor, hookState, isChampLike, peekState } from './util';
@@ -412,10 +412,6 @@ export const hooks: ChampionHooks = {
     sev_q_fireball(sim, ctx) {
       if (ctx.phase === 'expire') return explode(sim, ctx, ctx.x, ctx.y);
       if (ctx.phase === 'cast' && ctx.hits.length) explode(sim, ctx, sim.c.Pos.x[ctx.hits[0]!]!, sim.c.Pos.y[ctx.hits[0]!]!);
-    },
-    // Recast during the 0.4 s wind-up: cancel (fake), refund the mana, 2 s cooldown.
-    sev_q_fake_cancel(sim, ctx) {
-      if (ctx.phase === 'recast') cancelCast(sim, ctx.caster, { refund: true, cooldownTicks: sec(2) });
     },
     sev_w_crow_clone(sim, ctx) {
       if (ctx.phase === 'cast') spawnClone(sim, ctx);

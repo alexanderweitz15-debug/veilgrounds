@@ -102,20 +102,14 @@ describe('Q Feuerball', () => {
     expect(dmgTo(hits, d)).toBeGreaterThan(0);
   });
 
-  it('recast during the 0.4 s wind-up is a fake: no fireball, mana back, 2 s cooldown', () => {
+  it('pressing Q again during the 0.4 s wind-up does not cancel it (spam = cast)', () => {
     const { sim, s } = setup([1, 0, 0, 0]);
     const d = spawnDummy(sim, CX + 500, CY, 1);
     step(sim);
-    const mana = sim.c.Mana.cur[s]!;
     cmd(sim, cast(0, CX + 500, CY));
     steps(sim, 4);
     cmd(sim, cast(0, CX + 500, CY));
-    const hits = collect(sim, 30, s);
-    expect(dmgTo(hits, d)).toBe(0);
-    expect(sim.c.Mana.cur[s]!).toBeGreaterThanOrEqual(mana - 1e-6);
-    const cd = abilityHud(sim, s)[0]!.cdLeft;
-    expect(cd).toBeGreaterThan(0.5);
-    expect(cd).toBeLessThan(1.5);
+    expect(dmgTo(collect(sim, 30, s), d)).toBeGreaterThan(0);
   });
 });
 

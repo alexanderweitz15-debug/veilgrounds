@@ -1,7 +1,7 @@
 // Gorvam Kettenmund hooks. Contract: ./hooks.ts, behaviour list: docs/champion-hooks.md.
 import { sec } from '../types';
 import { addBuff } from '../buffs';
-import { cancelCast, displace } from '../systems/abilities';
+import { displace } from '../systems/abilities';
 import type { ChampionHooks } from './hooks';
 import { hookState, peekState } from './util';
 
@@ -30,10 +30,6 @@ export const hooks: ChampionHooks = {
     gorvam_q_drag(sim, ctx) {
       const t = ctx.hits[0];
       if (ctx.phase === 'cast' && t !== undefined && sim.c.Unit.alive[t]) displace(sim, ctx.caster, t, -1e6, PULL_TICKS);
-    },
-    // Recast during the wind-up: cancel, refund the mana, 2 s cooldown.
-    gorvam_q_fake_cancel(sim, ctx) {
-      if (ctx.phase === 'recast') cancelCast(sim, ctx.caster, { refund: true, cooldownTicks: sec(2) });
     },
     // ponytail: arming and the airborne on the empowered auto are generic (engine next-auto handling).
     gorvam_w_next_auto() {},

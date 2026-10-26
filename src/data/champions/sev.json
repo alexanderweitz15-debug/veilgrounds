@@ -6,8 +6,8 @@
   "archetype": "genjutsu_mage",
   "botBias": { "tradeLength": -1, "resourceUse": 1 },
   "trainingPurpose": {
-    "de": "Fake-Casts lesen, Blickkontakt meiden (wegschauen), Klon vom echten Ziel unterscheiden, Ult-Wahl des Gegners erkennen.",
-    "en": "Read fake casts, break eye contact (look away), tell the clone from the real target, recognise the enemy's ultimate choice."
+    "de": "Feuerball ausweichen, Blickkontakt meiden (wegschauen), Klon vom echten Ziel unterscheiden, Ult-Wahl des Gegners erkennen.",
+    "en": "Dodge the fireball, break eye contact (look away), tell the clone from the real target, recognise the enemy's ultimate choice."
   },
   "attackType": "ranged",
   "resource": "mana",
@@ -47,8 +47,8 @@
       "id": "sev_q",
       "name": { "de": "Feuerball", "en": "Great Fireball" },
       "desc": {
-        "de": "Nach 0,4 s ein großer Feuerball (900): explodiert am ersten Ziel oder am Ende in einem Flammenring (Radius 300): 80/125/170/215/260 (+70 % AP) magisch, dann 2 s brennender Boden (25/40/55/70/85 (+15 % AP)/s). Re-Cast in den 0,4 s bricht ab (Fake): Mana zurück, 2 s Abklingzeit.",
-        "en": "After 0.4 s a great fireball (900): explodes on the first unit or at the end in a ring of flame (radius 300): 80/125/170/215/260 (+70% AP) magic, then 2 s of burning ground (25/40/55/70/85 (+15% AP)/s). Recast within the 0.4 s cancels it (fake): mana refunded, 2 s cooldown."
+        "de": "Nach 0,4 s ein großer Feuerball (900): explodiert am ersten Ziel oder am Ende in einem Flammenring (Radius 300): 80/125/170/215/260 (+70 % AP) magisch, dann 2 s brennender Boden (25/40/55/70/85 (+15 % AP)/s).",
+        "en": "After 0.4 s a great fireball (900): explodes on the first unit or at the end in a ring of flame (radius 300): 80/125/170/215/260 (+70% AP) magic, then 2 s of burning ground (25/40/55/70/85 (+15% AP)/s)."
       },
       "type": "skillshot_line",
       "castTime": 0.4,
@@ -61,12 +61,11 @@
       "speed": 1300,
       "radius": 300,
       "duration": 2,
-      "flags": ["blocked_by_minions", "recast"],
+      "flags": ["blocked_by_minions"],
       "effects": [
         { "kind": "damage", "type": "magic", "amount": { "base": [80, 125, 170, 215, 260], "ap": 0.7 } },
         { "kind": "damage", "type": "magic", "amount": { "base": [25, 40, 55, 70, 85], "ap": 0.15 } },
-        { "kind": "hook", "id": "sev_q_fireball" },
-        { "kind": "hook", "id": "sev_q_fake_cancel" }
+        { "kind": "hook", "id": "sev_q_fireball" }
       ]
     },
     {

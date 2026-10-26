@@ -43,8 +43,8 @@
       "id": "gorvam_q",
       "name": { "de": "Kettenhaken", "en": "Chain Hook" },
       "desc": {
-        "de": "Linie 1.050 nach 0,5 s Wind-up. Zieht das erste Ziel über 1,5 s zu sich. Re-Cast bricht ab (Fake-Hook).",
-        "en": "Line 1050 after a 0.5 s wind-up. Drags the first target to him over 1.5 s. Recast cancels (fake hook)."
+        "de": "Linie 1.050 nach 0,5 s Wind-up. Zieht das erste Ziel über 1,5 s zu sich.",
+        "en": "Line 1050 after a 0.5 s wind-up. Drags the first target to him over 1.5 s."
       },
       "type": "skillshot_line",
       "castTime": 0.5,
@@ -55,11 +55,10 @@
       "costType": "mana",
       "width": 70,
       "speed": 1900,
-      "flags": ["blocked_by_minions", "recast"],
+      "flags": ["blocked_by_minions"],
       "effects": [
         { "kind": "damage", "type": "magic", "amount": { "base": [80, 120, 160, 200, 240], "ap": 1 } },
-        { "kind": "hook", "id": "gorvam_q_drag" },
-        { "kind": "hook", "id": "gorvam_q_fake_cancel" }
+        { "kind": "hook", "id": "gorvam_q_drag" }
       ]
     },
     {

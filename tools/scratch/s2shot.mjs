@@ -1,7 +1,7 @@
 // Scratch (agent S2): headless Edge screenshot via CDP. node tools/scratch/s2shot.mjs <url> <out.jpg> [waitMs] [evalJs] [width] [height]
 // Runs evalJs (async) after the wait, waits again, captures a 1280x720 JPEG, closes Edge (no tab is left behind).
 import { spawn } from 'node:child_process';
-import { writeFileSync, mkdtempSync } from 'node:fs';
+import { writeFileSync, readFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -38,9 +38,11 @@ try {
   await send('Emulation.setDeviceMetricsOverride', { width: +w, height: +h, deviceScaleFactor: 1, mobile: false });
   await send('Page.navigate', { url });
   await sleep(+waitMs);
-  if (evalJs) {
-    const r = await send('Runtime.evaluate', { expression: evalJs, awaitPromise: true, returnByValue: true });
-    console.log('[eval]', JSON.stringify(r.result?.result?.value ?? r.result).slice(0, 500));
+  // evalJs: JS text, or @file[,@file2...] (scripts run one after the other; the page keeps its state)
+  for (const part of evalJs ? (evalJs.startsWith('@') ? evalJs.split(',') : [evalJs]) : []) {
+    const expr = part.startsWith('@') ? readFileSync(part.slice(1), 'utf8') : part;
+    const r = await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true });
+    console.log('[eval]', JSON.stringify(r.result?.result?.value ?? r.result).slice(0, 700));
     await sleep(+waitMs);
   }
   const shot = await send('Page.captureScreenshot', { format: 'jpeg', quality: 85 });

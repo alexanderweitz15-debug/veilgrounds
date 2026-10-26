@@ -41,3 +41,11 @@
 .rp-warn { color: #e0a04a; font-size: 12px; }
 .rp-hint { color: var(--text-dim, #a09b8c); font-size: 11px; margin-left: auto; }
 .rp-loading { position: absolute; inset: 0; display: grid; place-items: center; color: #e8e0cc; font-size: 22px; background: #0c0e12; z-index: 40; }
+
+/* post-game mistake list (src/ui/errorListView.ts) */
+.pe-box { margin-top: 18px; }
+.pe-h { margin: 12px 0 6px; color: var(--gold, #c8aa6e); font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; }
+.pe-list { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; display: grid; gap: 4px; }
+.pe-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 10px; align-items: center; padding: 4px 8px; background: rgba(255, 255, 255, 0.03); font-size: 13px; }
+.pe-row.att { opacity: 0.85; }
+.pe-t { font-variant-numeric: tabular-nums; color: var(--text-dim, #a09b8c); }

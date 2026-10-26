@@ -6,6 +6,7 @@ import { t } from './i18n';
 import type { TrainerMode, TrainerSetup } from './game/modes';
 import type { SimConfig } from './sim/types';
 import type { SessionResult } from './game/session';
+import type { Replay } from './replay/replay';
 import { buildSettingsPanel } from './ui/settingsPanel';
 import { renderMainMenu, type MenuEntry } from './ui/mainMenu';
 import { installDisplaySettings } from './ui/display';
@@ -66,6 +67,7 @@ function mainMenu(): void {
     modes,
     nav: [
       { label: t('menu.encyclopedia'), onSelect: () => encyclopedia() },
+      { label: t('rp.nav'), onSelect: () => replayBrowser() },
       { label: t('menu.settings'), onSelect: () => settingsScreen() },
     ],
     notesTitle: t('menu.notesTitle'),
@@ -87,6 +89,26 @@ function encyclopedia(): void {
   s.classList.add('menu-screen');
   void import('./ui/encyclopedia').then(({ renderEncyclopedia }) => {
     if (s.isConnected) renderEncyclopedia(s, mainMenu);
+  });
+}
+
+/** Replay browser (S2): saved games, watch / delete. */
+function replayBrowser(): void {
+  const s = screen();
+  void Promise.all([import('./ui/replayBrowser'), import('./replay/store')]).then(([{ renderReplayBrowser }, { loadReplay }]) => {
+    if (!s.isConnected) return;
+    renderReplayBrowser(s, mainMenu, (id) => void loadReplay(id).then((r) => (r ? watchReplay(r, 0, replayBrowser) : alert(t('rp.missing')))));
+  });
+}
+
+/** Replay viewer: the normal game view fed by the replay worker (read-only), `back` runs when the player leaves. */
+function watchReplay(replay: Replay, start: number, back: () => void): void {
+  disposeMenu?.();
+  disposeMenu = null;
+  app.textContent = '';
+  void Promise.all([loadGame(), import('./replay/replayLink'), import('./ui/replayBar')]).then(([{ Game }, { replayLink }, { replayMount }]) => {
+    const link = replayLink(replay, replay.humanSlot ?? 0, start);
+    new Game(app, replay.config, () => back(), { link, clock: link.clock, silent: () => link.speed > 2, mount: replayMount(link) });
   });
 }
 
@@ -140,14 +162,24 @@ async function trainerLobby(mode: TrainerMode): Promise<void> {
 /** Post-game analysis for classic games and trainer runs (not for short or sandbox sessions). */
 function afterGame(config: SimConfig | null, r?: SessionResult): void {
   if (!config || !r) return mainMenu();
+  // finished game: keep the replay for the replay browser (IndexedDB, capped; no-op when unavailable)
+  if (r.replay && r.replay.ticks >= 1800) void import('./replay/store').then((m) => m.saveReplay(r.replay!)).catch(() => undefined);
   if (r.retry) return start({ ...structuredClone(config), seed: (Math.random() * 2 ** 31) | 0 });
   // match history for the training plan (IndexedDB; no-op when unavailable)
   if (r.summary.duration >= 60) void import('./stats/history').then((h) => h.saveRecord(h.recordFromSummary(r.summary, Date.now()))).catch(() => undefined);
   const auto = (config.mode === 'classic' || config.mode === 'laneOnly') && r.summary.duration >= 60;
   if (!r.analysis && !auto) return mainMenu();
+  showPostGame(config, r);
+}
+
+function showPostGame(config: SimConfig, r: SessionResult): void {
   const s = screen();
-  void Promise.all([import('./ui/postGame'), import('./game/session')]).then(([{ renderPostGame }, { isTrainerMode }]) => {
-    if (s.isConnected) renderPostGame(s, r.summary, mainMenu, isTrainerMode(config.mode) || config.mode === 'classic' ? () => afterGame(config, { ...r, retry: true }) : undefined);
+  void Promise.all([import('./ui/postGame'), import('./game/session'), import('./stats/errorList')]).then(([{ renderPostGame }, { isTrainerMode }, { buildErrorList }]) => {
+    if (!s.isConnected) return;
+    const replay = r.replay;
+    // mistake list: bots from the bot log, the player from the replay; "replay moment" opens the viewer 5 s before it
+    const errors = replay && (replay.botLog || replay.player) ? { list: buildErrorList(replay), onJump: (tick: number) => void import('./replay/timeline').then(({ momentTick }) => watchReplay(replay, momentTick(replay, tick), () => showPostGame(config, r))) } : undefined;
+    renderPostGame(s, r.summary, mainMenu, isTrainerMode(config.mode) || config.mode === 'classic' ? () => afterGame(config, { ...r, retry: true, replay: undefined }) : undefined, errors);
   });
 }
 

@@ -448,3 +448,12 @@ For A2 (@A2, owner of recallValue / intents):
    tell me and I will wire it behind a values.json switch.
 4. tests/utilityRecall.test.ts (test 8) runs the utility model with the legacy lane leaf (`runUtilityGame` does not
    pass `{ reflex: true }`). The beta brain passes the same bound (item recalls 0.2-0.4 enemy minions near, n small).
+
+## 2026-10-26 · s2-replay (replay browser 6.6, post-game error list 6.3)
+
+Additive edits to shared files (all small):
+- `src/main.ts`: nav entry "Replays" (`replayBrowser`, `watchReplay`), `afterGame` saves `r.replay`, new `showPostGame` (passes the error list + "replay moment" jump to `renderPostGame`).
+- `src/ui/postGame.ts`: optional 5th parameter `errors` (renders `renderErrorList` above the Challenger-Geist block). S1 (death recap) edits this file too: keep both blocks.
+- `src/game/game.ts`: `GameOpts` (injected replay link, virtual clock, silent, bar mount); `exit()` waits (max 3 s) for the worker's replay of a decided game. `src/game/link.ts` `requestReplay`; `src/sim/protocol.ts` + `src/sim/worker.ts` `getReplay` / `rec.observe(sim)`.
+- `src/game/state.ts` `resetForSeek()`, `src/game/objectives.ts` `restoreEpicKills()`, `src/game/session.ts` `SessionResult.replay`, `src/store/kv.ts` `kvDel`.
+- `src/i18n/de.json` + `en.json`: keys `rp.*` (replay) and `pe.*` (error list).

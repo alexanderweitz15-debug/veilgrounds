@@ -15,6 +15,8 @@ let lastIndexPost = 0;
 const TICK_MS = 1000 / 30;
 /** Wall ms per timer turn spent on the index pass (messages wait at most this long). */
 const INDEX_SLICE_MS = 15;
+/** Same while nothing is playing (paused / waiting for a far seek): the index may use most of the turn. */
+const INDEX_SLICE_IDLE_MS = 60;
 
 const post = (m: FromReplay): void => postMessage(m);
 const postSnap = (reset: boolean): void => post({ t: 'snap', snap: eng!.snapshot(slot), ...(reset ? { reset: true } : {}) });
@@ -55,7 +57,10 @@ setInterval(() => {
     pendingView = -1;
     postSnap(true);
   }
-  if (pendingSeek >= 0) {
+  // a seek far past the index waits until the background pass reaches it, so every seek stays at most one checkpoint
+  // interval of re-simulation (bar shows the progress); a seek within reach runs at once
+  const waitingSeek = pendingSeek >= 0 && !(eng.indexed || pendingSeek <= eng.indexedUntil + eng.every);
+  if (pendingSeek >= 0 && !waitingSeek) {
     const t0 = performance.now();
     const steps = eng.seek(pendingSeek);
     pendingSeek = -1;
@@ -78,7 +83,8 @@ setInterval(() => {
   }
   if (!eng.indexed) {
     const t1 = performance.now();
-    while (!eng.indexed && performance.now() - t1 < INDEX_SLICE_MS) eng.advanceIndex(30);
+    const slice = playing && !waitingSeek ? INDEX_SLICE_MS : INDEX_SLICE_IDLE_MS;
+    while (!eng.indexed && performance.now() - t1 < slice) eng.advanceIndex(30);
     if (eng.indexed || now - lastIndexPost > 250) {
       lastIndexPost = now;
       post({ t: 'index', progress: eng.indexProgress, checkpoints: eng.checkpoints.size });

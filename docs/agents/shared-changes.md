@@ -459,7 +459,6 @@ For A2 (@A2, owner of recallValue / intents):
    tell me and I will wire it behind a values.json switch.
 4. tests/utilityRecall.test.ts (test 8) runs the utility model with the legacy lane leaf (`runUtilityGame` does not
    pass `{ reflex: true }`). The beta brain passes the same bound (item recalls 0.2-0.4 enemy minions near, n small).
-<<<<<<< HEAD
 ## 2026-10-23 · Agent G (feel/g-shop) · render feel fixes in F's area (src/render/**), kept small, pushed first
 
 | File | Owner | Change | Reason |
@@ -614,9 +613,7 @@ Additive edits to shared files (all small):
 - src/data/map.json: 3 more plants per quarter (6 per side) (manafrucht, windfrucht, schildfrucht); jungle.test count 12 -> 24.
 - src/data/plants.json (new): all plant values. src/i18n de/en: unit.* names + `plant.hint.*`.
 - src/ui/overlay.ts (label "Name · Effekt", none for honey pieces), src/ui/minimap.ts (PLANT_FILL), src/render/champions/monsters.ts (MONSTER_SPRITE aliases for the new types).
-=======
 
 ## swarm/mech-minions
 
 - src/sim/systems/movement.ts: +1 import (`minionSpeed` from minions.ts) and one line in the step loop: `step *= minionSpeed(sim)[eid]` for minions in lane-walk mode (catch-up speed). Other units unaffected.
->>>>>>> origin/swarm/mech-minions

@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8" /><title>Champion lab</title>
+<style>body{margin:0;background:#202226;color:#ddd;font:12px sans-serif}canvas{display:block;margin:4px}</style></head>
+<body>
+<div id="out"></div>
+<script type="module">
+  // Scratch lab for the champion sprites: contact sheets (idle, all anims) and bake timing.
+  //   ?mode=sheet            idle contact sheet (big, game scale, 64 px silhouettes)
+  //   ?mode=anims&dir=SE     every frame of every anim per champion
+  //   ?mode=anim&id=brom     one champion, all anims x 5 directions
+  //   window.bake(ids)       worker-pool bake time (ms) of a match atlas
+  //   window.save(name, q)   POST the first canvas to tools' save endpoint (docs/style/champions/<name>)
+  import { renderMaster, drawChampionFrame, championKit, framesOf, ANIMS, CHAMPION_IDS, DIR_YAW, buildChampionAtlasAsync } from '/src/render/champions/index.ts';
+  const q = new URLSearchParams(location.search);
+  const mode = q.get('mode') ?? 'sheet';
+  const out = document.getElementById('out');
+  const ALL = [...CHAMPION_IDS.filter((i) => i !== 'hark'), 'hark'];
+  const nameOf = (id) => (championKit(id)?.name ?? 'Hark');
+  const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; out.appendChild(c); return c; };
+  const ground = (g, x, y, w, h, i) => { g.fillStyle = i % 2 ? '#56653f' : '#9c8558'; g.fillRect(x, y, w, h); };
+
+  function sheet() {
+    const dir = q.get('dir') ?? 'SE';
+    const anim = q.get('anim') ?? 'idle';
+    const fr = Number(q.get('f') ?? 0);
+    const BIG = 220, COLS = 9, GAME = 112, GCOLS = 14, SIL = 64;
+    const rowsBig = Math.ceil(ALL.length / COLS);
+    const rowsGame = Math.ceil(ALL.length / GCOLS);
+    const W = COLS * BIG;
+    const H = rowsBig * (BIG + 18) + 24 + rowsGame * (GAME + 14) + 24 + rowsGame * (SIL + 14);
+    const c = mk(W, H);
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.fillStyle = '#1b1c20'; g.fillRect(0, 0, W, H);
+    g.font = '600 14px sans-serif'; g.textAlign = 'center';
+    ALL.forEach((id, i) => {
+      const x = (i % COLS) * BIG, y = Math.floor(i / COLS) * (BIG + 18);
+      ground(g, x + 2, y + 2, BIG - 4, BIG - 4, Math.floor(i / COLS) + i);
+      drawChampionFrame(g, id, anim, dir, fr, x, y - 10, BIG, 256);
+      g.fillStyle = '#e8e2d6'; g.fillText(nameOf(id), x + BIG / 2, y + BIG + 12);
+    });
+    let y0 = rowsBig * (BIG + 18) + 4;
+    g.textAlign = 'left'; g.fillStyle = '#e8d25a'; g.fillText('Spielgröße (Atlas: master 192 -> 112 px Zelle)', 8, y0 + 14); y0 += 24;
+    const gw = W / GCOLS;
+    ALL.forEach((id, i) => {
+      const x = (i % GCOLS) * gw, y = y0 + Math.floor(i / GCOLS) * (GAME + 14);
+      ground(g, x, y, gw, GAME + 14, 0);
+      const src = renderMaster(id, anim, DIR_YAW[dir], fr, 192);
+      g.imageSmoothingQuality = 'high';
+      g.drawImage(src, x + (gw - GAME) / 2, y, GAME, GAME);
+    });
+    y0 += rowsGame * (GAME + 14);
+    g.fillStyle = '#e8d25a'; g.fillText('64-px-Silhouetten', 8, y0 + 14); y0 += 24;
+    const tmp = document.createElement('canvas');
+    ALL.forEach((id, i) => {
+      const x = (i % GCOLS) * gw, y = y0 + Math.floor(i / GCOLS) * (SIL + 14);
+      g.fillStyle = '#f2f0ea'; g.fillRect(x + 2, y, gw - 4, SIL + 10);
+      const src = renderMaster(id, anim, DIR_YAW[dir], fr, 192);
+      tmp.width = src.width; tmp.height = src.height;
+      const t = tmp.getContext('2d', { willReadFrequently: true });
+      t.clearRect(0, 0, tmp.width, tmp.height); t.drawImage(src, 0, 0);
+      t.globalCompositeOperation = 'source-in'; t.fillStyle = '#111'; t.fillRect(0, 0, tmp.width, tmp.height); t.globalCompositeOperation = 'source-over';
+      g.drawImage(tmp, x + (gw - SIL) / 2, y + 4, SIL, SIL);
+    });
+  }
+
+  function anims() {
+    const dir = q.get('dir') ?? 'SE';
+    const S = Number(q.get('s') ?? 84);
+    const ids = (q.get('ids') ?? ALL.join(',')).split(',');
+    const cols = ANIMS.map((a) => [a, Math.max(...ids.map((id) => framesOf(id, a)))]);
+    const total = cols.reduce((s, [, n]) => s + n, 0) + cols.length - 1;
+    const c = mk(110 + total * S, ids.length * S);
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.fillStyle = '#56653f'; g.fillRect(0, 0, c.width, c.height);
+    g.font = '600 12px sans-serif'; g.fillStyle = '#fff';
+    ids.forEach((id, r) => {
+      g.fillText(nameOf(id).split(' ')[0], 4, r * S + S / 2);
+      let x = 110;
+      for (const [a, n] of cols) {
+        for (let f = 0; f < framesOf(id, a); f++) drawChampionFrame(g, id, a, dir, f, x + f * S, r * S, S, 192);
+        x += (n + 1) * S;
+      }
+    });
+  }
+
+  function one() {
+    const id = q.get('id') ?? 'brom';
+    const S = Number(q.get('s') ?? 150);
+    const dirs = ['S', 'SE', 'E', 'NE', 'N'];
+    const rows = [];
+    for (const a of ANIMS) for (const d of dirs) if (framesOf(id, a)) rows.push([a, d]);
+    const n = Math.max(...ANIMS.map((a) => framesOf(id, a)));
+    const c = mk(70 + n * S, rows.length * S);
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.fillStyle = '#56653f'; g.fillRect(0, 0, c.width, c.height);
+    g.font = '600 12px sans-serif'; g.fillStyle = '#fff';
+    rows.forEach(([a, d], r) => {
+      g.fillText(`${a} ${d}`, 4, r * S + S / 2);
+      for (let f = 0; f < framesOf(id, a); f++) drawChampionFrame(g, id, a, d, f, 70 + f * S, r * S, S, 256);
+    });
+  }
+
+  function big() {
+    const ids = (q.get('ids') ?? 'vessa,grimald,harrow').split(',');
+    const S = Number(q.get('s') ?? 300);
+    const cols = (q.get('cols') ?? 'idle:S:0,idle:SE:0,idle:E:0,idle:N:0,run:SE:2,attack:SE:2,cast:SE:1,cast:SE:3').split(',').map((r) => r.split(':'));
+    const c = mk(cols.length * S, ids.length * S);
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.fillStyle = '#7a6a48'; g.fillRect(0, 0, c.width, c.height);
+    ids.forEach((id, r) => cols.forEach(([a, d, f], i) => drawChampionFrame(g, id, a, d, Number(f), i * S, r * S, S, 256)));
+  }
+
+  window.bake = async (ids = ['brom', 'corvin', 'gorvam', 'hagen', 'ilvane', 'mira', 'oleth', 'ottilie', 'renn', 'vessa']) => {
+    const t0 = performance.now();
+    const a = await buildChampionAtlasAsync(ids, { master: 192, frame: 128, autoHark: true, worker: () => new Worker(new URL('/src/render/spriteWorker.ts', location.href), { type: 'module' }) });
+    return { ms: Math.round(performance.now() - t0), size: `${a.canvas.width}x${a.canvas.height}`, cell: a.frameSize };
+  };
+  window.save = async (name, quality = 0.9, idx = 0) => {
+    const c = document.querySelectorAll('canvas')[idx];
+    const blob = await new Promise((r) => c.toBlob(r, name.endsWith('.png') ? 'image/png' : 'image/jpeg', quality));
+    return (await fetch('/__save?name=' + encodeURIComponent(name), { method: 'POST', body: blob })).text();
+  };
+  const t0 = performance.now();
+  if (mode === 'sheet') sheet();
+  else if (mode === 'anims') anims();
+  else if (mode === 'anim') one();
+  else if (mode === 'big') big();
+  window.renderMs = Math.round(performance.now() - t0);
+  window.ready = true;
+</script>
+</body>
+</html>

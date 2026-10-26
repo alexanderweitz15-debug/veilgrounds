@@ -36,7 +36,7 @@ export const SPRUNG_EXTRA = data.sprung.extra;
 export const HONIG = data.honig;
 export const SPAEH_TICKS = sec(data.spaeh.s);
 /** Vision points of the Spähfrucht cone: distance along the direction and radius. */
-export const SPAEH_POINTS = data.spaeh.points as readonly [number, number][];
+export const SPAEH_POINTS = data.spaeh.points as unknown as readonly [number, number][];
 export const MANA = data.mana;
 export const WIND = data.wind;
 export const SCHILD = data.schild;

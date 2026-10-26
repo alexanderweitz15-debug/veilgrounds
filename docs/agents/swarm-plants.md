@@ -1,6 +1,6 @@
 # swarm-plants (partial: wrapped up on lead order)
 
-Done (sim): 3 new fruits - Manafrucht (35 % max mana, min 60), Windfrucht (+35 % MS 4 s), Schildfrucht (80 + 10 % max HP shield 5 s), de/en names + effect hint on the world label. Honigfrucht now drops 5 honey pieces (Kind.Plant, variant honigstueck, untargetable) on a ring; first champion walking over one eats it (heal 12 + 1.8 % max HP, 20 % slow 1 s), pieces rot after 30 s. Values in src/data/plants.json. `SnapEntity.grow` + death-event `variant` are in the snapshot for the render. 18 plants on the map (positions scanned for open ground, map.test reachability green).
+Done (sim): 3 new fruits - Manafrucht (35 % max mana, min 60), Windfrucht (+35 % MS 4 s), Schildfrucht (80 + 10 % max HP shield 5 s), de/en names + effect hint on the world label. Honigfrucht now drops 5 honey pieces (Kind.Plant, variant honigstueck, untargetable) on a ring; first champion walking over one eats it (heal 12 + 1.8 % max HP, 20 % slow 1 s), pieces rot after 30 s. Values in src/data/plants.json. `SnapEntity.grow` + death-event `variant` are in the snapshot for the render. 24 plants on the map (6 per quarter) (positions scanned for open ground, map.test reachability green).
 Files: src/sim/systems/plants.ts, src/data/plants.json, types.ts, damage.ts, snapshot.ts, map.json, i18n, overlay.ts, minimap.ts, monsters.ts, tests/jungle.test.ts (see shared-changes.md).
 Tests: tests/jungle.test.ts (plants block: count, honey pieces, mana/wind/shield), map.test (reachability), i18n.test.
 

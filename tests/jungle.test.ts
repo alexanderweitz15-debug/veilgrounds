@@ -272,7 +272,7 @@ describe('jungle plants', () => {
   it('grow at 1:30 as 1-HP neutral units only champions can pop; regrow after 5:00', () => {
     const sim = atSpawn();
     const all = plantState(sim).plants;
-    expect(all.length).toBe(18);
+    expect(all.length).toBe(24);
     for (const p of all) {
       expect(p.spawnAt).toBe(-1);
       expect(sim.c.Unit.kind[p.eid]).toBe(Kind.Plant);

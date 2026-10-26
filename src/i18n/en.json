@@ -793,7 +793,7 @@
   "trainer.dodge.trendScore": "Survived (s)",
   "trainer.dodge.trendReaction": "Reaction (ms)",
   "trainer.dodge.trendHitRate": "Hit rate (%)",
-  "trainer.dodge.trendPanic": "Panic moves"
+  "trainer.dodge.trendPanic": "Panic moves",
   "menu.profile": "Profile",
   "profile.title": "Profile and history",
   "profile.empty": "No games saved yet. Every finished game of at least one minute shows up here with stats and a rank estimate.",

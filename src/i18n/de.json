@@ -793,7 +793,7 @@
   "trainer.dodge.trendScore": "Überlebt (s)",
   "trainer.dodge.trendReaction": "Reaktion (ms)",
   "trainer.dodge.trendHitRate": "Trefferquote (%)",
-  "trainer.dodge.trendPanic": "Panik-Bewegungen"
+  "trainer.dodge.trendPanic": "Panik-Bewegungen",
   "menu.profile": "Profil",
   "profile.title": "Profil und Verlauf",
   "profile.empty": "Noch keine Partien gespeichert. Jede beendete Partie ab einer Minute erscheint hier mit Statistik und Rang-Einschätzung.",

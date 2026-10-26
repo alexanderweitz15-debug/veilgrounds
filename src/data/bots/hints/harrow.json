@@ -1,0 +1,144 @@
+{
+  "id": "harrow",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "carry",
+    "engage": 1,
+    "peel": 1,
+    "poke": 0,
+    "burst": 1
+  },
+  "keyRanges": {
+    "auto": 150,
+    "trade": 300,
+    "engage": 150,
+    "poke": 150,
+    "threat": 300,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "harrow_data1",
+      "kind": "trade",
+      "sequence": [
+        "E",
+        "Q",
+        "W",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "harrow_data2",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "E"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "harrow_data3",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "AA",
+        "Q"
+      ],
+      "source": "data"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "target",
+      "roles": [
+        "burst"
+      ],
+      "range": 250,
+      "useRange": [
+        0,
+        250
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "self",
+      "roles": [
+        "cc",
+        "disengage"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        300
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 4,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "peel"
+    },
+    {
+      "slot": "E",
+      "aim": "self",
+      "roles": [
+        "utility"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        300
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "R",
+      "aim": "circle",
+      "roles": [
+        "summon",
+        "ult"
+      ],
+      "range": 400,
+      "useRange": [
+        0,
+        368
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.3,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": true,
+      "threat": 0,
+      "holdFor": "kill"
+    }
+  ]
+}

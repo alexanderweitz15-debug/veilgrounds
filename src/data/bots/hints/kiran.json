@@ -1,0 +1,158 @@
+{
+  "id": "kiran",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "support",
+    "engage": 3,
+    "peel": 4,
+    "poke": 3,
+    "burst": 3
+  },
+  "keyRanges": {
+    "auto": 575,
+    "trade": 700,
+    "engage": 575,
+    "poke": 1000,
+    "threat": 1000,
+    "peel": 800
+  },
+  "combos": [
+    {
+      "id": "kiran_data1",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "kiran_data2",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "Q",
+        "W"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "kiran_data3",
+      "kind": "trade",
+      "sequence": [
+        "E"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "kiran_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    },
+    {
+      "id": "kiran_peel",
+      "kind": "peel",
+      "sequence": [
+        "R"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "line",
+      "roles": [
+        "poke"
+      ],
+      "range": 1000,
+      "useRange": [
+        0,
+        920
+      ],
+      "speed": 1600,
+      "width": 60,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "circle",
+      "roles": [
+        "zone",
+        "burst"
+      ],
+      "range": 700,
+      "useRange": [
+        0,
+        644
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 250,
+      "castTime": 0.25,
+      "delay": 1,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "target",
+      "roles": [
+        "peel"
+      ],
+      "range": 800,
+      "useRange": [
+        0,
+        800
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "peel"
+    },
+    {
+      "slot": "R",
+      "aim": "circle",
+      "roles": [
+        "cc",
+        "burst",
+        "ult"
+      ],
+      "range": 900,
+      "useRange": [
+        0,
+        828
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 500,
+      "castTime": 0.3,
+      "delay": 0.75,
+      "cc": 3,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

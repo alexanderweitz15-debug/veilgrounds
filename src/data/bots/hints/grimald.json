@@ -1,0 +1,154 @@
+{
+  "id": "grimald",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "frontline",
+    "engage": 5,
+    "peel": 3,
+    "poke": 0,
+    "burst": 1
+  },
+  "keyRanges": {
+    "auto": 175,
+    "trade": 450,
+    "engage": 900,
+    "poke": 175,
+    "threat": 900,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "grimald_data1",
+      "kind": "allin",
+      "sequence": [
+        "E",
+        "R",
+        "Q",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "grimald_data2",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "E"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "grimald_data3",
+      "kind": "trade",
+      "sequence": [
+        "Q",
+        "AA",
+        "W"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "grimald_peel",
+      "kind": "peel",
+      "sequence": [
+        "E"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "target",
+      "roles": [
+        "burst"
+      ],
+      "range": 450,
+      "useRange": [
+        0,
+        450
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "self",
+      "roles": [
+        "buff"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        325
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "circle",
+      "roles": [
+        "cc",
+        "engage"
+      ],
+      "range": 900,
+      "useRange": [
+        0,
+        828
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 250,
+      "castTime": 0.25,
+      "delay": 1,
+      "cc": 3,
+      "damage": false,
+      "dodgeable": true,
+      "threat": 2,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "R",
+      "aim": "dash",
+      "roles": [
+        "escape",
+        "engage",
+        "cc",
+        "ult"
+      ],
+      "range": 650,
+      "useRange": [
+        87.5,
+        825
+      ],
+      "speed": 1200,
+      "width": 0,
+      "radius": 300,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 4,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

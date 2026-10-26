@@ -1,0 +1,153 @@
+{
+  "id": "nyx",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "assassin",
+    "engage": 3,
+    "peel": 1,
+    "poke": 3,
+    "burst": 2
+  },
+  "keyRanges": {
+    "auto": 450,
+    "trade": 600,
+    "engage": 950,
+    "poke": 800,
+    "threat": 800,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "nyx_data1",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "AA",
+        "Q",
+        "E"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "nyx_data2",
+      "kind": "allin",
+      "sequence": [
+        "E",
+        "Q",
+        "R"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "nyx_data3",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "W",
+        "AA",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "nyx_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "line",
+      "roles": [
+        "poke"
+      ],
+      "range": 800,
+      "useRange": [
+        0,
+        736
+      ],
+      "speed": 1500,
+      "width": 50,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "self",
+      "roles": [
+        "buff"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        600
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "dash",
+      "roles": [
+        "escape",
+        "engage"
+      ],
+      "range": 500,
+      "useRange": [
+        225,
+        950
+      ],
+      "speed": 1500,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "R",
+      "aim": "self",
+      "roles": [
+        "ult"
+      ],
+      "range": 1200,
+      "useRange": [
+        0,
+        1200
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 1200,
+      "castTime": 0.3,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "kill"
+    }
+  ]
+}

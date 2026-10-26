@@ -37,6 +37,31 @@ gezeichnet, der Rest bleibt gemalt, `console.warn`), das ist aber nur der Notbeh
 eine Sperre in Lobby und Bot-Auswahl). `tests/assetManifest.test.ts` führt `fenna` in `KNOWN_WITHOUT_ART`; Eintrag
 entfernen, sobald das Kit existiert.
 
+## R13-1 – A13 → A14 (src/ai/utility/intents.ts `uPoke`): Poke im Modus 'poke' werfen · offen
+
+`castSlot(v, ctx, rng, t, slot, mode)` hat einen sechsten Parameter `mode: 'poke' | 'fight'` (Standard `'fight'`, A13). Im
+Beta-Gehirn hält der Modus `'poke'` einen Wurf zurück, dessen Trefferzuversicht unter `micro.json` `aim.minConfidence.poke`
+liegt, und verschwendet keine Fähigkeit mit `holdFor ≠ none` (Engage, Ult, Peel-CC aus `src/data/bots/hints`). `uPoke`
+ruft heute `castSlot(n.v, n.ctx, n.rng, t, d.slot)`; bitte `, 'poke'` ergänzen (eine Stelle). Außerdem kann `pokeValue` die
+Slots aus `hintsOf(ctx.champ).abilities[i].roles.includes('poke')` wählen statt aus eigenen Regeln.
+
+## R13-2 – A13 → A29 (Tests `tests/bots.test.ts`, `tests/botPerception.test.ts`): Fog-Guard-Globs um `src/ai/combat` erweitern · offen
+
+Die statischen Guards (kein Import von `sim/sim|ecs|vision`, `bitecs`, keine Uhren) decken `src/ai/combat/*.ts` nicht ab. Bis
+die Globs erweitert sind, prüft `tests/a13Hints.test.ts` ("combat micro modules never import sim state or clocks") das
+Verzeichnis selbst. Die Dodge-Logs (`node: 'dodge'`) enthalten nur Skalare, keine Positionen (Test in `tests/a13Game.test.ts`),
+`checkFogConvention` braucht den Knoten deshalb nicht.
+
+## R13-3 – A13 → A27 / A18: Hints kuratieren, Profilfelder · offen
+
+`src/data/bots/hints/<id>.json` sind generiert (`status: "generated"`). A27 kuratiert, indem er die Datei ändert und
+`"status": "curated"` setzt (`tools/botHints/generate.ts` überschreibt sie dann nicht; `--check` meldet veraltete generierte
+Einträge, `tests/a13Hints.test.ts` den Rest). Profile: keine neuen Felder nötig. Der Rang wirkt über `reactionMedianMs`,
+`reactionSigmaMs`, `predictiveDodgePct`, `aimErrorDeg`, `situationalAbilityPct`, `apmCap`, `cooldownTracking`; `dodgeRateLine900Pct`
+und `skillshotHitPct` werden vom Mikro nicht mehr als Würfel benutzt (Ausweich- und Trefferquote ergeben sich aus Reaktionszeit,
+Geometrie und Zielrauschen). Falls A18 diese beiden Felder als Zielwerte behalten will: sie sind die Kalibrierziele, gegen die
+`tools/botHints/arenaBench.ts` / `combatBench.ts` messen.
+
 ## R-A3a – A3 → A1 (Atlas-Loader/Cache, `src/render/atlasStrip.ts`): Frame-Layout in den Streifen-Schlüssel · offen
 
 `stripKey(id, master, frame, mirror)` enthält die Frame-Zahlen einer Id nicht. Heute reicht das, weil die Cache-Version der

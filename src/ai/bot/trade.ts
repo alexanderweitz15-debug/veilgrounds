@@ -23,6 +23,8 @@ import { VALUES, rankCurve } from '../utility/values';
 import type { TradeState } from '../bt/state';
 import type { ExchangeResult } from '../contract';
 import { utilityOn } from '../utility/flag';
+import { microOn } from '../combat/flag';
+import { chooseHintCombo } from '../combat/combo';
 
 const SILVER = rankIdx('silver');
 const GOLD = rankIdx('gold');
@@ -49,7 +51,8 @@ export function comboReach(n: NodeCtx, combo: string[]): number {
 }
 
 /** Combo choice: standard = the champion's first combo; situational (profile situationalAbilityPct) by situation. */
-export function chooseCombo(n: NodeCtx, kind: 'trade' | 'allin', rng: Rng): string[] {
+export function chooseCombo(n: NodeCtx, kind: 'trade' | 'allin', rng: Rng, target?: SnapEntity): string[] {
+  if (target && microOn(n.ctx, 'combo')) return chooseHintCombo(n.v, n.ctx, rng, kind, target); // A13: hints, readiness, reach
   const combos = n.ctx.champ.combos.map((c) => c.sequence);
   if (!combos.length) return ['AA'];
   if (!rng.chance(n.ctx.profile.behavior.situationalAbilityPct / 100)) return combos[0]!;
@@ -178,7 +181,7 @@ export function tradeStart(n: NodeCtx): NodeResult {
 
 /** Start a trade / all-in on `target` (gated tradeStart above, or the utility model's trade intent) and run it. */
 export function startTrade(n: NodeCtx, target: SnapEntity, kind: 'trade' | 'allin', trigger: string, ex: ExchangeResult, exK: ExchangeResult, score: number): NodeResult {
-  const combo = chooseCombo(n, kind, n.rng);
+  const combo = chooseCombo(n, kind, n.rng, target);
   n.mem.ext.trade = { serial: target.serial, id: target.id, kind, start: n.v.tick, trigger, combo, step: 0, stepAt: n.v.tick, comboDone: false, flash: false, ignite: false, win: ex.winProb, kill: exK.killProb, death: exK.deathProb };
   n.mem.mode = 'fight';
   n.mem.fightTarget = target.serial;
@@ -421,7 +424,8 @@ function summoners(n: NodeCtx, tr: TradeState, t: SnapEntity, ex: ExchangeResult
  * decision casts nothing (late / fumbled combo step, ability held too long) and only keeps auto-attacking. With the
  * same champions the higher rank lands its damage sooner, which decides even fights.
  */
-export const executes = (n: NodeCtx): boolean => n.rng.chance(0.55 + 0.45 * Math.min(1, Math.max(0, n.ctx.params.skill / 100)));
+export const executeChance = (skill: number): number => 0.55 + 0.45 * Math.min(1, Math.max(0, skill / 100));
+export const executes = (n: NodeCtx): boolean => n.rng.chance(executeChance(n.ctx.params.skill));
 
 function execute(n: NodeCtx, tr: TradeState, t: SnapEntity, ex: ExchangeResult): void {
   const interval = decisionInterval(n);

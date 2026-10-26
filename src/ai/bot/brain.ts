@@ -25,6 +25,7 @@ import { cancelOrbwalk, attackTicks } from './kite';
 import { chooseWave, laneOf, sealWard, sweep, visionShop, wardDue } from './macro';
 import { laningSafety, rankIdx } from '../bt/deps';
 import { utilityOn } from '../utility/flag';
+import { microOn } from '../combat/flag';
 import { attentionOn, isDistracted, reactionPenaltyMs } from '../humanize/attention';
 import { rollErrorUntil } from '../errors';
 import { recallMinionClear } from '../utility/world';
@@ -267,6 +268,7 @@ export function retreat(n: NodeCtx): NodeResult {
  * in < 0.4 s, otherwise the dodge waits for the hit point.
  */
 export function dodge(n: NodeCtx): NodeResult {
+  if (microOn(n.ctx, 'dodge')) return 'failure'; // A13: the beta brain dodges every tick in the reflex layer (src/ai/combat/dodge.ts)
   const { v, ctx, mem, rng } = n;
   const live = new Set<number>();
   let res: BotAction | null = null;

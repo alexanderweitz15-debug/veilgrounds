@@ -1,0 +1,162 @@
+{
+  "id": "tobin",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "carry",
+    "engage": 2,
+    "peel": 3,
+    "poke": 3,
+    "burst": 2
+  },
+  "keyRanges": {
+    "auto": 550,
+    "trade": 1100,
+    "engage": 850,
+    "poke": 1100,
+    "threat": 1100,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "tobin_data1",
+      "kind": "trade",
+      "sequence": [
+        "Q",
+        "E",
+        "AA",
+        "W",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "tobin_data2",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "tobin_data3",
+      "kind": "trade",
+      "sequence": [
+        "E",
+        "W",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "tobin_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    },
+    {
+      "id": "tobin_peel",
+      "kind": "peel",
+      "sequence": [
+        "R"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "line",
+      "roles": [
+        "poke"
+      ],
+      "range": 1100,
+      "useRange": [
+        0,
+        1012
+      ],
+      "speed": 1800,
+      "width": 60,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "dash",
+      "roles": [
+        "escape",
+        "engage"
+      ],
+      "range": 300,
+      "useRange": [
+        275,
+        850
+      ],
+      "speed": 1300,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 1,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "E",
+      "aim": "circle",
+      "roles": [
+        "zone"
+      ],
+      "range": 700,
+      "useRange": [
+        0,
+        644
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 350,
+      "castTime": 0.25,
+      "delay": 0.75,
+      "cc": 1,
+      "damage": false,
+      "dodgeable": true,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "R",
+      "aim": "line",
+      "roles": [
+        "cc",
+        "burst",
+        "ult"
+      ],
+      "range": 1300,
+      "useRange": [
+        0,
+        1196
+      ],
+      "speed": 1200,
+      "width": 400,
+      "radius": 0,
+      "castTime": 0.3,
+      "delay": 0,
+      "cc": 3,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

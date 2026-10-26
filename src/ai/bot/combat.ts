@@ -10,6 +10,9 @@ import { towerCovering, near, type View } from './perception';
 import { dst, unit } from './geo';
 import { utilityOn } from '../utility/flag';
 import { sevUltAllowed } from '../utility/sev';
+import { microOn } from '../combat/flag';
+import { hintsOf } from '../../data/bots/hints';
+import { aimCircle, aimLine, type AimMode } from '../combat/cast';
 
 const rv = (v: number | number[] | undefined, rank: number): number =>
   v === undefined ? 0 : typeof v === 'number' ? v : v[Math.max(0, Math.min(v.length - 1, rank - 1))] ?? 0;
@@ -80,19 +83,29 @@ export function offensiveCast(v: View, ctx: BotStatic, rng: Rng, t: SnapEntity):
   return null;
 }
 
-/** Cast `slot` at `t` if it is ready, offensive and `t` is in its reach (combo execution, Agent M); null otherwise. */
-export function castSlot(v: View, ctx: BotStatic, rng: Rng, t: SnapEntity, slot: 0 | 1 | 2 | 3): BotAction | null {
+/**
+ * Cast `slot` at `t` if it is ready, offensive and `t` is in its reach (combo execution, Agent M); null otherwise.
+ * `mode` only matters for the beta brain's micro layer (src/ai/combat/cast.ts): 'poke' holds a spell that is unlikely
+ * to land, 'fight' (default) throws unless the shot is hopeless.
+ */
+export function castSlot(v: View, ctx: BotStatic, rng: Rng, t: SnapEntity, slot: 0 | 1 | 2 | 3, mode: AimMode = 'fight'): BotAction | null {
   const d = dst(v.self, t);
   if (!ready(v, ctx, slot)) return null;
   // Sev's Tsukuyomi roots Sev while it suppresses: only with an ally near or on a low target (utility flag)
   if (slot === 3 && utilityOn(ctx) && !sevUltAllowed(v, ctx, t)) return null;
   const ab = ctx.champ.abilities[slot];
   if (!offensive(ab) && !(ab.type === 'self' && !supportive(ab))) return null;
+  // A13: free harassment never spends the engage, the ultimate or the peel CC (hints: holdFor)
+  if (mode === 'poke' && microOn(ctx, 'aim') && hintsOf(ctx.champ).abilities[slot]!.holdFor !== 'none') return null;
   const range = rangeOf(v, ab, slot);
   const reachT = range + t.radius + v.self.radius;
   const cast = (x: number, y: number, target?: number): BotAction => ({ cmd: { t: 'cast', slot, x, y, ...(target !== undefined ? { target } : {}) } });
   switch (ab.type) {
     case 'skillshot_line': {
+      if (microOn(ctx, 'aim')) {
+        const m = aimLine(v, ctx, rng, t, ab, range, mode);
+        return m ? cast(m.x, m.y) : null;
+      }
       if (d > Math.min(range, 1500) + t.radius) break;
       const p = predict(t, leads(ctx, rng) ? ab.castTime + d / (ab.speed ?? 1500) : 0);
       if (ab.flags?.includes('blocked_by_minions') && blocked(v, p, ab.width ?? 60)) break;
@@ -102,6 +115,10 @@ export function castSlot(v: View, ctx: BotStatic, rng: Rng, t: SnapEntity, slot:
     case 'skillshot_circle':
     case 'zone':
     case 'summon': {
+      if (microOn(ctx, 'aim') && ab.type !== 'summon') {
+        const m = aimCircle(v, ctx, rng, t, ab, range, mode);
+        return m ? cast(m.x, m.y) : null;
+      }
       if (d > Math.min(range, 1500) + (ab.radius ?? 0) * 0.5) break;
       const p = aimed(v, ctx, rng, predict(t, leads(ctx, rng) ? ab.castTime + (ab.delay ?? 0) : 0), range);
       return cast(p.x, p.y);

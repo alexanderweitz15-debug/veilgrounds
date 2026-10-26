@@ -560,3 +560,10 @@ src/ui/overlay.ts (VoiceBubbles field, onEvent call, draw call), src/ui/classicL
 - src/i18n/de.json, en.json: `score.botInfo`, `score.botInfoToggleTip`, `score.botInfoAxis`, `score.rankTip`, and 50 keys
   `tend.<axis>.<-2..2>` (tendency sentences per playstyle axis).
 - src/ui/icons.ts: new exported `rankIcon(rank)` appended at the end (additive).
+
+## keybinds
+
+- src/settings.ts: `castModes` type widened to all CastKey; new `selfCastMod`, `levelUpMod` (+ DEFAULTS).
+- src/game/settingsIO.ts: ENUMS for the two modifiers, castModes validation uses CAST_KEYS / CAST_MODES.
+- src/i18n de/en: set.bind*, set.mod.*, set.selfCastMod, set.levelUpMod, set.presetLol*, set.castModeCol, set.modConflict.
+- src/ui/menu.css, style.css: `.binds` grid 4 columns.

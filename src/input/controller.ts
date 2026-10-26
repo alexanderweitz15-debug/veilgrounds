@@ -5,8 +5,8 @@ import type { ClientState } from '../game/state';
 import type { SimLink } from '../game/link';
 import type { World } from '../render/world';
 import { settings, updateSettings } from '../settings';
-import { actionFor, type Action } from './keybinds';
-import { castModeFor } from './castMode';
+import { actionFor, resolveKey, type Action, type KeyResolution } from './keybinds';
+import { ABILITY_KEYS, castModeFor, castTargetFor, isAbilityKey, isCastKey, type AbilityKey, type CastKey } from './castMode';
 import { PingWheel } from '../ui/pingWheel';
 import type { PingSender } from '../game/pingSender';
 import { missingAt, objectiveAt, type PingCtx, type PingReq } from '../game/contextPing';
@@ -67,7 +67,7 @@ export class InputController {
   private wasDead = false;
   showRange = false;
   /** Ability key held with "cast with indicator": aim preview until the key is released. */
-  aiming: { slot: 0 | 1 | 2 | 3; code: string; /** Normal cast: stays until a left click casts (right click cancels). */ click?: boolean } | null = null;
+  aiming: { slot: 0 | 1 | 2 | 3 | null; key: CastKey; code: string; /** Normal cast: stays until a left click casts (right click cancels). */ click?: boolean } | null = null;
   /** performance.now() until which the camera lock is suspended (minimap peek). */
   cameraPeekUntil = 0;
   private centerHeld = false;
@@ -156,9 +156,9 @@ export class InputController {
     const now = performance.now();
     // normal cast (C7): the shown indicator casts on left click, right click cancels it
     if (this.aiming?.click && (e.button === 0 || e.button === 2)) {
-      const slot = this.aiming.slot;
+      const key = this.aiming.key;
       this.aiming = null;
-      if (e.button === 0) this.cast('cast', slot, false);
+      if (e.button === 0) this.fire(key, false);
       return;
     }
     if (e.button === 2) {
@@ -244,8 +244,9 @@ export class InputController {
       if (!e.repeat) this.host.togglePause();
       return;
     }
-    const action = actionFor(e.code);
-    if (!action) return;
+    const hit = resolveKey(e, settings); // primary or alternate key + level-up / self-cast modifier
+    if (!hit) return;
+    const action = hit.action;
     e.preventDefault();
     if (action === 'targetChampionsOnly') {
       this.champsOnly = true; // held modifier, also while paused (keyUp / blur release it)
@@ -257,33 +258,27 @@ export class InputController {
     }
     if (e.repeat && action !== 'centerCamera') return;
     if (this.host.state.paused && action !== 'scoreboard') return;
-    this.act(action, e);
+    this.act(action, e, hit);
   }
 
-  private act(action: Action, e: KeyboardEvent): void {
-    // Ctrl (LoL default) or Shift: Ctrl+W/Q are browser shortcuts outside fullscreen, Shift always works
-    const levelMod = e.ctrlKey || e.shiftKey;
-    const abilitySlot = ({ q: 0, w: 1, e: 2, r: 3 } as Partial<Record<Action, 0 | 1 | 2 | 3>>)[action];
-    if (abilitySlot !== undefined) {
-      if (levelMod) this.send({ t: 'levelUp', slot: abilitySlot });
-      // LoL "quick cast with indicator": hold to aim (fx shows range + shape), release casts (keyUp)
-      else if (e.altKey) this.cast('cast', abilitySlot, true);
+  private act(action: Action, e: KeyboardEvent, hit: KeyResolution): void {
+    // Level-up modifier (settings.levelUpMod, LoL Ctrl) on Q/W/E/R levels the ability instead of casting it
+    if (hit.levelUp) {
+      this.send({ t: 'levelUp', slot: ABILITY_KEYS.indexOf(action as AbilityKey) as 0 | 1 | 2 | 3 });
+      return;
+    }
+    // abilities, summoner spells (the unlocked Teleport slot is ignored by the sim until it exists), items, ward:
+    // self-cast modifier casts on yourself, else the per-key cast mode decides (src/input/castMode.ts)
+    if (isCastKey(action)) {
+      if (hit.selfCast) this.fire(action, true);
       else {
-        // per-key cast mode (src/input/castMode.ts): quick, hold-and-release indicator, or indicator + left click
-        const mode = castModeFor(settings, abilitySlot);
-        if (mode === 'quick') this.cast('cast', abilitySlot, false);
-        else this.aiming = { slot: abilitySlot, code: e.code, click: mode === 'normal' };
+        const mode = castModeFor(settings, action);
+        if (mode === 'quick') this.fire(action, false);
+        else this.aiming = { slot: isAbilityKey(action) ? (ABILITY_KEYS.indexOf(action) as 0 | 1 | 2 | 3) : null, key: action, code: e.code, click: mode === 'normal' };
       }
       return;
     }
     switch (action) {
-      case 'd':
-        return this.cast('spell', 0, e.altKey);
-      case 'f':
-        return this.cast('spell', 1, e.altKey);
-      case 'tp':
-        // unlocked Teleport (B4): the sim ignores the command while the slot does not exist
-        return this.cast('spell', 2, e.altKey);
       case 'stop':
         this.send({ t: 'stop' });
         return;
@@ -308,25 +303,6 @@ export class InputController {
       case 'showRange':
         this.showRange = true;
         return;
-      case 'item1':
-      case 'item2':
-      case 'item3':
-      case 'item4':
-      case 'item5':
-      case 'item6': {
-        const slot = Number(action.slice(4)) - 1;
-        const g = this.cursorGround();
-        this.send(g ? { t: 'item', slot, x: g.x, y: g.y } : { t: 'item', slot });
-        this.host.useItem(slot);
-        return;
-      }
-      case 'trinket': {
-        // Schleierward: place at the cursor; Suchfeuer: sweep there (src/sim/wards.ts clamps to range)
-        const g = this.cursorGround();
-        if (g) this.send({ t: 'ward', x: g.x, y: g.y });
-        this.host.useItem(6);
-        return;
-      }
       case 'scoreboard':
         this.host.togglePanel('scoreboard', true);
         return;
@@ -389,7 +365,23 @@ export class InputController {
     this.intentFace(g.x, g.y, now);
   }
 
-  /** Quick cast at the cursor; enemy under cursor becomes the target; Alt = self-cast. */
+  /** Cast / use a bound key at the cursor (or on yourself): ability, summoner spell, item or the ward trinket. */
+  private fire(key: CastKey, self: boolean): void {
+    const tg = castTargetFor(key);
+    if (tg.t === 'cast' || tg.t === 'spell') return this.cast(tg.t, tg.slot, self);
+    const me = this.host.state.me();
+    const g = self && me ? { x: me.x, y: me.y } : this.cursorGround();
+    if (tg.t === 'item') {
+      this.send(g ? { t: 'item', slot: tg.slot, x: g.x, y: g.y } : { t: 'item', slot: tg.slot });
+      this.host.useItem(tg.slot);
+      return;
+    }
+    // Schleierward: place at the cursor; Suchfeuer: sweep there (src/sim/wards.ts clamps to range)
+    if (g) this.send({ t: 'ward', x: g.x, y: g.y });
+    this.host.useItem(6);
+  }
+
+  /** Quick cast at the cursor; enemy under cursor becomes the target; self = cast on the own champion. */
   private cast(t: 'cast' | 'spell', slot: number, self: boolean): void {
     const st = this.host.state;
     const me = st.me();
@@ -434,9 +426,9 @@ export class InputController {
 
   private keyUp(e: KeyboardEvent): void {
     if (this.aiming && !this.aiming.click && e.code === this.aiming.code) {
-      const slot = this.aiming.slot;
+      const key = this.aiming.key;
       this.aiming = null;
-      if (!this.host.menuOpen()) this.cast('cast', slot, false);
+      if (!this.host.menuOpen()) this.fire(key, false);
       return;
     }
     const action = actionFor(e.code);
@@ -481,7 +473,7 @@ export class InputController {
     // attack-move armed: highlight the unit the click would attack (same outline as hover)
     this.amTarget = this.armed === 'attackMove' ? this.predictAttackMove(this.cursorGround()) : null;
     // attack cursor over whatever a click would attack (hovered hostile unit / predicted attack-move target)
-    const cursor = this.armed === 'attackMove' ? (this.amTarget ? ATTACK_CURSOR : 'crosshair') : this.armed ? 'crosshair' : this.hoveredEnemy() ? ATTACK_CURSOR : '';
+    const cursor = this.aiming?.slot === null ? 'crosshair' : this.armed === 'attackMove' ? (this.amTarget ? ATTACK_CURSOR : 'crosshair') : this.armed ? 'crosshair' : this.hoveredEnemy() ? ATTACK_CURSOR : '';
     if (cursor !== this.cursor) this.el.style.cursor = this.cursor = cursor;
 
     if (this.rightHeld && !state.paused && now - this.lastHoldMove > HOLD_MOVE_MS) this.rightClick(now, false);

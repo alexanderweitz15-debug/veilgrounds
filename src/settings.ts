@@ -1,5 +1,7 @@
 // Client settings, persisted in IndexedDB. Loaded once at startup (await loadSettings()) then read synchronously.
 import { kvGet, kvSet } from './store/kv';
+import type { CastKey, CastMode } from './input/castMode';
+import type { LevelUpMod, SelfCastMod } from './input/keybinds';
 
 export type ColorMode = 'normal' | 'deuteranopia' | 'protanopia' | 'tritanopia';
 export type GraphicsPreset = 'veryLow' | 'low' | 'medium' | 'high' | 'veryHigh';
@@ -68,7 +70,11 @@ export interface Settings {
   /** Minimap at the bottom left instead of the bottom right (C7). */
   minimapLeft: boolean;
   /** Cast mode per ability key (C7, src/input/castMode.ts); missing keys follow castIndicator. */
-  castModes: Partial<Record<'q' | 'w' | 'e' | 'r', 'quick' | 'indicator' | 'normal'>>;
+  castModes: Partial<Record<CastKey, CastMode>>;
+  /** Hold with an ability / summoner / item key to cast on yourself (keybinds editor; LoL: Alt). */
+  selfCastMod: SelfCastMod;
+  /** Hold with Q/W/E/R to level the ability up (LoL: Ctrl; default Ctrl or Shift, Ctrl+W/Q close tabs outside fullscreen). */
+  levelUpMod: LevelUpMod;
   /** Champion HP bar ticks (C7, src/ui/overlay.ts): every 100 + 1000 HP (LoL), only 1000, or none. */
   hpBarStyle: 'segmented' | 'thousands' | 'plain';
   /** LoL "Player Attack Move Click": attack-move picks the enemy nearest to the cursor first (B5 command flag). */
@@ -115,6 +121,8 @@ const DEFAULTS: Settings = {
   minimapScale: 100,
   minimapLeft: false,
   castModes: {},
+  selfCastMod: 'alt',
+  levelUpMod: 'ctrlOrShift',
   hpBarStyle: 'segmented',
   enemySkillshotOutline: false,
   attackMoveNearCursor: true,

@@ -3,14 +3,16 @@
 import { t } from '../i18n';
 import { DEFAULT_SETTINGS, GRAPHICS_QUALITIES, settings, updateSettings, type Settings } from '../settings';
 import { currentFields, matchPreset, presetFields } from '../render/gfxPreset';
-import { ACTIONS, applyBinds, binds, keyLabel, resetBinds, setBind, type Action } from '../input/keybinds';
+import { ACTIONS, BIND_IDS, BIND_SLOTS, LEVEL_UP_MODS, SELF_CAST_MODS, applyBinds, applyDefaults, applyLolPreset, bindAt, clearBind, exportBindMap, findConflicts, keyLabel, modifierConflict, setBind, type Action, type BindSlot, type LevelUpMod, type SelfCastMod } from '../input/keybinds';
 import { exportSettings, parseSettingsFile } from '../game/settingsIO';
-import { CAST_KEYS, CAST_MODES, type CastMode } from '../input/castMode';
+import { CAST_MODES, isAbilityKey, isCastKey, type CastMode } from '../input/castMode';
 
 export function buildSettingsPanel(onLang: () => void): HTMLElement {
   const root = document.createElement('div');
   root.className = 'settings';
-  let capturing: { action: Action; btn: HTMLButtonElement } | null = null;
+  let capturing: { action: Action; slot: BindSlot } | null = null;
+  /** Warning under the key grid: key moved from another action, refused key, ... */
+  let bindMsg = '';
 
   const onKey = (e: KeyboardEvent): void => {
     if (!capturing) return;
@@ -21,7 +23,13 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     }
     e.preventDefault();
     e.stopPropagation();
-    if (e.code !== 'Escape') setBind(capturing.action, e.code);
+    bindMsg = '';
+    if (e.code === 'Backspace' || e.code === 'Delete') clearBind(capturing.action, capturing.slot);
+    else if (e.code !== 'Escape') {
+      const r = setBind(capturing.action, e.code, capturing.slot);
+      if (!r.ok) bindMsg = t(r.reason === 'modifier' ? 'set.bindModifierKey' : 'set.bindReserved', { key: keyLabel(e.code) });
+      else if (r.displaced.length) bindMsg = r.displaced.map((d) => t('set.bindConflict', { key: keyLabel(e.code), action: t(`act.${d.action}`) })).join(' ');
+    }
     capturing = null;
     render();
   };
@@ -108,16 +116,6 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.attackMoveOnCursor'), check('attackMoveOnCursor'));
     row(t('set.attackMoveTargetCursor'), check('attackMoveNearCursor'));
     row(t('set.castIndicator'), check('castIndicator'));
-    // cast mode per ability key (LoL: quick / quick with indicator / normal)
-    for (const k of CAST_KEYS) {
-      const cur = settings.castModes?.[k] ?? 'default';
-      row(t('set.castMode', { key: keyLabel(binds[k]) }), select<CastMode | 'default'>(cur, [['default', t('set.castMode.default')], ...CAST_MODES.map((m): [CastMode, string] => [m, t(`set.castMode.${m}`)])], (v) => {
-        const next = { ...settings.castModes };
-        if (v === 'default') delete next[k];
-        else next[k] = v;
-        updateSettings({ castModes: next });
-      }));
-    }
     row(t('set.edgeScroll'), check('edgeScroll'));
     row(t('set.cameraLocked'), check('cameraLocked'));
     row(t('set.fullscreenLock'), check('fullscreenLock'));
@@ -187,29 +185,91 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     const h = document.createElement('h3');
     h.textContent = t('set.keybinds');
     root.appendChild(h);
+    const hint = document.createElement('p');
+    hint.className = 'settings-note';
+    hint.textContent = t('set.bindHint');
+    root.appendChild(hint);
+    // modifiers: self-cast (LoL Alt) and level-up (LoL Ctrl)
+    const modName = (m: string): string => t(`set.mod.${m}`);
+    row(t('set.selfCastMod'), select<SelfCastMod>(settings.selfCastMod, SELF_CAST_MODS.map((m): [SelfCastMod, string] => [m, modName(m)]), (v) => {
+      updateSettings({ selfCastMod: v });
+      render();
+    }));
+    row(t('set.levelUpMod'), select<LevelUpMod>(settings.levelUpMod, LEVEL_UP_MODS.map((m): [LevelUpMod, string] => [m, modName(m)]), (v) => {
+      updateSettings({ levelUpMod: v });
+      render();
+    }));
     const grid = document.createElement('div');
     grid.className = 'binds';
+    for (const txt of ['', t('set.bindPrimary'), t('set.bindAlt'), t('set.castModeCol')]) {
+      const hd = document.createElement('span');
+      hd.className = 'binds-head';
+      hd.textContent = txt;
+      grid.appendChild(hd);
+    }
+    const dup = new Set(findConflicts().map((c) => c.code));
     for (const a of ACTIONS) {
       const l = document.createElement('span');
       l.textContent = t(`act.${a}`);
-      const b = document.createElement('button');
-      b.className = 'btn small key';
-      b.textContent = capturing?.action === a ? t('set.pressKey') : keyLabel(binds[a]);
-      b.addEventListener('click', () => {
-        capturing = { action: a, btn: b };
-        b.textContent = t('set.pressKey');
-      });
-      grid.append(l, b);
+      grid.appendChild(l);
+      for (const slot of BIND_SLOTS) {
+        const b = document.createElement('button');
+        b.className = 'btn small key';
+        const code = bindAt(a, slot);
+        if (dup.has(code)) b.classList.add('conflict');
+        b.textContent = capturing?.action === a && capturing.slot === slot ? t('set.pressKey') : keyLabel(code);
+        b.addEventListener('click', () => {
+          capturing = { action: a, slot };
+          bindMsg = '';
+          render();
+        });
+        grid.appendChild(b);
+      }
+      // cast mode per key (LoL: quick / quick with indicator / normal)
+      const cell = document.createElement('span');
+      if (isCastKey(a)) {
+        const cur = settings.castModes?.[a] ?? 'default';
+        const defLabel = isAbilityKey(a) ? t('set.castMode.default') : t('set.castMode.quick');
+        cell.appendChild(select<CastMode | 'default'>(cur, [['default', defLabel], ...CAST_MODES.map((m): [CastMode, string] => [m, t(`set.castMode.${m}`)])], (v) => {
+          const next = { ...settings.castModes };
+          if (v === 'default') delete next[a];
+          else next[a] = v;
+          updateSettings({ castModes: next });
+        }));
+      }
+      grid.appendChild(cell);
     }
     root.appendChild(grid);
+    const warns: string[] = [];
+    if (bindMsg) warns.push(bindMsg);
+    for (const c of findConflicts()) warns.push(t('set.bindDuplicate', { key: keyLabel(c.code), actions: c.owners.map((o) => t(`act.${o.action}`)).join(', ') }));
+    if (modifierConflict(settings)) warns.push(t('set.modConflict'));
+    if (warns.length) {
+      const w = document.createElement('p');
+      w.className = 'settings-note bind-warning';
+      w.textContent = warns.join(' ');
+      root.appendChild(w);
+    }
+    const btns = document.createElement('div');
+    btns.className = 'settings-io';
+    const lol = document.createElement('button');
+    lol.className = 'btn small';
+    lol.textContent = t('set.presetLol');
+    lol.addEventListener('click', () => {
+      updateSettings(applyLolPreset());
+      bindMsg = t('set.presetLolDone');
+      render();
+    });
     const reset = document.createElement('button');
     reset.className = 'btn small';
     reset.textContent = t('set.reset');
     reset.addEventListener('click', () => {
-      resetBinds();
+      updateSettings(applyDefaults());
+      bindMsg = '';
       render();
     });
-    root.appendChild(reset);
+    btns.append(lol, reset);
+    root.appendChild(btns);
     // export / import (C7): settings + keybinds as one JSON file
     section(t('set.ioTitle'));
     const io = document.createElement('div');
@@ -218,7 +278,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     exp.className = 'btn small';
     exp.textContent = t('set.export');
     exp.addEventListener('click', () => {
-      const url = URL.createObjectURL(new Blob([exportSettings(settings, binds)], { type: 'application/json' }));
+      const url = URL.createObjectURL(new Blob([exportSettings(settings, exportBindMap())], { type: 'application/json' }));
       const a = document.createElement('a');
       a.href = url;
       a.download = 'veilgrounds-settings.json';
@@ -240,7 +300,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
       if (!f) return;
       void f.text().then((text) => {
         try {
-          const r = parseSettingsFile(text, DEFAULT_SETTINGS, ACTIONS);
+          const r = parseSettingsFile(text, DEFAULT_SETTINGS, BIND_IDS as readonly string[] as readonly Action[]);
           updateSettings(r.settings);
           applyBinds(r.keybinds);
           render();

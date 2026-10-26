@@ -184,7 +184,8 @@ type KeyFn = (L: Landmarks) => Key[];
 const sh = (L: Landmarks): number => L.shoulderY - 3;
 const reach = (L: Landmarks): number => L.upper + L.fore;
 
-const ATTACKS: Record<AttackStyle, KeyFn> = {
+// ponytail: the 2D atlas has more styles than this rig; missing ones fall back below
+const ATTACKS: Partial<Record<AttackStyle, KeyFn>> = {
   // left hand pushes the bow out at shoulder height, right hand draws to the cheek, releases, settles
   bow: (L) => [
     { at: 0 },
@@ -365,7 +366,7 @@ const ATTACKS: Record<AttackStyle, KeyFn> = {
   ],
 };
 
-const CASTS: Record<CastStyle, KeyFn> = {
+const CASTS: Partial<Record<CastStyle, KeyFn>> = {
   // prop / hand up high
   raise: (L) => [
     { at: 0 },
@@ -407,7 +408,7 @@ const CASTS: Record<CastStyle, KeyFn> = {
     },
     { at: 1 },
   ],
-  ring: (L) => ATTACKS.ring(L),
+  ring: (L) => ATTACKS.ring!(L),
   // full spin on the spot, arms out
   spin: (L) => [
     { at: 0 },
@@ -453,9 +454,9 @@ const KNEEL: KeyFn = (L) => {
 export function actionKeys(anim: Anim3D, p: AnimProfile): Key[] | null {
   switch (anim) {
     case 'attack':
-      return ATTACKS[p.attack](p.L);
+      return (ATTACKS[p.attack] ?? ATTACKS.thrust!)(p.L);
     case 'cast':
-      return CASTS[p.cast](p.L);
+      return (CASTS[p.cast] ?? CASTS.forward!)(p.L);
     case 'death':
       return DEATH(p.L);
     case 'recall':

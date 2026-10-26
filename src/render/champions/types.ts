@@ -53,8 +53,49 @@ export type Hold =
   | 'jug'
   /** one hand held out in front at chest height, palm up (Sev's ember eye); the other tucked into the coat */
   | 'palm';
-export type AttackStyle = 'bow' | 'pistols' | 'rifle' | 'chop' | 'slash' | 'thrust' | 'swipe' | 'bash' | 'throw' | 'staff' | 'ring';
-export type CastStyle = 'raise' | 'forward' | 'slam' | 'ring' | 'spin';
+/**
+ * Per-weapon attack animation (anim.ts attackKeys). Agent F split the shared ones so no two champions attack alike:
+ * hammer (two-hand overhead smash), sling (underhand whirl), chain (hook whirled overhead, cast forward), flick
+ * (spindle snap, body still), ladle (scoop from the shoulder jug, fling low), palm (open hand pushed out), cane
+ * (two-hand staff poke), lantern (pole swung in an arc), snap (short quick bow draw with a hop), longbow (deep draw,
+ * lean back), harpoon (hip-fired, heavy recoil), spear (overhead stab down), lance (two-hand lunge), heave (two-hand
+ * horizontal swing), pounce (crouched double-claw rake).
+ */
+export type AttackStyle =
+  | 'bow'
+  | 'pistols'
+  | 'rifle'
+  | 'chop'
+  | 'slash'
+  | 'thrust'
+  | 'swipe'
+  | 'bash'
+  | 'throw'
+  | 'staff'
+  | 'ring'
+  | 'hammer'
+  | 'sling'
+  | 'chain'
+  | 'flick'
+  | 'ladle'
+  | 'palm'
+  | 'cane'
+  | 'lantern'
+  | 'snap'
+  | 'longbow'
+  | 'harpoon'
+  | 'spear'
+  | 'lance'
+  | 'heave'
+  | 'pounce';
+/**
+ * Cast body motion (anim.ts castKeys). raise = both hands up, forward = two-hand push, slam = fists to the ground,
+ * ring = bell swing, spin = full turn; agent F: point = one arm thrown at the target, sweep = wide horizontal arm
+ * sweep (cones), stomp = foot stamp + fists down (self AoE), lunge = low forward lean (dashes), lob = overhand toss
+ * to a far point (ground circles), draw = pulled back then loosed along a line (skillshots). A champion has two
+ * families (casts.ts): slots map to A (3 frames) or B (2 frames).
+ */
+export type CastStyle = 'raise' | 'forward' | 'slam' | 'ring' | 'spin' | 'point' | 'sweep' | 'stomp' | 'lunge' | 'lob' | 'draw';
 
 export interface BodySpec {
   /** soles to crown (px in the 256 master) */

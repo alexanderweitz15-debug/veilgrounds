@@ -128,7 +128,7 @@ export class World {
       const src = state.byId.get(ev.src);
       const ab = src?.champ ? abilityForSlot(src.champ, ev.slot, src.ult ?? -1) : undefined;
       const dur = ev.at !== undefined && state.snap ? Math.max(0, ev.at - (state.snap.tick - 1)) * (1000 / TICK_HZ) : (ab?.castTime ?? 0) * 1000;
-      this.units.champs?.onCast(ev.src, now, dur, castKindOf(ab?.type));
+      this.units.champs?.onCast(ev.src, now, dur, castKindOf(ab?.type), ev.slot);
     } else if (ev.e === 'death') this.units.onDeath(ev.eid, now);
     if (ev.e === 'damage') {
       const d = state.byId.get(ev.dst);

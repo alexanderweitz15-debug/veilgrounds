@@ -9,9 +9,10 @@
 // UVs follow three.js CanvasTexture defaults (flipY = true: v = 1 at the canvas top). Mirrored directions
 // (W, SW, NW when opts.mirror) reuse the E/SE/NE cells with u0/u1 swapped and flip = true.
 import { Painter, Stage, TAU, dirOf, len, lerp3, madd, norm, project, sub, type V3, type View } from './core';
-import { ATTACK_HIT, CAST_FLEX, CAST_RELEASE, CHAMP_FPS, FPS, FRAMES, LOOP, poseFor } from './anim';
+import { ATTACK_HIT, CAST_B, CAST_FLEX, CAST_RELEASE, CHAMP_FPS, FPS, FRAMES, LOOP, poseFor } from './anim';
 import { bodyOf, drawHumanoid, solveRig } from './humanoid';
 import { KITS } from './kits';
+import { motionOf } from './motion';
 import { drawWolf, HARK } from './wolf';
 import { VARGRIM_DRAWER } from './cavalry';
 import { MINION_DRAWERS, MINION_KITS } from './minions';
@@ -59,7 +60,8 @@ export function registerSpriteDrawer(id: string, d: SpriteDrawer): void {
 }
 const kitOf = (id: string): Kit | undefined => KITS[id] ?? EXTRA_KITS[id];
 
-export { ANIMS, DIRS, FRAMES, FPS, LOOP, CAST_RELEASE, CAST_FLEX };
+export { ANIMS, DIRS, FRAMES, FPS, LOOP, CAST_RELEASE, CAST_B, CAST_FLEX };
+export { castFamily, castSelfPose } from './casts';
 export type { Anim, Dir };
 
 export interface FrameRect {
@@ -169,7 +171,19 @@ function canvases(size: number) {
 const SUN_RIM = { x: 0, y: -1 };
 const RIM_WARM = '#ffcf8c';
 /** attack styles whose strike frame gets a smear (fast melee swings/stabs) */
-const SMEAR: Partial<Record<string, 'arc' | 'stab'>> = { chop: 'arc', slash: 'arc', swipe: 'arc', bash: 'arc', thrust: 'stab' };
+const SMEAR: Partial<Record<string, 'arc' | 'stab'>> = {
+  chop: 'arc',
+  slash: 'arc',
+  swipe: 'arc',
+  bash: 'arc',
+  thrust: 'stab',
+  hammer: 'arc',
+  heave: 'arc',
+  pounce: 'arc',
+  cane: 'stab',
+  lance: 'stab',
+  spear: 'stab',
+};
 /** outer contour: dilation taps on a ring (8 keep the line round at <= 2.5 px radius) */
 const INK_TAPS = 8;
 
@@ -549,9 +563,13 @@ export function hitOf(id: string): number {
   if (d) return d.hit ?? Math.floor((n - 1) / 2);
   return n >= 5 ? ATTACK_HIT : 1;
 }
-/** Playback rates for an id: champions use the longer layout's rates, everything else the legacy ones. */
+/** Playback rates for an id: champions use the longer layout's rates with their own run cadence and idle tempo
+ *  (motion.ts), everything else the legacy ones. */
 export function rateOf(id: string): Record<Anim, number> {
-  return { ...(KITS[id] ? CHAMP_FPS : FPS) };
+  const kit = KITS[id];
+  if (!kit) return { ...FPS };
+  const mo = motionOf(kit);
+  return { ...CHAMP_FPS, run: mo.gait.cadence, idle: mo.idle.fps };
 }
 export function worldSizeOf(id: string): number {
   if (id === 'hark') return HARK.world;

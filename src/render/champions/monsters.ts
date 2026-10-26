@@ -19,6 +19,8 @@ import type { Anim } from './types';
 import type { SpriteDrawer } from './atlas';
 
 const MF: Record<Anim, number> = { idle: 3, run: 4, attack: 3, cast: 0, death: 3 };
+/** epics (agent F): a breathing idle and an attack with anticipation, coil, STRIKE (hit frame 2), recover */
+const EF: Record<Anim, number> = { idle: 4, run: 4, attack: 4, cast: 0, death: 3 };
 const PF: Record<Anim, number> = { idle: 2, run: 0, attack: 0, cast: 0, death: 2 };
 
 // ------------------------------------------------------------------------------------------------ helpers
@@ -336,7 +338,8 @@ function drawToad(st: Stage, p: Painter, anim: Anim, frame: number): void {
 // ------------------------------------------------------------------------------------------------ beetle
 const CHITIN = m('#2f4752', 'metal');
 const CHITIN_DARK = m('#1f2a34', 'metal');
-const BEETLE_GLOW = '#8ee8d0';
+// F: glows one gouache step calmer (sprite-research rule 3: no channel at maximum on a body)
+const BEETLE_GLOW = '#86d2c0';
 function drawBeetle(st: Stage, p: Painter, anim: Anim, frame: number): void {
   st.view.k *= 1.15;
   const u = loop(anim, frame, MF);
@@ -406,7 +409,7 @@ function drawBeetle(st: Stage, p: Painter, anim: Anim, frame: number): void {
 // ------------------------------------------------------------------------------------------------ rock crab
 const ROCK = m('#5a5562', 'stone');
 const ROCK_DARK = m('#36323e', 'stone');
-const SHADOW_CRYSTAL = m('#9a7ae0', 'glass');
+const SHADOW_CRYSTAL = m('#8e74c8', 'glass');
 function drawCrab(st: Stage, p: Painter, anim: Anim, frame: number): void {
   st.view.k *= 1.12;
   const u = loop(anim, frame, MF);
@@ -543,18 +546,26 @@ const BELLY = m('#d6c69a', 'skin');
 const FIN = m('#6fd6c8', 'glow');
 function drawLeviathan(st: Stage, p: Painter, anim: Anim, frame: number): void {
   st.view.k *= 0.92;
-  const u = loop(anim, frame, MF);
+  const u = loop(anim, frame, EF);
   const f3 = frame % 3;
+  const f4 = frame % 4;
   let sway = 0;
   let strike = 0;
   let mouth = 0.15;
   let collapse = 0;
   let wave = 0;
-  if (anim === 'idle') sway = Math.sin(u * TAU) * 8;
-  else if (anim === 'run') wave = u * TAU;
+  let rise = 0;
+  if (anim === 'idle') {
+    // slow sway of the raised neck, the chest swells on the in-breath, the jaw works
+    sway = Math.sin(u * TAU) * 8;
+    rise = Math.sin(u * TAU * 2 + 0.6) * 0.04;
+    mouth = 0.12 + 0.12 * Math.max(0, Math.sin(u * TAU + 1));
+  } else if (anim === 'run') wave = u * TAU;
   else if (anim === 'attack') {
-    strike = [-0.4, 1, 0.4][f3]!;
-    mouth = [0.4, 1, 0.3][f3]!;
+    // rear up (anticipation), coil higher, STRIKE forward, recover
+    strike = [-0.45, -0.75, 1, 0.3][f4]!;
+    rise = [0.12, 0.22, -0.08, 0][f4]!;
+    mouth = [0.35, 0.7, 1, 0.3][f4]!;
   } else if (anim === 'death') {
     collapse = [0.3, 0.7, 1][f3]!;
     mouth = 0.5;
@@ -570,9 +581,10 @@ function drawLeviathan(st: Stage, p: Painter, anim: Anim, frame: number): void {
   const base: V3 = coil[0]!;
   for (let i = 0; i <= 7; i++) {
     const t = i / 7;
-    const up = 150 * (1 - collapse * 0.85);
-    const fwd = 40 + strike * 70 * t * t;
-    neck.push([base[0] * (1 - t) + sway * t, base[1] + up * Math.sin(t * 1.4) - strike * 60 * t * t, base[2] + 30 + fwd * t]);
+    const up = 150 * (1 - collapse * 0.85) * (1 + rise);
+    const fwd = 40 + strike * 95 * t * t;
+    // the strike drives the head forward more than down so it stays readable from the camera
+    neck.push([base[0] * (1 - t) + sway * t, base[1] + up * Math.sin(t * 1.4) - Math.max(0, strike) * 28 * t * t + Math.max(0, -strike) * 20 * t, base[2] + 30 + fwd * t]);
   }
   st.add([0, 20, -50], -5, (pp) => {
     for (let i = coil.length - 1; i > 0; i--) {
@@ -622,21 +634,25 @@ const VEIL_PLATE = m('#5c4a7c', 'metal');
 const VEIL_GLOW = '#c9a0ff';
 function drawWarden(st: Stage, p: Painter, anim: Anim, frame: number): void {
   st.view.k *= 0.86;
-  const u = loop(anim, frame, MF);
+  const u = loop(anim, frame, EF);
   const f3 = frame % 3;
+  const f4 = frame % 4;
   let sway = 0;
   let strike = 0;
   let collapse = 0;
   let tendril = 0;
   let glowP = 0.8;
   if (anim === 'idle' || anim === 'run') {
+    // the worm sways, breathes (segments swell) and its tendrils grope
     sway = Math.sin(u * TAU) * 10;
     tendril = Math.sin(u * TAU) * 0.3;
     glowP = 0.7 + 0.25 * Math.sin(u * TAU);
+    strike = Math.sin(u * TAU * 2 + 1) * 0.05;
   } else if (anim === 'attack') {
-    strike = [-0.3, 1, 0.4][f3]!;
-    tendril = [0.8, -0.6, 0][f3]!;
-    glowP = 1.2;
+    // draw back, rear up, STRIKE down, recover
+    strike = [-0.35, -0.6, 1, 0.35][f4]!;
+    tendril = [0.8, 1.0, -0.6, 0][f4]!;
+    glowP = [1, 1.3, 1.4, 1][f4]!;
   } else if (anim === 'death') {
     collapse = [0.25, 0.6, 1][f3]!;
     glowP = [0.5, 0.25, 0][f3]!;
@@ -903,8 +919,8 @@ export const MONSTER_DRAWERS: Record<string, SpriteDrawer> = {
   hohlkaefer: d(440, 0.78, MF, drawBeetle),
   schattenkrabbe: d(480, 0.78, MF, drawCrab),
   nebelschleicher: d(340, 0.8, MF, drawStrider),
-  leviathan: d(860, 0.88, MF, drawLeviathan, 0.9),
-  schleierwaechter: d(1040, 0.9, MF, drawWarden, 0.85),
+  leviathan: { ...d(860, 0.88, EF, drawLeviathan, 0.9), hit: 2 },
+  schleierwaechter: { ...d(1040, 0.9, EF, drawWarden, 0.85), hit: 2 },
   kesselbrut: d(290, 0.8, MF, drawGrub),
   sprungfrucht: d(190, 0.86, PF, drawSprung),
   honigfrucht: d(190, 0.86, PF, drawHonig),

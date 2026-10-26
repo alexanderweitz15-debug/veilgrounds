@@ -104,7 +104,7 @@ export class GroundObjects {
     this.lastNow = now;
     for (const o of snap?.objects ?? []) {
       // Sev R phantoms are drawn as Sev sprites for the feared player only (render/units.ts), never as pins
-      if (o.tag === 'sev_r_phantom') continue;
+      if (o.tag === 'sev_r_phantom' || o.tag === 'vargrim_rider') continue;
       this.draw(state, o, now);
       this.ambient(state, o, now, dt);
     }

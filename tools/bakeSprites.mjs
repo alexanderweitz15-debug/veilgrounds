@@ -94,14 +94,19 @@ if (process.platform === 'linux') flags.push('--no-sandbox'); // CI containers /
 const t0 = Date.now();
 console.log(`bakeSprites: ${exe}\n  serving ${dist} on :${port}`);
 const proc = spawn(exe, [...flags, `http://127.0.0.1:${port}/bake.html`], { stdio: 'ignore' });
-proc.on('exit', (code) => finish({ ok: false, msg: `browser exited early (${code})` }));
+// Windows msedge.exe is a launcher stub: it starts the real browser detached and exits at once (code 0), so an early exit
+// only counts as failure elsewhere; everywhere the page must report 'start' within 60 s.
+if (process.platform !== 'win32') proc.on('exit', (code) => finish({ ok: false, msg: `browser exited early (${code})` }));
 const timer = setTimeout(() => finish({ ok: false, msg: 'timeout' }), TIMEOUT_MS);
+const startTimer = setTimeout(() => !ver && finish({ ok: false, msg: 'the page did not start within 60 s' }), 60000);
 
 const r = await finished;
 clearTimeout(timer);
+clearTimeout(startTimer);
 proc.removeAllListeners('exit');
 try {
-  if (process.platform === 'win32') execSync(`taskkill /PID ${proc.pid} /T /F`, { stdio: 'ignore' });
+  // win32: the launcher pid is gone, so kill every browser process that uses the temp profile
+  if (process.platform === 'win32') execSync(`powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*veilgrounds-bake-*' -and $_.ProcessId -ne $PID } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"`, { stdio: 'ignore' });
   else proc.kill('SIGKILL');
 } catch {
   /* already gone */

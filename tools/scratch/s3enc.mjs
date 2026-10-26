@@ -13,7 +13,7 @@ const out = await b.evaluate(`(async () => {
   const x = c.getContext('2d'); x.drawImage(bmp, 0, 0);
   const res = { png: blob.size, w: bmp.width, h: bmp.height };
   { const wb1 = await new Promise((r) => c.toBlob(r, 'image/webp', 1)); const b2 = await createImageBitmap(wb1); const c2 = document.createElement('canvas'); c2.width = c.width; c2.height = c.height; const x2 = c2.getContext('2d'); x2.drawImage(b2, 0, 0); const A = x.getImageData(0, 0, c.width, c.height).data, B = x2.getImageData(0, 0, c.width, c.height).data; let diff = 0, maxd = 0; for (let i = 0; i < A.length; i += 4) { if (A[i+3] !== B[i+3]) { diff++; continue; } if (A[i+3] === 0) continue; const d = Math.max(Math.abs(A[i]-B[i]), Math.abs(A[i+1]-B[i+1]), Math.abs(A[i+2]-B[i+2])); if (d) diff++; if (d > maxd) maxd = d; } res.mismatch = diff; res.maxd = maxd; }
-  for (const q of [1]) {
+  for (const q of [1, 0.92, 0.8]) {
     const t0 = performance.now();
     const wb = await new Promise((r) => c.toBlob(r, 'image/webp', q));
     res['webp' + q] = wb.size; res['enc' + q] = Math.round(performance.now() - t0);

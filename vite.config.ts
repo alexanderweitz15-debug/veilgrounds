@@ -18,9 +18,8 @@ const GROUND_FILES = ['terrain', 'coords', 'organic', 'palette', 'materials'].ma
 
 /**
  * S3 load time: after the bundle is written, bake all sprite strips and the painted ground with a headless browser
- * (tools/bakeSprites.mjs) into dist/atlas/<ver>/, so a first start downloads them instead of painting for 20 s. Runs in
- * CI (CI=true) or with BAKE_SPRITES=1; BAKE_SPRITES=0 forces it off. Never fails the build: without the strips the game
- * bakes at runtime.
+ * (tools/bakeSprites.mjs) into dist/atlas/<ver>/. Opt-in: only with BAKE_SPRITES=1 (see docs/agents/s3.md). Never fails the build: without
+ * the strips the game bakes at runtime.
  */
 function bakeSprites(): Plugin {
   let outDir = 'dist';
@@ -35,7 +34,7 @@ function bakeSprites(): Plugin {
       order: 'post',
       sequential: true,
       handler() {
-        const want = process.env.BAKE_SPRITES ? process.env.BAKE_SPRITES !== '0' : !!process.env.CI;
+        const want = process.env.BAKE_SPRITES === '1'; // opt-in: 62 MB of PNG strips lose to the runtime bake on a 50 Mbit line (docs/agents/s3.md)
         if (want && existsSync(join(outDir, 'bake.html'))) {
           const r = spawnSync(process.execPath, [resolve('tools/bakeSprites.mjs'), outDir], { stdio: 'inherit' });
           if (r.status !== 0) console.warn(`bakeSprites exited with ${r.status}: the build ships without pre-baked sprites`);

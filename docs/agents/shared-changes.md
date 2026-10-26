@@ -567,3 +567,11 @@ src/ui/overlay.ts (VoiceBubbles field, onEvent call, draw call), src/ui/classicL
 - src/game/settingsIO.ts: ENUMS for the two modifiers, castModes validation uses CAST_KEYS / CAST_MODES.
 - src/i18n de/en: set.bind*, set.mod.*, set.selfCastMod, set.levelUpMod, set.presetLol*, set.castModeCol, set.modConflict.
 - src/ui/menu.css, style.css: `.binds` grid 4 columns.
+
+## swarm/fenna-kit
+
+- src/render/champions/kits.ts: import from `./fenna` + one `kit({ id: 'fenna', ... })` block before the Vargrim stub.
+- src/render/groundObjects.ts: import `drawFennaObject` + a 5-line `fenna_` branch next to the `sev_` branch.
+- src/sim/items/itemHooks.ts: `BAND` constant, `bandAt` field in `ItemEnt`, hook `dusk_band` (additive).
+- src/data/items.json: item `daemmerband` (appended). src/data/builds/fenna.json: standard core uses it (replaces frostkern).
+- tests/items.test.ts: legendary / total item counts are now `>=` (items are added in parallel).

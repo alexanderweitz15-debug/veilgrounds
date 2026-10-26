@@ -55,6 +55,8 @@ export const HOURGLASS_TICKS = sec(2.5);
 /** Chain Relay: 80 + 10 per level shield (holder's heal/shield power applies) for 2.5 s on allies within 500. */
 export const RELAY = { radius: 500, base: 80, perLevel: 10, ticks: sec(2.5) };
 export const POTION = { heal: 120, ticks: sec(15) };
+/** Duskband: +12 % move speed for 1.5 s on an ally champion that receives your heal or shield, once per ally every 6 s. */
+export const BAND = { pct: 12, ticks: sec(1.5), icd: sec(6) };
 
 // ------------------------------------------------------------------ state
 
@@ -73,6 +75,8 @@ interface ItemEnt {
   lampNext: number;
   lampLast: number;
   lampGold: number;
+  /** Duskband: ally eid -> tick its next move speed spark may land. */
+  bandAt: Map<number, number>;
 }
 
 interface ItemState {
@@ -90,7 +94,7 @@ function itemState(sim: Sim): ItemState {
 function ent(sim: Sim, eid: number): ItemEnt {
   const s = itemState(sim);
   let e = s.ent.get(eid);
-  if (!e) s.ent.set(eid, (e = { potion: 0, wind: 0, windRate: 0, spark: 0, mantleUsed: 0, mantleAt: 0, lamp: LAMP.max, lampNext: 0, lampLast: -1e9, lampGold: 0 }));
+  if (!e) s.ent.set(eid, (e = { potion: 0, wind: 0, windRate: 0, spark: 0, mantleUsed: 0, mantleAt: 0, lamp: LAMP.max, lampNext: 0, lampLast: -1e9, lampGold: 0, bandAt: new Map() }));
   return e;
 }
 
@@ -231,6 +235,18 @@ export const ITEM_HOOKS: Record<string, ItemHook> = {
   },
   warden_staff: {
     modifyHeal: (_sim, _eid, _t, amount) => amount * WARDEN_STAFF_MULT,
+  },
+  dusk_band: {
+    // ponytail: modifyHeal is the only hook every heal and shield on an ally passes through (abilities.ts, chain relay);
+    // it returns the amount unchanged and only adds the spark. A dedicated onHealGiven hook would be cleaner.
+    modifyHeal(sim, eid, t, amount) {
+      if (t === eid || !isChamp(sim, t) || isEnemy(sim, eid, t)) return amount;
+      const e = ent(sim, eid);
+      if (sim.tick < (e.bandAt.get(t) ?? 0)) return amount;
+      e.bandAt.set(t, sim.tick + BAND.icd);
+      addBuff(sim, t, { kind: 'stat', stat: 'ms', id: 'dusk_band', src: eid, pct: BAND.pct, ticks: BAND.ticks });
+      return amount;
+    },
   },
   spell_ring: {
     onKill(sim, eid, victim) {

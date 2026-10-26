@@ -9,9 +9,9 @@
     "boots": "stiefel_hast",
     "core": [
       "hueterstab",
+      "daemmerband",
       "kettenrelais",
-      "zeitglas",
-      "frostkern"
+      "zeitglas"
     ]
   },
   "vsAD": {

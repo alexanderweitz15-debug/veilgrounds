@@ -42,6 +42,7 @@ import {
 } from './props2';
 import { crimsonHem, crowRing, featherMarks, genjutsuEyes, highCollar, longHair, palmCrow, ringNecklace, SEV_CRIMSON } from './sev';
 import { VARGRIM_KIT } from './cavalry';
+import { antennae, flameLamp, lightThread, mothWings } from './fenna';
 import type { Kit } from './types';
 
 const SKIN = { fair: '#e9c6a4', light: '#ddb08a', tan: '#c08a62', brown: '#946244', dark: '#6a4430', pale: '#e8cfba', old: '#d6b094', ash: '#c8b8a8' };
@@ -881,5 +882,32 @@ kit({
   gait: 'light',
   props: [longHair, highCollar, genjutsuEyes, ringNecklace, crimsonHem, featherMarks, palmCrow, crowRing],
 });
+kit({
+  id: 'fenna',
+  name: 'Fenna Staubflügel',
+  world: 198,
+  look: 'tall slim moth-folk support: pale lilac skin, long cream hair, two feathery antennae, four big dusty-brown wings with dusk-violet eye-spots behind her, plum dress with a cream front panel; a small gold flame hovering over the right hand and a glowing thread trailing from the left',
+  feature: 'wide wing triangle behind + two antennae + gold thread',
+  body: { ...FEMALE, H: 188, shW: 16.5, hipW: 13.5, girth: 0.9, legs: 0.5, headR: 12.8, bust: 0.35 },
+  outfit: {
+    skin: '#e6d2d6',
+    face: { eyes: '#f0d070', brows: 0.8 },
+    top: cloth('#d9c9a8'),
+    sleeves: cloth('#8a78ac'),
+    forearms: cloth('#d9c9a8'),
+    legs: cloth('#4a3c5e'),
+    boots: leather('#5a4636'),
+    coat: { mat: cloth('#7c6a9c'), len: 1.5, flare: 0.55, open: cloth('#e4d6b4'), split: true },
+    belt: { mat: cloth('#c9973f'), y: 0.2 },
+    hair: { style: 'long', mat: hair('#e8dec6') },
+    shawl: cloth('#8a7aa8'),
+  },
+  hold: 'relaxed',
+  attack: 'throw',
+  cast: 'raise',
+  gait: 'light',
+  props: [mothWings, antennae, flameLamp, lightThread],
+});
+
 // Vargrim: icon-colour stub; the sprite is painted by the SpriteDrawer in cavalry.ts (atlas.ts DRAWERS)
 kit(VARGRIM_KIT);

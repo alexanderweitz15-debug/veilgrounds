@@ -723,5 +723,13 @@
   "ff.denied.early": "Surrender is only possible from {min}:00.",
   "ff.denied.active": "A vote is already running.",
   "ff.denied.cooldown": "{cd} minutes pause after a failed vote.",
-  "ff.denied.mode": "Surrender only exists in classic 5v5 games."
+  "ff.denied.mode": "Surrender only exists in classic 5v5 games.",
+  "recap.hint.tower": "A Challenger does not fight under the enemy tower unless an own minion draws the tower shot.",
+  "recap.hint.group": "A Challenger would have recalled earlier with several enemies in range - and would not have pushed with enemies missing on the map.",
+  "recap.hint.minions": "A Challenger does not walk into enemy minion waves without controlling the minion aggro first.",
+  "recap.hint.monster": "A Challenger only fights monsters at full health with the right abilities.",
+  "recap.hint.burst": "The damage came in under 2 s: a Challenger keeps an escape or a dash ready before entering range.",
+  "recap.hint.magic": "Mostly magic damage: a Challenger would have bought magic resist early.",
+  "recap.hint.phys": "Mostly physical damage: a Challenger would have bought armor early.",
+  "recap.hint.default": "A Challenger would have kept distance to the killer and checked the minimap for positions."
 }

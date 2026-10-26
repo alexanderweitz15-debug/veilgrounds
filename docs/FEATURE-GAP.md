@@ -29,7 +29,7 @@ Stand: 16.10.2026, Agent C (Audit des Codes auf `main` @ `0bbc3d0`). Quelle der 
 | 1.11 | Kamera nach dem Tod | Kamera bleibt frei, Hinweis, letzte Position statt Nebel | teilweise | 3 | S | C | C3: Hinweis „Kamera frei … Leertaste = zum Champion“ im Todes-Overlay (docs/ist/c3-dead-after.jpg). Kamera selbst unverändert. |
 | 1.12 | Minimap: letzte bekannte Gegnerposition | Geist-Icon / „?“ wo der Gegner verschwand | da | 4 | S | C | C3: gegnerische Champions 45 s an der letzten gesehenen Position (gestrichelter Ring + „?“); Test „minimap last-seen ghosts“; docs/ist/c3-hud-objectives.jpg. |
 | 1.13 | Todes-Zusammenfassung | „Getötet von“, Schadensaufteilung | da | 4 | – | C | `deathRecap.ts`; Screenshot `docs/ist/08-todesbildschirm.jpg`. Kein Test. |
-| 1.14 | Death-Recap-Vergleich mit Challenger-Schatten | (Veilgrounds-eigen) | fehlt | 4 | M | C | Challenger-Geist nur im Post-Game (`ghostReview.ts`), nicht im Death-Recap. |
+| 1.14 | Death-Recap-Vergleich mit Challenger-Schatten | (Veilgrounds-eigen) | teils | 4 | M | C | S1: Death-Recap zeigt eine Zeile „Ein Challenger hätte …“ (Regelwahl aus dem aufgezeichneten Schaden, `src/game/deathHint.ts`, Schwellen `src/data/deathHint.json`, Test `tests/deathHint.test.ts`). Kein echter Geist-Vergleich im Recap (Challenger-Geist weiter nur im Post-Game). |
 | 1.15 | Fehlzauber-Meldungen | „Nicht genug Mana“, „Außer Reichweite“ | teilweise | 3 | S | C | Für Fähigkeiten da (`castFail`), für Item-Aktive nicht. → C3 |
 | 1.16 | Kill-Feed, Ansagen, Multikills, Ace | Ansager + Feed | da | 2 | – | C | `announce.ts`, `hud.ts` Kill-Feed. Kein Test. |
 | 1.17 | Pause / Fortsetzen mit Ansage | „Spiel pausiert von X“ | teilweise | 1 | S | C | F10 pausiert (Overlay `hud.paused`), keine Ansage, keine Bot-Reaktion. |
@@ -46,9 +46,9 @@ Stand: 16.10.2026, Agent C (Audit des Codes auf `main` @ `0bbc3d0`). Quelle der 
 | 2.5 | Beschwörerzauber-Ping | Klick auf Gegner-Zauber im Scoreboard schreibt „Flash 4:32“ in den Chat | da | 4 | S | C | C2/C4: Klick auf gegnerischen Zauber im Scoreboard startet den Timer und schreibt „Wren Sprung bis 12:34“ ins Team; Test (Timer). |
 | 2.6 | Team-Chat | Enter, Teamzeilen | da | 1 | – | C | `chat.ts`; Bot-Zeilen kommen aus der Sim. |
 | 2.7 | Chat-Befehle | /mute, /surrender, /ff, /all, /help | teilweise | 1 | S | C | C4: /help, /mute, /unmute funktionieren; /ff, /surrender, /all antworten „noch nicht verfügbar“ (Sim/Bots nötig). Test tests/chatPings.test.ts. |
-| 2.8 | Allchat-Umschalter | Shift+Enter bzw. /all | fehlt | 1 | S | C (+B für Gegner-Zustellung) | Chat-Events gehen nur an das eigene Team (`teamEvents` `case 'chat'`). |
+| 2.8 | Allchat-Umschalter | Shift+Enter bzw. /all | da | 1 | S | C (+B für Gegner-Zustellung) | S1: Umschalt+Enter / `/all` sendet an beide Teams (`all`-Flag am Chat-Command/-Event, `teamEvents`), Gegner-Bots antworten gelegentlich (`allChatReply` in `social.ts`, Daten `src/data/bots/allchat.json`). Test `tests/allChat.test.ts`. |
 | 2.9 | Stummschalten einzelner Spieler / Pings | /mute, Klick im Scoreboard | da | 1 | S | C | C4: /mute Name oder alle blendet Chatzeilen und Pings des Spielers lokal aus; Test (Parser). |
-| 2.10 | Surrender-Abstimmung mit Bot-Stimmen | /ff ab 15:00, Stimmen der Mitspieler | fehlt | 1 | M | C + A (Stimmen) | Kein Code. Bot-Stimmen = Gehirn-Team. |
+| 2.10 | Surrender-Abstimmung mit Bot-Stimmen | /ff ab 15:00, Stimmen der Mitspieler | da | 1 | M | C + A (Stimmen) | S1: `/ff` ab 15:00 (nur klassisch), Abstimmung 30 s, vor 20:00 einstimmig, danach 4 von 5 (`src/sim/surrender.ts`, Werte `src/data/surrender.json`); Panel mit F5/F6 (`src/ui/surrenderPanel.ts`); Bots stimmen per Datenregel (`surrenderScore` in `social.ts`: Gold-/Kill-/Turmrückstand + Tilt, Schwelle je Rang). Test `tests/surrender.test.ts`. |
 
 ## 3. Eingabe, Kamera, Einstellungen
 

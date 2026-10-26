@@ -4,6 +4,7 @@
 import type { ClientState } from '../game/state';
 import { Kind, isMinion, type DamageType, type SimEvent } from '../sim/types';
 import { t } from '../i18n';
+import { deathHint } from '../game/deathHint';
 import { champName } from './names';
 import { setPortrait } from '../render/portraits';
 
@@ -125,6 +126,10 @@ export class DeathRecap {
       for (const ty of ['phys', 'magic', 'true'] as const)
         if (byType[ty] > 0) el('span', `dr-key ${ty}`, legend, `${t(`recap.${ty}`)} ${Math.round(byType[ty])} (${Math.round((100 * byType[ty]) / total)} %)`);
     } else el('div', 'dr-none', r, t('recap.none'));
+    if (total > 0) {
+      const recent = this.hits.filter((h) => h.at >= now - RECAP_S).map((h) => ({ ago: now - h.at, kind: h.kind, key: h.key, amount: h.amount, type: h.type }));
+      el('div', 'dr-hint', r, t(`recap.hint.${deathHint(recent)}`));
+    }
     const rows = [...src.values()].sort((a, b) => b.total - a.total).slice(0, 5);
     for (const s of rows) {
       const row = el('div', 'dr-row', r);

@@ -1,0 +1,10 @@
+{
+  "note": "S1 (FEATURE-GAP 1.14): rule thresholds of the death recap line 'what a Challenger would have done' (src/game/deathHint.ts). First matching rule wins, in this order: tower, group, minions, monster, burst, magic, phys, default. *Share = share of the damage of the last 10 s; burstShare = share dealt in the last burstS seconds before the death; groupChamps = number of enemy champions that dealt damage.",
+  "towerShare": 0.4,
+  "minionShare": 0.4,
+  "monsterShare": 0.4,
+  "groupChamps": 2,
+  "burstS": 2,
+  "burstShare": 0.8,
+  "typeShare": 0.6
+}

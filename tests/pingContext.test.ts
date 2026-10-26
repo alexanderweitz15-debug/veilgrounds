@@ -177,9 +177,9 @@ describe('context labels', () => {
     const enemy = { id: 3, kind: Kind.Champion, team: 1, x: 900, y: 800, radius: 40, champ: 'wren' };
     expect(missingAt(ctx(), 0, 0, enemy)).toMatchObject({ kind: 'missing', target: 3, x: 900, y: 800 });
     expect(missingAt(ctx(), 0, 0, enemy).label).toMatch(/ vermisst$/);
-    const mid = map.sides[0].lanes.mid[Math.floor(map.sides[0].lanes.mid.length / 2)]!;
+    const mid = { x: 8000, y: 8000 }; // centre of the two-point mid lane (the end points sit in the bases)
     expect(laneNear(mid.x, mid.y, ctx().lanes)).toBe('mid');
     expect(missingAt(ctx(), mid.x, mid.y).label).toBe('Mid vermisst');
-    expect(missingAt(ctx(), 200, 15800).label).toBeUndefined();
+    expect(missingAt(ctx(), 4500, 9000).label).toBeUndefined();
   });
 });

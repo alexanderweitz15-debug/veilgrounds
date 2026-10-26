@@ -214,6 +214,7 @@ html.minimap-left .game .chat-box { bottom: calc(292px * var(--mm, 1) + 56px); }
 .dr-killed { font-size: 16px; font-weight: 800; color: #ffcfb8; }
 .dr-total { color: #b8a8a0; font-size: 12px; }
 .dr-none { color: #a99f8a; }
+.dr-hint { margin: 6px 0; padding: 4px 8px; border-left: 3px solid #c8aa6e; color: #e8d9a8; font-size: 12px; font-style: italic; }
 .dr-bar { display: flex; height: 8px; border-radius: 2px; overflow: hidden; background: #222; }
 .dr-bar.small { grid-column: 1 / -1; height: 4px; }
 .dr-seg.phys { background: #e07a3a; }

@@ -1,5 +1,6 @@
 // One running match on the client: sim link, render world, input, HUD, minimap and the frame loop.
 import { ChatBox } from '../ui/chat';
+import { SurrenderPanel } from '../ui/surrenderPanel';
 import { soundForEvent, soundForFire } from '../audio/eventSounds';
 import { audioUnlock, setListener, setVolume } from '../audio/sfx';
 import { blockBrowserShortcuts, enterGameFullscreen, exitGameFullscreen } from './fullscreen';
@@ -36,6 +37,7 @@ export class Game {
   private readonly menu: HTMLElement;
   private readonly extras: SessionExtras;
   private readonly chat: ChatBox;
+  private readonly surrender: SurrenderPanel;
   private raf = 0;
   private lastFrame = performance.now();
   private focusedOnce = false;
@@ -133,6 +135,7 @@ export class Game {
         this.overlay.onEvent(ev, this.state, now);
         this.hud.onEvent(ev, this.state, now);
         this.chat?.onEvent(ev);
+        this.surrender?.onEvent(ev);
         soundForEvent(ev, this.state);
       }
       for (const e of this.state.fired) soundForFire(e);
@@ -184,10 +187,12 @@ export class Game {
       this.root,
       config?.players ?? [],
       config?.players.find((p) => p.isHuman)?.slot ?? 0,
-      (text) => this.link.send({ t: 'chat', text }),
+      (text, all) => this.link.send(all ? { t: 'chat', text, all: true } : { t: 'chat', text }),
       () => this.menu.classList.contains('open'),
       this.state.muted,
+      () => this.link.send({ t: 'ff' }),
     );
+    this.surrender = new SurrenderPanel(this.root, config?.players ?? [], config?.players.find((p) => p.isHuman)?.slot ?? 0, (yes) => this.link.send({ t: 'ffVote', yes }));
     this.menu = document.createElement('div');
     this.menu.className = 'ingame-menu';
     this.root.appendChild(this.menu);
@@ -388,6 +393,7 @@ export class Game {
     this.minimap.draw(st, this.world, this.world.fog, now);
     const t4 = performance.now();
     this.hud.update(st, now);
+    this.surrender.update(st.snap?.tick ?? 0);
     this.extras.frame(st.snap);
     this.root.classList.toggle('dead', !!st.snap?.me?.dead);
     const t5 = performance.now();
@@ -430,6 +436,7 @@ export class Game {
     this.input.dispose();
     this.minimap.dispose();
     this.chat.dispose();
+    this.surrender.dispose();
     this.offSettings();
     window.removeEventListener('keydown', this.onFpsKey);
     window.removeEventListener('resize', this.onResize);

@@ -20,6 +20,8 @@ export interface MatchRecord extends MatchMetrics {
   win: boolean | null;
   kills: number;
   deaths: number;
+  /** Older records have none (S1: profile KDA). */
+  assists?: number;
   dmgChampPerMin: number;
   /** metrics: per-trainer measurements (dodge: reactionMs, panic, unnecessary, hitRate; only those that were measured). */
   trainer?: { kind: string; score: number; grade: string; scenario?: string; metrics?: Record<string, number> };
@@ -77,6 +79,7 @@ export function recordFromSummary(s: MatchSummary, at: number): MatchRecord {
     win: s.winner !== null ? s.winner === s.team : tr?.won ?? null,
     kills: s.kills.length,
     deaths: s.deaths.length,
+    ...(s.assists !== undefined ? { assists: s.assists } : {}),
     dmgChampPerMin: s.dealtChamp.reduce((a, b) => a + b, 0) / min,
     ...(tr ? { trainer: { kind: tr.kind, score: tr.score, grade: tr.grade, ...(tr.scenario ? { scenario: tr.scenario } : {}), ...(trMetrics ? { metrics: trMetrics } : {}) } } : {}),
     ...metrics,

@@ -14,6 +14,7 @@ import { useItem } from '../items/itemHooks';
 import { swapTrinket, useTrinket } from '../wards';
 import { scheduleNextWave } from './waves';
 import { raiseLevel } from '../trainer/common';
+import { castVote, startVote } from '../surrender';
 import { respawnCamps, toggleGodMode, toggleNoCooldowns } from '../trainer/sandbox';
 
 export const inputSystem: System = {
@@ -70,6 +71,8 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
   if (cmd.t === 'trinket') return void swapTrinket(sim, eid, cmd.id); // shop rule: also while dead
   if (cmd.t === 'ping') return ping(sim, eid, cmd); // pings also while dead
   if (cmd.t === 'chat') return chat(sim, eid, cmd);
+  if (cmd.t === 'ff') return startVote(sim, eid);
+  if (cmd.t === 'ffVote') return castVote(sim, eid, cmd.yes);
   if (cmd.t === 'ultChoice') return void chooseUlt(sim, eid, cmd.choice);
   if (!Unit.alive[eid]) return;
   switch (cmd.t) {
@@ -207,7 +210,7 @@ function chat(sim: Sim, eid: number, cmd: Extract<Command, { t: 'chat' }>): void
   recent.push(sim.tick);
   st.set(eid, recent);
   const { Unit } = sim.c;
-  sim.events.push({ e: 'chat', slot: Unit.slot[eid]!, team: Unit.team[eid]!, text: cmd.text.slice(0, 120), ...(cmd.ref !== undefined ? { ref: cmd.ref } : {}) });
+  sim.events.push({ e: 'chat', slot: Unit.slot[eid]!, team: Unit.team[eid]!, text: cmd.text.slice(0, 120), ...(cmd.ref !== undefined ? { ref: cmd.ref } : {}), ...(cmd.all ? { all: true } : {}) });
 }
 
 function ping(sim: Sim, eid: number, cmd: Extract<Command, { t: 'ping' }>): void {

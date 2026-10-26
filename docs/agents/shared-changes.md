@@ -429,6 +429,17 @@ Measure: console lines `champion atlas: ... in N ms` (sheets.ts) cold vs warm, 1
 - values.json weights: `tradeCsWindowBonus` 1.0, `tradePunishBonus` 0.8, `tradePunishS` 3.
 - Reason: user feedback "trade when the enemy misses a cast or last-hits"; only active with the utility flag.
 
+## 2026-10-23 · S1 · all chat + surrender vote: shared-file edits · on ui/s1-features
+
+| File | Owner | Change | Row |
+|---|---|---|---|
+| src/sim/types.ts | B | `Command` chat gets `all?: boolean`; `SimEvent` chat gets `all?: boolean` (additive) | 2.8 |
+| src/sim/systems/input.ts | B | `chat()` copies `all` onto the event | 2.8 |
+| src/sim/snapshot.ts | B | event filter `case 'chat'`: `ev.team === team \|\| !!ev.all` | 2.8 |
+| src/ai/bot/social.ts | A3 | `allChatReply(n)` called from `socialTick` (additive): an enemy bot may answer the human's all-chat line; uses the 45 s chat throttle, no new BotExt field | 2.8 |
+| src/data/bots/chat.json | A3 | 9 new lines, `cat: "allReply"` (low/mid/high, 2 toxic) | 2.8 |
+| src/data/bots/allchat.json (new) | A3 | reply chance per band, reaction delay | 2.8 |
+
 ## 2026-10-23 · A1 -> A2 Phase 3 (shove-and-recall coordination; no shared-file edit)
 
 Measured with the beta brain (reflex + utility), Gold, 4 x 14 min, seeds 1-4, main e55cbbd + A1 55d4395 (harness
@@ -514,3 +525,17 @@ src/ui/overlay.ts (VoiceBubbles field, onEvent call, draw call), src/ui/classicL
 - `src/i18n/de.json` + `en.json`: 32 new keys each, `trainer.stat.{reaction,panic,unnecessary,hitRate}` and `trainer.dodge.*` (appended at the end, same keys in both).
 - `src/stats/history.ts`: `MatchRecord.trainer.metrics?` (optional, old records stay valid), new `trainerMetrics`, `trainerSeries`, `trainerTrend`, `withoutRun`.
 - `src/ui/trainer.css`: `.dg-*` classes appended.
+
+## 2026-10-26 · S1 · surrender vote + death recap hint: further shared-file edits · on ui/s1-features-2
+
+| File | Owner | Change | Row |
+|---|---|---|---|
+| src/sim/types.ts | B | `Command` `ff` / `ffVote`; `SimEvent` `ff` (additive) | 2.10 |
+| src/sim/systems/index.ts | B | `surrenderSystem` appended (no-op without a vote) | 2.10 |
+| src/sim/systems/input.ts | B | `ff` / `ffVote` dispatch (also while dead) | 2.10 |
+| src/sim/snapshot.ts | B | `case 'ff'`: team-private | 2.10 |
+| src/ai/bot/social.ts | A3 | `surrenderVote` / `surrenderScore` / `votesYes`, called from `socialTick` | 2.10 |
+| src/data/bots/chat.json | A3 | `surrender_yes` / `surrender_no` lines | 2.10 |
+| src/ui/chat.ts, src/game/game.ts | C | `/ff` starts the vote; `SurrenderPanel` mounted | 2.10 |
+| src/ui/deathRecap.ts, style.css | C | hint line `.dr-hint` | 1.14 |
+| src/i18n/de.json, en.json | - | `ff.*`, `recap.hint.*`; removed `chat.ffNo` | 2.10, 1.14 |

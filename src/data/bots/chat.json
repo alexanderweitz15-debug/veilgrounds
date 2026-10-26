@@ -160,6 +160,16 @@
     { "cat": "lane", "band": "high", "de": "Slow-Push bis 4, dann Dive", "en": "Slow push until 4, then dive" },
     { "cat": "lane", "band": "high", "de": "Belagerer-Welle, jetzt crashen", "en": "Cannon wave, crash now" },
     { "cat": "lane", "band": "high", "de": "Welle zurück ziehen, Gank-Gefahr", "en": "Pull the wave back, gank danger" },
-    { "cat": "lane", "band": "mid", "de": "Ich brauche Mana, gleich back", "en": "Need mana, back soon" }
+    { "cat": "lane", "band": "mid", "de": "Ich brauche Mana, gleich back", "en": "Need mana, back soon" },
+
+    { "cat": "allReply", "band": "low", "de": "hi", "en": "hi" },
+    { "cat": "allReply", "band": "low", "de": "lol", "en": "lol" },
+    { "cat": "allReply", "band": "low", "de": "gg ez", "en": "gg ez", "toxic": true },
+    { "cat": "allReply", "band": "low", "de": "halt die klappe und spiel", "en": "shut up and play", "toxic": true },
+    { "cat": "allReply", "band": "mid", "de": "gl hf", "en": "gl hf" },
+    { "cat": "allReply", "band": "mid", "de": "Danke, euch auch", "en": "Thanks, you too" },
+    { "cat": "allReply", "band": "mid", "de": "Wir sehen uns am Nexus", "en": "See you at the nexus" },
+    { "cat": "allReply", "band": "high", "de": "gl hf, saubere Partie", "en": "gl hf, clean game" },
+    { "cat": "allReply", "band": "high", "de": "Danke. Wir bleiben beim Plan.", "en": "Thanks. We stick to the plan." }
   ]
 }

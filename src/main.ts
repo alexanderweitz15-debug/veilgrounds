@@ -65,6 +65,7 @@ function mainMenu(): void {
     modesLabel: t('menu.modes'),
     modes,
     nav: [
+      { label: t('menu.profile'), onSelect: () => profileScreen() },
       { label: t('menu.encyclopedia'), onSelect: () => encyclopedia() },
       { label: t('menu.settings'), onSelect: () => settingsScreen() },
     ],
@@ -87,6 +88,15 @@ function encyclopedia(): void {
   s.classList.add('menu-screen');
   void import('./ui/encyclopedia').then(({ renderEncyclopedia }) => {
     if (s.isConnected) renderEncyclopedia(s, mainMenu);
+  });
+}
+
+/** Profile (S1): match history, per-champion stats, rank-estimate trend. */
+function profileScreen(): void {
+  const s = screen();
+  void Promise.all([import('./ui/profileScreen'), import('./stats/history')]).then(async ([{ renderProfile }, h]) => {
+    const history = await h.loadHistory().catch(() => []);
+    if (s.isConnected) renderProfile(s, history, mainMenu);
   });
 }
 

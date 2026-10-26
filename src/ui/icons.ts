@@ -1000,6 +1000,7 @@ const SUMMONER: Record<string, [number, Glyph]> = {
   entflammen: [18, (g, c) => shape(g, c, () => (g.moveTo(32, 8), g.quadraticCurveTo(52, 30, 44, 50), g.quadraticCurveTo(32, 58, 20, 50), g.quadraticCurveTo(12, 30, 32, 8), g.closePath()))],
   erschoepfen: [30, (g, c) => line(g, c, 5, [16, 20, 28, 30, 20, 38, 34, 48])],
   reinigen: [175, ABILITY_GLYPH.self!],
+  barriere: [215, (g, c) => shape(g, c, () => (g.moveTo(32, 8), g.lineTo(52, 15), g.lineTo(50, 34), g.quadraticCurveTo(46, 50, 32, 58), g.quadraticCurveTo(18, 50, 14, 34), g.lineTo(12, 15), g.closePath()))],
   teleport: [280, (g, c) => {
     for (const r of [20, 13, 6]) {
       g.beginPath();

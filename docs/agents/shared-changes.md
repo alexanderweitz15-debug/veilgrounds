@@ -496,3 +496,8 @@ If art/f-identity rewrites `push()`: the three hooks to keep are `castPoseActive
 - src/ui/settingsPanel.ts: video section; slider key union + `renderScale`.
 - src/i18n: `set.gfx.*`, `set.renderScale`, `set.fpsCap*`, `set.showFps`, `set.autoDetect*`, `gfx.benchmark`, `act.fpsOverlay`.
 - src/render/particles.ts: `density` field.
+
+## summoners (swarm/summoners, 2026-10-23)
+
+- src/ai/bot/brain.ts `utilitySpells`: +2 lines `push(n, barrierStep(...))`, `push(n, ghostStep(...))`; import extended. Steps live in src/ai/bot/spells.ts (additive); `exhaustStep` now prefers the enemy whose `atkTarget` is the protected unit (score -300). No new BotMemory fields, rng drawn only when Barrier fires (same pattern as cleanseStep).
+- src/data/summoners.json: +`barriere` (no i18n json keys; names live in the json, tooltip text in src/ui/tooltip.ts SUMMONER_DESC).

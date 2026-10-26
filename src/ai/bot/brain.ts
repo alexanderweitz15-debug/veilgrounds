@@ -17,7 +17,7 @@ import { planLastHit } from './lasthit';
 import { shop, spendable } from './shop';
 import { dst, laneProgress, lanePoint } from './geo';
 import { laneLength } from '../perception/waves';
-import { cleanseStep, exhaustStep, teleportStep } from './spells';
+import { barrierStep, cleanseStep, exhaustStep, ghostStep, teleportStep } from './spells';
 import { runTree } from '../bt/leaves';
 import { ARENA_CENTRE } from '../../sim/trainer/arena';
 import type { NodeCtx, NodeResult } from '../bt/types';
@@ -119,6 +119,8 @@ export function utilitySpells(n: NodeCtx): NodeResult {
   if (n.v.me.dead || n.v.me.recallLeft > 0) return 'success';
   push(n, cleanseStep(n.v, n.ctx, n.rng, reactionPenaltyMs(n.mem, n.v.tick))); // §9 +150 ms while distracted
   push(n, exhaustStep(n.v));
+  push(n, barrierStep(n.v, n.ctx, n.rng, reactionPenaltyMs(n.mem, n.v.tick)));
+  push(n, ghostStep(n.v, n.ctx, n.mem));
   if (!inFountain(n)) {
     push(n, drinkPotion(n.v, n.v.me, n.mem));
     // seal ward / sweeper on spots the bot walks past (item and trinket use do not stop the walk)

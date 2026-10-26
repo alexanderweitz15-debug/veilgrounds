@@ -36,8 +36,8 @@
   "passive": {
     "name": { "de": "Hufschlag", "en": "Hoofbeat" },
     "desc": {
-      "de": "Vargrim erhält 20 % seines Bonus-Lauftempos als Bonus-Angriffsschaden. Je schneller der Ritt, desto härter die Lanze.",
-      "en": "Vargrim gains bonus attack damage equal to 20% of his bonus move speed. The faster the ride, the harder the lance."
+      "de": "Vargrim erhält 6 % seines Lauftempos als Bonus-Angriffsschaden. Je schneller der Ritt, desto härter die Lanze.",
+      "en": "Vargrim gains bonus attack damage equal to 6% of his move speed. The faster the ride, the harder the lance."
     },
     "hooks": ["vargrim_gallop"]
   },

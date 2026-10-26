@@ -10,8 +10,8 @@ import type { ChampionHooks, ChampionVisuals, VisualObject } from './hooks';
 import { ctxFor, hookState, isChampLike, peekState } from './util';
 import { championData } from './index';
 
-/** Passive: share of the bonus move speed converted to bonus AD. */
-const GALLOP_RATIO = 0.2;
+/** Passive: share of the total move speed converted to bonus AD (user 26 Oct: total speed, not bonus speed). */
+const GALLOP_RATIO = 0.06;
 const Q_STACK_MAX = 3;
 const Q_STACK_SECS = 4;
 const Q_STACK_BONUS = 0.15;
@@ -170,7 +170,7 @@ function vargrimTick(sim: Sim, eid: number): void {
 function vargrimVisuals(sim: Sim, eid: number): ChampionVisuals {
   const { Pos, Unit } = sim.c;
   const bonus = Math.round(gallopBonus(sim, eid));
-  const v: ChampionVisuals = { passive: { stacks: bonus, max: 40, ready: bonus >= 5 } };
+  const v: ChampionVisuals = { passive: { stacks: bonus, max: 60, ready: bonus >= 25 } };
   const s = peekState<VState>(sim, KEY)?.get(eid);
   if (!s || !Unit.alive[eid]) return v;
   if (s.stacks > 0 && sim.tick <= s.stackUntil) v.marks = [{ target: eid, id: 'vargrim_q', n: s.stacks, max: Q_STACK_MAX, left: s.stackUntil - sim.tick }];
@@ -189,10 +189,9 @@ function vargrimVisuals(sim: Sim, eid: number): ChampionVisuals {
   return v;
 }
 
-/** Bonus AD from bonus move speed: 20 % of (current move speed - base move speed), never negative. */
+/** Bonus AD from total move speed: 6 % of the current move speed (~21 AD at 345 MS, ~30 AD at 500 MS). */
 function gallopBonus(sim: Sim, eid: number): number {
-  const base = championData('vargrim').base.ms;
-  return Math.max(0, sim.c.Stats.ms[eid]! - base) * GALLOP_RATIO;
+  return Math.max(0, sim.c.Stats.ms[eid]!) * GALLOP_RATIO;
 }
 
 export const hooks: ChampionHooks = {

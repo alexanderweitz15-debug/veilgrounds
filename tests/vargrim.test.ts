@@ -37,12 +37,12 @@ describe('Vargrim data', () => {
 });
 
 describe('Vargrim passive Hoofbeat', () => {
-  it('bonus AD = 20 % of bonus move speed, gone again without it', () => {
+  it('bonus AD = 6 % of total move speed, extra speed adds AD that is gone again without it', () => {
     const { sim, m } = setup();
     const ad0 = sim.c.Stats.ad[m]!;
     addBuff(sim, m, { kind: 'stat', stat: 'ms', id: 't', src: m, flat: 100, ticks: 60 });
     step(sim);
-    expect(sim.c.Stats.ad[m]! - ad0).toBeCloseTo(0.2 * (sim.c.Stats.ms[m]! - 345), 4);
+    expect(sim.c.Stats.ad[m]! - ad0).toBeCloseTo(0.06 * (sim.c.Stats.ms[m]! - 345), 4);
     expect(sim.c.Stats.bonusAd[m]!).toBeGreaterThan(15);
     steps(sim, 70);
     expect(sim.c.Stats.ad[m]!).toBeCloseTo(ad0, 4);
@@ -135,7 +135,7 @@ describe('Vargrim E Storm Gallop', () => {
       for (const e of sim.events) if (e.e === 'damage' && e.src === m && e.dst === d) short.push(e.amount);
     }
     expect(short.length).toBeGreaterThan(0);
-    expect(Math.max(...long.dmg)).toBeGreaterThan(Math.max(...short) * 1.5);
+    expect(Math.max(...long.dmg)).toBeGreaterThan(Math.max(...short) * 1.2); // passive now counts total MS, so the ride adds less on top
     expect(hasBuff(sim, m, 'stat', 'vargrim_e')).toBe(false); // ramp ends with the auto
   });
 });

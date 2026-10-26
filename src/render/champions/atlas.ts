@@ -467,8 +467,10 @@ export function renderMaster(id: string, anim: Anim, yaw: number, frame: number,
     const view: View = { yaw, elev: 0.42, cx: res / 2, cy: res * drawer.foot, k: s, fall: 0, lift: 0 };
     drawer.draw(new Stage(view), painter, anim, frame);
   } else {
-    const kit = kitOf(id);
-    if (!kit) throw new Error(`unknown champion '${id}'`);
+    // ponytail: a champion without a sprite kit (e.g. a new champion merged before its art) is drawn with a stand-in
+    // kit instead of throwing - one missing kit used to abort the whole match atlas (no sprites at all).
+    const kit = kitOf(id) ?? KITS.mira!;
+    if (!kitOf(id)) console.warn(`sprite kit missing for '${id}', drawing a stand-in`);
     const pose = poseFor(kit, anim, frame);
     const b = bodyOf(kit);
     const view: View = { yaw, elev: 0.42, cx: res / 2, cy: res * 0.935, k: s * 1.1, fall: pose.fall, lift: Math.sin(pose.fall) * (b.chestD + 3) };

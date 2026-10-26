@@ -1,0 +1,155 @@
+{
+  "id": "fenna",
+  "name": "Fenna Staubflügel",
+  "title": { "de": "die Dämmerfalterin", "en": "the Dusk Moth" },
+  "roles": ["support"],
+  "archetype": "tether_warden",
+  "botBias": { "aggression": -2, "vision": 1, "teamplay": 3 },
+  "trainingPurpose": {
+    "de": "Band-Support lesen: nicht zwischen Fenna und ihre Gebundene laufen, Staub-Abpraller und Kokon-Zeitfenster erkennen.",
+    "en": "Reading a tether support: do not walk between Fenna and her bonded ally, read the dust bounce and the cocoon timing."
+  },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 560,
+    "hpGrowth": 92,
+    "hpRegen": 5.5,
+    "hpRegenGrowth": 0.55,
+    "mana": 410,
+    "manaGrowth": 38,
+    "manaRegen": 11,
+    "manaRegenGrowth": 0.8,
+    "ad": 52,
+    "adGrowth": 2.4,
+    "armor": 24,
+    "armorGrowth": 4,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.644,
+    "asGrowth": 1.8,
+    "range": 525,
+    "ms": 335,
+    "windup": 0.22,
+    "projectileSpeed": 1500,
+    "radius": 60
+  },
+  "passive": {
+    "name": { "de": "Lichtband", "en": "Lightbond" },
+    "desc": {
+      "de": "Fenna ist an eine verbündete Champion gebunden (zuerst die nächste; W wechselt). Das Band spannt sich bis 1.150: Gegner, die es kreuzen, werden 25-40 % (nach Level) 1 s verlangsamt (pro Gegner alle 4 s). Schilde, die Fenna auf die Gebundene legt, geben ihr selbst 40 % davon. Reißt bei über 1.600 Abstand.",
+      "en": "Fenna is bonded to one allied champion (the nearest at first; W switches). The bond is taut up to 1150: enemies crossing it are slowed 25-40% (by level) for 1 s (once per enemy every 4 s). Shields Fenna puts on her bonded ally give her 40% of them. Snaps beyond 1600."
+    },
+    "hooks": ["fenna_lightbond"]
+  },
+  "abilities": [
+    {
+      "id": "fenna_q",
+      "name": { "de": "Flügelstaub", "en": "Wingdust" },
+      "desc": {
+        "de": "Linie 900. Trifft sie einen Gegner: Schaden und 25 % Slow 1,25 s, dann prallt der Staub zur Gebundenen (sonst nächste Verbündete): Schild 2 s und +20 % Bewegung 1,5 s. Trifft sie zuerst eine Verbündete: dieselbe Wirkung, dann prallt er zum nächsten Gegner und trifft ihn mit +15 % Schaden.",
+        "en": "Line 900. Hits an enemy: damage and 25% slow for 1.25 s, then the dust bounces to the bonded ally (else the nearest ally): shield for 2 s and +20% move speed for 1.5 s. Hits an ally first: same effect, then it bounces to the nearest enemy for +15% damage."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 900,
+      "cooldown": [9, 8.5, 8, 7.5, 7],
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "width": 70,
+      "speed": 1700,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [50, 80, 110, 140, 170], "ap": 0.5 } },
+        { "kind": "slow", "pct": 25, "duration": 1.25 },
+        { "kind": "shield", "amount": { "base": [35, 55, 75, 95, 115], "ap": 0.3 }, "duration": 2, "target": "ally" },
+        { "kind": "buff", "stat": "ms", "pct": 20, "duration": 1.5, "target": "ally" },
+        { "kind": "hook", "id": "fenna_q_dust" }
+      ]
+    },
+    {
+      "id": "fenna_w",
+      "name": { "de": "Flammenwahl", "en": "Chosen Flame" },
+      "desc": {
+        "de": "Verbündete (750): Schild 70/105/140/175/210 (+55 % AP) 3 s; Fenna bindet sich an sie. Erneut innerhalb 3 s: der Rest des Schilds wandert zu einer anderen Verbündeten und die Bindung folgt.",
+        "en": "Ally (750): shield 70/105/140/175/210 (+55% AP) for 3 s; Fenna bonds to her. Recast within 3 s: the remaining shield moves to another ally and the bond follows."
+      },
+      "type": "targeted",
+      "castTime": 0.2,
+      "movesWhileCasting": true,
+      "range": 750,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": [60, 65, 70, 75, 80],
+      "costType": "mana",
+      "duration": 3,
+      "flags": ["ally_target", "recast"],
+      "effects": [
+        { "kind": "shield", "amount": { "base": [70, 105, 140, 175, 210], "ap": 0.55 }, "duration": 3, "target": "ally" },
+        { "kind": "hook", "id": "fenna_w_choose" }
+      ]
+    },
+    {
+      "id": "fenna_e",
+      "name": { "de": "Dämmerlache", "en": "Duskpool" },
+      "desc": {
+        "de": "Kreis 300 auf 650, 3,5/4/4,5/5/5,5 s: Verbündete darin +20/22/24/26/28 % Bewegung, Gegner darin 25/30/35/40/45 % Slow. Kein Gelände, nur Boden.",
+        "en": "Circle 300 at 650, 3.5/4/4.5/5/5.5 s: allies inside get +20/22/24/26/28% move speed, enemies inside are slowed 25/30/35/40/45%. No terrain, ground only."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 650,
+      "cooldown": [16, 15, 14, 13, 12],
+      "cost": [70, 75, 80, 85, 90],
+      "costType": "mana",
+      "radius": 300,
+      "duration": [3.5, 4, 4.5, 5, 5.5],
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "buff", "stat": "ms", "pct": [20, 22, 24, 26, 28], "duration": 0.5, "target": "allies" },
+        { "kind": "slow", "pct": [25, 30, 35, 40, 45], "duration": 0.5 },
+        { "kind": "hook", "id": "fenna_e_pool" }
+      ]
+    },
+    {
+      "id": "fenna_r",
+      "name": { "de": "Kokonlicht", "en": "Cocoon Light" },
+      "desc": {
+        "de": "Kreis 450 auf 700, nach 0,6 s: 1,75/2/2,25 s lang sind Verbündete darin nicht anvisierbar, Gegner darin 25 % langsamer; danach heilen sie 120/200/280 (+50 % AP).",
+        "en": "Circle 450 at 700, after 0.6 s: for 1.75/2/2.25 s allies inside cannot be targeted and enemies inside are 25% slower; then allies inside heal 120/200/280 (+50% AP)."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.4,
+      "movesWhileCasting": false,
+      "range": 700,
+      "cooldown": [130, 115, 100],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 450,
+      "delay": 0.6,
+      "flags": ["ground_target"],
+      "effects": [{ "kind": "hook", "id": "fenna_r_cocoon" }]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3 (Q und W stehen, Band-Slow zählt) und Level 6 (Kokonlicht).",
+    "en": "Level 3 (Q and W maxed early, the bond slow starts to matter) and level 6 (Cocoon Light)."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Staub über die Gebundene", "en": "Dust through the bonded" }, "sequence": ["Q", "AA"] },
+    { "name": { "de": "Flamme wechseln und poolen", "en": "Switch flame, then pool" }, "sequence": ["W", "W", "E"] },
+    { "name": { "de": "Lache, Staub, Kokon", "en": "Pool, dust, cocoon" }, "sequence": ["E", "Q", "R"] }
+  ],
+  "scores": { "engage": 1, "peel": 4, "range": 3, "scaling": 3, "waveclear": 1, "mobility": 1 },
+  "voiceLines": {
+    "pick": { "de": "Ich such das Licht. Du bist hell genug.", "en": "I follow light. You will do." },
+    "firstBlood": { "de": "Zu nah an der Flamme.", "en": "Too close to the flame." },
+    "kill": { "de": "Angeflogen und verglüht.", "en": "Flew in and burned out." },
+    "death": { "de": "Das Licht ging aus. Wie unhöflich.", "en": "The light went out. How rude." },
+    "recall": { "de": "Zurück zum Kokon.", "en": "Back to the cocoon." },
+    "taunt": { "de": "Lauf ruhig zwischen uns durch.", "en": "Go on, walk between us." }
+  },
+  "silhouette": "tall moth-winged figure with feathery antennae, two big dusty wings spread behind and a glowing thread to her partner"
+}

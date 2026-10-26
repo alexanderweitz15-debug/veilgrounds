@@ -1,0 +1,4 @@
+
+> veilgrounds@0.1.0 bot-sim
+> tsx tools/botSim.ts --brain=new --rank=gold --games=2 --minutes=8 --jobs=2 --variance=0 --out=tools/scratch/hp/base.csv
+

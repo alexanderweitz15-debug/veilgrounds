@@ -40,9 +40,6 @@ describe('test 8 (full game): shove-and-recall, Diamond', () => {
     });
     expect(item.length).toBeGreaterThan(0);
     const mean = item.reduce((a, r) => a + r.foes, 0) / item.length;
-    // ponytail: 2.5 (was 2). 5 item recalls; four leave 0-1 foes, one (tick 17738, 13 foes) is a recall with nothing
-    // left to shove (own wave dead, enemy wave 13 strong) - the 14900 map reshuffled the seeded game and that case
-    // now shows up once. Mean without it is 0.25. Tighten if the no-wave-to-shove recall gets its own retreat step.
-    expect(mean, JSON.stringify(item)).toBeLessThanOrEqual(2.5);
+    expect(mean, JSON.stringify(item)).toBeLessThanOrEqual(2);
   }, 600_000);
 });

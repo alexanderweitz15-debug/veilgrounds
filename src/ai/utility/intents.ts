@@ -21,6 +21,8 @@ import type { IntentData, IntentId } from './types';
 const current = new WeakMap<object, IntentData | undefined>();
 /** Shove-before-recall episode per bot: first and latest tick the recall intent shoved. */
 const shoving = new WeakMap<object, { from: number; last: number }>();
+/** Last tick the bot saw a big enemy lane wave near it with no own wave beside it (fog: unseen is not gone). */
+const foeWaveSeen = new WeakMap<object, number>();
 const dataOf = (n: NodeCtx): IntentData => current.get(n.mem) ?? {};
 
 /** Keep the wave state on crash while an intent pushes (chooseWave keeps a state for 3 s; refreshed each decision). */
@@ -102,7 +104,12 @@ function uRecall(n: NodeCtx): NodeResult {
   // no recall attempt with enemy minions walking in (they break the channel - recall loop next to a wave): back off
   // toward the fountain until they are out of recall.minionAvoidRange, then channel
   const foes = near(n.v.enemyMinions, n.v.self, VALUES.recall.minionAvoidRange).length;
-  if (foes > 0) {
+  // A big enemy wave seen a moment ago and no own wave to meet it: out of sight is not out of reach (the minions walk
+  // on at the bot's speed just beyond vision), so keep backing off for recall.waveMemoryS before the channel starts.
+  const R = VALUES.recall;
+  if (near(n.v.enemyMinions, n.v.self, R.waveSeenRange).length >= R.waveMinMinions && near(n.v.ownMinions, n.v.self, R.waveSeenRange).length < R.ownWaveMinMinions) foeWaveSeen.set(n.mem, n.v.tick);
+  const remembered = n.v.tick - (foeWaveSeen.get(n.mem) ?? -1e9) < R.waveMemoryS * 30;
+  if (foes > 0 || remembered) {
     cancelOrbwalk(n);
     n.mem.mode = 'home';
     const f = n.ctx.map.sides[n.ctx.team].fountain;

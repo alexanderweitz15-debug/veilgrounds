@@ -9,3 +9,28 @@ NOT done (open items):
 - Grow/ripe/pop effects: sim gives `grow` and death `variant`; the render does not use them yet (needs an optional scale arg in championSprites.push - agent F's file - and a small PlantFx for pop bursts).
 - Bot hook (`plants` leaf in tree.json + values.json): bots ignore plants and honey pieces. Plan: src/ai/bot/plants.ts, filter snap.entities for Kind.Plant, detour when hp/mana low and no enemy near.
 - No screenshot taken.
+
+---
+
+# swarm-plants-2 (branch swarm/plants-2): "bessere Früchte"
+
+Closes the three open items above.
+
+## 1. Own painted sprites + third atlas
+- src/render/champions/monsters.ts: drawers `manafrucht` (violet crystal berries), `windfrucht` (teal swirl pod, feather wings), `schildfrucht` (bronze plated gourd, pale boss), `honigstueck` (amber honey drop). Idle = 2 frames (pulse), death = 2 frames (pop: shards / feathers / cracked halves / sparkles). The four `MONSTER_SPRITE` aliases are gone.
+- `PLANT_IDS` = those four, baked as a third atlas (src/render/sheets.ts: `getMonsterAtlases()` -> `[big, camp, plants]`, `PLANT_BAKE` = camp cell size, `BAKE_GROUPS` gets the group so the build bake and the strip cache cover it). The camp atlas is unchanged (still holds Sprung-, Honig-, Spähfrucht), so its cached strips stay valid.
+
+## 2. Grow / ripe / pop (src/render/plantFx.ts)
+- Grow: `growScale(grow)` = 20 % -> 100 % with a small overshoot. championSprites.ts reads a unit's scale once, at the first frame it sees it, and is not editable here. So `units.ts` hands a sprouting plant to the batch as a stand-in unit with its own serial per growth step (`sproutEntity`, 10 steps over 1.2 s), and `MONSTER_BATCH.scaleFor` multiplies by `growScale(e.grow)`. Ceiling: stepped, not continuous; an optional `scale` arg on `ChampionSprites.push` would make it smooth once agent F's merge is in.
+- Ripe: sparkle burst when a plant finishes growing; idle mote glow on ripe fruits and (stronger) on honey pieces.
+- Pop: the `death` event (with `variant`) bursts sparks + motes in the fruit's colour (hue table in plantFx.ts). Pickup glow: a honey piece that vanishes with a champion standing within 150 sparkles (render-only: `despawn` emits no event; rotting pieces vanish alone, no glow).
+- Particles go through the shared ability particles, so reduce-motion and the graphics density setting apply.
+
+## 3. Bots use plants (src/ai/bot/plants.ts, values in values.json "plants", tree node `plants` between `fountain` and `survive`)
+- Honigfrucht: hurt (< 55 %) and no enemy champion within 1700 -> pop (detour 900, 1600 below 35 %); afterwards walks over the honey pieces while below 90 %.
+- Manafrucht: mana < 35 %, safe. Schildfrucht: enemy champion 800-1800 away, HP >= 50 %, not outnumbered. Windfrucht: fleeing (retreat/home) with nobody within 550, or chasing a target > 350 away. Spähfrucht: jungle / support only, safe, at most every 90 s. Sprungfrucht: never.
+- Only visible, ripe plants; none within 1000 of an enemy tower. One target at a time, dropped after 12 s (ignored for 20 s). No rng, per-bot state in a WeakMap (BotMemory / BotExt unchanged).
+- Gap: the leaf runs before `survive`, but a bot that already walks home or chases is not turned around for a plant farther than the detour (450 for wind); a fleeing bot's pop costs a wind-up.
+
+## Tests
+See the end of this file (filled in after the runs).

@@ -13,6 +13,7 @@ import { MIRA_ID } from '../game/modes';
 import { ChampionSprites, type SpriteBatchOptions } from './championSprites';
 import { disposeTree } from './dispose';
 import { champions } from '../data/champions';
+import { growScale, sproutEntity } from './plantFx';
 import { minionId, MONSTER_SPRITE, type ChampionAtlas, type MinionKind } from './champions';
 
 const CAPACITY: Record<SpriteKey, number> = { mira: 10, champ: 10, melee: 96, caster: 96, siege: 32, super: 32, dummy: 8, monster: 32 };
@@ -56,7 +57,7 @@ const MONSTER_BATCH: SpriteBatchOptions = {
     const m = monsterSprite(e);
     return m && atlas.frames[m.id] ? m.id : null;
   },
-  scaleFor: (e) => monsterSprite(e)?.scale ?? 1,
+  scaleFor: (e) => (monsterSprite(e)?.scale ?? 1) * growScale(e.grow), // sprouting plants: see plantFx.sproutEntity
 };
 
 /** Ranged attackers recoil at the hit point instead of lunging. */
@@ -278,7 +279,7 @@ export class Units {
         let x = state.x(e);
         let y = state.y(e);
         // monsters scale with their hitbox (Agent H): small camp members ~0.6x, Schleierwächter ~1.8x
-        const size = key === 'monster' ? SPRITE_SIZE.monster * Math.min(1.8, Math.max(0.6, e.radius / 90)) : SPRITE_SIZE[key];
+        const size = (key === 'monster' ? SPRITE_SIZE.monster * Math.min(1.8, Math.max(0.6, e.radius / 90)) : SPRITE_SIZE[key]) * growScale(e.grow);
         let bob = 0;
         let sx = 1;
         let sy = 1;
@@ -319,7 +320,7 @@ export class Units {
             else c = 1 + (1 - k) * (this.flashAmpOf.get(e.serial) ?? amp);
           }
           if (e.id === hoverId) c *= 1.25;
-          batch!.push(e, champId, x, y, c, now, this.lift(state, e, now));
+          batch!.push(sproutEntity(e), champId, x, y, c, now, this.lift(state, e, now));
           if ((e.kind === Kind.Champion || e.id === hoverId) && rings < 48) rings = this.ring(state, e, myEid, rings);
           continue;
         }

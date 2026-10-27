@@ -41,6 +41,7 @@
           { "type": "action", "name": "dead" },
           { "type": "action", "name": "recallChannel" },
           { "type": "action", "name": "fountain" },
+          { "type": "action", "name": "plants", "comment": "jungle plants: honey at low HP, mana, shield before a fight, wind while fleeing/chasing, scout fruit for vision (src/ai/bot/plants.ts)" },
           {
             "type": "selector",
             "id": "survive",

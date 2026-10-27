@@ -627,3 +627,10 @@ Additive edits to shared files (all small):
 - `src/game/objectives.ts`: `TeamObjectives` + `drakes`, `soulElem`, `elderLeft`; elder respawn in `epicTimers`.
 - `src/i18n/{de,en}.json`: `buff.uralt(.desc)`, `drake.{glut,flut,fels,wind,arkan,elder}` appended.
 - `tests/objectives.test.ts`: two `toEqual` on `team()` got the three new fields.
+
+## swarm/plants-2
+
+- src/ai/bt/leaves.ts: +1 import, +1 registry line (`plants` action). src/data/bots/tree.json: one action node `plants` between `fountain` and `survive`. src/data/bots/values.json: new `plants` block (thresholds, distances). New file src/ai/bot/plants.ts (per-bot state in a WeakMap; BotMemory / BotExt untouched).
+- src/render/sheets.ts: `getMonsterAtlases()` now resolves to `ChampionAtlas[]` = [big, camp, plants] (was a 2-tuple; game.ts / world.ts / units.ts already took an array); `BAKE_GROUPS` + the plant group (same cell size as camp, so the bake script and the strip cache pick it up).
+- src/render/champions/monsters.ts / index.ts: `PLANT_IDS`, four new drawers, the four MONSTER_SPRITE aliases removed.
+- src/render/units.ts: monster batch scale x `growScale(e.grow)`; `batch.push(sproutEntity(e), ...)`. src/render/world.ts: `PlantFx` (new src/render/plantFx.ts) wired into `onEvent` + `frame`. championSprites.ts untouched.

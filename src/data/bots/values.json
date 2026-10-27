@@ -174,6 +174,19 @@
     "fogFollowBushS": { "iron": 0, "silver": 0.5, "gold": 1, "diamond": 1.5, "challenger": 2 }
   },
 
+  "plants": {
+    "note": "Bots use jungle plants (src/ai/bot/plants.ts, leaf 'plants' before 'survive'). Distances in map units, hp/mana as fractions. safeR: no enemy champion closer than this = safe. detour: nearest ripe plant of the type must be within this distance of the bot. giveUpS/blockS: give up on a plant after 12 s and ignore it for 20 s.",
+    "safeR": 1700,
+    "towerClear": 1000,
+    "giveUpS": 12,
+    "blockS": 20,
+    "honig": { "hp": 0.55, "hpLow": 0.35, "detour": 900, "detourLow": 1600, "pieceR": 800, "pieceSafeR": 1100, "eatBelow": 0.9 },
+    "mana": { "pct": 0.35, "detour": 650 },
+    "schild": { "enemyMin": 800, "enemyMax": 1800, "hp": 0.5, "detour": 650 },
+    "wind": { "detour": 450, "enemyMin": 550, "chaseGap": 350 },
+    "spaeh": { "detour": 700, "roles": ["jungle", "support"], "hp": 0.5, "everyS": 90 }
+  },
+
   "combat": {
     "focusHysteresis": 0.2,
     "commitLeaveWin": 0.25,

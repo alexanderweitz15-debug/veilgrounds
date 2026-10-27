@@ -37,3 +37,4 @@ Closes the three open items above.
 - tests/jungle.test.ts (18, incl. plants block), tests/bt.test.ts, tests/i18n.test.ts: green. tests/map.test.ts: plant / camp reachability green; "wall corners ... Hohlkaefer" hit its 20 s timeout only because of the load (untouched code path), not re-run.
 - `npx tsc --noEmit`: clean.
 - Not run: replay / determinism suites (no sim change), full bot-sim (not allowed).
+- Screenshot (dev sandbox, 1:38): Schildfrucht (bronze gourd) and Windfrucht (teal pod, feathers) render from the third atlas (console: `monster atlases: 4096x4096 + 4096x2048 + 4096x512`). Not captured: the sprout animation and pop burst in motion (one frame only; the sandbox has no time skip, `skipTime` is a no-op). Tab and vite server closed.

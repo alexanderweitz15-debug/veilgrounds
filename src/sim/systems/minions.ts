@@ -265,7 +265,7 @@ export function recentVictim(sim: Sim, src: number, window = CALL_WINDOW): numbe
 const NO_TARGET = 255;
 
 interface AggroState {
-  /** Priority of the current target (1 = champion attacking allied champion ... 6 = nearest champion). */
+  /** Priority of the current target (1 = champion attacking allied champion ... 8 = nearest champion). */
   prio: Uint8Array;
   /** Chase anchor (CHASE_LEASH): last position on its lane while not targeting a champion. */
   anchored: Uint8Array;
@@ -302,7 +302,7 @@ export function attackable(sim: Sim, team: number, t: number): boolean {
 interface Call {
   src: number;
   dst: number;
-  /** 1 champ->champ, 2 minion->champ, 3 minion->minion. */
+  /** 1 champ->champ, 2 minion->champ, 3 minion->minion, 4 tower->minion, 5 champ->minion. */
   prio: number;
 }
 
@@ -312,7 +312,7 @@ function gatherCalls(sim: Sim, units: ArrayLike<number>): Call[] {
   for (let i = 0; i < units.length; i++) {
     const src = units[i]!;
     const sk = Unit.kind[src]!;
-    if (sk !== Kind.Champion && !isMinion(sk)) continue;
+    if (sk !== Kind.Champion && sk !== Kind.Tower && !isMinion(sk)) continue;
     const dst = recentVictim(sim, src);
     if (dst < 0) continue;
     const dk = Unit.kind[dst]!;
@@ -320,6 +320,8 @@ function gatherCalls(sim: Sim, units: ArrayLike<number>): Call[] {
     if (sk === Kind.Champion && dk === Kind.Champion) prio = 1;
     else if (isMinion(sk) && dk === Kind.Champion) prio = 2;
     else if (isMinion(sk) && isMinion(dk)) prio = 3;
+    else if (sk === Kind.Tower && isMinion(dk)) prio = 4;
+    else if (sk === Kind.Champion && isMinion(dk)) prio = 5;
     if (prio) calls.push({ src, dst, prio });
   }
   return calls;
@@ -404,7 +406,8 @@ function nearest(sim: Sim, m: number, list: number[], range = AGGRO_RANGE): numb
 
 /**
  * LoL minion priorities: 1 enemy champ attacking allied champ, 2 enemy minion attacking allied champ, 3 enemy minion
- * attacking allied minion, 4 nearest enemy minion, 5 nearest enemy structure, 6 nearest enemy champion.
+ * attacking allied minion, 4 enemy turret attacking allied minion, 5 enemy champ attacking allied minion, 6 nearest
+ * enemy minion, 7 nearest enemy structure, 8 nearest enemy champion.
  * Structures sit before champions so a wave pushes a tower instead of chasing a champion standing next to it
  * (LoL also ranks turrets above uninvolved champions).
  */
@@ -443,12 +446,12 @@ export function updateMinionAggro(sim: Sim, m: number, lists: [TargetLists, Targ
   }
   // Low-priority targets (structure, idle champion) are not sticky: a minion in aggro range or a call for help
   // takes over, and an idle champion is dropped once it leaves aggro range (no chasing a champion across the lane).
-  if (cur >= 0 && st.prio[m]! >= 5) {
-    const c = bestCall(sim, m, calls, 3);
+  if (cur >= 0 && st.prio[m]! >= 7) {
+    const c = bestCall(sim, m, calls, 5);
     if (c) return setTarget(sim, m, c.src, c.prio);
     const mt = nearest(sim, m, lists[team as 0 | 1].minions);
-    if (mt >= 0) return setTarget(sim, m, mt, 4);
-    if (st.prio[m] === 6) {
+    if (mt >= 0) return setTarget(sim, m, mt, 6);
+    if (st.prio[m] === 8) {
       const r = sim.c.Stats.range[m]! + Unit.radius[m]! + 150 + Unit.radius[cur]!;
       if (dist2(Pos.x[m]!, Pos.y[m]!, Pos.x[cur]!, Pos.y[cur]!) > r * r) {
         Atk.target[m] = -1;
@@ -461,17 +464,17 @@ export function updateMinionAggro(sim: Sim, m: number, lists: [TargetLists, Targ
     Move.mode[m] = 2;
     return;
   }
-  const c = bestCall(sim, m, calls, 3);
+  const c = bestCall(sim, m, calls, 5);
   if (c) return setTarget(sim, m, c.src, c.prio);
   const l = lists[team as 0 | 1];
   let t = nearest(sim, m, l.minions);
-  if (t >= 0) return setTarget(sim, m, t, 4);
+  if (t >= 0) return setTarget(sim, m, t, 6);
   t = nearest(sim, m, l.structures);
-  if (t >= 0) return setTarget(sim, m, t, 5);
+  if (t >= 0) return setTarget(sim, m, t, 7);
   // idle champions only when (almost) in the minion's own attack range: no chasing champions across the lane
   t = pastLeash(sim, m) ? -1 : nearest(sim, m, l.champs, sim.c.Stats.range[m]! + sim.c.Unit.radius[m]! + 100);
   if (t < 0) t = nearest(sim, m, l.dummies);
-  if (t >= 0) return setTarget(sim, m, t, 6);
+  if (t >= 0) return setTarget(sim, m, t, 8);
   walkLane(sim, m);
 }
 

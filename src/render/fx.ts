@@ -94,6 +94,7 @@ function missileStyle(pr: { srcKind?: number; champ?: string | null; slot?: numb
     case Kind.Nexus: // big energy orb
       // D2: elongated energy lance (LoL tower shot) + spark trail (below), not a round blob
       return ms(own ? '#c8ecff' : '#ffb08a', 2.3, 3.4, 0.9, 260, 2.2);
+      return { color: own ? '#c8ecff' : '#ffb08a', size: 3, length: 3.6, thick: 1.1, height: 260, halo: 2.8 };
     case Kind.MinionSiege: // dark cannonball
       return ms('#3a3430', 1.5, 1, 1, 120, 1.3);
     case Kind.MinionCaster: // small bolt
@@ -296,6 +297,8 @@ export class Fx {
   private readonly aimRange = new THREE.Mesh(new THREE.RingGeometry(0.988, 1, 96).rotateX(-Math.PI / 2), groundMat('#8fd0ff', 0.6));
   private readonly aimViews: ShapeView[] = [];
   private readonly towerLines: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>[] = [];
+  /** Ring under the champion an enemy tower is shooting (readability: who is the target). */
+  private readonly towerMarks: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>[] = [];
   private readonly m = new THREE.Matrix4();
   private readonly q = new THREE.Quaternion();
   private readonly p = new THREE.Vector3();
@@ -359,6 +362,13 @@ export class Fx {
       this.towerRings.push(ring);
       this.towerLines.push(line);
       this.group.add(ring, line);
+    }
+    for (let i = 0; i < 4; i++) {
+      const mark = new THREE.Mesh(new THREE.RingGeometry(0.86, 1, 48).rotateX(-Math.PI / 2), groundMat('#ff4a3a', 0.8));
+      mark.renderOrder = 4;
+      mark.visible = false;
+      this.towerMarks.push(mark);
+      this.group.add(mark);
     }
     this.chanRing.renderOrder = this.chanArc.renderOrder = 3;
     this.chanRing.visible = this.chanArc.visible = false;
@@ -740,8 +750,10 @@ export class Fx {
       this.chanCol.material.color.set(tp > 0 ? '#c79bff' : '#8fb6ff');
     }
 
-    // enemy tower readability (LoL): range circle when you come close, red when it targets you, aggro line to its target
+    // enemy tower readability (LoL): range circle when you come close, red when it targets you, aggro line to its target;
+    // a tower shooting a champion (also an ally far away) always shows the line and a pulsing ring under that champion
     let nt = 0;
+    let nm = 0;
     if (snap && me) {
       for (const t of snap.entities) {
         if (t.kind !== Kind.Tower || !t.alive || t.team === state.myTeam || nt >= this.towerRings.length) continue;
@@ -749,16 +761,26 @@ export class Fx {
         const ty = state.y(t);
         const r = TOWER_RANGE + t.radius + me.radius;
         const d = Math.sqrt((state.x(me) - tx) ** 2 + (state.y(me) - ty) ** 2);
-        if (d > r + TOWER_RING_NEAR) continue;
+        const tgt = t.atkTarget >= 0 ? state.byId.get(t.atkTarget) : undefined;
+        const onChamp = !!tgt && tgt.kind === Kind.Champion && tgt.alive;
+        const far = d > r + TOWER_RING_NEAR;
+        if (far && !onChamp) continue;
         const onMe = t.atkTarget === me.id;
+        if (onChamp && nm < this.towerMarks.length) {
+          const mark = this.towerMarks[nm++]!;
+          mark.visible = true;
+          mark.position.set(state.x(tgt!), 4, -state.y(tgt!));
+          mark.scale.setScalar(tgt!.radius + 34 + (settings.reduceMotion ? 0 : Math.sin(now / 90) * 6));
+          mark.material.color.set(onMe ? '#ff4a3a' : '#ffb347');
+          mark.material.opacity = onMe ? 0.95 : 0.75;
+        }
         const ring = this.towerRings[nt]!;
         const line = this.towerLines[nt++]!;
-        ring.visible = true;
+        ring.visible = !far;
         ring.position.set(tx, 3, -ty);
         ring.scale.setScalar(r);
         ring.material.color.set(onMe ? '#ff4a3a' : '#f0d8a0');
-        ring.material.opacity = onMe ? 0.85 : 0.3 + 0.4 * Math.min(1, (r + TOWER_RING_NEAR - d) / TOWER_RING_NEAR);
-        const tgt = t.atkTarget >= 0 ? state.byId.get(t.atkTarget) : undefined;
+        ring.material.opacity = onMe ? 0.85 : 0.3 + 0.4 * Math.max(0, Math.min(1, (r + TOWER_RING_NEAR - d) / TOWER_RING_NEAR));
         line.visible = !!tgt;
         if (tgt) {
           const gx = state.x(tgt);
@@ -773,6 +795,7 @@ export class Fx {
       }
     }
     for (let i = nt; i < this.towerRings.length; i++) this.towerRings[i]!.visible = this.towerLines[i]!.visible = false;
+    for (let i = nm; i < this.towerMarks.length; i++) this.towerMarks[i]!.visible = false;
 
     // feared (Sev R eye contact or any fear CC on me): dark vignette, eases in/out
     const feared = !!me && me.alive && (((me.cc ?? 0) & 256) !== 0 || (snap?.objects ?? []).some((o) => o.tag === 'sev_r_bann' && o.follow === me.id));

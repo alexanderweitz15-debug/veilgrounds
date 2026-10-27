@@ -168,8 +168,9 @@ describe('structures', () => {
 });
 
 describe('plates', () => {
-  it('a champion breaking a plate before 14:00 gets 120 gold; plates fall at 14:00 with -50 % armor', () => {
+  it('a champion breaking a plate before 14:00 gets 160 gold; plates fall at 14:00 with -50 % armor', () => {
     const sim = newSim(false);
+    sim.tick = sec(5 * 60) + 1; // past fortification (outer towers take half damage until 5:00)
     const t = outer(sim, 1, Lane.Mid);
     const c = spawnChamp(sim, 0, 9000, 9000);
     const { Tower, Champ, Stats } = sim.c;
@@ -202,6 +203,7 @@ describe('plates', () => {
 
   it('plate events are emitted', () => {
     const sim = newSim(false);
+    sim.tick = sec(5 * 60) + 1;
     const t = outer(sim, 0, Lane.Top);
     const c = spawnChamp(sim, 1, 1300, 10000);
     dealDamage(sim, c, t, 1700, 'true'); // two plates in one go

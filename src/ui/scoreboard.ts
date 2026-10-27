@@ -19,7 +19,9 @@ import { PLAYSTYLE_AXES } from '../ai/contract';
 import { tendencyText } from './botTendency';
 import { settings, updateSettings } from '../settings';
 import { setPortrait } from '../render/portraits';
-import { itemIcon, kesselbrutIcon, objectiveIcon, rankIcon, setIcon, summonerIcon } from './icons';
+import { drakeIcon, itemIcon, kesselbrutIcon, objectiveIcon, rankIcon, setIcon, summonerIcon } from './icons';
+import { elemColor, drakeSummary } from './drakes';
+import { ELDER_ELEM, SOUL_AT } from '../sim/drakes';
 import { setTip } from './tooltip';
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?: HTMLElement, text?: string): HTMLElementTagNameMap[K] {
@@ -186,7 +188,7 @@ export class Scoreboard {
     const o: TeamObjectives = state.objectives.team(team);
     const other = state.objectives.team(team === 0 ? 1 : 0);
     const towers = state.towers[team];
-    const key = [towers, other.inhibRespawn.map((s) => Math.ceil(s)).join('/'), o.leviathan, o.kesselbrut, Math.ceil(o.schleierLeft)].join('|');
+    const key = [towers, other.inhibRespawn.map((s) => Math.ceil(s)).join('/'), o.leviathan, o.drakes.join(''), o.soulElem, Math.ceil(o.elderLeft), o.kesselbrut, Math.ceil(o.schleierLeft)].join('|');
     if (key === v.key) return;
     v.key = key;
     const r = v.root;
@@ -205,14 +207,24 @@ export class Scoreboard {
     // Leviathan: one badge per stack, empty pips up to the soul; at the maximum the soul badge
     const lev = el('span', 'sb-obj-item sb-lev', r);
     if (o.soul) {
-      setIcon(el('span', 'sb-ico soul', lev), objectiveIcon('soul'));
+      const soul = el('span', 'sb-ico soul', lev);
+      setIcon(soul, o.soulElem >= 0 ? drakeIcon(o.soulElem, true) : objectiveIcon('soul'));
+      if (o.soulElem >= 0) soul.style.boxShadow = `0 0 6px ${elemColor(o.soulElem)}`;
       el('b', 'soul-lbl', lev, t('score.obj.soulShort'));
     } else
-      for (let i = 0; i < LEVIATHAN_MAX_STACKS; i++) {
+      // one badge per kill in its element (older snapshots without drake data: the plain wave crest), empty pips up to the soul
+      for (let i = 0; i < SOUL_AT; i++) {
         const b = el('span', `sb-ico lev${i < o.leviathan ? '' : ' empty'}`, lev);
-        if (i < o.leviathan) setIcon(b, objectiveIcon('leviathan'));
+        if (i < o.leviathan) setIcon(b, o.drakes[i] !== undefined ? drakeIcon(o.drakes[i]!) : objectiveIcon('leviathan'));
       }
-    setTip(lev, `text:${o.soul ? t('score.obj.soul') : t('score.obj.leviathan', { n: o.leviathan, max: LEVIATHAN_MAX_STACKS })}`);
+    const kills = o.drakes.length ? `\n${drakeSummary(o.drakes, o.soulElem)}` : '';
+    setTip(lev, `text:${o.soul ? t('score.obj.soul') : t('score.obj.leviathan', { n: o.leviathan, max: LEVIATHAN_MAX_STACKS })}${kills}`);
+    if (o.elderLeft > 0) {
+      const el2 = el('span', 'sb-obj-item sb-elder', r);
+      setIcon(el('span', 'sb-ico', el2), drakeIcon(ELDER_ELEM));
+      el('span', 'sb-timer', el2, mmss(o.elderLeft));
+      setTip(el2, `text:${t('score.obj.elder', { s: mmss(o.elderLeft) })}`);
+    }
     const kb = el('span', 'sb-obj-item', r);
     setIcon(el('span', 'sb-ico kessel', kb), kesselbrutIcon());
     el('b', '', kb, String(o.kesselbrut));

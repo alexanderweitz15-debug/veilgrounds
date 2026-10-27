@@ -121,6 +121,8 @@ export interface PerceptionState {
   junglerStart: 'top' | 'bot' | null;
   /** Epic objective death ticks (announced), for spawn glances. */
   objectiveDeaths: Map<string, number>;
+  /** Respawn seconds that applied when each epic objective died (the Leviathan pit slows down after a soul). */
+  objectiveRespawn: Map<string, number>;
   /** Per enemy slot: behaviour observations for style estimation (§5.3). */
   styleObs: Map<number, EnemyStyleObs>;
   /** Own recent damage taken (tick, amount) for burst detection. */
@@ -173,6 +175,7 @@ export const newPerceptionState = (): PerceptionState => ({
   campKilled: new Map(),
   junglerStart: null,
   objectiveDeaths: new Map(),
+  objectiveRespawn: new Map(),
   styleObs: new Map(),
   dmgTaken: [],
   tactics: {},

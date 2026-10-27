@@ -13,6 +13,7 @@ import { REL } from './palette';
 import { abilityParticles, abilityTheme, type ParticleKindId } from './abilityTheme';
 import { missileShape } from './missileStyles';
 import { Particles } from './particles';
+import { elemColor, elemFx } from '../sim/drakes';
 import { settings } from '../settings';
 import { castDir, castTelegraph, hitboxAbility, lineZone, windupTicks, zoneProgress, type CastTelegraph, type CircleShape, type LineShape, type Shape } from './telegraph';
 
@@ -529,6 +530,17 @@ export class Fx {
     z.centre = shape.k === 'line' && hitAb?.line !== 'forward';
   }
 
+  private readonly hues = new Map<number, number>();
+  /** Hue (degrees) of an element colour, cached. */
+  private elemHue(elem: number): number {
+    let h = this.hues.get(elem);
+    if (h === undefined) {
+      const hsl = { h: 0, s: 0, l: 0 };
+      this.hues.set(elem, (h = this.c.set(elemColor(elem)).getHSL(hsl).h * 360));
+    }
+    return h;
+  }
+
   update(state: ClientState, now: number, showRange: boolean): void {
     const snap = state.snap;
     // fractional sim tick of the displayed state (snapshot tick = sim tick + 1)
@@ -608,6 +620,13 @@ export class Fx {
       this.trails.delete(id);
       this.particles.emit(t.kind, t.x, t.y, t.h, t.hue, this.particles.kind(t.kind).burst, now);
     }
+    // elemental Leviathans: ambient particles in the element colour around the monster
+    if (snap)
+      for (const e of snap.entities) {
+        if (e.elem === undefined || !e.alive) continue;
+        const hue = this.elemHue(e.elem);
+        this.particles.emit(elemFx(e.elem) as ParticleKindId, e.x, e.y, 40, hue, 14 * dt, now, undefined, 0.5);
+      }
     this.particles.update(now, dt);
     for (const m of [this.proj, this.halo]) {
       m.count = n;

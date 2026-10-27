@@ -7,6 +7,7 @@ import type { ClientState } from '../game/state';
 import { FlashGate, READ, airborneLift, dashLift, flashAmp } from './readability';
 import { PITCH } from './camera';
 import { REL } from './palette';
+import { elemColor } from '../sim/drakes';
 import { settings } from '../settings';
 import { SPRITE_KEYS, SPRITE_SIZE, type Atlas, type SpriteKey } from './sprites';
 import { MIRA_ID } from '../game/modes';
@@ -318,6 +319,8 @@ export class Units {
           sx = 1.06;
           sy *= 0.97;
         }
+        // elemental Leviathan: ground ring in the element colour
+        if (e.elem !== undefined && rings < 47) rings = this.ring(state, e, myEid, rings, elemColor(e.elem), 1.3);
         if (champId) {
           let c = 1;
           const f = this.flashAt.get(e.serial);
@@ -412,13 +415,13 @@ export class Units {
     });
   }
 
-  private ring(state: ClientState, e: SnapEntity, myEid: number, i: number): number {
-    const r = Math.max(e.radius, 40) * 1.5;
+  private ring(state: ClientState, e: SnapEntity, myEid: number, i: number, color?: string, k = 1.5): number {
+    const r = Math.max(e.radius, 40) * k;
     this.p.set(state.x(e), 2, -state.y(e));
     this.s.set(r, r, r);
     this.m.compose(this.p, this.qFlat, this.s);
     this.rings.setMatrixAt(i, this.m);
-    this.col.set(e.id === myEid ? REL.me : e.team === state.myTeam ? REL.ally : REL.enemy);
+    this.col.set(color ?? (e.id === myEid ? REL.me : e.team === state.myTeam ? REL.ally : REL.enemy));
     this.rings.setColorAt(i, this.col);
     return i + 1;
   }

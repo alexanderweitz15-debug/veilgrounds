@@ -641,3 +641,12 @@ Additive edits to shared files (all small):
 ## art/f-identity-3 (agent F)
 - `src/render/championSprites.ts`: additive `SpriteBatchOptions.groundBlob?` (soft contact-shadow InstancedMesh, off by default; set on MONSTER_BATCH in `units.ts`). G's `runPh` is now seeded once per unit in the state literal and no longer reset on every stop -> run (phase-continuous, no cycle restart while orbwalking); distance pacing, `intent`, `castPoseActive`, flinch 13 unchanged.
 - `src/render/champions/atlas.ts` `rateOf`: idle rate x1.25 (6 idle frames); `hark` / `mooswolf` run rate 14 (8-frame gallop). `HARK.frames` idle 4 / run 8 (Mooswolf shares it); champion `FRAMES.idle` 6 (also Vargrim).
+## drakes-ui (swarm/drakes-ui)
+
+- `src/data/drakes.json` + `src/sim/drakes.ts`: additive `fx` (ambient particle kind) per element and for the elder; `elemColor` / `elemFx` helpers.
+- `src/game/objectives.ts`: `ObjectiveTracker.drake()` (public rotation state).
+- `src/ui/{icons,hud,scoreboard,announce}.ts`: `drakeIcon`; element badges per kill / soul / elder timer in the scoreboard strip; epic-timer chip shows current / next element; buff bar gets element stack + soul chips; announcer banners via `src/ui/drakes.ts`.
+- `src/render/units.ts` (`ring()` gets optional colour + factor; element ring for `SnapEntity.elem`), `src/render/fx.ts` (ambient element particles). `championSprites.ts` untouched.
+- `src/ai/perception/{types,perceive}.ts`, `src/ai/ganks/common.ts`, `src/ai/bot/teamai.ts`: respawn timers via new `src/ai/objectiveTimers.ts` (elder 360 s, no hard-coded 300); `PerceptionState.objectiveRespawn` added.
+- `src/ai/utility/value.ts` + `src/data/bots/values.json` (`gold.drakes`): `leviathanGold` (element, soul point / denial, elder).
+- `src/i18n/{de,en}.json`: `drake.short.*`, `drake.soul*`, `drake.nowLine/nextLine`, `ann.drake*`, `ann.elder*`, `score.obj.elder` appended.

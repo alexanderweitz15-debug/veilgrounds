@@ -4,7 +4,7 @@
 // epic death events (`ev.epic`, B6) and the camp schedule.
 //
 // Timing: the events of a snapshot happened in the tick before `snap.tick` (sim.step increments the tick last).
-import type { ScoreRow, Snapshot } from '../sim/snapshot';
+import type { ScoreRow, SnapDrake, Snapshot } from '../sim/snapshot';
 import { Kind, type SimEvent } from '../sim/types';
 import { CAMPS, LEVIATHAN_MAX_STACKS } from '../sim/systems/jungle';
 import { MAP_OBJECTIVES } from '../sim/map';
@@ -137,6 +137,11 @@ export class ObjectiveTracker {
       schleierLeft: o?.schleierLeft[team] ?? 0,
       inhibRespawn: (o?.inhibs ?? []).filter((x) => x.team === team).map((x) => x.left).sort((a, b) => a - b),
     };
+  }
+
+  /** Public Leviathan rotation state (current / next element), undefined before the first spawn. */
+  drake(): SnapDrake | undefined {
+    return this.snap?.objectives?.drake;
   }
 
   /** Dead champions of both teams with seconds left (soonest first): the bar above the minimap. */

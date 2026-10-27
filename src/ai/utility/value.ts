@@ -22,6 +22,8 @@ import { gankActive, gankLane, gankOptions } from '../ganks/jungle';
 import { frontTower } from '../perception/waves';
 import { laneEnemies, LANE_ROLES } from '../ganks/common';
 import { VALUES, rankCurve } from './values';
+import { ELDER_ELEM, ELEMENTS, SOUL_AT } from '../../sim/drakes';
+import type { SnapDrake } from '../../sim/snapshot';
 import { absenceLoss, hpGold, killGold, laneRateOf, laneTripLength } from './world';
 import type { CandidateDef, CandidateValue, IntentData, World } from './types';
 
@@ -386,13 +388,29 @@ export function recallValue(w: World): CandidateValue | null {
 
 const OBJECTIVE_KINDS = new Set(['take_objective', 'contest_objective', 'set_vision', 'recall_window', 'chase', 'idle']);
 
+/**
+ * Gold worth of the Leviathan in the pit for `team`: the element of the monster (announced after the first kill),
+ * the kill that completes our soul or denies the enemy's soul is worth extra, the Uralt-Leviathan is worth most.
+ */
+export function leviathanGold(d: SnapDrake | undefined, team: number): number {
+  const o = G.objectives.leviathan;
+  const K = G.drakes;
+  if (!d) return o.gold * 5 + o.buff;
+  const target = d.next >= 0 ? d.next : d.cur;
+  if (d.elder || target === ELDER_ELEM) return K.elder;
+  let gold = o.gold * 5 + ((K.elements as Record<string, number>)[ELEMENTS[target]?.id ?? ''] ?? o.buff);
+  if (d.kills[team]!.length + 1 >= SOUL_AT) gold += K.soulPoint;
+  else if (d.kills[1 - team]!.length + 1 >= SOUL_AT) gold += K.soulDeny;
+  return gold;
+}
+
 export function objectiveValue(w: World): CandidateValue | null {
   const n = w.n;
   const d = n.ctx.teamAI?.desireFor(n.ctx.slot, w.tick);
   if (!d || !OBJECTIVE_KINDS.has(d.kind)) return null;
   const h = H.objective;
   const o = d.obj ? (G.objectives as Record<string, Record<string, number>>)[d.obj] : undefined;
-  const objGold = !o ? 0 : d.obj === 'schleierwaechter' ? o.goldPerChamp! * o.champs! + o.buff! : d.obj === 'kesselbrut' ? 3 * (o.goldPerLarva! + o.stackStructureValue!) : o.gold! * 5 + o.buff!;
+  const objGold = !o ? 0 : d.obj === 'schleierwaechter' ? o.goldPerChamp! * o.champs! + o.buff! : d.obj === 'kesselbrut' ? 3 * (o.goldPerLarva! + o.stackStructureValue!) : d.obj === 'leviathan' ? leviathanGold(n.snap.objectives?.drake, n.ctx.team) : o.gold! * 5 + o.buff!;
   let benefit = 0;
   switch (d.kind) {
     case 'take_objective':

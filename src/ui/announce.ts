@@ -10,6 +10,7 @@ import { champName } from './names';
 import { binds, keyLabel } from '../input/keybinds';
 import { MAP_OBJECTIVES } from '../sim/map';
 import { CAMPS, KESSELBRUT_MAX_STACKS } from '../sim/systems/jungle';
+import { drakeBanners, drakeKillBanner, newDrakeSeen } from './drakes';
 
 interface Item {
   title: string;
@@ -45,6 +46,7 @@ export class Announcer {
   private kessel: [number, number] = [0, 0];
   private kesselRoseAt: [number, number] = [-1, -1];
   private kesselSpawned = false;
+  private readonly drakeSeen = newDrakeSeen();
 
   constructor(parent: HTMLElement, private readonly mode?: string) {
     this.root = document.createElement('div');
@@ -98,7 +100,10 @@ export class Announcer {
       if (!which) return;
       const killerTeam = ev.killerTeam ?? state.entity(ev.killer)?.team;
       const ours = killerTeam === mine;
-      this.push(t(`ann.${which}${ours ? 'Own' : 'Enemy'}`), ours ? 'epic' : 'bad', 2);
+      if (which === 'leviathan') {
+        const b = drakeKillBanner(snap.objectives?.drake, ours);
+        this.push(b.title, ours ? 'epic' : 'bad', 2, b.sub);
+      } else this.push(t(`ann.${which}${ours ? 'Own' : 'Enemy'}`), ours ? 'epic' : 'bad', 2);
       return;
     }
     if (ev.kind !== Kind.Champion || ev.team > 1) return;
@@ -177,6 +182,8 @@ export class Announcer {
           this.push(t(own ? 'ann.kesselbrutOwn' : 'ann.kesselbrutEnemy'), own ? 'epic' : 'bad', 1, t('ann.kesselbrutStacks', { n: k, max: KESSELBRUT_MAX_STACKS }));
         }
       }
+      // elemental Leviathans: next element (after a kill), soul claimed, Uralt-Leviathan spawned
+      for (const b of drakeBanners(this.drakeSeen, snap.objectives?.drake, mine)) this.push(b.title, b.tone, b.prio, b.sub);
       for (const team of [0, 1]) if (this.aced[team] && snap.players.some((r) => r.team === team && !r.dead)) this.aced[team] = false;
     }
     if (now < this.showUntil) return;

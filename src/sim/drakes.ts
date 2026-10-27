@@ -6,6 +6,8 @@ import type { Rng } from './rng';
 export type DrakeStats = Partial<Record<string, number>>;
 export interface DrakeElement {
   id: string;
+  /** Ambient particle kind of the monster (render only). */
+  fx: string;
   color: string;
   perKill: DrakeStats;
   soul: DrakeStats;
@@ -32,6 +34,10 @@ export interface DrakeState {
   /** A soul was claimed: the pit spawns the Uralt-Leviathan from now on. */
   elder: boolean;
 }
+
+/** Display colour / ambient particle kind of an element (ELDER_ELEM = Uralt-Leviathan); render + UI only. */
+export const elemColor = (e: number): string => (e === ELDER_ELEM ? ELDER.color : (ELEMENTS[e]?.color ?? '#7fb6bf'));
+export const elemFx = (e: number): string => (e === ELDER_ELEM ? ELDER.fx : (ELEMENTS[e]?.fx ?? 'mote'));
 
 export const newDrakeState = (): DrakeState => ({ kills: [[], []], total: 0, cur: -1, next: -1, soulType: -1, soul: [-1, -1], elder: false });
 

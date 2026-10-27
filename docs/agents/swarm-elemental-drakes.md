@@ -14,7 +14,16 @@ Branch `swarm/elemental-drakes`. Status: sim + snapshot + data DONE, client UI N
 - `tests/objectives.test.ts`, `tests/sim/snapshotBots.test.ts` pass. `tsc --noEmit` clean.
 - `tests/replay.test.ts` / `tests/jungle.test.ts` NOT verified: vitest worker crashed / timed out under machine load. Lead please run them (the only rng use is `sim.rng` at Leviathan spawn/kill, deterministic).
 
-## Open items (not done)
+## Update: client UI and bots (swarm/drakes-ui) - the open items below are done, except the minimap badge colour
+
+- UI (`src/ui/drakes.ts` pure helpers, `drakeIcon` in icons.ts): scoreboard strip shows one element badge per kill (empty pips up to 4), a gold-framed soul badge in the soul element, the elder-buff timer, and a tooltip with the summed bonuses. Epic-timer chip shows the current element while the monster is up, the announced next element on cooldown (tooltip line). Buff bar: element stack chips ("Glut 2x") and the soul chip with bonus tooltips; the elder buff keeps its existing `buff.uralt` chip.
+- Announcements (de/en): next element after a kill (plus "soul element" note before spawn 3), soul claimed (own / enemy), Uralt-Leviathan appears, kill banner with element / elder text.
+- Render: ground ring in the element colour + ambient particles (kind from `drakes.json` `fx`) on the monster; no sprite tint, `championSprites.ts` untouched.
+- Bots: `leviathanGold` (values.json `gold.drakes`: per element, soulPoint +600, soulDeny +300, elder 2500); respawn timers use the real value (elder 360 s) in perceive, ganks/common and TeamAI via `src/ai/objectiveTimers.ts`.
+- Tests: `tests/drakesUi.test.ts` (10, new), `tests/sim/elementalDrakes.test.ts`, `tests/objectives.test.ts`, `tests/i18n.test.ts`, `tests/botPerception.test.ts`, `tests/botReact.test.ts` pass; `tsc --noEmit` clean. replay/jungle tests not run (load rules).
+- Decisions / open: bot values are untuned guesses (JSON). Screenshot: a real game needs 5:00+ for the first drake, so the real `drakeIcon` / `drakeBuffs` output was rendered in a throwaway DOM strip instead (all six badges look right). Minimap badge colour still open.
+
+## Open items (not done, see update above)
 - Scoreboard/objective-bar element icons (`ui/scoreboard.ts`, `ui/icons.ts` drakeIcon; colors in drakes.json; use `TeamObjectives.drakes/soulElem`), de/en announcements (next element, soul, elder spawn/kill; keys `ann.drake*`), per-element tint on the monster (needs an RGB tint in `championSprites.ts`, owned by agent F; alternative: colored ground ring in `render/units.ts` via `SnapEntity.elem`), minimap badge color.
 - Bot team AI values by element in `src/data/bots/values.json` + `ai/utility/value.ts` `objectiveValue` (soul/elder bonus); bot respawn timers (`ai/perception/perceive.ts`, `ai/ganks/common.ts`) still assume 300 s, elder is 360 s.
 - Decision: stat-based effects only (no combat hooks) to stay cheap and deterministic; numbers are in drakes.json for tuning. Old flat +6 % AD/AP per stack replaced.

@@ -17,6 +17,7 @@ import { CHAMPION_DATA } from '../../sim/champions';
 import type { BotMemory, BotStatic } from '../bot/types';
 import { sampleReactionMs } from '../profiles';
 import { dst } from '../bot/geo';
+import { objectiveFirstS, objectiveRespawnS } from '../objectiveTimers';
 import { atLeast, bySkill, cdTracking, junglerInputs } from './rankModel';
 import { cloudOf, type Cloud, type CloudEnv } from './clouds';
 import { gankRisk, junglerPrior, riskSource, type JunglerEstimate } from './gankRisk';
@@ -146,13 +147,16 @@ export function perceive(st: PerceptionState, snap: Snapshot, bot: BotStatic, pa
     } else if (ev.e === 'death' && ev.kind === Kind.Champion) reasons.push('killFeed');
     else if (ev.e === 'death' && ev.kind === Kind.Monster) {
       const o = nearestObjective(map, ev);
-      if (o) st.objectiveDeaths.set(o, evTick(i));
+      if (o) {
+        st.objectiveDeaths.set(o, evTick(i));
+        st.objectiveRespawn.set(o, objectiveRespawnS(o, !!snap.objectives?.drake?.elder));
+      }
     }
   }
   if (atLeast(params, 'gold')) {
     for (const [name, first, respawn] of OBJECTIVES) {
       const dead = st.objectiveDeaths.get(name);
-      const spawn = (dead === undefined ? first : dead / 30 + respawn) * 30;
+      const spawn = (dead === undefined ? first : dead / 30 + (st.objectiveRespawn.get(name) ?? respawn)) * 30;
       if (spawn > st.lastTick && spawn <= tick) reasons.push('objectiveSpawn');
     }
   }
@@ -414,10 +418,7 @@ export function perceive(st: PerceptionState, snap: Snapshot, bot: BotStatic, pa
 
 // ------------------------------------------------------------------ helpers
 
-const OBJECTIVES: [string, number, number][] = [
-  ['leviathan', 300, 300],
-  ['schleierwaechter', 1200, 360],
-];
+const OBJECTIVES: [string, number, number][] = (['leviathan', 'schleierwaechter'] as const).map((n): [string, number, number] => [n, objectiveFirstS(n), objectiveRespawnS(n, false)]);
 
 function nearestObjective(map: BotStatic['map'], p: Pt): string | null {
   const o = map.objectives;

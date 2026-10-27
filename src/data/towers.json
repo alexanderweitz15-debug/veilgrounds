@@ -1,0 +1,21 @@
+{
+  "_doc": "Structure numbers (LoL-like), read by src/sim/systems/towers.ts. Times in seconds, gold in gold. Tiers: 0 outer, 1 inner, 2 inhibitor tower, 3 nexus tower. Damage ramps linearly dmg0 -> dmg20 over rampSec. Plate gold 160 = LoL value (was 120; no deliberate choice in docs/DECISIONS.md). Fortification damageMult is a tuned guess (LoL: outer towers resist early pushing).",
+  "range": 750,
+  "attackSpeed": 0.83,
+  "radius": 88,
+  "vision": 1350,
+  "defendRange": 1400,
+  "rampSec": 1200,
+  "tiers": [
+    { "hp": 5000, "armor": 40, "dmg0": 170, "dmg20": 320 },
+    { "hp": 3600, "armor": 55, "dmg0": 190, "dmg20": 360 },
+    { "hp": 3300, "armor": 55, "dmg0": 210, "dmg20": 390 },
+    { "hp": 2700, "armor": 55, "dmg0": 210, "dmg20": 390 }
+  ],
+  "inhibitor": { "hp": 4000, "armor": 20, "radius": 140, "respawnSec": 300 },
+  "nexus": { "hp": 5500, "armor": 0, "radius": 220 },
+  "plates": { "count": 5, "hp": 800, "gold": 160, "fallSec": 840 },
+  "fortification": { "untilSec": 300, "damageMult": 0.5 },
+  "killTeamGold": 250,
+  "killLastHitGold": 150
+}

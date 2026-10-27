@@ -16,7 +16,7 @@ import { CHAMP_ABILITY_DMG_MULT, DT, Kind, isMinion, isStructure, sec, type Cast
 import { dealDamage } from '../damage';
 import { dir, dist2, circleInCone, cosDeg, segDist2 } from '../vec';
 import { findPath, lineWalkable, nearestWalkable, walkable } from '../map';
-import { addBuff, addShield, canAttack, canCast, canMove, channelBroken, healUnit, isFeared, removeBuffs, reveal, type StatKey } from '../buffs';
+import { addBuff, addShield, canAttack, canCast, canMove, channelBroken, healUnit, removeBuffs, reveal, type StatKey } from '../buffs';
 import { championData, championHooks, champIdOf, passiveHooksOf, slotAbility } from '../champions';
 import type { AbilityData, Effect, EffectTarget, Ranked, Scaling } from '../champions/schema';
 import type { CastMods, DashPlan, EffectCtx, EffectPhase } from '../champions/hooks';
@@ -1018,6 +1018,14 @@ function stepMoves(sim: Sim): void {
       s.moves.delete(eid);
       continue;
     }
+    // LoL: stun / fear / airborne / suppression / stasis stop an own dash (root and slow do not); `unstoppable` dashes
+    // are immune (canAttack honours it). The dash ends where it is, its landing effect does not fire.
+    if (m.slot >= 0 && !canAttack(sim, eid)) {
+      s.moves.delete(eid);
+      teleport(sim, eid, Pos.x[eid]!, Pos.y[eid]!);
+      noteDashEnd(sim, eid, m.slot);
+      continue;
+    }
     // dash to a unit: re-aim each tick, stop beside it
     let arrived = -1;
     const tgt = m.target >= 0 && Unit.serial[m.target] === m.targetSerial && Unit.alive[m.target] ? m.target : -1;
@@ -1137,7 +1145,6 @@ export function castSummoner(sim: Sim, eid: number, slot: number, x: number, y: 
   if (!def || def.todo) return 'unlearned';
   if (id === 'teleport' && cancelTeleport(sim, eid)) return null; // recast during the channel cancels it
   if (sim.tick < a.sumCdUntil[slot]!) return 'cooldown';
-  if (isFeared(sim, eid)) return 'cc'; // Furcht (Sev R) locks every summoner, Reinigen included
   if (id !== 'reinigen' && (!canAttack(sim, eid) || (id === 'sprung' && !canMove(sim, eid)))) return 'cc';
   const channel = a.channel !== null && a.channel.until > sim.tick;
   // a targeted wind-up resolves without a new range check: Flash waits for it (buffered) instead of moving the caster

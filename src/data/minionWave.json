@@ -3,5 +3,7 @@
   "catchupGapStart": 700,
   "catchupGapRamp": 600,
   "catchupMaxBonus": 0.25,
-  "offLaneBonus": 0.2
+  "offLaneBonus": 0.2,
+  "superMinionsLaneDown": 1,
+  "superMinionsAllDown": 2
 }

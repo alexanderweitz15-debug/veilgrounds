@@ -61,16 +61,16 @@ export function summonerCooldown(sim: Sim, id: string): number {
 /** Linear by champion level 1..18. */
 const byLevel = (sim: Sim, eid: number, lo: number, hi: number): number => lo + ((hi - lo) * (Math.max(1, sim.c.Champ.level[eid]!) - 1)) / 17;
 
-/** Cleanse removes these (not airborne / suppression / stasis) plus the summoner debuffs below. */
-const CLEANSED: ReadonlySet<BuffKind> = new Set(['slow', 'blind', 'root', 'silence', 'stun']);
+/** Cleanse removes these (not airborne / suppression / stasis) plus the summoner debuffs below. Fear: LoL Cleanse removes it. */
+const CLEANSED: ReadonlySet<BuffKind> = new Set(['slow', 'blind', 'root', 'silence', 'stun', 'fear']);
 const SUMMONER_DEBUFFS: ReadonlySet<string> = new Set(['entflammen', 'erschoepfen']);
 
 /** Executes the spell; returns false if it could not be cast (no cooldown then). */
 export function castSummonerSpell(sim: Sim, eid: number, id: string, x: number, y: number, target?: number): boolean {
   if (teleporting(sim, eid)) return false; // a Teleport channel blocks the other summoner
   if (id === 'reinigen') {
-    // usable while stunned/rooted/silenced; not while airborne, suppressed or in stasis
-    if (hasBuff(sim, eid, 'airborne') || hasBuff(sim, eid, 'suppress') || hasBuff(sim, eid, 'stasis') || hasBuff(sim, eid, 'fear')) return false;
+    // usable while stunned/rooted/silenced/feared; not while airborne, suppressed or in stasis
+    if (hasBuff(sim, eid, 'airborne') || hasBuff(sim, eid, 'suppress') || hasBuff(sim, eid, 'stasis')) return false;
     removeBuffs(sim, eid, (b) => !b.uncleansable && (CLEANSED.has(b.kind) || (SUMMONER_DEBUFFS.has(b.id) && b.kind !== 'mark')));
     addBuff(sim, eid, { kind: 'stat', stat: 'tenacity', id: 'reinigen', src: eid, pct: CLEANSE_TENACITY_PCT, ticks: CLEANSE_TICKS });
     return true;

@@ -1,14 +1,15 @@
 // OWNER: agent A (structures: spawn, targeting, shot damage, plates, protection, inhibitor respawn, game end).
 //
-// Structure numbers (LoL-like):
+// Structure numbers (LoL-like; the values live in src/data/towers.json, this table shows the defaults):
 //   tier            HP    armor/MR  damage 0:00 -> 20:00 (linear, then flat)
-//   outer  (t0)   5000    40         170 -> 320   5 plates x 800 HP (break at 4200/3400/2600/1800/1000), 120 g each
+//   outer  (t0)   5000    40         170 -> 320   5 plates x 800 HP (break at 4200/3400/2600/1800/1000), 160 g each
 //   inner  (t1)   3600    55         190 -> 360
 //   inhib  (t2)   3300    55         210 -> 390
 //   nexus  (t3)   2700    55         210 -> 390
 //   inhibitor     4000    20         -            respawns after 5 min
 //   nexus         5500     0         -
 // Towers: range 750 (edge to edge, like attack ranges), 0.83 attacks/s, windup 0, radius 88, vision 1350.
+// Fortification: until 5:00 outer towers take half damage (towers.json "fortification").
 // Warming vs champions: +40 % per consecutive shot on the same champion, max +120 %.
 // vs minions: raw % of max HP (melee 45 %, caster 70 %, siege 15 %, super 7 %), so shot counts never drift: like LoL
 // a caster dies to 2 shots (auto-shot-auto to last-hit it), a melee to 3 (shot-shot-auto). Was 50 % / 80 %: the 2nd
@@ -26,30 +27,26 @@ import { dist2, nearer } from '../vec';
 import { sees } from '../vision';
 import { MINION_STATS, recentVictim, targetLists, type TargetLists } from './minions';
 import { champions, reward } from './economy';
+import D from '../../data/towers.json';
 
-export const TOWER_RANGE = 750;
-export const TOWER_AS = 0.83;
-export const TOWER_RADIUS = 88;
-export const TOWER_VISION = 1350;
+export const TOWER_RANGE = D.range;
+export const TOWER_AS = D.attackSpeed;
+export const TOWER_RADIUS = D.radius;
+export const TOWER_VISION = D.vision;
 /** An enemy champion attacking an allied champion within this distance of the tower draws aggro. */
-export const TOWER_DEFEND_RANGE = 1400;
-export const PLATE_COUNT = 5;
-export const PLATE_HP = 800;
-export const PLATE_GOLD = 120;
-export const PLATES_FALL_TICK = sec(14 * 60);
-export const INHIB_RESPAWN = sec(5 * 60);
-export const TOWER_KILL_TEAM_GOLD = 250;
-export const TOWER_KILL_LAST_HIT_GOLD = 150;
+export const TOWER_DEFEND_RANGE = D.defendRange;
+export const PLATE_COUNT = D.plates.count;
+export const PLATE_HP = D.plates.hp;
+export const PLATE_GOLD = D.plates.gold;
+export const PLATES_FALL_TICK = sec(D.plates.fallSec);
+export const INHIB_RESPAWN = sec(D.inhibitor.respawnSec);
+export const TOWER_KILL_TEAM_GOLD = D.killTeamGold;
+export const TOWER_KILL_LAST_HIT_GOLD = D.killLastHitGold;
 
-export const TOWER_TIERS = [
-  { hp: 5000, armor: 40, dmg0: 170, dmg20: 320 },
-  { hp: 3600, armor: 55, dmg0: 190, dmg20: 360 },
-  { hp: 3300, armor: 55, dmg0: 210, dmg20: 390 },
-  { hp: 2700, armor: 55, dmg0: 210, dmg20: 390 },
-] as const;
-const INHIB = { hp: 4000, armor: 20, radius: 140 };
-const NEXUS = { hp: 5500, armor: 0, radius: 220 };
-const DMG_RAMP_TICKS = sec(20 * 60);
+export const TOWER_TIERS = D.tiers;
+const INHIB = D.inhibitor;
+const NEXUS = D.nexus;
+const DMG_RAMP_TICKS = sec(D.rampSec);
 
 export interface StructureRec {
   team: number;

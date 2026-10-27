@@ -1,15 +1,15 @@
 // OWNER: agent A (minion waves).
 // First wave 1:05 (tick 1950); every 30 s, from 15:00 every 25 s, from 25:00 every 20 s.
 // Wave = 3 melee + 3 casters; siege every 3rd wave (from 15:00 every 2nd, from 25:00 every wave);
-// one super minion per wave in a lane whose enemy inhibitor is down.
-// ponytail: LoL sends 2 supers per lane when all 3 inhibitors are down and replaces the siege minion; add both
-// here if late-game pushing feels too weak.
+// super minions in a lane whose enemy inhibitor is down: 1, or 2 when all three enemy inhibitors are down (LoL;
+// counts in src/data/minionWave.json). The siege minion stays.
 
 import type { Sim } from '../sim';
 import type { System } from './index';
 import { Kind, Lane, enemyOf, sec, type LaneId } from '../types';
 import { laneDir, laneGeo, lanePoint, setLanePath, spawnMinion } from './minions';
 import { inhibitorDown } from './towers';
+import waveData from '../../data/minionWave.json';
 
 export const FIRST_WAVE_TICK = 1950;
 const T15 = sec(15 * 60);
@@ -55,12 +55,19 @@ export function nextWaveInfo(sim: Sim): { tick: number; inSeconds: number; siege
   return { tick: s.next, inSeconds: Math.max(0, (s.next - sim.tick) / 30), siege: s.sinceSiege + 1 >= siegeEvery(s.next), index: s.index };
 }
 
-/** Spawn one wave for `team` in `lane` (rows front to back: super, 3 melee, siege, 3 casters). */
-export function spawnWave(sim: Sim, team: number, lane: LaneId, siege: boolean, superMinion: boolean): number[] {
+/** Super minions a wave of `team` in `lane` carries: 0 inhibitor up, 1 this lane's enemy inhibitor down, 2 all three down. */
+export function superCount(sim: Sim, team: number, lane: LaneId): number {
+  const foe = enemyOf(team);
+  if (!inhibitorDown(sim, foe, lane)) return 0;
+  return ([Lane.Top, Lane.Mid, Lane.Bot] as LaneId[]).every((l) => inhibitorDown(sim, foe, l)) ? waveData.superMinionsAllDown : waveData.superMinionsLaneDown;
+}
+
+/** Spawn one wave for `team` in `lane` (rows front to back: supers, 3 melee, siege, 3 casters). `supers`: count (true = 1). */
+export function spawnWave(sim: Sim, team: number, lane: LaneId, siege: boolean, supers: boolean | number): number[] {
   const g = laneGeo(sim, team, lane);
   const d0 = lane === Lane.Mid ? SPAWN_DIST.mid : SPAWN_DIST.side;
   const rows: number[][] = [];
-  if (superMinion) rows.push([Kind.MinionSuper]);
+  if (supers) rows.push(Array<number>(+supers).fill(Kind.MinionSuper));
   rows.push([Kind.MinionMelee, Kind.MinionMelee, Kind.MinionMelee]);
   if (siege) rows.push([Kind.MinionSiege]);
   rows.push([Kind.MinionCaster, Kind.MinionCaster, Kind.MinionCaster]);
@@ -96,7 +103,7 @@ export const wavesSystem: System = {
         if (!teams.includes(team)) continue; // tower last-hit trainer: enemy waves only
         for (const lane of [Lane.Top, Lane.Mid, Lane.Bot] as LaneId[]) {
           if (!lanes.includes(lane)) continue;
-          spawnWave(sim, team, lane, siege, inhibitorDown(sim, enemyOf(team), lane));
+          spawnWave(sim, team, lane, siege, superCount(sim, team, lane));
           sim.events.push({ e: 'wave', lane, team, index: s.index });
         }
       }

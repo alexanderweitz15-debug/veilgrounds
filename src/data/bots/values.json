@@ -4,7 +4,7 @@
   "gold": {
     "xp": 0.4,
     "kill": { "base": 300, "streakStep": 100, "streakMax": 1000, "assistShare": 0.5 },
-    "plate": 120,
+    "plate": 160,
     "tower": { "local": 250, "team": 150 },
     "inhibitor": 500,
     "nexusTower": 300,

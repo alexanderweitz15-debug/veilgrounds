@@ -115,7 +115,7 @@ export function dealDamage(sim: Sim, src: number, dst: number, amount: number, t
     let dmg = opts.raw || type === 'true' ? amount : amount * mitigation(effectiveResist(sim, src, dst, type));
     if (!ward) dmg *= damageTakenMult(sim, dst);
     // Fortification (towers.json): early outer towers take reduced damage
-    if (Unit.kind[dst] === Kind.Tower && sim.c.Tower.tier[dst] === 0 && sim.tick < sec(TOWER_DATA.fortification.untilSec)) dmg *= TOWER_DATA.fortification.damageMult;
+    if (Unit.kind[dst] === Kind.Tower && sim.c.Tower.tier[dst] === 0 && sim.tick < sec(TOWER_DATA.fortification.untilSec) && !sim.config.towerMult) dmg *= TOWER_DATA.fortification.damageMult;
     const absorbed = Math.min(Hp.shield[dst]!, dmg);
     Hp.shield[dst] = Hp.shield[dst]! - absorbed;
     const toHp = dmg - absorbed;

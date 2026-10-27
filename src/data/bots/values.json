@@ -109,6 +109,10 @@
     "minionClearMargin": 40,
     "shoveMaxS": 20,
     "minionAvoidRange": 1400,
+    "waveSeenRange": 2200,
+    "waveMinMinions": 3,
+    "waveMemoryS": 5,
+    "ownWaveMinMinions": 3,
     "shoveGapTicks": 90
   },
 

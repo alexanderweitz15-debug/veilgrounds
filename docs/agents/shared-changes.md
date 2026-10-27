@@ -627,3 +627,13 @@ Additive edits to shared files (all small):
 - `src/game/objectives.ts`: `TeamObjectives` + `drakes`, `soulElem`, `elderLeft`; elder respawn in `epicTimers`.
 - `src/i18n/{de,en}.json`: `buff.uralt(.desc)`, `drake.{glut,flut,fels,wind,arkan,elder}` appended.
 - `tests/objectives.test.ts`: two `toEqual` on `team()` got the three new fields.
+
+## drakes-ui (swarm/drakes-ui)
+
+- `src/data/drakes.json` + `src/sim/drakes.ts`: additive `fx` (ambient particle kind) per element and for the elder; `elemColor` / `elemFx` helpers.
+- `src/game/objectives.ts`: `ObjectiveTracker.drake()` (public rotation state).
+- `src/ui/{icons,hud,scoreboard,announce}.ts`: `drakeIcon`; element badges per kill / soul / elder timer in the scoreboard strip; epic-timer chip shows current / next element; buff bar gets element stack + soul chips; announcer banners via `src/ui/drakes.ts`.
+- `src/render/units.ts` (`ring()` gets optional colour + factor; element ring for `SnapEntity.elem`), `src/render/fx.ts` (ambient element particles). `championSprites.ts` untouched.
+- `src/ai/perception/{types,perceive}.ts`, `src/ai/ganks/common.ts`, `src/ai/bot/teamai.ts`: respawn timers via new `src/ai/objectiveTimers.ts` (elder 360 s, no hard-coded 300); `PerceptionState.objectiveRespawn` added.
+- `src/ai/utility/value.ts` + `src/data/bots/values.json` (`gold.drakes`): `leviathanGold` (element, soul point / denial, elder).
+- `src/i18n/{de,en}.json`: `drake.short.*`, `drake.soul*`, `drake.nowLine/nextLine`, `ann.drake*`, `ann.elder*`, `score.obj.elder` appended.

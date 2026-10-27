@@ -13,7 +13,7 @@ import { ATTACK_HIT, CAST_B, CAST_FLEX, CAST_RELEASE, CHAMP_FPS, FPS, FRAMES, LO
 import { bodyOf, drawHumanoid, solveRig } from './humanoid';
 import { KITS } from './kits';
 import { motionOf } from './motion';
-import { drawWolf, HARK } from './wolf';
+import { drawWolf, GALLOP_FPS, HARK } from './wolf';
 import { VARGRIM_DRAWER } from './cavalry';
 import { MINION_DRAWERS, MINION_KITS } from './minions';
 import { MONSTER_DRAWERS } from './monsters';
@@ -567,9 +567,10 @@ export function hitOf(id: string): number {
  *  (motion.ts), everything else the legacy ones. */
 export function rateOf(id: string): Record<Anim, number> {
   const kit = KITS[id];
-  if (!kit) return { ...FPS };
+  if (!kit) return id === 'hark' || id === 'mooswolf' ? { ...FPS, run: GALLOP_FPS } : { ...FPS };
   const mo = motionOf(kit);
-  return { ...CHAMP_FPS, run: mo.gait.cadence, idle: mo.idle.fps };
+  // idle has 6 frames (was 4): x1.25 keeps the breath cycle ~1.5 s instead of 1.9 s
+  return { ...CHAMP_FPS, run: mo.gait.cadence, idle: mo.idle.fps * 1.25 };
 }
 export function worldSizeOf(id: string): number {
   if (id === 'hark') return HARK.world;

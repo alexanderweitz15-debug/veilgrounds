@@ -2,11 +2,11 @@
 // the wolf (jagged "fur" hulls, IK legs), an armored rider torso grows out of its chest, couched lance, chains and
 // ghost-green flames. Baked as a SpriteDrawer (atlas.ts DRAWERS) plus a small humanoid Kit stub for icon colours.
 import { at, frameYZ, ik, lerp3, m, madd, norm, project, ring, shapeFrom, smoothPath, sub, TAU, type Basis, type Painter, type Stage, type V3 } from './core';
-import { furHull } from './wolf';
+import { furHull, gallopBody, gallopFoot } from './wolf';
 import type { SpriteDrawer } from './atlas';
 import type { Anim, Kit } from './types';
 
-const FRAMES: Record<Anim, number> = { idle: 4, run: 8, attack: 5, cast: 4, death: 3 };
+const FRAMES: Record<Anim, number> = { idle: 6, run: 8, attack: 5, cast: 4, death: 3 };
 
 const HIDE = m('#46565c', 'fur');
 const HIDE_LIGHT = m('#86aaa2', 'fur');
@@ -90,16 +90,17 @@ function poseOf(anim: Anim, frame: number): Pose {
     p.flare = 0.2 + 0.15 * Math.sin(t * TAU * 2);
     p.feet[1]![2] += Math.sin(t * TAU) * 3; // pawing
     p.feet[1]![1] = Math.max(0, Math.sin(t * TAU)) * 4;
+    p.pitch = Math.sin(t * TAU) * 0.025; // breath: the barrel rocks, weight shifts back onto the haunches
+    p.feet[2]![2] -= Math.max(0, Math.sin(t * TAU * 2)) * 1.5;
   } else if (anim === 'run') {
-    const ph = t * TAU;
-    const pairs = [0, 1.1, Math.PI + 0.5, Math.PI + 1.6];
     p.feet.forEach((f, i) => {
-      const a = ph + pairs[i]!;
-      f[2] += Math.cos(a) * 26;
-      f[1] = Math.max(0, -Math.sin(a)) * 18;
+      const [dz, dy] = gallopFoot(t, i, 19, 20);
+      f[2] += dz;
+      f[1] = dy;
     });
-    p.bob = Math.abs(Math.sin(ph)) * 5 - 2;
-    p.pitch = Math.sin(ph) * 0.07;
+    const g = gallopBody(t, 3.4, 0.07);
+    p.bob = g.bob + 0.6;
+    p.pitch = g.pitch;
     p.lean = 6;
     p.lancePush = 6;
     p.flare = 0.7;

@@ -638,3 +638,6 @@ Additive edits to shared files (all small):
 - `src/data/towers.json` (new), `src/data/minionWave.json` (+`superMinionsLaneDown`, `superMinionsAllDown`), `src/data/bots/values.json` (`gold.plate` 120 -> 160, test `utility.test.ts` requires equality with `PLATE_GOLD`).
 - `src/render/fx.ts`: bigger tower lance, ring under the champion an enemy tower shoots, aggro line also for far allies under tower fire (additive, in the existing tower readability block).
 - `tests/towers.test.ts`: two plate tests start at 5:00 (fortification ends) and expect 160 g.
+## art/f-identity-3 (agent F)
+- `src/render/championSprites.ts`: additive `SpriteBatchOptions.groundBlob?` (soft contact-shadow InstancedMesh, off by default; set on MONSTER_BATCH in `units.ts`). G's `runPh` is now seeded once per unit in the state literal and no longer reset on every stop -> run (phase-continuous, no cycle restart while orbwalking); distance pacing, `intent`, `castPoseActive`, flinch 13 unchanged.
+- `src/render/champions/atlas.ts` `rateOf`: idle rate x1.25 (6 idle frames); `hark` / `mooswolf` run rate 14 (8-frame gallop). `HARK.frames` idle 4 / run 8 (Mooswolf shares it); champion `FRAMES.idle` 6 (also Vargrim).

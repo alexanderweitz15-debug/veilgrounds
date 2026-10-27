@@ -54,6 +54,7 @@ const MONSTER_BATCH: SpriteBatchOptions = {
   ghosts: 16,
   corpseMs: 2600,
   dynAmp: 0.6,
+  groundBlob: 0.42, // camps and epics sit in the gouache world on a soft contact shadow
   idFor: (e, atlas) => {
     const m = monsterSprite(e);
     return m && atlas.frames[m.id] ? m.id : null;

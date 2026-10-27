@@ -52,6 +52,24 @@ export interface SpriteBatchOptions {
   scaleFor?: (e: SnapEntity) => number;
   /** amplitude of the runtime squash / stretch / lean springs (spriteDynamics.ts), default 1; 0 disables */
   dynAmp?: number;
+  /** soft contact-shadow blob under every sprite: peak opacity 0..1 (camps, epics); undefined = none */
+  groundBlob?: number;
+}
+
+/** Radial violet-black gradient (opaque centre, transparent rim) for the contact-shadow blob. */
+function blobTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d')!;
+  const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(30,20,48,1)');
+  gr.addColorStop(0.55, 'rgba(30,20,48,0.55)');
+  gr.addColorStop(1, 'rgba(30,20,48,0)');
+  g.fillStyle = gr;
+  g.fillRect(0, 0, 64, 64);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
 }
 
 /** Ranged attackers recoil on the release instead of lunging into the strike. */
@@ -149,6 +167,7 @@ export class ChampionSprites {
   readonly group = new THREE.Group();
   private readonly vis: THREE.InstancedMesh;
   private readonly cast: THREE.InstancedMesh;
+  private readonly blob?: THREE.InstancedMesh;
   private readonly uv: THREE.InstancedBufferAttribute;
   private readonly st = new Map<number, AnimState>(); // by serial
   private readonly byEid = new Map<number, AnimState>();
@@ -163,6 +182,7 @@ export class ChampionSprites {
   private readonly tmp = new THREE.Color();
   private readonly qLean = new THREE.Quaternion();
   private readonly qOut = new THREE.Quaternion();
+  private readonly qId = new THREE.Quaternion();
   private static readonly Z = new THREE.Vector3(0, 0, 1);
   private n = 0;
 
@@ -215,6 +235,22 @@ export class ChampionSprites {
     this.cast.frustumCulled = false;
     this.cast.count = 0;
     this.group.add(this.vis, this.cast);
+    if (opts.groundBlob) {
+      const bm = new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, opacity: opts.groundBlob, depthWrite: false });
+      // the whole blob takes the depth of its centre (the feet), a hair BEHIND the sprite quad (which sits 0.0004 in front)
+      bm.onBeforeCompile = (s) => {
+        s.vertexShader = s.vertexShader.replace(
+          '#include <project_vertex>',
+          '#include <project_vertex>\nvec4 footClip = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);\ngl_Position.z = (footClip.z / footClip.w + 0.0002) * gl_Position.w;',
+        );
+      };
+      this.blob = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 32).rotateX(-Math.PI / 2), bm, CAP);
+      this.blob.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      this.blob.frustumCulled = false;
+      this.blob.count = 0;
+      this.blob.renderOrder = -1;
+      this.group.add(this.blob);
+    }
   }
 
   /** Atlas id for an entity, or null if it is not drawn by this renderer. */
@@ -298,7 +334,7 @@ export class ChampionSprites {
     if (this.n >= this.opts.cap) return;
     let a = this.st.get(e.serial);
     if (!a) {
-      a = { scale: this.opts.scaleFor?.(e) ?? 1, serial: e.serial, seen: now, id, anim: 'idle', t0: now, dir: 'S', phase: 0, x, y, atk0: 0, atkHit: 0, wind: 0, hitT: -1e9, hx: 0, hy: 0, ang: NaN, angT: now, runPh: 0, intent: null, dyn: newDyn(now) };
+      a = { scale: this.opts.scaleFor?.(e) ?? 1, serial: e.serial, seen: now, id, anim: 'idle', t0: now, dir: 'S', phase: 0, x, y, atk0: 0, atkHit: 0, wind: 0, hitT: -1e9, hx: 0, hy: 0, ang: NaN, angT: now, runPh: ((e.id * 97) / 1000) * (this.atlas.rate[id]?.run ?? this.atlas.fps.run), intent: null, dyn: newDyn(now) };
       this.st.set(e.serial, a);
     }
     const dtMs = now - a.seen;
@@ -368,8 +404,7 @@ export class ChampionSprites {
       }
       if (anim === 'run' && a.anim === 'idle') KICKS.runStart(a.dyn, dirX, amp);
       a.anim = anim;
-      a.t0 = now;
-      if (anim === 'run') a.runPh = (e.id * 97) / 1000 * (this.atlas.rate[id]?.run ?? this.atlas.fps.run);
+      a.t0 = now; // runPh is seeded once per unit (desync) and kept across stops: no cycle restart while orbwalking
     }
     if (frame < 0 && anim === 'run') {
       // G/A2: run cycle paced by the distance walked in the last tick (boots faster, slows slower), phase-continuous
@@ -420,6 +455,14 @@ export class ChampionSprites {
     this.m.compose(this.p, this.qCast, this.s);
     this.cast.setMatrixAt(i, this.m);
     this.vis.setColorAt(i, this.tmp.setRGB(c, c, c));
+    if (this.blob) {
+      // contact shadow on the ground under the feet; shrinks while the unit is airborne
+      const r = size * 0.27 * Math.max(0.5, 1 - lift / 240);
+      this.p.set(x, 0.5, -y);
+      this.s.set(r, 1, r);
+      this.m.compose(this.p, this.qId, this.s);
+      this.blob.setMatrixAt(i, this.m);
+    }
   }
 
   end(now: number): void {
@@ -438,6 +481,10 @@ export class ChampionSprites {
       for (const [eid, t] of this.castAt) if (now - t.t0 > STALE_MS) this.castAt.delete(eid);
     }
     this.vis.count = this.cast.count = this.n;
+    if (this.blob) {
+      this.blob.count = this.n;
+      this.blob.instanceMatrix.needsUpdate = true;
+    }
     this.vis.instanceMatrix.needsUpdate = true;
     this.cast.instanceMatrix.needsUpdate = true;
     if (this.vis.instanceColor) this.vis.instanceColor.needsUpdate = true;

@@ -42,15 +42,28 @@ function cellStore(): AtlasCellCache | undefined {
   });
 }
 
+const listeners = new Map<string, ((done: number, total: number) => void)[]>();
+const lastProgress = new Map<string, [number, number]>();
+
 /** Champion atlas for the champions of a match (Hark added when Ottilie plays). Cached per id set. */
 export function getChampionAtlas(ids: string[], onProgress?: (done: number, total: number) => void): Promise<ChampionAtlas> {
   const list = [...new Set(ids)].sort();
   const key = list.join(',');
   gameRequested = true; // stops the menu precache (the game needs the bake workers now)
+  // every caller hears the progress (the game asks again while the lobby's or main.ts' early request is still running)
+  if (onProgress) {
+    listeners.set(key, [...(listeners.get(key) ?? []), onProgress]);
+    const last = lastProgress.get(key);
+    if (last) onProgress(...last);
+  }
   let p = cache.get(key);
   if (!p) {
     const t0 = performance.now();
-    p = buildChampionAtlasAsync(list, { master: CHAMP_MASTER, frame: CHAMP_FRAME, maxSize: ATLAS_MAX, autoHark: true, worker: makeWorker, cache: cellStore(), onProgress }).then((a) => {
+    const heard = (d: number, n: number): void => {
+      lastProgress.set(key, [d, n]);
+      for (const l of listeners.get(key) ?? []) l(d, n);
+    };
+    p = buildChampionAtlasAsync(list, { master: CHAMP_MASTER, frame: CHAMP_FRAME, maxSize: ATLAS_MAX, autoHark: true, worker: makeWorker, cache: cellStore(), onProgress: heard }).then((a) => {
       console.info(`champion atlas: ${list.length} champions, ${a.canvas.width}x${a.canvas.height} @${a.frameSize}px in ${Math.round(performance.now() - t0)} ms`);
       return a;
     });
@@ -58,9 +71,19 @@ export function getChampionAtlas(ids: string[], onProgress?: (done: number, tota
     p.catch(() => cache.get(key) === p && cache.delete(key));
     // ponytail: keep only the latest build (one match at a time)
     cache.clear();
+    for (const k of [...listeners.keys()]) if (k !== key) listeners.delete(k), lastProgress.delete(k);
     cache.set(key, p);
   }
   return p;
+}
+
+/**
+ * S3 progressive loading: stand-in for the champions of a match, one still pose per animation and direction in 64 px cells
+ * from a 96 px master (a small fraction of the full atlas' frames). Not cached; the game swaps it for the full atlas as
+ * soon as that is ready.
+ */
+export function getStandInAtlas(ids: string[]): Promise<ChampionAtlas> {
+  return buildChampionAtlasAsync([...new Set(ids)].sort(), { master: 96, frame: 64, maxSize: ATLAS_MAX, autoHark: true, worker: makeWorker, still: true });
 }
 
 // Champion frames ~1:1 with their on-screen size (a 260-unit sprite is ~160 px tall at 1080p, max zoom-out): the

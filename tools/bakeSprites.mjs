@@ -1,6 +1,6 @@
 // Pre-bakes the sprite strips of a finished build:   node tools/bakeSprites.mjs [distDir=dist]
 // Serves distDir, opens dist/bake.html (src/render/bakeEntry.ts) in a headless Chrome / Edge, receives every baked
-// strip as PNG and writes dist/atlas/<ver>/<file>.png + manifest.json (read at runtime by src/render/staticAtlas.ts).
+// strip as lossy WebP (BAKE_FORMAT=png: lossless PNG, BAKE_QUALITY=0.92) and writes dist/atlas/<ver>/<file> + manifest.json (read at runtime by src/render/staticAtlas.ts).
 // Run automatically by `vite build` in CI or with BAKE_SPRITES=1 (vite.config.ts). Exit code 0 = baked, 1 = failed,
 // 2 = no browser found. Set CHROME_PATH to pick a browser.
 import { spawn, execSync } from 'node:child_process';
@@ -11,7 +11,7 @@ import { extname, join, normalize, resolve } from 'node:path';
 
 const dist = resolve(process.argv[2] ?? 'dist');
 const TIMEOUT_MS = 20 * 60 * 1000;
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json', '.woff2': 'font/woff2' };
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json', '.woff2': 'font/woff2' };
 
 function findBrowser() {
   const c = [
@@ -93,7 +93,7 @@ const flags = ['--headless=new', '--disable-gpu', '--no-first-run', '--no-defaul
 if (process.platform === 'linux') flags.push('--no-sandbox'); // CI containers / userns restrictions; the page is our own bundle
 const t0 = Date.now();
 console.log(`bakeSprites: ${exe}\n  serving ${dist} on :${port}`);
-const proc = spawn(exe, [...flags, `http://127.0.0.1:${port}/bake.html`], { stdio: 'ignore' });
+const proc = spawn(exe, [...flags, `http://127.0.0.1:${port}/bake.html?fmt=${process.env.BAKE_FORMAT ?? 'webp'}&q=${process.env.BAKE_QUALITY ?? 0.92}`], { stdio: 'ignore' });
 // Windows msedge.exe is a launcher stub: it starts the real browser detached and exits at once (code 0), so an early exit
 // only counts as failure elsewhere; everywhere the page must report 'start' within 60 s.
 if (process.platform !== 'win32') proc.on('exit', (code) => finish({ ok: false, msg: `browser exited early (${code})` }));

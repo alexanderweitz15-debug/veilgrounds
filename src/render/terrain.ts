@@ -861,55 +861,61 @@ function detailTexture(): THREE.CanvasTexture {
  * in builds, kept in IndexedDB as PNG (src/render/atlasStore.ts) so a warm start only decodes it. Until the stored or
  * freshly painted image is ready the texture shows a flat ground colour (under the loading cover).
  */
-let groundImg: { n: number; canvas: HTMLCanvasElement } | null = null;
+// S3: a stored / shipped ground goes to the GPU as the decoded ImageBitmap itself (decoded pre-flipped: WebGL ignores
+// UNPACK_FLIP_Y for bitmaps), not copied through a 4096² canvas first (64 MB + a main-thread drawImage).
+let groundImg: { n: number; image: TexImageSource; flipY: boolean } | null = null;
 const GROUND_VER = buildVersion(import.meta.url);
-function groundTexture(cx: Ctx, N: number): THREE.CanvasTexture {
-  if (groundImg?.n === N) return new THREE.CanvasTexture(groundImg.canvas);
+function groundTexture(cx: Ctx, N: number): THREE.Texture {
+  const make = (image: TexImageSource, flipY: boolean): THREE.Texture => {
+    const t = new THREE.Texture(image as THREE.Texture['image']);
+    t.flipY = flipY;
+    t.needsUpdate = true;
+    return t;
+  };
+  if (groundImg?.n === N) return make(groundImg.image, groundImg.flipY);
   const paint = (): HTMLCanvasElement => {
     const t0 = performance.now();
     const c = paintGround(cx, N);
     console.info(`terrain: ground painted in ${Math.round(performance.now() - t0)} ms`);
-    groundImg = { n: N, canvas: c };
+    groundImg = { n: N, image: c, flipY: true };
     return c;
   };
-  if (import.meta.env.DEV || !atlasStoreAvailable() || typeof createImageBitmap === 'undefined') return new THREE.CanvasTexture(paint());
+  if (import.meta.env.DEV || !atlasStoreAvailable() || typeof createImageBitmap === 'undefined') return make(paint(), true);
   const flat = document.createElement('canvas');
   flat.width = flat.height = 4;
   const fctx = flat.getContext('2d')!;
   fctx.fillStyle = C.floor;
   fctx.fillRect(0, 0, 4, 4);
-  const tex = new THREE.CanvasTexture(flat);
+  const tex = make(flat, true);
   const key = `ground-${N}`;
-  const use = (c: HTMLCanvasElement): void => {
+  const use = (image: TexImageSource, flipY: boolean): void => {
     // the GPU storage of the 4 px placeholder is immutable: free it so the full image is allocated anew
     tex.dispose();
-    tex.image = c;
+    tex.image = image as THREE.Texture['image'];
+    tex.flipY = flipY;
     tex.needsUpdate = true;
   };
+  const useShared = (): void => use(groundImg!.image, groundImg!.flipY);
   void loadStrip(key, GROUND_VER)
     .then(async (hit) => {
-      if (groundImg?.n === N) return use(groundImg.canvas);
+      if (groundImg?.n === N) return useShared();
       // S3: the build ships the painted ground (tools/bakeSprites.mjs); copy it into IndexedDB like the sprite strips
       const shipped = hit ? null : await staticStrip(key, GROUND_ART_VER);
       if (shipped) void saveStrip(key, GROUND_VER, shipped.blob, 0);
       const stored = hit ?? shipped;
-      if (groundImg?.n === N) return use(groundImg.canvas);
+      if (groundImg?.n === N) return useShared();
       if (stored) {
         const t0 = performance.now();
-        const bmp = await createImageBitmap(stored.blob);
-        const c = document.createElement('canvas');
-        c.width = c.height = N;
-        c.getContext('2d')!.drawImage(bmp, 0, 0);
-        bmp.close();
-        groundImg = { n: N, canvas: c };
+        const bmp = await createImageBitmap(stored.blob, { imageOrientation: 'flipY' });
+        groundImg = { n: N, image: bmp, flipY: false };
         console.info(`terrain: ground loaded in ${Math.round(performance.now() - t0)} ms`);
-        return use(c);
+        return useShared();
       }
       const c = paint();
-      use(c);
+      use(c, true);
       c.toBlob((blob) => blob && void saveStrip(key, GROUND_VER, blob, 0), 'image/png');
     })
-    .catch(() => use(paint()));
+    .catch(() => use(paint(), true));
   return tex;
 }
 

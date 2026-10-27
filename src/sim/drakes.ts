@@ -6,6 +6,8 @@ import type { Rng } from './rng';
 export type DrakeStats = Partial<Record<string, number>>;
 export interface DrakeElement {
   id: string;
+  /** Ambient particle kind of the monster (render only). */
+  fx: string;
   color: string;
   perKill: DrakeStats;
   soul: DrakeStats;

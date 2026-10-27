@@ -1,12 +1,12 @@
 {
-  "note": "Elemental Leviathans (swarm elemental-drakes). Order of elements = index in the sim state and the snapshot (append only). perKill = team bonus per kill of that element (summed, BonusStat keys of sim/items/inventory.ts); soul = extra bonus when the team reached soulAt kills and the soul element is this one. Rotation: spawn 1 random, spawn 2 random other, spawn 3 = soul (map) element (differs from 1 and 2), then random without repeating the previous one. Once a team has the soul the pit spawns the Uralt-Leviathan (elder) instead; its kill gives the team an execute buff.",
+  "note": "Elemental Leviathans (swarm elemental-drakes). Order of elements = index in the sim state and the snapshot (append only). fx = ambient particle kind on the monster (render/fx.ts); perKill = team bonus per kill of that element (summed, BonusStat keys of sim/items/inventory.ts); soul = extra bonus when the team reached soulAt kills and the soul element is this one. Rotation: spawn 1 random, spawn 2 random other, spawn 3 = soul (map) element (differs from 1 and 2), then random without repeating the previous one. Once a team has the soul the pit spawns the Uralt-Leviathan (elder) instead; its kill gives the team an execute buff.",
   "soulAt": 4,
   "elements": [
-    { "id": "glut", "color": "#e8602c", "perKill": { "adPct": 3, "apPct": 3 }, "soul": { "adPct": 10, "apPct": 10 } },
-    { "id": "flut", "color": "#2f9fd0", "perKill": { "hp": 40, "hpRegenPct": 10 }, "soul": { "hp": 200, "hpRegenPct": 60, "lifestealPct": 5 } },
-    { "id": "fels", "color": "#a08460", "perKill": { "armor": 5, "mr": 5 }, "soul": { "armor": 25, "mr": 25, "hp": 150 } },
-    { "id": "wind", "color": "#9fd8e8", "perKill": { "msPct": 1.5, "haste": 3 }, "soul": { "msPct": 7, "haste": 15 } },
-    { "id": "arkan", "color": "#b06ae8", "perKill": { "asPct": 5 }, "soul": { "asPct": 20, "haste": 10 } }
+    { "id": "glut", "fx": "ember", "color": "#e8602c", "perKill": { "adPct": 3, "apPct": 3 }, "soul": { "adPct": 10, "apPct": 10 } },
+    { "id": "flut", "fx": "drip", "color": "#2f9fd0", "perKill": { "hp": 40, "hpRegenPct": 10 }, "soul": { "hp": 200, "hpRegenPct": 60, "lifestealPct": 5 } },
+    { "id": "fels", "fx": "shard", "color": "#a08460", "perKill": { "armor": 5, "mr": 5 }, "soul": { "armor": 25, "mr": 25, "hp": 150 } },
+    { "id": "wind", "fx": "spark", "color": "#9fd8e8", "perKill": { "msPct": 1.5, "haste": 3 }, "soul": { "msPct": 7, "haste": 15 } },
+    { "id": "arkan", "fx": "mote", "color": "#b06ae8", "perKill": { "asPct": 5 }, "soul": { "asPct": 20, "haste": 10 } }
   ],
-  "elder": { "color": "#c23a5a", "hp": 7500, "ad": 130, "radius": 140, "gold": 0, "xp": 300, "respawnS": 360, "buffS": 150, "executePct": 20 }
+  "elder": { "fx": "blackflame", "color": "#c23a5a", "hp": 7500, "ad": 130, "radius": 140, "gold": 0, "xp": 300, "respawnS": 360, "buffS": 150, "executePct": 20 }
 }

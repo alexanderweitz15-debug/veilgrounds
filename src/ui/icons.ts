@@ -8,6 +8,7 @@ import { abilityForSlot } from '../data/champions';
 import { championKit } from '../render/champions/atlas';
 import { MOTIF_RULES, abilityTheme } from '../render/abilityTheme';
 import { ITEM_ICON_TABLE, RUNE_ICON_TABLE } from './iconTable';
+import { DRAKE_GLYPH, elemColor, elemId } from './drakes';
 
 const S = 64;
 const cache = new Map<string, string>();
@@ -1114,6 +1115,17 @@ export function objectiveIcon(kind: 'leviathan' | 'soul' | 'schleier' | 'tower' 
       shape(g, '#d8cfb8', () => (g.moveTo(32, 6), g.lineTo(56, 32), g.lineTo(32, 58), g.lineTo(8, 32), g.closePath()));
       shape(g, '#8fd0ff', () => g.arc(32, 32, 8, 0, 7), undefined, 2);
     }
+  });
+}
+
+/** Elemental Leviathan badge (element colour backdrop + glyph; `soul` = gold frame; element = ELDER_ELEM for the Uralt-Leviathan). */
+export function drakeIcon(elem: number, soul = false): string {
+  return cached(`drake:${elem}:${soul ? 1 : 0}`, (g) => {
+    const col = elemColor(elem);
+    backdrop(g, col, '#0d1014');
+    const glyph = DRAKE_GLYPH[elemId(elem)] ?? 'wave';
+    (MOTIF[glyph] ?? GLYPHS[glyph]!)(g, '#fff6e0');
+    frame(g, soul ? GOLD : col, soul ? 5 : 3);
   });
 }
 

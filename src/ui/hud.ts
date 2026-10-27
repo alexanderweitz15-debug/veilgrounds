@@ -16,13 +16,14 @@ import { ShopPanel, itemAbbr, itemName } from './shop';
 import { Scoreboard, mmss } from './scoreboard';
 import { fitMinimap } from './display';
 import { DeathBar } from './deathBar';
-import { TargetFrame, drawChips, unitChips } from './targetFrame';
+import { TargetFrame, drawChips, unitChips, type Chip } from './targetFrame';
 import { BotDebugPanel } from './botDebug';
 import { JungleTrackerPanel } from './jungleTrackerPanel';
 import { setPortrait } from '../render/portraits';
 import { Announcer } from './announce';
 import { DeathRecap } from './deathRecap';
-import { abilityIcon, itemIcon, kesselbrutIcon, objectiveIcon, passiveIcon, setIcon, summonerIcon } from './icons';
+import { abilityIcon, drakeIcon, itemIcon, kesselbrutIcon, objectiveIcon, passiveIcon, setIcon, summonerIcon } from './icons';
+import { chipElem, chipLine, drakeBuffTip, drakeBuffs } from './drakes';
 import { KESSELBRUT_MAX_STACKS, KESSELBRUT_STRUCT_PCT } from '../sim/systems/jungle';
 import { setTip } from './tooltip';
 import { play } from '../audio/sfx';
@@ -480,7 +481,9 @@ export class Hud {
     setText(this.gold, String(Math.floor(me.gold)));
     this.drawItems(me.items ?? [], me.inFountain || me.dead);
     // own buff bar: crowd control and ability buffs on the own champion + jungle/objective buffs with seconds left
-    this.buffKey = drawChips(this.marks, meE && !me.dead ? unitChips(meE, snap.tick, me.marks ?? []) : [], this.buffKey);
+    const own = state.objectives.team(state.myTeam as 0 | 1);
+    const drakeChips = drakeBuffs(own.drakes, own.soulElem).map((b): Chip => ({ key: b.key, label: b.label, icon: drakeIcon(b.elem, b.soul), kind: 'buff', tip: `text:${drakeBuffTip(b)}` }));
+    this.buffKey = drawChips(this.marks, meE && !me.dead ? [...unitChips(meE, snap.tick, me.marks ?? []), ...drakeChips] : [], this.buffKey);
     this.drawTrinket(me.trinket);
     if (this.panels.shop.classList.contains('open')) this.shop.update(me, state.snap?.time ?? 0);
     if (meE) {
@@ -524,15 +527,19 @@ export class Hud {
   private drawEpicTimers(state: ClientState): void {
     if (!this.epics) return;
     const list = state.objectives.epicTimers();
-    const key = list.map((x) => `${x.kind}:${x.left === null ? 'up' : Math.ceil(x.left)}`).join(',');
+    const dr = state.objectives.drake();
+    const elemOf = (x: { kind: string; left: number | null }): number => (x.kind === 'leviathan' ? chipElem(dr, x.left === null) : -1);
+    const key = list.map((x) => `${x.kind}:${x.left === null ? 'up' : Math.ceil(x.left)}:${elemOf(x)}`).join(',');
     if (key === this.epicKey) return;
     this.epicKey = key;
     this.epics.textContent = '';
     for (const x of list) {
       const chip = el('span', `obj-timer ${x.kind}${x.left === null ? ' up' : ''}`, this.epics);
-      setIcon(el('span', 'ot-ico', chip), x.kind === 'kesselbrut' ? kesselbrutIcon() : objectiveIcon(x.kind));
+      const elem = elemOf(x);
+      setIcon(el('span', 'ot-ico', chip), x.kind === 'kesselbrut' ? kesselbrutIcon() : elem >= 0 ? drakeIcon(elem) : objectiveIcon(x.kind));
       el('span', 'ot-t', chip, x.left === null ? t('hud.epicUp') : mmss(x.left));
-      chip.title = `${x.left === null ? t(`hud.epic.${x.kind}Up`) : t(`hud.epic.${x.kind}`, { s: mmss(x.left) })}\n${t('hud.epicPingTip')}`;
+      const eline = x.kind === 'leviathan' ? chipLine(dr, x.left === null) : '';
+      chip.title = `${x.left === null ? t(`hud.epic.${x.kind}Up`) : t(`hud.epic.${x.kind}`, { s: mmss(x.left) })}${eline ? `\n${eline}` : ''}\n${t('hud.epicPingTip')}`;
       // click: tell the team (LoL objective-timer ping)
       const time = state.snap?.time ?? 0;
       chip.addEventListener('mousedown', (e) => {

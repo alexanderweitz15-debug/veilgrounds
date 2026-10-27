@@ -93,8 +93,7 @@ function missileStyle(pr: { srcKind?: number; champ?: string | null; slot?: numb
     case Kind.Tower:
     case Kind.Nexus: // big energy orb
       // D2: elongated energy lance (LoL tower shot) + spark trail (below), not a round blob
-      return ms(own ? '#c8ecff' : '#ffb08a', 2.3, 3.4, 0.9, 260, 2.2);
-      return { color: own ? '#c8ecff' : '#ffb08a', size: 3, length: 3.6, thick: 1.1, height: 260, halo: 2.8 };
+      return ms(own ? '#c8ecff' : '#ffb08a', 3, 3.6, 1.1, 260, 2.8); // mech-rest: bigger lance
     case Kind.MinionSiege: // dark cannonball
       return ms('#3a3430', 1.5, 1, 1, 120, 1.3);
     case Kind.MinionCaster: // small bolt

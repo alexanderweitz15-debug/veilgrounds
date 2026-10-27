@@ -6,6 +6,7 @@ import { addBuff } from '../src/sim/buffs';
 import { buildSnapshot } from '../src/sim/snapshot';
 import { Kind, sec, type PlayerSetup } from '../src/sim/types';
 import { castFailText } from '../src/ui/castFailText';
+import { classicConfig } from '../src/ai/runner';
 import { ringFraction, unitChips } from '../src/ui/targetFrame';
 import { CX, CY, makeSim, place } from './combat-helpers';
 
@@ -92,5 +93,15 @@ describe('target frame stats', () => {
     expect(me.st).toHaveLength(5);
     expect(me.st![4]).toBeGreaterThan(250);
     expect(ents.filter((e) => e.kind !== Kind.Champion).every((e) => e.st === undefined)).toBe(true);
+  });
+});
+
+describe('bot summoners', () => {
+  it('bot adcs may carry Barrier, bot tops Ghost; the human keeps the lobby pick', () => {
+    const cfg = classicConfig('mira', 'mid', 'gold', { seed: 1, summoners: ['sprung', 'heilen'] });
+    const bots = cfg.players.filter((p) => !p.isHuman);
+    expect(bots.filter((p) => p.role === 'adc').every((p) => p.summoners.includes('barriere'))).toBe(true);
+    expect(bots.filter((p) => p.role === 'top').every((p) => p.summoners.includes('geist'))).toBe(true);
+    expect(cfg.players.find((p) => p.isHuman)!.summoners).toEqual(['sprung', 'heilen']);
   });
 });

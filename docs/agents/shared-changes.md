@@ -627,3 +627,10 @@ Additive edits to shared files (all small):
 - `src/game/objectives.ts`: `TeamObjectives` + `drakes`, `soulElem`, `elderLeft`; elder respawn in `epicTimers`.
 - `src/i18n/{de,en}.json`: `buff.uralt(.desc)`, `drake.{glut,flut,fels,wind,arkan,elder}` appended.
 - `tests/objectives.test.ts`: two `toEqual` on `team()` got the three new fields.
+
+## ui-polish-3 (swarm/ui-polish-3)
+
+- `src/sim/snapshot.ts`: additive `SnapEntity.st?` ([ad, ap, armor, mr, move speed] of champions, target frame stats).
+- `src/sim/types.ts`: additive `SimConfig.towerMult?` ({hp, dmg}); read in `src/sim/systems/towers.ts` (spawn HP, shot damage vs champions/structures, no plates when set). Only `tutorialConfig` sets it; other games keep their state hash.
+- `src/ai/runner.ts`: SUMMONERS role table: top `['geist','teleport']`, adc `['sprung','barriere']` (bot games change; seeded tests may need a re-baseline).
+- `src/i18n/{de,en}.json`: `hud.resumeIn`, `tf.st.{ad,ap,armor,mr,ms}`.

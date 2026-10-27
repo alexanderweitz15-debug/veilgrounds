@@ -13,6 +13,13 @@
       "kesselbrut": { "goldPerLarva": 25, "stackStructureValue": 90 },
       "schleierwaechter": { "goldPerChamp": 300, "champs": 5, "buff": 2500 }
     },
+    "drakes": {
+      "note": "Elemental Leviathans (swarm drakes-ui): buff value per element (replaces objectives.leviathan.buff), extra for the kill that completes our soul / denies the enemy soul, and the Uralt-Leviathan (buff + execute).",
+      "elements": { "glut": 450, "flut": 350, "fels": 350, "wind": 300, "arkan": 400 },
+      "soulPoint": 600,
+      "soulDeny": 300,
+      "elder": 2500
+    },
     "ward": { "seal": 75, "visionMin": 40, "visionMax": 120, "objectiveLeadS": 60 },
     "hpPerPointFull": 0.15,
     "hpPerPointLowMult": 2.0,

@@ -10,6 +10,7 @@ import { CHAMPION_DATA } from '../../sim/champions';
 import type { SnapEntity } from '../../sim/snapshot';
 import type { DecisionLogEntry, ErrorId } from '../contract';
 import { dst } from '../bot/geo';
+import { objectiveFirstS, objectiveRespawnS } from '../objectiveTimers';
 import { isCC } from '../perception/perceive';
 import { pingChance } from '../perception/rankModel';
 import type { BotPerception, TrackMem } from '../perception/types';
@@ -130,9 +131,8 @@ export const canWard = (n: NodeCtx): boolean => !!n.snap.me?.trinket && n.snap.m
 
 /** Seconds until an objective spawns, from public timers + announced deaths (pv.mem.objectiveDeaths). */
 export function objectiveSpawnIn(pv: BotPerception, name: 'leviathan' | 'schleierwaechter'): number {
-  const [first, respawn] = name === 'leviathan' ? [300, 300] : [1200, 360];
   const dead = pv.mem.objectiveDeaths.get(name);
-  const at = dead === undefined ? first : dead / 30 + respawn;
+  const at = dead === undefined ? objectiveFirstS(name) : dead / 30 + (pv.mem.objectiveRespawn.get(name) ?? objectiveRespawnS(name, false));
   return at - pv.time;
 }
 

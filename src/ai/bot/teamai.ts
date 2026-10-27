@@ -18,6 +18,7 @@ import type { NodeCtx } from '../bt/types';
 import { dst } from './geo';
 import treeData from '../../data/bots/tree.json';
 import { utilityOn } from '../utility/flag';
+import { objectiveRespawnS } from '../objectiveTimers';
 import { VALUES, rankCurve } from '../utility/values';
 
 /** Log names of the conversion targets (§7.4 convert: tower | dragon | baron | kesselbrut). */
@@ -166,7 +167,7 @@ export class TeamAI {
       for (const o of OBJECTIVES) {
         if (dst(ev, this.map.objectives[o]) > 900 || !this.objectiveAlive(o, tick)) continue;
         const at = n.snap.eventTicks?.[i] ?? tick;
-        this.aliveFrom[o] = at + (campOf(o)?.respawn ?? 360) * 30;
+        this.aliveFrom[o] = at + objectiveRespawnS(o, !!n.snap.objectives?.drake?.elder) * 30;
         this.desires = this.desires.filter((d) => d.obj !== o);
         const byTeam = ev.killer >= 0 && n.snap.entities.some((e) => e.id === ev.killer && e.team === this.team);
         if (o === 'schleierwaechter' && byTeam) {

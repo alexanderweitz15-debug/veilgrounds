@@ -1,6 +1,7 @@
 // Elemental Leviathans on the client (pure: no DOM, testable in node): names, colours, stat text, buff-bar entries,
 // the epic-timer element and the announcer banners. The sim side is src/sim/drakes.ts, data src/data/drakes.json.
-import { ELDER, ELDER_ELEM, ELEMENTS, SOUL_AT, type DrakeStats } from '../sim/drakes';
+import { ELDER, ELDER_ELEM, ELEMENTS, SOUL_AT, elemColor, elemFx, type DrakeStats } from '../sim/drakes';
+export { elemColor, elemFx };
 import type { SnapDrake } from '../sim/snapshot';
 import { t } from '../i18n';
 
@@ -8,9 +9,6 @@ import { t } from '../i18n';
 export const DRAKE_GLYPH: Record<string, string> = { glut: 'flame', flut: 'wave', fels: 'gem', wind: 'wing', arkan: 'spiral', elder: 'crown' };
 
 export const elemId = (e: number): string => (e === ELDER_ELEM ? 'elder' : (ELEMENTS[e]?.id ?? ''));
-export const elemColor = (e: number): string => (e === ELDER_ELEM ? ELDER.color : (ELEMENTS[e]?.color ?? '#7fb6bf'));
-/** Particle kind (render/fx.ts) of the monster's ambient effect. */
-export const elemFx = (e: number): string => (e === ELDER_ELEM ? ELDER.fx : (ELEMENTS[e]?.fx ?? 'mote'));
 export const elemName = (e: number): string => t(`drake.${elemId(e)}`);
 const shortName = (e: number): string => t(`drake.short.${elemId(e)}`);
 
@@ -92,6 +90,6 @@ export function drakeBanners(seen: DrakeSeen, d: SnapDrake | undefined, mine: nu
 
 /** Banner of a Leviathan kill: the element is `cur` (still the killed one when the event arrives); the elder has its own text. */
 export function drakeKillBanner(d: SnapDrake | undefined, ours: boolean): { title: string; sub: string } {
-  if (d && d.cur === ELDER_ELEM) return { title: t(ours ? 'ann.elderOwn' : 'ann.elderEnemy'), sub: t('ann.elderSub', { s: ELDER.buffS }) };
+  if (d && d.cur === ELDER_ELEM) return { title: t(ours ? 'ann.elderOwn' : 'ann.elderEnemy'), sub: t('ann.elderSub', { s: ELDER.buffS, pct: ELDER.executePct }) };
   return { title: t(ours ? 'ann.leviathanOwn' : 'ann.leviathanEnemy'), sub: d && d.cur >= 0 ? elemName(d.cur) : '' };
 }

@@ -35,6 +35,10 @@ export interface DrakeState {
   elder: boolean;
 }
 
+/** Display colour / ambient particle kind of an element (ELDER_ELEM = Uralt-Leviathan); render + UI only. */
+export const elemColor = (e: number): string => (e === ELDER_ELEM ? ELDER.color : (ELEMENTS[e]?.color ?? '#7fb6bf'));
+export const elemFx = (e: number): string => (e === ELDER_ELEM ? ELDER.fx : (ELEMENTS[e]?.fx ?? 'mote'));
+
 export const newDrakeState = (): DrakeState => ({ kills: [[], []], total: 0, cur: -1, next: -1, soulType: -1, soul: [-1, -1], elder: false });
 
 /** Random element out of all except `skip`. */

@@ -89,13 +89,13 @@ function spawnStructure(sim: Sim, rec: StructureRec): void {
   const eid = spawnUnit(sim, rec.kind, rec.team, rec.x, rec.y, radius);
   const base = isTower ? TOWER_TIERS[rec.tier]! : rec.kind === Kind.Inhibitor ? INHIB : NEXUS;
   Unit.lane[eid] = rec.lane;
-  Hp.max[eid] = Hp.cur[eid] = base.hp;
+  Hp.max[eid] = Hp.cur[eid] = isTower ? base.hp * (sim.config.towerMult?.hp ?? 1) : base.hp;
   Stats.armor[eid] = Stats.mr[eid] = base.armor;
   Vision.r[eid] = isTower ? TOWER_VISION : 0;
   if (isTower) {
     addComp(sim, Tower, eid);
     Tower.tier[eid] = rec.tier;
-    Tower.plates[eid] = rec.tier === 0 && sim.tick < PLATES_FALL_TICK ? PLATE_COUNT : 0;
+    Tower.plates[eid] = rec.tier === 0 && sim.tick < PLATES_FALL_TICK && !sim.config.towerMult ? PLATE_COUNT : 0; // weakened tower (tutorial): no plates (HP is not a multiple of PLATE_HP)
     Tower.lastTarget[eid] = -1;
     Tower.shotsOnSame[eid] = 0;
     Stats.as[eid] = TOWER_AS;
@@ -127,7 +127,7 @@ export function towerShotDamage(sim: Sim, tower: number, target: number): { amou
     const pct = MINION_STATS[k]?.towerPct ?? 0.07;
     return { amount: Hp.max[target]! * pct, type: 'phys', raw: true };
   }
-  let amount = towerBaseDamage(Tower.tier[tower]!, sim.tick);
+  let amount = towerBaseDamage(Tower.tier[tower]!, sim.tick) * (sim.config.towerMult?.dmg ?? 1);
   if (k === Kind.Champion) {
     if (Tower.lastTarget[tower] !== target) {
       Tower.lastTarget[tower] = target;

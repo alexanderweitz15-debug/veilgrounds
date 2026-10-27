@@ -72,6 +72,7 @@ export function tutorialConfig(runes?: RuneChoice, champion = MIRA_ID, summoners
     dummies: [{ ...SANDBOX_DUMMY, team: 1 }],
     minionsEnabled: false,
     minionLanes: [Lane.Mid],
+    towerMult: { hp: 0.5, dmg: 0.4 }, // tower step: kill time of about a minute for a first-time player
     trainer: { scenario: TUTORIAL_MARK },
   };
 }

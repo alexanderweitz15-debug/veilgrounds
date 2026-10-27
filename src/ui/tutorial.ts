@@ -20,8 +20,9 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?:
 
 /** Map points the preparation of a step teleports to. */
 export function tutorialGeo(): Geo {
-  const side = loadMap().sides[0];
-  return { fountain: side.fountain, ownTower: side.towers.mid[0]!, dummy: SANDBOX_DUMMY };
+  const map = loadMap();
+  const side = map.sides[0];
+  return { fountain: side.fountain, ownTower: side.towers.mid[0]!, enemyTower: map.sides[1].towers.mid[0]!, dummy: SANDBOX_DUMMY };
 }
 
 export class TutorialController {

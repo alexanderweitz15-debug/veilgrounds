@@ -16,6 +16,8 @@ export interface Geo {
   fountain: Pt;
   /** Own outer mid tower. */
   ownTower: Pt;
+  /** Enemy outer mid tower (tower step starts in front of it); falls back to the own tower. */
+  enemyTower?: Pt;
   /** Practice dummy (sandbox). */
   dummy: Pt;
 }
@@ -40,7 +42,7 @@ export const MOVE_DIST = 300;
 /** What a step needs from the sandbox while it runs. */
 interface Needs {
   /** Teleport here when the step starts. */
-  place?: 'fountain' | 'ownTower' | 'dummy';
+  place?: 'fountain' | 'ownTower' | 'enemyTower' | 'dummy';
   /** Raise to at least this level (cheat). */
   level?: number;
   /** Give this much gold once (cheat) when the player has less. */
@@ -181,7 +183,7 @@ export const STEPS: StepDef[] = [
     id: 'tower',
     highlight: ['.hud-top .towers'],
     keys: [],
-    needs: { noCd: false, place: 'ownTower', minions: true, level: 9 },
+    needs: { noCd: false, place: 'enemyTower', minions: true, level: 9 },
     check: (v) => v.snap.events.some((ev) => ev.e === 'death' && ev.kind === Kind.Tower && ev.team !== v.snap.team),
   },
   {
@@ -243,6 +245,14 @@ export const isComplete = (p: Progress): boolean => STEP_IDS.every((id) => p.don
 const placePoint = (geo: Geo, where: NonNullable<Needs['place']>): Pt => {
   if (where === 'fountain') return geo.fountain;
   if (where === 'ownTower') return { x: geo.ownTower.x - 100, y: geo.ownTower.y - 100 };
+  if (where === 'enemyTower') {
+    if (!geo.enemyTower) return { x: geo.ownTower.x - 100, y: geo.ownTower.y - 100 };
+    // 1200 in front of the enemy tower (range 750), on the line from our tower
+    const dx = geo.enemyTower.x - geo.ownTower.x;
+    const dy = geo.enemyTower.y - geo.ownTower.y;
+    const l = Math.hypot(dx, dy) || 1;
+    return { x: geo.enemyTower.x - (dx / l) * 1200, y: geo.enemyTower.y - (dy / l) * 1200 };
+  }
   // 450 in front of the dummy, on the line from the fountain
   const dx = geo.dummy.x - geo.fountain.x;
   const dy = geo.dummy.y - geo.fountain.y;

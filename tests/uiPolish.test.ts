@@ -4,9 +4,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { step } from '../src/sim/sim';
 import { addBuff } from '../src/sim/buffs';
 import { buildSnapshot } from '../src/sim/snapshot';
-import { sec, type PlayerSetup } from '../src/sim/types';
+import { Kind, sec, type PlayerSetup } from '../src/sim/types';
 import { castFailText } from '../src/ui/castFailText';
-import { unitChips } from '../src/ui/targetFrame';
+import { ringFraction, unitChips } from '../src/ui/targetFrame';
 import { CX, CY, makeSim, place } from './combat-helpers';
 
 // targetFrame pulls canvas-only modules (icons -> sprite atlas -> Path2D): stub what the chip logic does not need
@@ -72,5 +72,25 @@ describe('buff chips', () => {
     expect(chips[0]!.left).toBe(3.2);
     expect(chips[0]!.tip.startsWith('timed:4:')).toBe(true);
     expect(chips[1]!.tip.startsWith('timed:40:text:')).toBe(true);
+  });
+
+  it('ring fraction counts down from the longest value seen on the node', () => {
+    const n = { dataset: {} as DOMStringMap };
+    expect(ringFraction(n, 5)).toBe(1);
+    expect(ringFraction(n, 2.5)).toBe(0.5);
+    expect(ringFraction(n, 0)).toBe(0);
+    expect(ringFraction(n, 8)).toBe(1); // refreshed buff: new longest
+  });
+});
+
+describe('target frame stats', () => {
+  it('champions carry [ad, ap, armor, mr, ms]; minions do not', () => {
+    const sim = makeSim({ players: [player(0, 'mira'), player(5, 'brom')] });
+    step(sim);
+    const ents = buildSnapshot(sim, 0, 0).entities;
+    const me = ents.find((e) => e.id === sim.slots[0]!)!;
+    expect(me.st).toHaveLength(5);
+    expect(me.st![4]).toBeGreaterThan(250);
+    expect(ents.filter((e) => e.kind !== Kind.Champion).every((e) => e.st === undefined)).toBe(true);
   });
 });

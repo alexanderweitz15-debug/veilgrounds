@@ -32,5 +32,8 @@ Closes the three open items above.
 - Only visible, ripe plants; none within 1000 of an enemy tower. One target at a time, dropped after 12 s (ignored for 20 s). No rng, per-bot state in a WeakMap (BotMemory / BotExt unchanged).
 - Gap: the leaf runs before `survive`, but a bot that already walks home or chases is not turned around for a plant farther than the detour (450 for wind); a fleeing bot's pop costs a wind-up.
 
-## Tests
-See the end of this file (filled in after the runs).
+## Tests (machine at 100 % CPU: runs took 5-20x longer than normal)
+- tests/botPlants.test.ts (new, 7 tests: 6 decision cases on hand-built snapshots, 1 seeded sim: hurt bot pops a Honigfrucht and eats a piece in < 8 s game time): green.
+- tests/jungle.test.ts (18, incl. plants block), tests/bt.test.ts, tests/i18n.test.ts: green. tests/map.test.ts: plant / camp reachability green; "wall corners ... Hohlkaefer" hit its 20 s timeout only because of the load (untouched code path), not re-run.
+- `npx tsc --noEmit`: clean.
+- Not run: replay / determinism suites (no sim change), full bot-sim (not allowed).

@@ -627,3 +627,14 @@ Additive edits to shared files (all small):
 - `src/game/objectives.ts`: `TeamObjectives` + `drakes`, `soulElem`, `elderLeft`; elder respawn in `epicTimers`.
 - `src/i18n/{de,en}.json`: `buff.uralt(.desc)`, `drake.{glut,flut,fels,wind,arkan,elder}` appended.
 - `tests/objectives.test.ts`: two `toEqual` on `team()` got the three new fields.
+
+## swarm/mech-rest
+
+- `src/sim/damage.ts`: +1 import (`towers.json`) and one line in `dealDamage`: outer towers (tier 0) take `fortification.damageMult` x damage until `fortification.untilSec` (all sources).
+- `src/sim/systems/abilities.ts`: `stepMoves` ends an own dash (slot >= 0) when `canAttack` is false (stun/fear/airborne/suppress/stasis; unstoppable immune); `castSummoner` no longer blocks Reinigen while feared (dropped `isFeared` import).
+- `src/sim/summoners.ts`: Reinigen cleanses `fear` and is castable while feared.
+- `src/sim/systems/minions.ts`: aggro tiers renumbered 1..8 (new 4 = turret attacking allied minion, 5 = champion attacking allied minion; 6 nearest minion, 7 structure, 8 idle champion). `gatherCalls` also takes towers as source. `prio` is module-local, no outside users.
+- `src/sim/systems/waves.ts`: `spawnWave` last arg `boolean | number` (super count; old `true/false` callers unchanged), new `superCount()`.
+- `src/data/towers.json` (new), `src/data/minionWave.json` (+`superMinionsLaneDown`, `superMinionsAllDown`), `src/data/bots/values.json` (`gold.plate` 120 -> 160, test `utility.test.ts` requires equality with `PLATE_GOLD`).
+- `src/render/fx.ts`: bigger tower lance, ring under the champion an enemy tower shoots, aggro line also for far allies under tower fire (additive, in the existing tower readability block).
+- `tests/towers.test.ts`: two plate tests start at 5:00 (fortification ends) and expect 160 g.

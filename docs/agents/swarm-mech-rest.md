@@ -12,7 +12,9 @@
 
 ## Tests
 - `tests/mechRest.test.ts` (new, 8, seeded): json drives constants + 160 g, fortification, Reinigen vs fear, stun/fear stop a dash and root does not, three minion tier cases, super count 0/1/2.
-- Other results: see final message of the lead hand-off (filled below).
+- Green (this branch, run on a saturated machine, 1-10 min each): mechRest 8/8, minions 12/12, waves 8/8, minionWave 3/3, mechCc 5/5, utility 19/19, mechanics 19/19, summonersWards (all).
+- towers.test.ts: 10/12 first run; the 2 plate tests failed only on +1 passive gold at tick 9000. Fixed (start at 5:00 + 1 tick), re-run did NOT finish (CPU starved) -> lead must run `npx vitest run tests/towers.test.ts`.
+- NOT run: `tsc --noEmit`, tests/phase1.test.ts (>= 60 CS), tests/replay.test.ts. The machine sat at 100 % CPU (one msedge process, ~100k CPU s) and vitest/tsc got no CPU. Lead must run these. Risk to watch: new minion tiers 4/5 (minions answer turret / champion hits on allied minions) can change CS in phase1; fortification halves early outer tower damage.
 
 ## Open
 - Fortification factor and super-minion siege replacement are guesses; tune in json.

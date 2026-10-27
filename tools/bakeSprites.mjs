@@ -1,6 +1,6 @@
 // Pre-bakes the sprite strips of a finished build:   node tools/bakeSprites.mjs [distDir=dist]
 // Serves distDir, opens dist/bake.html (src/render/bakeEntry.ts) in a headless Chrome / Edge, receives every baked
-// strip as PNG and writes dist/atlas/<ver>/<file>.png + manifest.json (read at runtime by src/render/staticAtlas.ts).
+// strip as lossy WebP (BAKE_FORMAT=png: lossless PNG, BAKE_QUALITY=0.92) and writes dist/atlas/<ver>/<file> + manifest.json (read at runtime by src/render/staticAtlas.ts).
 // Run automatically by `vite build` in CI or with BAKE_SPRITES=1 (vite.config.ts). Exit code 0 = baked, 1 = failed,
 // 2 = no browser found. Set CHROME_PATH to pick a browser.
 import { spawn, execSync } from 'node:child_process';

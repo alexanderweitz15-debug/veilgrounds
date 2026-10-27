@@ -78,11 +78,12 @@ export function getChampionAtlas(ids: string[], onProgress?: (done: number, tota
 }
 
 /**
- * S3 progressive loading: low-res stand-in for the champions of a match (cells 64 px from a 96 px master: ~6x less to bake
- * than the full 152 px / 240 px atlas). Not cached; the game swaps it for the full atlas as soon as that is ready.
+ * S3 progressive loading: stand-in for the champions of a match, one still pose per animation and direction in 64 px cells
+ * from a 96 px master (a small fraction of the full atlas' frames). Not cached; the game swaps it for the full atlas as
+ * soon as that is ready.
  */
 export function getStandInAtlas(ids: string[]): Promise<ChampionAtlas> {
-  return buildChampionAtlasAsync([...new Set(ids)].sort(), { master: 96, frame: 64, maxSize: ATLAS_MAX, autoHark: true, worker: makeWorker });
+  return buildChampionAtlasAsync([...new Set(ids)].sort(), { master: 96, frame: 64, maxSize: ATLAS_MAX, autoHark: true, worker: makeWorker, still: true });
 }
 
 // Champion frames ~1:1 with their on-screen size (a 260-unit sprite is ~160 px tall at 1080p, max zoom-out): the

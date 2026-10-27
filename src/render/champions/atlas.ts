@@ -114,6 +114,8 @@ export interface AtlasOptions {
   workers?: number;
   /** B7: persistent per-id cell cache (src/render/sheets.ts, Cache Storage); hits skip baking that id. */
   cache?: AtlasCellCache;
+  /** S3 stand-in: one still frame per animation and direction (a fraction of the jobs); never combine with `cache`. */
+  still?: boolean;
 }
 
 /**
@@ -580,7 +582,7 @@ function plan(ids: string[], opts: AtlasOptions) {
   const jobs: AtlasJob[] = [];
   for (const id of list)
     for (const anim of ANIMS)
-      for (const dir of uniqueDirs) for (let f = 0; f < framesOf(id, anim); f++) jobs.push({ id, anim, dir, frame: f, cell: jobs.length });
+      for (const dir of uniqueDirs) for (let f = 0; f < (opts.still ? 1 : framesOf(id, anim)); f++) jobs.push({ id, anim, dir, frame: f, cell: jobs.length });
   const maxSize = opts.maxSize ?? 4096;
   let frame = opts.frame ?? 128;
   const fits = (fs: number) => Math.floor(maxSize / fs) ** 2 >= jobs.length;

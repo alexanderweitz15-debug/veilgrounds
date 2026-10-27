@@ -15,7 +15,8 @@
   color: var(--ivory);
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: #121110; user-select: none; }
+/* S3: the first painted frame (before the menu script runs) already has the map tone of the main menu, not near-black */
+html, body { margin: 0; height: 100%; overflow: hidden; background: #16211c radial-gradient(ellipse at 62% 42%, #46603f 0%, #2b4034 38%, #16211c 72%, #0b100e 100%) no-repeat; user-select: none; }
 #app { position: fixed; inset: 0; }
 
 .btn {

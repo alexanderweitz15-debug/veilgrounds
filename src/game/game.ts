@@ -152,8 +152,10 @@ export class Game {
     let fullDone = false;
     window.setTimeout(() => {
       if (fullDone) return;
+      const t0 = performance.now();
       getStandInAtlas(champIds)
         .then((atlas) => {
+          console.info(`champion stand-in atlas: ${atlas.canvas.width}x${atlas.canvas.height} in ${Math.round(performance.now() - t0)} ms${fullDone ? ' (full atlas was faster)' : ''}`);
           if (fullDone) return;
           this.world.setChampionAtlas(atlas);
           begin();

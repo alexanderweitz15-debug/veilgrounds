@@ -25,7 +25,7 @@ const port = server.address().port;
 const va = readdirSync(join(a, 'atlas'))[0];
 const vb = readdirSync(join(b, 'atlas'))[0];
 
-const bro = await launch(join(tmpdir(), 's3-diff-profile'));
+const bro = await launch(join(tmpdir(), `s3-diff-profile-${Date.now()}`));
 await bro.send('Page.navigate', { url: `http://127.0.0.1:${port}/` });
 await bro.sleep(500);
 const result = await bro.evaluate(`(async () => {
@@ -81,7 +81,7 @@ const result = await bro.evaluate(`(async () => {
     x.putImageData(worst.B.d, w, 0, 0, 0, w, h);
     x.putImageData(diff, 2 * w, 0);
     const blob = await c.convertToBlob({ type: 'image/png' });
-    img = btoa(String.fromCharCode(...new Uint8Array(await blob.arrayBuffer())));
+    img = await new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.readAsDataURL(blob); });
   }
   return JSON.stringify({ rows, bytesA, bytesB, worstKey: worst?.key, img });
 })()`);

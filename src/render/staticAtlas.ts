@@ -32,7 +32,7 @@ export function staticManifest(): Promise<StaticManifest | null> {
   return manifest;
 }
 
-/** The shipped strip of `key` (PNG blob + head height), or null if the build does not contain it. */
+/** The shipped strip of `key` (WebP / PNG blob + head height), or null if the build does not contain it. */
 export async function staticStrip(key: string, ver?: string | null): Promise<{ blob: Blob; top: number } | null> {
   const e = (await staticManifest())?.strips[key];
   if (!e || (ver !== undefined && e.ver !== ver)) return null;

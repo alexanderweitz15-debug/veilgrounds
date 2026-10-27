@@ -68,7 +68,7 @@ for (let i = 0; i < Number(runs); i++) {
   const t = r.m?.t ?? {};
   results.push(t.loadingGone ?? -1);
   console.log(`${label} ${mode} run ${i + 1}: champions ready ${t.loadingGone ?? 'TIMEOUT'} ms, cover done ${t.coverDone ?? '-'} ms, longest task ${r.m?.long ?? '-'} ms`);
-  console.log('   ', r.logs.filter((l) => /atlas|precache|ground|bake|EXC/.test(l)).join(' | '));
+  console.log('   ', r.logs.filter((l) => /atlas|precache|ground|bake|EXC|stand-in/.test(l)).join(' | '));
 }
 console.log(`${label} ${mode}: [${results.join(', ')}] ms`);
 process.exit(0);

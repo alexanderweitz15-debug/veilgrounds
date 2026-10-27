@@ -3,7 +3,7 @@
 // only decodes them. Records carry a version derived from this module's built URL (content-hashed chunk: any art change
 // in the bundle invalidates them); the dev server bakes every time. Not Cache Storage: the PWA service worker deletes
 // every cache but its own on activate.
-import { buildChampionAtlasAsync, BIG_MONSTER_IDS, CAMP_MONSTER_IDS, CHAMPION_IDS, MINION_IDS, STRIP_COLS, stripKey, type AnyCanvas, type AtlasCellCache, type ChampionAtlas } from './champions';
+import { buildChampionAtlasAsync, BIG_MONSTER_IDS, CAMP_MONSTER_IDS, CHAMPION_IDS, MINION_IDS, PLANT_IDS, STRIP_COLS, stripKey, type AnyCanvas, type AtlasCellCache, type ChampionAtlas } from './champions';
 import { buildVersion, loadStrip, saveStrip } from './atlasStore';
 import { ART_VER, staticManifest, staticStrip } from './staticAtlas';
 
@@ -81,12 +81,14 @@ const ATLAS_MAX = ((): number => {
 const MINION_BAKE = { master: 144, frame: 96 };
 const BIG_BAKE = { master: 320, frame: 200 };
 const CAMP_BAKE = { master: 192, frame: 128 };
+const PLANT_BAKE = CAMP_BAKE; // third atlas: same cells as the camp atlas
 /** Every strip the build bakes (tools/bakeSprites.mjs via src/render/bakeEntry.ts): ids with their master / cell size. */
 export const BAKE_GROUPS: { ids: string[]; master: number; frame: number }[] = [
   { ids: [...new Set([...CHAMPION_IDS, 'hark'])], master: CHAMP_MASTER, frame: CHAMP_FRAME },
   { ids: MINION_IDS, ...MINION_BAKE },
   { ids: BIG_MONSTER_IDS, ...BIG_BAKE },
   { ids: CAMP_MONSTER_IDS, ...CAMP_BAKE },
+  { ids: PLANT_IDS, ...PLANT_BAKE },
 ];
 let gameRequested = false;
 let precaching = false;
@@ -145,18 +147,22 @@ export function getMinionAtlas(onProgress?: (done: number, total: number) => voi
   return minions;
 }
 
-let monsters: Promise<[ChampionAtlas, ChampionAtlas]> | null = null;
+let monsters: Promise<ChampionAtlas[]> | null = null;
 /**
- * Jungle monster + plant atlases, the same for every match: [big, camp]. Buffs and epic objectives get a 200 px
- * cell (they are drawn 2.7-5x champion height), camps and plants 128 px; big = 4096², camp = 4096 x 2048.
+ * Jungle monster + plant atlases, the same for every match: [big, camp, plants]. Buffs and epic objectives get a 200 px
+ * cell (they are drawn 2.7-5x champion height), camps and plants 128 px; big = 4096², camp = 4096 x 2048, plants =
+ * the four newer fruits / honey piece (the camp atlas is near its cell limit).
  */
-export function getMonsterAtlases(onProgress?: (done: number, total: number) => void): Promise<[ChampionAtlas, ChampionAtlas]> {
+export function getMonsterAtlases(onProgress?: (done: number, total: number) => void): Promise<ChampionAtlas[]> {
   if (!monsters) {
     const t0 = performance.now();
-    const p = buildChampionAtlasAsync(BIG_MONSTER_IDS, { ...BIG_BAKE, autoHark: false, worker: makeWorker, cache: cellStore(), onProgress: (d, n) => onProgress?.(d * 0.4, n) })
-      .then((big) => buildChampionAtlasAsync(CAMP_MONSTER_IDS, { ...CAMP_BAKE, autoHark: false, worker: makeWorker, cache: cellStore(), onProgress: (d, n) => onProgress?.(n * 0.4 + d * 0.6, n) }).then((camp) => [big, camp] as [ChampionAtlas, ChampionAtlas]))
+    const bake = (ids: string[], size: { master: number; frame: number }, from: number, span: number): Promise<ChampionAtlas> =>
+      buildChampionAtlasAsync(ids, { ...size, autoHark: false, worker: makeWorker, cache: cellStore(), onProgress: (d, n) => onProgress?.(from + (d / n) * span, 1) });
+    const p = bake(BIG_MONSTER_IDS, BIG_BAKE, 0, 0.4)
+      .then((big) => bake(CAMP_MONSTER_IDS, CAMP_BAKE, 0.4, 0.45).then((camp) => [big, camp]))
+      .then((two) => bake(PLANT_IDS, PLANT_BAKE, 0.85, 0.15).then((plants) => [...two, plants]))
       .then((a) => {
-        console.info(`monster atlases: ${a[0].canvas.width}x${a[0].canvas.height} + ${a[1].canvas.width}x${a[1].canvas.height} in ${Math.round(performance.now() - t0)} ms`);
+        console.info(`monster atlases: ${a.map((x) => `${x.canvas.width}x${x.canvas.height}`).join(' + ')} in ${Math.round(performance.now() - t0)} ms`);
         return a;
       });
     p.catch(() => {
@@ -166,4 +172,3 @@ export function getMonsterAtlases(onProgress?: (done: number, total: number) => 
   }
   return monsters;
 }
-

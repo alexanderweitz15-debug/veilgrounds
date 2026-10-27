@@ -47,4 +47,4 @@ export {
   type BakeResult,
 } from './atlas';
 export { MINION_IDS, MINION_KINDS, minionId, type MinionKind } from './minions';
-export { BIG_MONSTER_IDS, CAMP_MONSTER_IDS, MONSTER_SPRITE } from './monsters';
+export { BIG_MONSTER_IDS, CAMP_MONSTER_IDS, MONSTER_SPRITE, PLANT_IDS } from './monsters';

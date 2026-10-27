@@ -15,6 +15,7 @@ import { attackedByChampion, diveDefence, disengage, pokeReact, tradeRun, tradeS
 import { holdTrades, followUp, pingRetreat, pingsIn, socialTick } from '../bot/social';
 import { joinFight, teamfight, teamfightNear } from '../bot/teamfight';
 import { hasObjectiveDesire, idleAfterShove, objective, recall, recallScore, splitPush, vision } from '../bot/macro';
+import { plants } from '../bot/plants';
 import { dst } from '../bot/geo';
 import { MAX_TILT, withTilt } from '../params';
 import { attentionOn } from '../humanize/attention';
@@ -45,6 +46,7 @@ export const registry = (): Registry => ({
     utilitySelect: (n) => (utilityOn(n.ctx) ? utilitySelect(n) : 'failure'),
     recallChannel: brain.recallChannel,
     fountain: brain.fountain,
+    plants,
     escape,
     pingRetreat,
     diveDefence,

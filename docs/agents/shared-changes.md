@@ -650,3 +650,9 @@ Additive edits to shared files (all small):
 - `src/ai/perception/{types,perceive}.ts`, `src/ai/ganks/common.ts`, `src/ai/bot/teamai.ts`: respawn timers via new `src/ai/objectiveTimers.ts` (elder 360 s, no hard-coded 300); `PerceptionState.objectiveRespawn` added.
 - `src/ai/utility/value.ts` + `src/data/bots/values.json` (`gold.drakes`): `leviathanGold` (element, soul point / denial, elder).
 - `src/i18n/{de,en}.json`: `drake.short.*`, `drake.soul*`, `drake.nowLine/nextLine`, `ann.drake*`, `ann.elder*`, `score.obj.elder` appended.
+## swarm/plants-2
+
+- src/ai/bt/leaves.ts: +1 import, +1 registry line (`plants` action). src/data/bots/tree.json: one action node `plants` between `fountain` and `survive`. src/data/bots/values.json: new `plants` block (thresholds, distances). New file src/ai/bot/plants.ts (per-bot state in a WeakMap; BotMemory / BotExt untouched).
+- src/render/sheets.ts: `getMonsterAtlases()` now resolves to `ChampionAtlas[]` = [big, camp, plants] (was a 2-tuple; game.ts / world.ts / units.ts already took an array); `BAKE_GROUPS` + the plant group (same cell size as camp, so the bake script and the strip cache pick it up).
+- src/render/champions/monsters.ts / index.ts: `PLANT_IDS`, four new drawers, the four MONSTER_SPRITE aliases removed.
+- src/render/units.ts: monster batch scale x `growScale(e.grow)`; `batch.push(sproutEntity(e), ...)`. src/render/world.ts: `PlantFx` (new src/render/plantFx.ts) wired into `onEvent` + `frame`. championSprites.ts untouched.

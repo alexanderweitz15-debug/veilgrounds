@@ -14,6 +14,7 @@ import { Structures } from './structures';
 import { Units, spriteKeyFor } from './units';
 import { buildAtlas, SPRITE_SIZE } from './sprites';
 import { Fx } from './fx';
+import { PlantFx } from './plantFx';
 import { FogOfWar } from './fog';
 import { WardMarkers } from './wards';
 import type { ChampionAtlas } from './champions';
@@ -33,6 +34,7 @@ export class World {
   readonly rig: CameraRig;
   readonly fog: FogOfWar;
   readonly fx = new Fx();
+  private readonly plantFx = new PlantFx(this.fx.particles);
   readonly structures = new Structures();
   readonly ground = new GroundObjects();
   readonly wards = new WardMarkers();
@@ -123,6 +125,7 @@ export class World {
 
   onEvent(ev: SimEvent, state: ClientState, now: number): void {
     this.fx.onEvent(ev, state, now);
+    this.plantFx.onEvent(ev, now);
     if (ev.e === 'cast') {
       // wind-up until the release: the sim's wind-up end tick (snapshot tick = event tick + 1)
       const src = state.byId.get(ev.src);
@@ -157,6 +160,7 @@ export class World {
     if (state.snap) this.structures.update(state.snap.entities, now / 1000);
     this.units.update(state, now, hoverId);
     this.fx.update(state, now, showRange);
+    this.plantFx.update(state, now);
     this.ground.update(state, now);
     this.wards.update(state, now);
     this.pings.update(state, now);

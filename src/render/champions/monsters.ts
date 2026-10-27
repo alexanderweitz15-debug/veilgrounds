@@ -11,7 +11,8 @@
 //   Flussleviathan  river serpent rising from its coils, glowing fins (dragon)
 //   Schleierwächter armoured veil worm with a horned crown and many eyes (baron)
 //   Kesselbrut   grub carrying a bubbling iron cauldron shell (voidgrubs)
-//   plants: Sprungfrucht (amber pod), Honigfrucht (golden fruit cluster), Spähfrucht (blue eye bloom)
+//   plants: Sprungfrucht (amber pod), Honigfrucht (golden fruit cluster), Spähfrucht (blue eye bloom), Manafrucht
+//   (violet crystal berries), Windfrucht (teal swirl pod), Schildfrucht (bronze plated gourd), Honigstück (honey drop)
 import { at, INK, lerp3, m, madd, mix, norm, ring, sub, TAU, type Basis, type Mat, type Painter, type Shape, type Stage, type V3 } from './core';
 import { glowOrb } from './props';
 import { drawWolf, furHull, HARK, type WolfLook } from './wolf';
@@ -886,6 +887,134 @@ function drawSpaeh(st: Stage, p: Painter, anim: Anim, frame: number): void {
   st.render(p);
 }
 
+// Manafrucht: violet crystal berries; Windfrucht: teal swirl pod with feather wings; Schildfrucht: bronze plated gourd
+// with a pale boss; Honigstück: amber honey drop. Second frame of idle = pulse, death = pop.
+const MANA_BERRY = m('#5c5ae0', 'glass');
+const MANA_SHARD = m('#a89cff', 'glass');
+function drawMana(st: Stage, p: Painter, anim: Anim, frame: number): void {
+  st.view.k *= 1.4;
+  const burst = anim === 'death';
+  const pulse = anim === 'idle' ? (frame % 2) * 0.35 : 0;
+  st.add([0, 0, -10], -2, (pp) => leaves(st, pp, 6, 46, 30, LEAF));
+  st.add([0, 30, 0], 0, (pp) => {
+    tube(st, pp, [[0, 0, 0], [8, 40, -2], [-2, 72, 0]], 5, 3, STEM, 1.1);
+    if (!burst) {
+      const berries: V3[] = [[-22, 62, 12], [20, 52, 14], [0, 84, 8], [-4, 38, 22]];
+      for (const c of berries) {
+        pp.line(st.pts2([[-2, 72, 0], madd(c, [0, 1, 0], 12)]), '#3a4a2e', 1.3);
+        pp.fill(st.hull([...ellPts(basis(c), [0, 0, 0], 12, 14, 12, 10), madd(c, [0, 1, 0], 20)]), MANA_BERRY, { lw: 1.2, sheen: [st.pts2([madd(c, [-1, 0.3, 0.6], 8), madd(c, [-0.6, 1, 0.6], 9)])] });
+        glowOrb(st, pp, [c[0], c[1] + 2, c[2] + 10], 6, '#d4c8ff', 0.65 + pulse);
+      }
+      pp.fill(spike(st, [0, 98, 8], [0, 120, 8], 6), MANA_SHARD, { lw: 1 });
+    } else {
+      const k = 0.7 + frame * 0.5;
+      for (let i = 0; i < 7; i++) {
+        const a = (i / 7) * TAU;
+        pp.fill(spike(st, [0, 56, 0], [Math.cos(a) * 46 * k, 56 + Math.sin(a * 2) * 24 * k + 12, Math.sin(a) * 30 * k], 6), MANA_SHARD, { lw: 1 });
+      }
+      for (let i = 0; i < 5; i++) glowOrb(st, pp, [Math.cos(i * 1.3) * 40 * k, 70 + i * 9, Math.sin(i * 1.3) * 30], 4, '#d4c8ff', 1);
+    }
+  });
+  st.render(p);
+}
+
+const WIND_POD = m('#4fc7a0', 'skin');
+const WIND_FEATHER = m('#d2f7e8', 'cloth');
+function drawWind(st: Stage, p: Painter, anim: Anim, frame: number): void {
+  st.view.k *= 1.4;
+  const burst = anim === 'death';
+  const sway = anim === 'idle' ? (frame % 2 ? 5 : -5) : 0;
+  st.add([0, 0, -10], -2, (pp) => leaves(st, pp, 6, 44, 28, LEAF));
+  st.add([0, 30, 0], 0, (pp) => {
+    tube(st, pp, [[0, 0, 0], [sway * 0.3, 40, 0], [sway * 0.5, 64, 2]], 5, 3, STEM, 1.1);
+    const c: V3 = [sway * 0.5, 88, 4];
+    if (!burst) {
+      pp.fill(st.hull([...ellPts(basis(c), [0, 0, 0], 21, 27, 21, 12), madd(c, [0, 1, 0], 44)]), WIND_POD, {
+        lw: 1.2,
+        folds: [st.pts2([madd(c, [-1, 0.2, 0.7], 16), madd(c, [-0.8, 0.9, 0.8], 14)])],
+      });
+      const sw: V3[] = [];
+      for (let i = 0; i <= 12; i++) {
+        const a = i * 0.85;
+        const r = 19 * (1 - i / 17);
+        sw.push([c[0] + Math.sin(a) * r, c[1] - 22 + i * 4.4, c[2] + Math.cos(a) * r * 0.9 + 6]);
+      }
+      pp.line(st.pts2(sw), '#eafff6', 1.8);
+      for (const s of [1, -1]) {
+        for (let j = 0; j < 2; j++) {
+          const base: V3 = [c[0] + s * 16, c[1] - 6 + j * 14, c[2]];
+          const tip: V3 = [c[0] + s * (62 - j * 14) + sway * s * 0.6, c[1] + 18 + j * 18, c[2] - 6];
+          pp.fill(st.poly([base, madd(tip, [0, -1, 0], 12), tip, madd(tip, [0, 1, 0], 4), madd(base, [0, 1, 0], 14)], true), WIND_FEATHER, { lw: 1 });
+        }
+      }
+    } else {
+      const k = 0.7 + frame * 0.5;
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * TAU + frame * 0.4;
+        const o: V3 = [Math.cos(a) * 44 * k, 78 + Math.sin(i * 2.1) * 18 * k, Math.sin(a) * 30 * k];
+        pp.fill(st.poly([o, madd(o, [Math.cos(a + 0.5), 0.3, 0], 20), madd(o, [Math.cos(a), -0.4, Math.sin(a)], 12)], true), WIND_FEATHER, { lw: 1 });
+      }
+      for (let i = 0; i < 4; i++) glowOrb(st, pp, [Math.cos(i * 1.7) * 36 * k, 90 + i * 6, Math.sin(i * 1.7) * 26], 4, '#bff5de', 1);
+    }
+  });
+  st.render(p);
+}
+
+const SHELL = m('#a77a3c', 'metal');
+const SHELL_DARK = m('#6e4e28', 'metal');
+function drawSchild(st: Stage, p: Painter, anim: Anim, frame: number): void {
+  st.view.k *= 1.4;
+  const burst = anim === 'death';
+  const pulse = anim === 'idle' ? (frame % 2) * 0.35 : 0;
+  st.add([0, 0, -10], -2, (pp) => leaves(st, pp, 6, 48, 26, LEAF));
+  st.add([0, 20, 0], 0, (pp) => {
+    const c: V3 = [0, 44, 0];
+    if (!burst) {
+      pp.fill(ell(st, basis(c), [0, 0, 0], 38, 34, 36), SHELL, { sheen: [st.pts2([[-26, 62, 22], [-30, 48, 22], [-24, 32, 22]])] });
+      for (const k of [-0.75, 0, 0.75]) {
+        const pts: V3[] = [];
+        for (let t = 0.25; t < 2.95; t += 0.28) pts.push([Math.sin(t) * Math.sin(k) * 38, c[1] + Math.cos(t) * 34, Math.sin(t) * Math.cos(k) * 36]);
+        pp.line(st.pts2(pts), '#4a3418', 2);
+      }
+      pp.fill(st.capsule([0, 76, 0], [2, 92, 0], 4, 3), STEM, { lw: 1 });
+      pp.fill(st.poly([[2, 90, 0], [30, 100, -4], [10, 86, 0]], true), LEAF, { lw: 1 });
+      glowOrb(st, pp, [0, 46, 36], 10, '#cfe6ff', 0.7 + pulse);
+      for (const [x, y] of [[-24, 30], [24, 30], [-28, 56], [28, 56]] as const) {
+        const q = st.p([x, y, 28]);
+        pp.dot(q.x, q.y, 2.8 * st.view.k, 2.8 * st.view.k, '#e6c987');
+      }
+    } else {
+      const k = 0.6 + frame * 0.5;
+      for (const s of [1, -1]) {
+        const hc: V3 = [s * 36 * k, 40 + frame * 4, 0];
+        pp.fill(st.hull(ellPts(basis(hc, 0, s * (0.5 + frame * 0.3)), [0, 0, 0], 22, 30, 32, 10)), SHELL_DARK, { lw: 1.3 });
+      }
+      glowOrb(st, pp, [0, 56, 8], 16, '#cfe6ff', 1);
+      for (let i = 0; i < 5; i++) glowOrb(st, pp, [Math.cos(i * 1.4) * 40 * k, 60 + i * 8, Math.sin(i * 1.4) * 26], 4, '#e6f3ff', 1);
+    }
+  });
+  st.render(p);
+}
+
+const HONEY = m('#f2b53a', 'glass');
+function drawHonigstueck(st: Stage, p: Painter, anim: Anim, frame: number): void {
+  st.view.k *= 1.6;
+  const eaten = anim === 'death';
+  const pulse = anim === 'idle' ? (frame % 2) * 0.3 : 0;
+  st.add([0, 0, 0], 0, (pp) => {
+    if (!eaten) {
+      const c: V3 = [0, 16, 0];
+      pp.fill(st.hull([...ellPts(basis(c), [0, 0, 0], 17, 14, 17, 10), madd(c, [0, 1, 0], 30)]), HONEY, { lw: 1.2 });
+      const q = st.p([-6, 24, 12]);
+      pp.dot(q.x, q.y, 4 * st.view.k, 2.6 * st.view.k, '#fff3c4');
+      glowOrb(st, pp, [0, 16, 12], 10, '#ffe08a', 0.55 + pulse);
+    } else {
+      for (let i = 0; i < 4; i++) glowOrb(st, pp, [Math.cos(i * 1.6) * (14 + frame * 14), 20 + frame * 12 + i * 3, Math.sin(i * 1.6) * 10], 4, '#ffe08a', 1);
+    }
+  });
+  st.render(p);
+}
+
 // ------------------------------------------------------------------------------------------------ registry
 const MOSS_WOLF: WolfLook = { fur: m('#5d6452', 'fur'), light: m('#a8a88a', 'fur'), dark: m('#363c30', 'fur'), eye: '#f0d860', collar: false, moss: m('#5f7d3e', 'fur') };
 
@@ -894,15 +1023,12 @@ export const MONSTER_SPRITE: Record<string, { id: string; scale: number }> = {
   mooswelpe: { id: 'mooswolf', scale: 0.6 },
   kaeferling: { id: 'hohlkaefer', scale: 0.56 },
   krabbling: { id: 'schattenkrabbe', scale: 0.58 },
-  // ponytail: new fruits reuse the three painted fruit sprites until own art is baked (swarm-plants.md open items)
-  manafrucht: { id: 'spaehfrucht', scale: 0.9 },
-  windfrucht: { id: 'sprungfrucht', scale: 0.9 },
-  schildfrucht: { id: 'honigfrucht', scale: 0.9 },
-  honigstueck: { id: 'honigfrucht', scale: 0.3 },
 };
-/** Sprites baked into the big atlas (higher resolution) and the camp atlas. */
+/** Sprites baked into the big atlas (higher resolution), the camp atlas (camps + the three first fruits) and the plant atlas. */
 export const BIG_MONSTER_IDS = ['dornenbock', 'glutwaechter', 'leviathan', 'schleierwaechter'];
 export const CAMP_MONSTER_IDS = ['sumpfunke', 'mooswolf', 'hohlkaefer', 'schattenkrabbe', 'nebelschleicher', 'kesselbrut', 'sprungfrucht', 'honigfrucht', 'spaehfrucht'];
+/** The camp atlas is near its cell limit: the newer fruits and the honey piece have their own (third) atlas. */
+export const PLANT_IDS = ['manafrucht', 'windfrucht', 'schildfrucht', 'honigstueck'];
 
 const d = (world: number, foot: number, frames: Record<Anim, number>, draw: SpriteDrawer['draw'], ink = 1.2): SpriteDrawer => ({ world, foot, frames, draw, ink });
 // `world` = cell height in map units; figure height (idle top to feet) relative to a champion (~170) is the LoL
@@ -925,4 +1051,8 @@ export const MONSTER_DRAWERS: Record<string, SpriteDrawer> = {
   sprungfrucht: d(190, 0.86, PF, drawSprung),
   honigfrucht: d(190, 0.86, PF, drawHonig),
   spaehfrucht: d(200, 0.88, PF, drawSpaeh),
+  manafrucht: d(190, 0.86, PF, drawMana),
+  windfrucht: d(190, 0.86, PF, drawWind),
+  schildfrucht: d(190, 0.86, PF, drawSchild),
+  honigstueck: d(110, 0.8, PF, drawHonigstueck),
 };

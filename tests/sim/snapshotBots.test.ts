@@ -35,7 +35,7 @@ describe('B3 snapshot additions', () => {
     expect(outer.length).toBe(6); // 3 lanes x 2 teams
     expect(outer.every((e) => e.plates === 5)).toBe(true);
     const red = outer.find((e) => e.team === 1)!;
-    dealDamage(sim, -1, red.id, 900, 'true');
+    dealDamage(sim, -1, red.id, 1800, 'true'); // fortification halves damage before 5:00 (towers.json)
     step(sim);
     expect(snap(sim, 0).entities.find((e) => e.id === red.id)!.plates).toBe(4);
     expect(snap(sim, 1).entities.find((e) => e.id === red.id)!.plates).toBe(4);

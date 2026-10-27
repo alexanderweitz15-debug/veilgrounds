@@ -627,3 +627,7 @@ Additive edits to shared files (all small):
 - `src/game/objectives.ts`: `TeamObjectives` + `drakes`, `soulElem`, `elderLeft`; elder respawn in `epicTimers`.
 - `src/i18n/{de,en}.json`: `buff.uralt(.desc)`, `drake.{glut,flut,fels,wind,arkan,elder}` appended.
 - `tests/objectives.test.ts`: two `toEqual` on `team()` got the three new fields.
+
+## art/f-identity-3 (agent F)
+- `src/render/championSprites.ts`: additive `SpriteBatchOptions.groundBlob?` (soft contact-shadow InstancedMesh, off by default; set on MONSTER_BATCH in `units.ts`). G's `runPh` is now seeded once per unit in the state literal and no longer reset on every stop -> run (phase-continuous, no cycle restart while orbwalking); distance pacing, `intent`, `castPoseActive`, flinch 13 unchanged.
+- `src/render/champions/atlas.ts` `rateOf`: idle rate x1.25 (6 idle frames); `hark` / `mooswolf` run rate 14 (8-frame gallop). `HARK.frames` idle 4 / run 8 (Mooswolf shares it); champion `FRAMES.idle` 6 (also Vargrim).

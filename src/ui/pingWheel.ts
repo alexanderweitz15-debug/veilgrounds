@@ -5,6 +5,8 @@ import { t } from '../i18n';
 /** Eight wheel slots, clockwise from the top. */
 export const WHEEL: PingKind[] = ['danger', 'onMyWay', 'help', 'vision', 'missing', 'back', 'group', 'ok'];
 const DEADZONE = 22;
+const WHEEL_MARGIN_X = 170;
+const WHEEL_MARGIN_Y = 110;
 
 /** Glyph per kind: wheel slots, world badges (src/render/pings.ts) and the minimap share it. */
 export const PING_ICON: Record<PingKind, string> = {
@@ -49,8 +51,11 @@ export const PING_COLOR: Record<PingKind, string> = {
 
 export class PingWheel {
   readonly el: HTMLDivElement;
+  /** Wheel centre (kept inside the window) and the press point (the dead zone is measured from it). */
   private ox = 0;
   private oy = 0;
+  private px = 0;
+  private py = 0;
   private open = false;
 
   constructor(parent: HTMLElement) {
@@ -82,8 +87,13 @@ export class PingWheel {
   }
 
   show(x: number, y: number): void {
-    this.ox = x;
-    this.oy = y;
+    this.px = x;
+    this.py = y;
+    // the wheel is ~160 px wide per side and ~100 px tall per side: shift it in from the window edge (minimap in the corner)
+    this.ox = Math.min(Math.max(x, WHEEL_MARGIN_X), Math.max(WHEEL_MARGIN_X, window.innerWidth - WHEEL_MARGIN_X));
+    this.oy = Math.min(Math.max(y, WHEEL_MARGIN_Y), Math.max(WHEEL_MARGIN_Y, window.innerHeight - WHEEL_MARGIN_Y));
+    x = this.ox;
+    y = this.oy;
     this.open = true;
     this.el.style.left = `${x}px`;
     this.el.style.top = `${y}px`;
@@ -96,7 +106,7 @@ export class PingWheel {
 
   /** Ping kind for the current mouse position (alert inside the dead zone). */
   pick(mx: number, my: number): PingKind {
-    return pickWheel(mx - this.ox, my - this.oy);
+    return Math.hypot(mx - this.px, my - this.py) < DEADZONE ? 'alert' : pickWheel(mx - this.ox, my - this.oy);
   }
 
   highlight(mx: number, my: number): void {

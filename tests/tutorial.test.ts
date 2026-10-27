@@ -490,4 +490,29 @@ describe('tutorial: scripted walk through the sandbox sim', () => {
     // report where it got stuck, if anywhere
     expect({ finished, stuckAt: engine.step?.id ?? null, tick: sim.tick, at }).toMatchObject({ finished: STEP_IDS.filter((id) => id !== 'tower'), stuckAt: null });
   }, 120000);
+  it('the tower step is killable by one player within 60 s (weakened tower, placed in front of it)', () => {
+    const sim = createSim(tutorialConfig(undefined, 'mira', ['sprung', 'heilen'], 11));
+    const g: Geo = { fountain: sim.map.sides[0].fountain, ownTower: sim.map.sides[0].towers.mid[0]!, enemyTower: sim.map.sides[1].towers.mid[0]!, dummy: SANDBOX_DUMMY };
+    const queue: TickInput[] = [];
+    const engine = new TutorialEngine((cmd) => queue.push({ slot: 0, cmd }), g, undefined, STEPS.filter((st) => st.id === 'tower'));
+    let t0 = -1;
+    let deaths = 0;
+    let wasDead = false;
+    // the allied wave stays in the middle of the lane for minutes, so the player has to be able to take the tower alone
+    for (let i = 0; i < 30 * 90 && engine.phase === 'active'; i++) {
+      simStep(sim, queue.splice(0));
+      const snap = buildSnapshot(sim, 0, 0);
+      engine.ingest(snap);
+      const me = snap.me!;
+      if (me.dead && !wasDead) deaths++;
+      wasDead = me.dead;
+      if (me.level < 9 || me.dead) continue;
+      if (t0 < 0) t0 = snap.tick;
+      const mine = snap.entities.find((e) => e.id === me.eid)!;
+      const tower = snap.entities.find((e) => e.kind === Kind.Tower && e.team === 1 && Math.hypot(e.x - mine.x, e.y - mine.y) < 2500);
+      if (tower && i % 10 === 0) queue.push({ slot: 0, cmd: { t: 'attack', target: tower.id } });
+    }
+    expect(JSON.stringify({ done: engine.done.has('tower'), deaths, t0, now: sim.tick })).toContain('"done":true,"deaths":0');
+    expect(sim.tick - t0).toBeLessThan(30 * 60);
+  }, 120000);
 });

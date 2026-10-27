@@ -27,6 +27,8 @@ import { getChampionAtlas, getMinionAtlas, getMonsterAtlases } from '../render/s
 import { SessionExtras, type ExitOpts, type SessionResult } from './session';
 import { withClientSettings } from './modes';
 
+const RESUME_SECONDS = 3;
+
 /** Replay viewer (S2, src/replay/replayLink.ts): the same renderer / HUD fed by a replay link instead of a live sim. */
 export interface GameOpts {
   /** Injected link (replay worker); commands sent to it are ignored. */
@@ -52,6 +54,8 @@ export class Game {
   private readonly clock: (realNow: number) => number;
   private replayCam: 'follow' | 'free' | null = null;
   private exiting = false;
+  /** setInterval id of the 3 s resume countdown (0 = none). */
+  private resumeTimer = 0;
   private readonly state = new ClientState();
   private readonly link: SimLink;
   private readonly world: World;
@@ -330,9 +334,29 @@ export class Game {
 
   /** Player's F10 / Pause key: toggle, then announce (banner + chat line); the trainer-result freeze stays silent. */
   private togglePause(): void {
+    if (this.resumeTimer) return this.cancelResume(); // F10 during the countdown: stay paused
     const was = this.state.paused;
-    this.setPaused(!was);
-    if (this.state.paused !== was) this.chat.system(this.hud.announcePause(this.state.paused));
+    if (!was) {
+      this.setPaused(true);
+      if (this.state.paused) this.chat.system(this.hud.announcePause(true));
+      return;
+    }
+    if (this.extras.over || this.state.winner !== null) return;
+    // resume after a 3 s countdown (LoL); the sim stays paused meanwhile, so bots wait too (they only act on sim ticks)
+    let n = RESUME_SECONDS;
+    this.hud.resumeCountdown(n);
+    this.resumeTimer = window.setInterval(() => {
+      if (--n > 0) return this.hud.resumeCountdown(n);
+      this.cancelResume(false);
+      this.setPaused(false);
+      if (!this.state.paused) this.chat.system(this.hud.announcePause(false));
+    }, 1000);
+  }
+
+  private cancelResume(restore = true): void {
+    clearInterval(this.resumeTimer);
+    this.resumeTimer = 0;
+    if (restore) this.hud.resumeCountdown(null);
   }
 
   /** Dead: free camera onto the death spot (own corpse) or the own fountain. */
@@ -513,6 +537,7 @@ export class Game {
   }
 
   private finishExit(result: SessionResult): void {
+    this.cancelResume(false);
     this.extras.dispose();
     cancelAnimationFrame(this.raf);
     delete (window as unknown as { __vg?: unknown }).__vg;

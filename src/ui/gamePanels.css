@@ -109,6 +109,9 @@
 .chip.cc { border-color: #c8553a; color: #ffc6b4; }
 .chip.buff { border-color: #6c9a5a; }
 .chip-ico { width: 16px; height: 16px; background: center / cover no-repeat; border-radius: 3px; }
+.chip-ring { flex: none; width: 13px; height: 13px; border-radius: 50%; background: conic-gradient(#d9c79a calc(var(--p, 0) * 360deg), rgba(255,255,255,0.14) 0); -webkit-mask: radial-gradient(circle, transparent 3px, #000 4px); mask: radial-gradient(circle, transparent 3px, #000 4px); }
+.chip.cc .chip-ring { background: conic-gradient(#ff8a6a calc(var(--p, 0) * 360deg), rgba(255,255,255,0.14) 0); }
+.chip.buff .chip-ring { background: conic-gradient(#8fd07a calc(var(--p, 0) * 360deg), rgba(255,255,255,0.14) 0); }
 .chip-t { color: #d9c79a; font-variant-numeric: tabular-nums; }
 /* target frame (top left, LoL) */
 .target-frame { display: none; position: absolute; left: 10px; top: 10px; transform: scale(var(--ui)); transform-origin: top left; width: 270px; padding: 6px 8px 6px 64px; min-height: 56px; background: rgba(10, 12, 14, 0.9); border: 1px solid #4d4233; border-left: 3px solid #a99f8a; pointer-events: auto; z-index: 6; }
@@ -127,6 +130,8 @@
 .tf-bar .shield { position: absolute; top: 0; bottom: 0; background: #e8e2d0; }
 .tf-bar .txt { position: absolute; inset: 0; text-align: center; font: 700 10px/12px sans-serif; color: #fff; text-shadow: 0 0 2px #000; }
 .tf-info { font-size: 11.5px; color: #c8bfa8; margin-top: 2px; }
+.tf-stats { display: flex; flex-wrap: wrap; gap: 2px 8px; font-size: 11px; color: #b9ae93; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.tf-stats:empty { display: none; }
 .tf-info:empty, .tf-items:empty, .tf-chips:empty { display: none; }
 .tf-items { margin-top: 3px; }
 .tf-chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
@@ -253,7 +258,7 @@
 .killfeed .entry.ping { border-left-width: 4px; }
 
 /* FPS / frame-time overlay (setting showFps, key F3) and the graphics benchmark note */
-.fps-overlay { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); z-index: 60; padding: 2px 8px; font: 12px/1.4 monospace; color: #e8e0cc; background: rgba(10,12,14,0.7); pointer-events: none; }
+.fps-overlay { position: absolute; top: 6px; right: 8px; /* top right: the centre is the score bar */  z-index: 60; padding: 2px 8px; font: 12px/1.4 monospace; color: #e8e0cc; background: rgba(10,12,14,0.7); pointer-events: none; }
 .fps-overlay:empty { display: none; }
 .ping-glyph { display: inline-block; margin-right: 6px; color: var(--c); font-size: 15px; letter-spacing: 0; }
 .ping-centre { padding: 2px 9px; border-radius: 50%; font-size: 15px; color: var(--c); }

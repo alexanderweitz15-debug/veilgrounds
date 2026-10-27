@@ -72,6 +72,7 @@ export function tutorialConfig(runes?: RuneChoice, champion = MIRA_ID, summoners
     dummies: [{ ...SANDBOX_DUMMY, team: 1 }],
     minionsEnabled: false,
     minionLanes: [Lane.Mid],
+    towerMult: { hp: 0.4, dmg: 0.12 }, // tower step: the waves clash mid lane for minutes, so one player must be able to take the tower alone
     trainer: { scenario: TUTORIAL_MARK },
   };
 }

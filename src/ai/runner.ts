@@ -390,10 +390,10 @@ const ROLES: PlayerSetup['role'][] = ['top', 'jungle', 'mid', 'adc', 'support'];
 
 /** Summoners by role. */
 const SUMMONERS: Record<PlayerSetup['role'], [string, string]> = {
-  top: ['sprung', 'teleport'],
+  top: ['geist', 'teleport'], // ponytail: Ghost/TP top, Barrier adc; whole role shares one pair (no per-bot spread)
   jungle: ['sprung', 'bannen'],
   mid: ['sprung', 'entflammen'],
-  adc: ['sprung', 'heilen'],
+  adc: ['sprung', 'barriere'],
   support: ['sprung', 'erschoepfen'],
 };
 

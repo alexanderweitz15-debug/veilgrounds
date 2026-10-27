@@ -656,3 +656,9 @@ Additive edits to shared files (all small):
 - src/render/sheets.ts: `getMonsterAtlases()` now resolves to `ChampionAtlas[]` = [big, camp, plants] (was a 2-tuple; game.ts / world.ts / units.ts already took an array); `BAKE_GROUPS` + the plant group (same cell size as camp, so the bake script and the strip cache pick it up).
 - src/render/champions/monsters.ts / index.ts: `PLANT_IDS`, four new drawers, the four MONSTER_SPRITE aliases removed.
 - src/render/units.ts: monster batch scale x `growScale(e.grow)`; `batch.push(sproutEntity(e), ...)`. src/render/world.ts: `PlantFx` (new src/render/plantFx.ts) wired into `onEvent` + `frame`. championSprites.ts untouched.
+## ui-polish-3 (swarm/ui-polish-3)
+
+- `src/sim/snapshot.ts`: additive `SnapEntity.st?` ([ad, ap, armor, mr, move speed] of champions, target frame stats).
+- `src/sim/types.ts`: additive `SimConfig.towerMult?` ({hp, dmg}); read in `src/sim/systems/towers.ts` (spawn HP, shot damage vs champions/structures, no plates when set). Only `tutorialConfig` sets it; other games keep their state hash.
+- `src/ai/runner.ts`: SUMMONERS role table: top `['geist','teleport']`, adc `['sprung','barriere']` (bot games change; seeded tests may need a re-baseline).
+- `src/i18n/{de,en}.json`: `hud.resumeIn`, `tf.st.{ad,ap,armor,mr,ms}`.

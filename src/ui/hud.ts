@@ -377,6 +377,11 @@ export class Hud {
     return t(paused ? 'chat.paused' : 'chat.resumed', { name: this.humanName });
   }
 
+  /** Resume countdown under "Pausiert": `n` seconds left, null = cancelled (back to the "paused by" line). */
+  resumeCountdown(n: number | null): void {
+    setText(this.pauseBy, n === null ? t('hud.pausedBy', { name: this.humanName }) : t('hud.resumeIn', { n }));
+  }
+
   onEvent(ev: SimEvent, state: ClientState, now: number): void {
     this.announcer.onEvent(ev, state);
     this.recap.onEvent(ev, state);

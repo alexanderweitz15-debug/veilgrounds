@@ -113,6 +113,8 @@ export interface SnapEntity {
   auras?: string[];
   /** Seconds left per aura id (only auras backed by a timed buff; hook-visual auras have no entry). */
   auraLeft?: Record<string, number>;
+  /** Champions only: [ad, ap, armor, mr, move speed] as currently effective (target frame stats). */
+  st?: [number, number, number, number, number];
   /** Jungle / objective buffs on this champion (no champion prefix; not shown as marks), seconds left. */
   buffs?: SnapMark[];
 }
@@ -438,7 +440,7 @@ function decoyFields(sim: Sim, e: number): { look?: string; level?: number } {
  * truth for the entity fields).
  */
 export function snapshotEntities(sim: Sim, team: number): SnapEntity[] {
-  const { Unit, Pos, Face, Hp, Mana, Champ, Atk } = sim.c;
+  const { Unit, Pos, Face, Hp, Mana, Champ, Atk, Stats } = sim.c;
   const entities: SnapEntity[] = [];
   for (const e of query(sim.world, [Unit])) {
     const k = Unit.kind[e]!;
@@ -483,6 +485,7 @@ export function snapshotEntities(sim: Sim, team: number): SnapEntity[] {
       ...(Unit.variant[e] === LEVIATHAN_VARIANT && (drakeState(sim)?.cur ?? -1) >= 0 ? { elem: drakeState(sim)!.cur } : {}),
       ...(Unit.variant[e] ? { variant: VARIANTS[Unit.variant[e]!] } : {}),
       ...(k === Kind.Plant && alive ? growField(sim, e) : {}),
+      ...(k === Kind.Champion ? { st: [Stats.ad[e]!, Stats.ap[e]!, Stats.armor[e]!, Stats.mr[e]!, Stats.ms[e]!].map(Math.round) as [number, number, number, number, number] } : {}),
     });
   }
   // no eid leaks: an attack / chase target outside this view is masked

@@ -30,6 +30,18 @@ describe('motion specs', () => {
     expect(new Set(MOTION_IDS.map((id) => motionOf({ id, hold: 'relaxed' }).idle.style)).size).toBeGreaterThanOrEqual(8);
   });
 
+  it('every champion has its own drag / asym / impact triple (no two runs read the same)', () => {
+    const seen = new Map<string, string>();
+    for (const id of MOTION_IDS) {
+      const g = motionOf({ id, hold: 'relaxed' }).gait;
+      const k = `${g.drag}/${g.asym}/${g.impact}`;
+      expect([id, seen.get(k)]).toEqual([id, undefined]);
+      seen.set(k, id);
+      expect(g.impact).toBeGreaterThan(0);
+      expect(Math.abs(g.asym)).toBeLessThan(0.3);
+    }
+  });
+
   it('run cadence follows movement speed and stride (feet do not slide): steps/s x 4 frames', () => {
     for (const id of MOTION_IDS) {
       const g = motionOf({ id, hold: 'relaxed' }).gait;

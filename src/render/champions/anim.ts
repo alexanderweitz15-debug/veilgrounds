@@ -2,7 +2,7 @@
 // feet as ground targets. Holds (idle/run carry), attack styles and cast styles are shared across champions.
 //
 // Frame layout (champions; minions keep the older, shorter layout through kit.frames):
-//   idle   4  breathing + weight shift loop (frame 0 = neutral rest pose: portraits / head anchor / bar height)
+//   idle   6  breathing + weight shift loop (frame 0 = neutral rest pose: portraits / head anchor / bar height)
 //   run    8  contact / down / passing / up per step, counter-rotating shoulders, trailing cloth
 //   attack 5  anticipation, coil, STRIKE (= the sim's hit point, ATTACK_HIT), follow-through, recover
 //   cast   6  family A: gather, RELEASE (CAST_RELEASE), follow-through; family B: gather (CAST_B), release;
@@ -15,7 +15,7 @@ import { motionOf } from './motion';
 import { castStylesOf } from './casts';
 import type { Anim, CastStyle, Kit, Pose } from './types';
 
-export const FRAMES: Record<Anim, number> = { idle: 4, run: 8, attack: 5, cast: 6, death: 3 };
+export const FRAMES: Record<Anim, number> = { idle: 6, run: 8, attack: 5, cast: 6, death: 3 };
 /** The frame layout before the animation pass (minions, carts, monsters, Hark). */
 export const LEGACY_FRAMES: Record<Anim, number> = { idle: 4, run: 6, attack: 4, cast: 0, death: 3 };
 /** suggested playback rates (frames per second) of the legacy layout */
@@ -569,8 +569,9 @@ export function poseFor(kit: Kit, anim: Anim, frame: number): Pose {
       const st = I.style;
       p.breath = (0.5 - 0.5 * Math.cos(t)) * I.breath;
       p.bob = -0.3 - Math.sin(t) * 0.35 - Math.abs(Math.sin(t)) * I.bob;
-      p.shift = -Math.sin(t) * I.shift;
-      p.roll = Math.sin(t) * I.roll;
+      // 6 frames: the weight settles in two beats (second harmonic) instead of one sine
+      p.shift = -Math.sin(t) * I.shift - Math.sin(2 * t) * I.shift * 0.3;
+      p.roll = Math.sin(t) * I.roll + Math.sin(2 * t) * I.roll * 0.25;
       p.headTilt = Math.sin(t + 1) * I.nod;
       p.headYaw = Math.sin(t * 0.5 + 0.6) * I.scan - I.scan * 0.5;
       p.sway = Math.sin(t - 0.8) * I.sway;
@@ -632,25 +633,29 @@ export function poseFor(kit: Kit, anim: Anim, frame: number): Pose {
       const swingR = Math.max(0, -Math.sin(t));
       const swingL = Math.max(0, Math.sin(t));
       const air = Gt.hop * Math.max(0, Math.sin(2 * t)); // bounding: both feet off the ground mid-step
+      // drag: shoulders, arms and head trail the legs by this phase (loose = floppy, stiff = follows at once)
+      const tl = t - Gt.drag;
       if (Gt.style !== 'hover') {
-        // swing foot: knee lifts early, foot reaches forward before it lands
-        p.footR = [-b.stance * 0.75, Gt.lift * Math.pow(swingR, 0.7) + air * Gt.lift * 0.45, Gt.stride * Math.cos(t) + swingR * 3];
-        p.footL = [b.stance * 0.75, Gt.lift * Math.pow(swingL, 0.7) + air * Gt.lift * 0.45, -Gt.stride * Math.cos(t) + swingL * 3];
+        // swing foot: knee lifts early, foot reaches forward before it lands; asym = one long, one short stride (limp)
+        p.footR = [-b.stance * 0.75, Gt.lift * Math.pow(swingR, 0.7) + air * Gt.lift * 0.45, Gt.stride * (1 + Gt.asym) * Math.cos(t) + swingR * 3];
+        p.footL = [b.stance * 0.75, Gt.lift * Math.pow(swingL, 0.7) + air * Gt.lift * 0.45, -Gt.stride * (1 - Gt.asym) * Math.cos(t) + swingL * 3];
       }
-      p.bob = Gt.bob * Math.abs(Math.sin(t)) - Gt.bob * 0.64 + air * 3 - Gt.hop * 1.2;
+      // impact: < 1 sharp light landings with a long float, > 1 flat heavy plants (lowest point stays at the contact)
+      const bounce = Math.pow(Math.abs(Math.sin(t)), Gt.impact);
+      p.bob = Gt.bob * bounce - Gt.bob * 0.64 + air * 3 - Gt.hop * 1.2;
       p.lean += Gt.lean;
       p.crouch = Math.max(p.crouch, Gt.crouch);
-      p.hipYaw = Math.cos(t) * 0.12 * (Gt.twist / 0.24);
-      p.twist = -Math.cos(t) * Gt.twist;
-      // weight over the stance leg, hip drops on the swing side
+      p.hipYaw = Math.cos(tl) * 0.12 * (Gt.twist / 0.24);
+      p.twist = -Math.cos(tl) * Gt.twist;
+      // weight over the stance leg, hip drops on the swing side (the short-stride side sinks)
       p.shift = -Math.sin(t) * Gt.hipSway;
-      p.roll = Math.sin(t) * Gt.roll;
-      p.headTilt = -Math.abs(Math.sin(t)) * Gt.headBob;
-      if (Gt.style === 'waddle' || Gt.style === 'swagger') p.headYaw = Math.sin(t) * 0.06;
+      p.roll = Math.sin(t) * Gt.roll + Gt.asym * 0.25;
+      p.headTilt = -Math.pow(Math.abs(Math.sin(tl)), Gt.impact) * Gt.headBob;
+      if (Gt.style === 'waddle' || Gt.style === 'swagger') p.headYaw = Math.sin(tl) * 0.06;
       // cloth trails behind and flutters a beat after the body bounce
-      p.sway = (0.85 + 0.18 * Math.sin(2 * t - 1.2)) * Gt.sway;
-      apply(p, hold(kit, Math.cos(t), true));
-      const jog = Math.sin(2 * t - 0.8) * 1.6 * (Gt.bob / 2.8);
+      p.sway = (0.85 + 0.18 * Math.sin(2 * tl - 1.2)) * Gt.sway;
+      apply(p, hold(kit, Math.cos(tl), true));
+      const jog = Math.sin(2 * tl - 0.8) * 1.6 * (Gt.bob / 2.8);
       p.handL = [p.handL[0], p.handL[1] + jog, p.handL[2]];
       p.handR = [p.handR[0], p.handR[1] + jog, p.handR[2]];
       break;

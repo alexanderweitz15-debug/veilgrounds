@@ -2,7 +2,26 @@
 import { at, frameYZ, ik, INK, lerp3, m, madd, norm, ring, sub, TAU, hull2, shapeFrom, type Basis, type Painter, type Stage, type V3 } from './core';
 import type { Anim } from './types';
 
-export const HARK = { world: 300, frames: { idle: 4, run: 6, attack: 4, cast: 0, death: 3 } as Record<Anim, number> };
+export const HARK = { world: 300, frames: { idle: 4, run: 8, attack: 4, cast: 0, death: 3 } as Record<Anim, number> };
+/** Run cycle rate of the quadruped drawers (Hark, Mooswolf): one 8-frame gallop per ~0.57 s. */
+export const GALLOP_FPS = 14;
+
+/** Rotary gallop footfalls (feet order FR, FL, HR, HL): hind pair lands first, then the fronts. */
+const GALLOP_OFF = [0.52, 0.42, 0.1, 0] as const;
+/**
+ * Foot offset (dz forward, dy up) of foot `i` at cycle phase `t` (0..1): it sweeps back on the ground for `stance` of
+ * the cycle, then swings forward on an arc. The body is airborne around t = 0.9 (no foot down), see gallopBody.
+ */
+export function gallopFoot(t: number, i: number, reach: number, lift: number, stance = 0.34): [number, number] {
+  const u = (((t - GALLOP_OFF[i]!) % 1) + 1) % 1;
+  if (u < stance) return [reach * (1 - (2 * u) / stance), 0];
+  const v = (u - stance) / (1 - stance);
+  return [-reach + 2 * reach * v * v * (3 - 2 * v), lift * Math.sin(Math.PI * v)];
+}
+/** Body rise (peaks in the suspension) and pitch (nose up on the hind push, down on the front landing). */
+export function gallopBody(t: number, rise: number, pitch: number): { bob: number; pitch: number } {
+  return { bob: rise * Math.cos(TAU * (t - 0.93)), pitch: pitch * Math.sin(TAU * t) };
+}
 
 
 export function jag(pts: { x: number; y: number }[], tooth: number): { x: number; y: number }[] {
@@ -71,16 +90,15 @@ export function drawWolf(st: Stage, p: Painter, anim: Anim, frame: number, look:
     bob = Math.sin(t * TAU) * 1;
     tailUp = 0.25 + Math.sin(t * TAU * 2) * 0.15;
   } else if (anim === 'run') {
-    const ph = t * TAU;
-    const pairs = [0, Math.PI, Math.PI, 0];
     feet.forEach((f, i) => {
-      const a = ph + pairs[i]!;
-      f[2] += Math.cos(a) * 16;
-      f[1] = Math.max(0, -Math.sin(a)) * 9;
+      const [dz, dy] = gallopFoot(t, i, 15, 10);
+      f[2] += dz;
+      f[1] = dy;
     });
-    bob = Math.abs(Math.sin(ph)) * 3 - 1;
-    pitch = Math.sin(ph) * 0.05;
-    headDrop = 4;
+    const g = gallopBody(t, 3.2, 0.09);
+    bob = g.bob + 0.5;
+    pitch = g.pitch;
+    headDrop = 4 + 3 * Math.sin(TAU * (t - 0.39)); // head dips over the front stance (t ~ .64), lifts in the suspension
     tailUp = 0.05;
   } else if (anim === 'attack') {
     const k = [

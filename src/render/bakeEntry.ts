@@ -11,8 +11,14 @@ const GROUND_QUALITY = 0.92;
 
 const post = (path: string, body: BodyInit | null = null): Promise<Response> => fetch(`/__bake/${path}`, { method: 'POST', body });
 
-const toBlob = (c: AnyCanvas): Promise<Blob | null> =>
-  'convertToBlob' in c ? c.convertToBlob({ type: 'image/png' }) : new Promise((resolve) => (c as HTMLCanvasElement).toBlob(resolve, 'image/png'));
+// Strips ship as lossy WebP (~3x smaller than PNG, docs/agents/s3.md); ?fmt=png (BAKE_FORMAT=png) keeps the lossless ones.
+const PNG = new URLSearchParams(location.search).get('fmt') === 'png';
+const STRIP_QUALITY = Number(new URLSearchParams(location.search).get('q') ?? 0.92);
+
+const toBlob = (c: AnyCanvas): Promise<Blob | null> => {
+  const type = PNG ? 'image/png' : 'image/webp';
+  return 'convertToBlob' in c ? c.convertToBlob({ type, quality: STRIP_QUALITY }) : new Promise((resolve) => (c as HTMLCanvasElement).toBlob(resolve, type, STRIP_QUALITY));
+};
 
 async function main(): Promise<void> {
   await post(`start?ver=${encodeURIComponent(ART_VER ?? '')}`);
@@ -23,7 +29,7 @@ async function main(): Promise<void> {
       uploads.push(
         toBlob(strip).then((blob) => {
           if (!blob) throw new Error(`no PNG for ${key}`);
-          return post(`strip?key=${encodeURIComponent(key)}&top=${top}`, blob);
+          return post(`strip?key=${encodeURIComponent(key)}&top=${top}&ext=${PNG ? 'png' : 'webp'}`, blob);
         }),
       );
     },

@@ -203,6 +203,9 @@ function showPostGame(config: SimConfig, r: SessionResult): void {
 function start(config: SimConfig | null): void {
   disposeMenu?.();
   disposeMenu = null;
+  // S3: the sprite atlas does not need the game chunk: start it now, in parallel with the chunk download and the
+  // renderer setup (the Game asks again and gets the same promise; the classic lobby's loading screen did it already)
+  if (config) void import('./render/sheets').then((s) => s.getChampionAtlas(config.players.map((p) => p.champion))).catch(() => undefined);
   void loadGame().then(({ Game }) => {
     app.textContent = '';
     new Game(app, config, (r) => afterGame(config, r));

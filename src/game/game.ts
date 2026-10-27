@@ -23,7 +23,10 @@ import { actionFor } from '../input/keybinds';
 import { presetFields } from '../render/gfxPreset';
 import { Benchmark, FrameLimiter, pickPreset } from './gfxTune';
 import { t } from '../i18n';
-import { getChampionAtlas, getMinionAtlas, getMonsterAtlases } from '../render/sheets';
+import { getChampionAtlas, getMinionAtlas, getMonsterAtlases, getStandInAtlas } from '../render/sheets';
+
+/** Full champion atlas not ready after this long: start with the low-res stand-in (see Game constructor). */
+const STAND_IN_AFTER_MS = 2500;
 import { SessionExtras, type ExitOpts, type SessionResult } from './session';
 import { withClientSettings } from './modes';
 
@@ -136,17 +139,36 @@ export class Game {
     loading.className = 'sprite-loading';
     loading.textContent = t('hud.loadingChamps', { p: 0 });
     this.cover.appendChild(loading);
-    void getChampionAtlas(config?.players.map((p) => p.champion) ?? ['mira'], (done, total) => {
+    const champIds = config?.players.map((p) => p.champion) ?? ['mira'];
+    // champions ready: start the clock (minions only appear at 1:05, they keep baking in the background)
+    const begin = (): void => {
+      if (this.atlasReady) return;
+      loading.remove();
+      this.atlasReady = true;
+      this.link.pause(this.state.paused);
+    };
+    // S3 progressive loading: when the full atlas takes longer than STAND_IN_AFTER_MS (cold start without shipped strips),
+    // a cheap low-res one starts the match and the full one replaces it when ready.
+    let fullDone = false;
+    window.setTimeout(() => {
+      if (fullDone) return;
+      getStandInAtlas(champIds)
+        .then((atlas) => {
+          if (fullDone) return;
+          this.world.setChampionAtlas(atlas);
+          begin();
+        })
+        .catch(() => undefined); // the full atlas is still on its way
+    }, STAND_IN_AFTER_MS);
+    void getChampionAtlas(champIds, (done, total) => {
       loading.textContent = t('hud.loadingChamps', { p: Math.round((done / total) * 100) });
     })
-      .then((atlas) => this.world.setChampionAtlas(atlas))
-      .catch((e) => console.warn('champion atlas failed, keeping placeholder sprites', e))
-      .then(() => {
-        // champions ready: start the clock (minions only appear at 1:05, they keep baking in the background)
-        loading.remove();
-        this.atlasReady = true;
-        this.link.pause(this.state.paused);
+      .then((atlas) => {
+        fullDone = true;
+        this.world.setChampionAtlas(atlas);
       })
+      .catch((e) => console.warn('champion atlas failed, keeping placeholder sprites', e))
+      .then(begin)
       // minions after the champions (one worker pool at a time); usually already baked on the loading screen.
       // G/A4: wait 2.5 s after the clock started so the bakes do not compete with the first snapshots (the first
       // minute showed snapshot jitter up to 71 ms = frozen frames; minions only appear at 1:05 anyway)

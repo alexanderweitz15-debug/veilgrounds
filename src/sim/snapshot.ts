@@ -10,6 +10,7 @@ import type { ChampionVisuals, HintMarker, VisualShape } from './champions/hooks
 import { inFountain, inventory, itemValue, undoDepth } from './items/inventory';
 import { bootsPriceMult } from './items/runeHooks';
 import { itemCooldownHud } from './items/itemHooks';
+import { baseMaxHp } from './systems/stats';
 import { champions, kda } from './systems/economy';
 import { airborneProgress, buffs, isRevealed } from './buffs';
 import { groundObjects, petOwner, petTag } from './summons';
@@ -184,7 +185,8 @@ export interface PlayerHud {
   hints?: HintMarker[];
   /** Passive badge state (stacks / cooldown seconds / ready). */
   passive?: { stacks?: number; max?: number; cdLeft?: number; cdTotal?: number; ready?: boolean };
-  stats: { ad: number; ap: number; armor: number; mr: number; as: number; ms: number; range: number; crit: number };
+  /** bonusAd/maxHp/bonusHp/haste: live numbers for tooltip ratios (optional for older fixtures). */
+  stats: { ad: number; ap: number; armor: number; mr: number; as: number; ms: number; range: number; crit: number; bonusAd?: number; maxHp?: number; bonusHp?: number; haste?: number };
 }
 
 /** Ground objects from hooks (Renn blades, Nyx seeds, Grimald traps). Hidden ones only for the owner's team. */
@@ -530,7 +532,7 @@ export function buildSnapshot(sim: Sim, team: number, slot: number): Snapshot {
       undo: undoDepth(sim, me),
       ...(bootsPriceMult(sim, me) !== 1 ? { bootsMult: bootsPriceMult(sim, me) } : {}),
       marks: buffs(sim, me).filter((b) => b.kind === 'mark' && b.until > sim.tick).map((b) => ({ id: b.id, left: (b.until - sim.tick) / 30 })),
-      stats: { ad: Stats.ad[me]!, ap: Stats.ap[me]!, armor: Stats.armor[me]!, mr: Stats.mr[me]!, as: Stats.as[me]!, ms: Stats.ms[me]!, range: Stats.range[me]!, crit: Stats.crit[me]! },
+      stats: { ad: Stats.ad[me]!, ap: Stats.ap[me]!, armor: Stats.armor[me]!, mr: Stats.mr[me]!, as: Stats.as[me]!, ms: Stats.ms[me]!, range: Stats.range[me]!, crit: Stats.crit[me]!, bonusAd: Stats.bonusAd[me]!, maxHp: sim.c.Hp.max[me]!, bonusHp: sim.c.Hp.max[me]! - baseMaxHp(sim, me), haste: Stats.haste[me]! },
     };
   }
   const te = teamEvents(sim, team);

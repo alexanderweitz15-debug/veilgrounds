@@ -1,0 +1,8 @@
+[
+  { "cls": "kw-cc", "de": "betäub\\w*|verlangsam\\w*|slow\\w*|hochschleud\\w*|festhalt\\w*|wurzel\\w*|verstumm\\w*|blend\\w*|stasis|furcht|heranzieh\\w*|rückstoß\\w*|fessel\\w*", "en": "stun\\w*|slow\\w*|knock\\w*(?: (?:up|back|down|away))?|root\\w*|silenc\\w*|blind\\w*|stasis|fear\\w*|pull\\w*|taunt\\w*|suppress\\w*" },
+  { "cls": "dmg-phys", "de": "körperliche\\w* schaden", "en": "physical damage" },
+  { "cls": "dmg-magic", "de": "magische\\w* schaden", "en": "magic damage" },
+  { "cls": "dmg-true", "de": "absolute\\w* schaden", "en": "true damage" },
+  { "cls": "heal", "de": "heil\\w*", "en": "heal\\w*" },
+  { "cls": "shield", "de": "schild\\w*", "en": "shield\\w*" }
+]

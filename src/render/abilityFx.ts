@@ -27,6 +27,12 @@ export const ABILITY_FX_TAGS: readonly string[] = [
   'aurel_e_rewind',
   'ottilie_w_scout',
   'oda_p_spring',
+  'seraphyne_r_strike',
+  'renn_w_drop',
+  'isolde_anchor',
+  'tobin_q_range',
+  'ottilie_q_leap',
+  'vargrim_w_mist',
 ];
 
 /** Draws a hook object by tag; false = not ours (the generic shape is drawn instead). */
@@ -253,6 +259,69 @@ export function drawAbilityObject(o: SnapObject, now: number, g: SevFxApi): bool
         const k = (now / 1500 + i / 3) % 1;
         circle(g.thin, o.r * (0.2 + 0.8 * k), '#9fe0e0', 0.6 * (1 - k), 4 + i);
       }
+      return true;
+    }
+    case 'seraphyne_r_strike': {
+      // pending storm strike(s): faint outer ring, a bright ring closing in on the next strike, a lightning column
+      // building up; the last strike (n 1) also stuns: white inner ring
+      const k = o.total ? Math.max(0, Math.min(1, (o.left ?? 0) / o.total)) : 0;
+      const more = o.n ?? 1;
+      circle(g.disc, o.r, '#7ab8ff', 0.1 + 0.12 * (1 - k));
+      circle(g.thin, o.r, '#9fd0ff', 0.45, 4);
+      circle(g.thin, o.r * (0.25 + 0.75 * k), '#e8f6ff', 0.95, 6);
+      pane(o.x, o.y, 22, 60 + 240 * (1 - k), now / 90, '#d8f0ff', 0.25 + 0.5 * (1 - k) * flick(now, 3, 45));
+      if (more <= 1) circle(g.ring, o.r * 0.3, '#ffffff', 0.5 + 0.4 * flick(now, 1, 80), 7);
+      else for (let i = 0; i < more; i++) circle(g.disc, 7, '#e8f6ff', 0.95, 8, o.x + (i - (more - 1) / 2) * 24, o.y);
+      return true;
+    }
+    case 'renn_w_drop': {
+      // blade about to land: a landing mark that tightens, filling up, and a blade standing over it
+      const k = o.total ? Math.max(0, Math.min(1, (o.left ?? 0) / o.total)) : 0;
+      circle(g.thin, o.r * (0.5 + 0.9 * k), '#8fb4ff', 0.85, 5);
+      circle(g.disc, o.r * 0.35, '#8fb4ff', 0.3 + 0.4 * (1 - k), 4);
+      pane(o.x, o.y, 14, 30 + 200 * k, now / 400, '#dfe8ff', 0.9);
+      return true;
+    }
+    case 'isolde_anchor': {
+      // wire anchor: a copper rivet with a ring that pulses while the recast window is open
+      circle(g.disc, 16, '#f0b070', 0.95, 6);
+      circle(g.disc, 7, '#fff4d0', 0.95, 7);
+      circle(g.thin, o.r * (0.8 + 0.2 * flick(now, 0, 140)), '#f0b070', 0.8 * (0.4 + 0.6 * life), 5);
+      return true;
+    }
+    case 'tobin_q_range': {
+      // root distance: a ring of hemp-coloured beads that burns down clockwise with the tether timer
+      const n = 40;
+      const lit = Math.ceil(life * n);
+      for (let i = 0; i < lit; i++) {
+        const a = Math.PI / 2 - (i / n) * Math.PI * 2;
+        circle(g.disc, 9, '#e8d49a', 0.9, 6, o.x + Math.cos(a) * o.r, o.y + Math.sin(a) * o.r);
+      }
+      circle(g.thin, o.r, '#8a6a3a', 0.25, 4);
+      return true;
+    }
+    case 'ottilie_q_leap': {
+      // hunt line: paw prints walking from Hark to the marked prey
+      const len = Math.hypot(ex - o.x, ey - o.y) || 1;
+      const n = Math.max(1, Math.floor(len / 90));
+      const ph = (now / 500) % 1;
+      for (let i = 0; i < n; i++) {
+        const t = Math.min(1, (i + ph) / n);
+        const side = i % 2 ? 1 : -1;
+        circle(g.disc, 9, '#d8d0c0', 0.8 * (1 - 0.5 * t), 5, o.x + (ex - o.x) * t - ((ey - o.y) / len) * 14 * side, o.y + (ey - o.y) * t + ((ex - o.x) / len) * 14 * side);
+      }
+      circle(g.thin, 70, '#ff8a6a', 0.55 + 0.3 * flick(now, 0, 120), 6, ex, ey);
+      return true;
+    }
+    case 'vargrim_w_mist': {
+      // gallop mist: pale teal cloud with slow puffs and a thin rim that fades with the timer
+      circle(g.disc, o.r, '#6fd0b8', 0.1 * (0.5 + 0.5 * life));
+      for (let i = 0; i < 8; i++) {
+        const a = i * 0.8 + now / (2200 + i * 110);
+        const rr = o.r * (0.25 + 0.6 * flick(now, i, 1100));
+        circle(g.disc, o.r * (0.16 + 0.07 * flick(now, i + 5, 600)), '#bfeee0', 0.22 * life, 5 + i, o.x + Math.cos(a) * rr, o.y + Math.sin(a) * rr);
+      }
+      circle(g.thin, o.r, '#8fe0c8', 0.55 * life, 5);
       return true;
     }
     default:

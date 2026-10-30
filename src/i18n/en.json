@@ -600,6 +600,7 @@
   "gfx.benchmark": "Graphics test running ...",
   "set.graphicsNote": "Shadows and resolution apply immediately, antialiasing and shadow filter from the next match.",
   "set.a11yTitle": "Accessibility",
+  "set.textScale": "Text size (menus, panels, names)",
   "set.colorMode": "Colour mode (team colours)",
   "set.cb.normal": "Default",
   "set.cb.deuteranopia": "Deuteranopia (green-weak)",

@@ -600,6 +600,7 @@
   "gfx.benchmark": "Grafiktest läuft ...",
   "set.graphicsNote": "Schatten und Auflösung wirken sofort, Kantenglättung und Schattenfilter ab dem nächsten Spiel.",
   "set.a11yTitle": "Barrierefreiheit",
+  "set.textScale": "Textgröße (Menüs, Panels, Namen)",
   "set.colorMode": "Farbmodus (Teamfarben)",
   "set.cb.normal": "Standard",
   "set.cb.deuteranopia": "Deuteranopie (Grünschwäche)",

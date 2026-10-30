@@ -57,7 +57,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     i.addEventListener('change', () => updateSettings({ [key]: i.checked } as Partial<Settings>));
     return i;
   };
-  const slider = (key: 'cameraSpeed' | 'uiScale' | 'volume' | 'minimapScale' | 'renderScale', min: number, max: number, step: number, fmt: (v: number) => string): HTMLElement => {
+  const slider = (key: 'cameraSpeed' | 'uiScale' | 'textScale' | 'volume' | 'minimapScale' | 'renderScale', min: number, max: number, step: number, fmt: (v: number) => string): HTMLElement => {
     const wrap = document.createElement('span');
     wrap.className = 'slider';
     const i = document.createElement('input');
@@ -176,6 +176,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     note.textContent = t('set.graphicsNote');
     root.appendChild(note);
     section(t('set.a11yTitle'));
+    row(t('set.textScale'), slider('textScale', 90, 150, 5, (v) => `${v}%`));
     row(t('set.colorMode'), select<Settings['colorMode']>(settings.colorMode, [
       ['normal', t('set.cb.normal')], ['deuteranopia', t('set.cb.deuteranopia')], ['protanopia', t('set.cb.protanopia')], ['tritanopia', t('set.cb.tritanopia')],
     ], (v) => updateSettings({ colorMode: v })));

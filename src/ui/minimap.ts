@@ -146,7 +146,7 @@ export class Minimap {
             // diamond with an eye dot in the enemy colour
             const revealed = (e as { stealth?: true }).stealth === true && e.team !== state.myTeam;
             const r = (e.ward === 'seal' ? 3.2 : 2.6) * d;
-            ctx.fillStyle = e.ward === 'seal' ? (e.team === state.myTeam ? '#f2d36b' : '#ff8a5a') : col;
+            ctx.fillStyle = e.ward === 'seal' ? (e.team === state.myTeam ? REL.allySeal : REL.enemySeal) : col;
             ctx.beginPath();
             ctx.moveTo(x, y - r);
             ctx.lineTo(x + r, y);

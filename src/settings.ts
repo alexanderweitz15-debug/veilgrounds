@@ -17,6 +17,8 @@ export interface Settings {
   uiScale: number;
   /** HUD scale follows the window height (innerHeight / 720); moving the slider turns it off. */
   uiScaleAuto: boolean;
+  /** Text size in percent (90..150): menus, HUD panels and the overlay labels (name, floating numbers). */
+  textScale: number;
   /** Colour-blind palette for team/relation colours (bars, rings, minimap, pings, telegraphs). */
   colorMode: ColorMode;
   /** Fewer flashes, pulses and animations (hit flash, cast/death pulses, HUD animations). */
@@ -94,6 +96,7 @@ const DEFAULTS: Settings = {
   cameraSpeed: 1,
   uiScale: 100,
   uiScaleAuto: true,
+  textScale: 100,
   colorMode: 'normal',
   reduceMotion: false,
   highContrast: false,
@@ -157,6 +160,11 @@ export function uiScaleFactor(): number {
   const h = typeof window === 'undefined' ? 720 : window.innerHeight;
   return Math.min(2, Math.max(0.8, h / 720));
 }
+
+/** Text size factor (1 = 100 %) for DOM panels (CSS --txt) and canvas labels (`txtPx`). */
+export const textScaleFactor = (): number => Math.min(1.5, Math.max(0.9, settings.textScale / 100 || 1));
+/** Canvas font size `px` scaled by the text size setting. */
+export const txtPx = (px: number): number => Math.round(px * textScaleFactor() * 10) / 10;
 
 export function updateSettings(patch: Partial<Settings>): void {
   Object.assign(settings, patch);

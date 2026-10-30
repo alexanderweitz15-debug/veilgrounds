@@ -25,6 +25,7 @@ const ENUMS: Partial<Record<keyof Settings, readonly string[]>> = {
 const RANGES: Partial<Record<keyof Settings, [number, number]>> = {
   cameraSpeed: [0.3, 3],
   uiScale: [80, 150],
+  textScale: [90, 150],
   minimapScale: [80, 150],
   volume: [0, 1],
   renderScale: [50, 100],

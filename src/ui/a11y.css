@@ -2,6 +2,9 @@
    --ui is set on <html> by src/ui/display.ts. The HUD bars/minimap already use transform: scale(var(--ui));
    panels with their own transforms use `zoom` so their layout transforms stay untouched. */
 
+:root { --txt: 1; --uit: calc(var(--ui, 1) * var(--txt)); } /* --txt = text size setting (display.ts); --uit = zoom of the text-heavy panels */
+/* menu screens: text size setting */
+.menu-screen > :not(canvas) { zoom: var(--txt); }
 /* ---------------------------------------------------------------- UI scale */
 .game .panel.open,
 .game .chat-box,
@@ -11,12 +14,12 @@
 .game .respawn.open,
 .game .recall.open,
 .game .buff-marks,
-.ingame-menu .menu-panel { zoom: var(--ui); }
+.ingame-menu .menu-panel { zoom: var(--uit); }
 /* zoomed boxes: viewport-relative sizes must be divided by the zoom to still fit the screen */
-.game .panel.shop.open { width: min(860px, calc(96vw / var(--ui))); max-height: calc((100vh - 60px - 150px * var(--ui)) / var(--ui)); }
-.game .panel.scoreboard.open { min-width: min(820px, calc(96vw / var(--ui))); }
-.game .chat-box { width: min(420px, calc(40vw / var(--ui))); }
-.ingame-menu .menu-panel { max-height: calc(96vh / var(--ui)); overflow-y: auto; }
+.game .panel.shop.open { width: min(860px, calc(96vw / var(--uit))); max-height: calc((100vh - 60px - 150px * var(--uit)) / var(--uit)); }
+.game .panel.scoreboard.open { min-width: min(820px, calc(96vw / var(--uit))); }
+.game .chat-box { width: min(420px, calc(40vw / var(--uit))); }
+.ingame-menu .menu-panel { max-height: calc(96vh / var(--uit)); overflow-y: auto; }
 /* buff marks already compensate their offset with --ui; zoom scales it once more */
 .game .buff-marks { bottom: 150px; }
 

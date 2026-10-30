@@ -943,6 +943,13 @@ function applyEffect(sim: Sim, ctx: EffectCtx, eff: Effect): void {
   }
 }
 
+/** Own short dash of `eid` along (dx, dy) at the knock-back speed, not airborne (Vargrim E rides after the target). */
+export function rideAlong(sim: Sim, eid: number, dx: number, dy: number, d: number): void {
+  if (d <= 0) return;
+  onMoveCommand(sim, eid);
+  abilState(sim).moves.set(eid, { serial: sim.c.Unit.serial[eid]!, dx, dy, speed: DISPLACE_SPEED, left: d, total: d, slot: -1, rank: 0, target: -1, targetSerial: 0, stopAtEnemy: 0, cx: 0, cy: 0 });
+}
+
 /** Knockback (distance > 0, away from src) or pull (< 0, toward src, stops at the hitboxes). Airborne while moving. */
 const DISPLACE_SPEED = 1200;
 export function displace(sim: Sim, src: number, t: number, distance: number, overTicks?: number): void {

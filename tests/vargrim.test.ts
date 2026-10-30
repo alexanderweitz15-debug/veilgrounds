@@ -71,6 +71,18 @@ describe('Vargrim Q Lance Whirl', () => {
   });
 });
 
+describe('Vargrim Q while riding', () => {
+  it('casts on the move: no wind-up stop', () => {
+    const { sim, m } = setup();
+    cmd(sim, { t: 'move', x: CX + 1000, y: CY });
+    steps(sim, 5);
+    const x0 = sim.c.Pos.x[m]!;
+    cmd(sim, cast(0, CX, CY));
+    steps(sim, 9);
+    expect(sim.c.Pos.x[m]! - x0).toBeGreaterThan(80); // ~345 u/s for 0.47 s, never stood still
+  });
+});
+
 describe('Vargrim W Dread Mist', () => {
   it('ticks damage on enemies inside for 4 s and heals him for 25 % of it', () => {
     const { sim, m } = setup();
@@ -137,6 +149,22 @@ describe('Vargrim E Storm Gallop', () => {
     expect(short.length).toBeGreaterThan(0);
     expect(Math.max(...long.dmg)).toBeGreaterThan(Math.max(...short) * 1.2); // passive now counts total MS, so the ride adds less on top
     expect(hasBuff(sim, m, 'stat', 'vargrim_e')).toBe(false); // ramp ends with the auto
+  });
+
+  it('rides after the knocked-back target and ends right behind it', () => {
+    const { sim, m } = setup();
+    const d = spawnDummy(sim, CX + 200, CY, 1);
+    step(sim);
+    cmd(sim, cast(2, CX, CY));
+    cmd(sim, { t: 'attack', target: d });
+    let x0 = 0;
+    for (let i = 0; i < 60; i++) {
+      step(sim);
+      if (!x0 && hasBuff(sim, d, 'airborne')) x0 = sim.c.Pos.x[m]!;
+    }
+    expect(x0).toBeGreaterThan(0);
+    expect(sim.c.Pos.x[m]! - x0).toBeGreaterThan(200); // he moved with the knock-back
+    expect(Math.abs(sim.c.Pos.x[d]! - sim.c.Pos.x[m]!)).toBeLessThan(450); // still on the target
   });
 });
 

@@ -46,12 +46,12 @@
       "id": "vargrim_q",
       "name": { "de": "Lanzenwirbel", "en": "Lance Whirl" },
       "desc": {
-        "de": "Nach 0,25 s wirbelt er die Lanze im Kreis (350): 50/75/100/125/150 (+30 % AD, +55 % Bonus-AD) physisch. Jeder getroffene Gegner (max. 3) verkürzt die Abklingzeit um 0,6 s. Ein Treffer auf Champion oder Monster gibt einen Wirbel-Stack (max. 3, 4 s): +15 % Schaden pro Stack.",
-        "en": "After 0.25 s he spins the lance in a circle (350): 50/75/100/125/150 (+30% AD, +55% bonus AD) physical. Each enemy hit (max 3) reduces the cooldown by 0.6 s. Hitting a champion or monster gives a Whirl stack (max 3, 4 s): +15% damage per stack."
+        "de": "Er wirbelt im Laufen die Lanze im Kreis (350): 50/75/100/125/150 (+30 % AD, +55 % Bonus-AD) physisch. Jeder getroffene Gegner (max. 3) verkürzt die Abklingzeit um 0,6 s. Ein Treffer auf Champion oder Monster gibt einen Wirbel-Stack (max. 3, 4 s): +15 % Schaden pro Stack.",
+        "en": "He spins the lance in a circle (350): 50/75/100/125/150 (+30% AD, +55% bonus AD) physical. Each enemy hit (max 3) reduces the cooldown by 0.6 s. Hitting a champion or monster gives a Whirl stack (max 3, 4 s): +15% damage per stack."
       },
       "type": "self",
-      "castTime": 0.25,
-      "movesWhileCasting": false,
+      "castTime": 0,
+      "movesWhileCasting": true,
       "range": 0,
       "cooldown": [5, 4.75, 4.5, 4.25, 4],
       "cost": [28, 30, 32, 34, 36],
@@ -88,8 +88,8 @@
       "id": "vargrim_e",
       "name": { "de": "Sturmritt", "en": "Storm Gallop" },
       "desc": {
-        "de": "Vargrim galoppiert los: Lauftempo wächst in 3 s auf +40 %. Der nächste Angriff innerhalb von 4 s schleudert das Ziel 300 zurück und trifft mit 35/60/85/110/135 (+60 % Bonus-AD) physisch, bis zu +100 % Schaden je nach zurückgelegter Strecke (1.000).",
-        "en": "Vargrim breaks into a gallop: move speed grows to +40% over 3 s. His next attack within 4 s knocks the target back 300 and deals 35/60/85/110/135 (+60% bonus AD) physical, up to +100% damage depending on the distance travelled (1,000)."
+        "de": "Vargrim galoppiert los: Lauftempo wächst in 3 s auf +40 %. Der nächste Angriff innerhalb von 4 s schleudert das Ziel 300 zurück, Vargrim reitet hinterher und trifft mit 35/60/85/110/135 (+60 % Bonus-AD) physisch, bis zu +100 % Schaden je nach zurückgelegter Strecke (1.000).",
+        "en": "Vargrim breaks into a gallop: move speed grows to +40% over 3 s. His next attack within 4 s knocks the target back 300 and he rides after it and deals 35/60/85/110/135 (+60% bonus AD) physical, up to +100% damage depending on the distance travelled (1,000)."
       },
       "type": "self",
       "castTime": 0,

@@ -678,6 +678,7 @@
   "set.castMode.normal": "Normal (indicator, left click casts)",
   "shop.search": "Search …",
   "shop.none": "No items in this category.",
+  "shop.noMatch": "No matches for this search.",
   "shop.passive": "Passive",
   "shop.active": "Active",
   "shop.cat.all": "All",

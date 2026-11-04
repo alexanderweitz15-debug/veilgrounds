@@ -678,6 +678,7 @@
   "set.presetLolDone": "LoL-Standardlayout geladen (Alt = Selbstzauber, Strg = Verbessern).",
   "shop.search": "Suchen …",
   "shop.none": "Keine Gegenstände in dieser Kategorie.",
+  "shop.noMatch": "Keine Treffer für diese Suche.",
   "shop.passive": "Passiv",
   "shop.active": "Aktiv",
   "shop.cat.all": "Alle",

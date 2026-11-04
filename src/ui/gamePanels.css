@@ -182,6 +182,12 @@
 .score-table th { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #c8aa6e; text-align: left; padding: 2px 6px; border-bottom: 1px solid #3a3226; white-space: nowrap; }
 .score-table td { padding: 2px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); white-space: nowrap; }
 .score-table td.name { max-width: 190px; overflow: hidden; text-overflow: ellipsis; cursor: help; }
+/* ui-bughunt: both tables share one column grid (auto layout lined them up differently per content) */
+.score-table { table-layout: fixed; }
+.score-table td { overflow: hidden; text-overflow: ellipsis; }
+.score-table th.summoners { width: 80px; } .score-table th.level { width: 52px; } .score-table th.kda { width: 80px; }
+.score-table th.cs { width: 46px; } .score-table th.vision { width: 56px; } .score-table th.damage { width: 70px; }
+.score-table th.gold, .score-table th.itemValue { width: 84px; } .score-table th.items { width: 176px; }
 .score-table td.kda { font-variant-numeric: tabular-nums; }
 .score-portrait { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 6px; vertical-align: middle; border-radius: 50%; border: 1px solid #6b5a35; background: #1c1824; font-size: 11px; font-weight: 800; color: #f1e6c8; }
 .score-table.ally td.champ { color: #8fb7ea; }

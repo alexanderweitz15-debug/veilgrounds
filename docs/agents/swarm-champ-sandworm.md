@@ -1,0 +1,23 @@
+# swarm/champ-sandworm - WIP checkpoint
+
+Status: research only, NO code written. Stopped by coordinator (5-agent limit). Branch `swarm/champ-sandworm` from origin/main (23c7f08).
+No node_modules junction, browser tab or server was started.
+
+## Design decided
+- id `dorrak`, name "Dorrak Sandschlund", title "der Duenenwuehler" / "the Dune Burrower", roles [jungle], archetype `burrowing_juggernaut`, melee, mana, ~655 hp / 62 ad / 36 armor / ms 340 (tune vs vessa/grimald/vargrim).
+- Passive "Sandmagen": regenerates ~3 % max HP/s while burrowed (hook passive + onTick).
+- Q "Schlundbiss": cone ~350, phys dmg, armor shred -15 % 3 s (effect kind buff, negative pct, target hit). Casting Q/R while burrowed surfaces him first (effect hook at cast phase).
+- W "Untertauchen" (burrow): self, movesWhileCasting true, up to ~4 s, recast surfaces. While burrowed: stat buffs `untargetable` + `ms` +35 %, new buff kind `disarm` (cannot attack), dust-trail VisualObjects (shape `line`/`disc`, tag `dorrak_trail`, NOT hidden so enemies see it), snapshot `aura`.
+- E "Sandausbruch": self AoE r~330, delay ~0.45 (telegraph), damage + `airborne` 0.75 s; if burrowed: dmgMult 1.3, extra airborne +0.25 s, ends burrow. Two hooks: `dorrak_e_prep` (before damage) and `dorrak_e_finish` (after).
+- R: not designed yet (idea: big erupting maw, line/circle knock-up + suppress-light, 3 ranks 110/95/80 s cd).
+
+## Findings for the next agent
+- Wiring checklist (copy vargrim): `src/data/champions/<id>.json` + index.ts import/raw entry; `src/sim/champions/<id>.ts` + index.ts hooks import/CHAMPION_HOOKS; `src/data/builds/<id>.json` + `src/ai/bot/builds.ts` (import + BUILDS list); `src/data/runePresets.json` (vargrim block ~line 1964); `src/data/voiceLines.json` (vargrim block ~line 886); `src/render/abilityMotifs.json` row (4 motifs, vargrim line 61); `src/render/champions/{kits.ts (kit(STUB)), casts.ts (CAST_FAMILIES, F(a,b,'abab') style), motion.ts (MS table + SPECS entry, tests/motion.test.ts demands unique gait/idle JSON and unique drag/asym/impact triple; stride<=0 or style 'gallop' skips cadence check)}`; `atlas.ts` DRAWERS one-line registry (import + entry) for a custom SpriteDrawer; `src/sim/trainer/scenarios.ts` JG list (line 71); `tests/championData.test.ts` ROSTER (optional, additive); docs/champion-hooks.md, docs/spec-champions.md, docs/agents/shared-changes.md; item icon rows in `src/data/itemIcons.json`, items in `src/data/items.json` (check docs/IDEAS-FEEL-SHOP.md "Neue Items").
+- Sprite: custom `SpriteDrawer` like `src/render/champions/cavalry.ts` (Stage/Painter API: st.capsule, st.sphere, st.hull, ring, frameYZ, ik; `furHull`/`jag` in wolf.ts). Worm = chain of capsules/spheres along a sagging curve, ring-of-teeth maw, sand plates. Needs frames idle 6, run 8, attack 5, cast 4 or 6 (6 enables cast families A/B), death 3, plus a "burrowed" look (low mound + ridge; can be run anim variant). Kit stub (`Kit`) required in kits.ts for motionOf/rateOf.
+- Cannot attack while burrowed: no engine support. Plan: add `'disarm'` to `BuffKind` in `src/sim/buffs.ts` (not a CC, not in CC_BIT) and one line in `src/sim/systems/attack.ts` updateUnit: `const able = canAttack(sim, eid) && !isBusy(sim, eid) && !hasBuff(sim, eid, 'disarm');` (do NOT put it in canAttack: summoners/items use that). List in shared-changes.md.
+- Hook API: `src/sim/champions/hooks.ts` header; state via `hookState`/`peekState` (util.ts); `visuals()` must be read-only. vargrim.ts is the closest template.
+- Tests to write: `tests/dorrak.test.ts` (copy structure of tests/vargrim.test.ts: setup(), spawnDummy, collect): burrow untargetable + ms + no auto + trail object in snapshot, regen while burrowed, eruption knock-up (hasBuff airborne), bonus when burrowed, Q armor shred; clear-time sanity (compare camp clear ticks vs vessa/grimald in a jungle sim, see tests/jungle.test.ts 'jungle clear timing'); `missingHooks('dorrak')` empty; validateChampion passes (championData.test.ts).
+- Items: 1-2 fighter/tank jungle items (existing ItemStat fields only), German+en names, icon row, price by gold efficiency (tests/goldEfficiency.test.ts), passive via item hook system (src/sim/items/itemHooks.ts), test for passive, add to bot build.
+- Bot: simple burrow use for ganks in the bot champion logic (find how vargrim/others are used in src/ai/bot; keep minimal: cast W when moving toward an enemy lane >1500 away and no enemy visible, cast E when within r of enemy champion).
+- End: one sandbox screenshot only, close tab/server, delete junction with `(Get-Item <worktree>\node_modules).Delete()`.
+- Forbidden files (another agent): championSprites.ts, sheets.ts, atlas.ts (beyond one-line registry), particles.ts, fx.ts, audio, game.ts.

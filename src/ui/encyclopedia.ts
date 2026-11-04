@@ -10,6 +10,7 @@ import { AXIS_LABELS, ARCHETYPE_NAMES, ARCHETYPE_PLAYSTYLES, signed } from '../a
 import { settings } from '../settings';
 import { setPortrait, setSplash } from '../render/portraits';
 import { setTip } from './tooltip';
+import { statLines } from './shop';
 import { abilityIcon, itemIcon, passiveIcon, runeIcon, setIcon } from './icons';
 import './showcase.css';
 
@@ -43,6 +44,40 @@ function scaling(s: Scaling): string {
   return parts.join(' ');
 }
 
+/** Player-facing names for the data enums (ability type, flags, buff stats, cost types, CC kinds). */
+const TYPE_NAME: Record<AbilityData['type'], [string, string]> = {
+  skillshot_line: ['Linien-Skillshot', 'Line skillshot'],
+  skillshot_circle: ['Kreis-Skillshot', 'Circle skillshot'],
+  cone: ['Kegel', 'Cone'],
+  targeted: ['Zielgerichtet', 'Targeted'],
+  self: ['Selbst', 'Self'],
+  dash: ['Sprung', 'Dash'],
+  blink: ['Teleport-Sprung', 'Blink'],
+  zone: ['Zone', 'Zone'],
+  summon: ['Beschwörung', 'Summon'],
+};
+const FLAG_NAME: Record<NonNullable<AbilityData['flags']>[number], [string, string]> = {
+  blocked_by_minions: ['von Vasallen blockiert', 'blocked by minions'],
+  pierce: ['durchdringt', 'pierces'],
+  unstoppable: ['unaufhaltsam', 'unstoppable'],
+  recast: ['Zweitaktivierung', 'recast'],
+  ground_target: ['Bodenziel', 'ground target'],
+  ally_target: ['Verbündetenziel', 'ally target'],
+  auto_reset: ['setzt Angriff zurück', 'resets auto attack'],
+  channel: ['Kanalisierung', 'channel'],
+  mobility: ['Mobilität', 'mobility'],
+  stealth: ['Tarnung', 'stealth'],
+  root_ok: ['trotz Festhalten', 'works while rooted'],
+};
+const COST_NAME = { mana: ['Mana', 'mana'], energy: ['Energie', 'energy'], hp: ['HP', 'HP'], none: ['–', '–'] } as const;
+const BUFF_NAME: Record<string, [string, string]> = {
+  as: ['Angriffstempo', 'attack speed'], ms: ['Lauftempo', 'move speed'], ad: ['AD', 'AD'], ap: ['AP', 'AP'], armor: ['Rüstung', 'armor'], mr: ['MR', 'MR'],
+  dmgReduction: ['Schadensreduktion', 'damage reduction'], tenacity: ['Zähigkeit', 'tenacity'], invisible: ['Unsichtbarkeit', 'invisibility'],
+  untargetable: ['Unangreifbarkeit', 'untargetability'], range: ['Reichweite', 'range'], armorPen: ['Rüstungsdurchdringung', 'armor penetration'], projImmune: ['Projektil-Immunität', 'projectile immunity'],
+};
+const CC_NAME: Record<string, [string, string]> = { root: ['Festhalten', 'Root'], stun: ['Betäubung', 'Stun'], airborne: ['Hochschleudern', 'Knock-up'], blind: ['Blendung', 'Blind'], silence: ['Verstummen', 'Silence'], stasis: ['Stasis', 'Stasis'] };
+const loc = (p: [string, string] | undefined, fallback: string): string => (p ? L(p[0], p[1]) : fallback);
+
 function effectText(e: Effect): string {
   switch (e.kind) {
     case 'damage':
@@ -57,7 +92,7 @@ function effectText(e: Effect): string {
     case 'pull':
       return `${e.kind === 'pull' ? L('Zug', 'Pull') : L('Rückstoß', 'Knockback')} ${e.distance}`;
     case 'buff':
-      return `${L('Buff', 'Buff')} ${e.stat} ${e.pct !== undefined ? ranked(e.pct, ' %') : ranked(e.flat)}, ${ranked(e.duration, ' s')}`;
+      return `${L('Buff', 'Buff')} ${loc(BUFF_NAME[e.stat], e.stat)} ${e.pct !== undefined ? ranked(e.pct, ' %') : ranked(e.flat)}, ${ranked(e.duration, ' s')}`;
     case 'reveal':
       return `${L('Enthüllt', 'Reveals')} ${e.duration} s`;
     case 'mark':
@@ -65,7 +100,7 @@ function effectText(e: Effect): string {
     case 'hook':
       return L('Spezial-Logik', 'special logic');
     default:
-      return `${e.kind} ${ranked((e as { duration: Ranked }).duration, ' s')}`;
+      return `${loc(CC_NAME[e.kind], e.kind)} ${ranked((e as { duration: Ranked }).duration, ' s')}`;
   }
 }
 
@@ -74,17 +109,17 @@ function abilityBlock(a: AbilityData, key: string, parent: HTMLElement, lang: La
   const head = el('div', 'enc-ab-head', undefined, box);
   el('span', 'enc-key', key, head);
   el('span', 'enc-ab-name', a.name[lang], head);
-  el('span', 'enc-ab-type', a.type, head);
+  el('span', 'enc-ab-type', loc(TYPE_NAME[a.type], a.type), head);
   el('p', 'enc-desc', a.desc[lang], box);
   const facts: [string, string][] = [
     [L('Reichweite', 'Range'), ranked(a.range)],
     [L('Abklingzeit', 'Cooldown'), ranked(a.cooldown, ' s')],
-    [L('Kosten', 'Cost'), a.costType === 'none' ? '–' : `${ranked(a.cost)} ${a.costType}`],
+    [L('Kosten', 'Cost'), a.costType === 'none' ? '–' : `${ranked(a.cost)} ${loc(COST_NAME[a.costType] as [string, string], a.costType)}`],
     [L('Cast-Zeit', 'Cast time'), `${a.castTime} s`],
   ];
   if (a.width) facts.push([L('Breite', 'Width'), String(a.width)]);
   if (a.speed) facts.push([L('Geschw.', 'Speed'), String(a.speed)]);
-  if (a.radius) facts.push(['Radius', String(a.radius)]);
+  if (a.radius) facts.push([L('Radius', 'Radius'), String(a.radius)]);
   if (a.angle) facts.push([L('Winkel', 'Angle'), `${a.angle}°`]);
   if (a.delay) facts.push([L('Verzögerung', 'Delay'), `${a.delay} s`]);
   const grid = el('div', 'enc-facts', undefined, box);
@@ -94,7 +129,7 @@ function abilityBlock(a: AbilityData, key: string, parent: HTMLElement, lang: La
   }
   const ul = el('ul', 'enc-effects', undefined, box);
   for (const e of a.effects) if (e.kind !== 'hook') el('li', '', effectText(e), ul);
-  if (a.flags?.length) el('div', 'enc-flags', a.flags.join(' · '), box);
+  if (a.flags?.length) el('div', 'enc-flags', a.flags.map((f) => loc(FLAG_NAME[f], f)).join(' · '), box);
 }
 
 function championsTab(body: HTMLElement, lang: Lang): void {
@@ -180,7 +215,7 @@ function itemsTab(body: HTMLElement, lang: Lang): void {
       setTip(ii, `item:${it.id}`);
       el('span', 'enc-ab-name', it.name[lang], hd);
       el('span', 'enc-gold', String(it.cost), hd);
-      el('div', 'enc-sub', Object.entries(it.stats).map(([k, v]) => `+${v} ${k}`).join(' · ') || '–', c);
+      el('div', 'enc-sub', statLines(it).join(' · ') || '–', c);
       if (it.from.length) el('div', 'enc-sub', `${L('aus', 'from')}: ${it.from.map((f) => byId.get(f)?.name[lang] ?? f).join(' + ')}`, c);
       if (it.passive) el('p', 'enc-desc', `${it.passive.name[lang]}: ${it.passive.desc[lang]}`, c);
       if (it.active) el('p', 'enc-desc', `${L('Aktiv', 'Active')} – ${it.active.name[lang]}: ${it.active.desc[lang]} (CD ${it.active.cooldown} s)`, c);
@@ -206,7 +241,7 @@ const RANK_LABEL: Record<string, string> = {
 
 function ranksTab(body: HTMLElement, lang: Lang): void {
   const wrap = el('div', 'enc-scroll', undefined, body);
-  el('p', 'enc-desc', L('Alle Bot-Parameter stammen aus src/data/bots/profiles/<rang>.json. Kein Wert ist im Code fest verdrahtet.', 'All bot parameters come from src/data/bots/profiles/<rank>.json; none are hard-coded.'), wrap);
+  el('p', 'enc-desc', L('Alle Bot-Parameter pro Rang. Kein Wert ist im Code fest verdrahtet, sie stammen aus den Rang-Profilen.', 'All bot parameters per rank. No value is hard-coded; they come from the rank profiles.'), wrap);
   const table = el('table', 'enc-table', undefined, wrap);
   const head = el('tr', '', undefined, el('thead', '', undefined, table));
   el('th', '', L('Parameter', 'Parameter'), head);

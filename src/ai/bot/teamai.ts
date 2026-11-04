@@ -42,7 +42,9 @@ export const OBJECTIVES: ObjectiveId[] = (['leviathan', 'schleierwaechter', 'kes
 /** Kesselbrut (herald) leaves its pit to the Schleierwaechter at 20:00: not started after 19:45. */
 const HERALD_UNTIL_S = 19 * 60 + 45;
 /** Objective feasibility: the assigned group must kill the monster within this many seconds (rough DPS model). */
-const KILL_WITHIN_S: Record<ObjectiveId, number> = { leviathan: 25, kesselbrut: 30, schleierwaechter: 35 };
+// user 2026-11-04 "die machen viel zu selten Drachen": with 25/30 s and the old DPS guess a 3-bot take only became
+// "feasible" around level 8-9 - the first Leviathan sat for minutes. LoL teams take it at 5:00 in ~25-35 s.
+const KILL_WITHIN_S: Record<ObjectiveId, number> = { leviathan: 40, kesselbrut: 45, schleierwaechter: 45 };
 /** No new start on the same objective for this long after a start (a failed take is not retried at once). */
 const OBJECTIVE_RETRY_S = 180;
 /** The group / siege decision is re-rolled at most this often (a desire lasts 90 s, then laners go back). */
@@ -422,7 +424,7 @@ export class TeamAI {
         // feasibility: rough team DPS (level-based) must kill the monster within KILL_WITHIN_S; monster HP as the sim
         // scales it (public game knowledge): Baron + BARON_HP_PER_MIN per minute after 20:00, others by the average
         // champion level (scoreboard)
-        const dps = team.reduce((a, sl) => a + 0.55 * (40 + 12 * (n.snap.players.find((r) => r.slot === sl)?.level ?? 1)), 0);
+        const dps = team.reduce((a, sl) => a + 0.8 * (40 + 12 * (n.snap.players.find((r) => r.slot === sl)?.level ?? 1)), 0); // autos + spells + smite
         const avgLevel = n.snap.players.reduce((a, r) => a + r.level, 0) / Math.max(1, n.snap.players.length);
         const baseHp = campOf(o)?.monsters.reduce((a, m) => a + m.hp, 0) ?? 5000;
         const hp = o === 'schleierwaechter' ? baseHp + BARON_HP_PER_MIN * Math.max(0, Math.floor(time / 60 - 20)) : baseHp * (1 + MONSTER_HP_PER_LEVEL * Math.max(0, avgLevel - 1));

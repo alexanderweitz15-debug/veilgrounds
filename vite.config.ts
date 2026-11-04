@@ -56,6 +56,6 @@ export default defineConfig(({ mode }) => ({
   plugins: [bakeSprites()],
   // three.js as its own long-cached vendor chunk (~530 kB min, shared by the menu backdrop and the game view)
   build: { rollupOptions: { input: { main: 'index.html', bake: 'bake.html' }, output: { manualChunks: { three: ['three'] } } } },
-  // npm test = fast set (< ~1 min); npm run test:slow = full-game brain/determinism tests; CI runs both (test:all)
+  // npm test = fast set (~1-2 min, also the deploy gate); npm run test:slow = full-game brain/determinism tests (run before brain merges)
   test: mode === 'slow' ? { include: SLOW_TESTS } : { include: ['tests/**/*.test.ts'], exclude: mode === 'all' ? [] : SLOW_TESTS },
 }));

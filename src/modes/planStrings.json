@@ -23,7 +23,7 @@
     "plan.metric.trainerScore": "Trainer-Punkte",
     "plan.streak.win": "Siegesserie {n} (Bestwert {best})",
     "plan.streak.cs": "{n}× CS gesteigert",
-    "plan.streak.days": "{n} Tage in Folge trainiert",
+    "plan.streak.days": "Tage in Folge trainiert: {n}",
     "plan.empty": "Noch keine Einträge."
   },
   "en": {
@@ -49,7 +49,7 @@
     "plan.metric.trainerScore": "Trainer score",
     "plan.streak.win": "Win streak {n} (best {best})",
     "plan.streak.cs": "{n}× CS improved",
-    "plan.streak.days": "{n} days in a row",
+    "plan.streak.days": "Days in a row: {n}",
     "plan.empty": "No entries yet."
   }
 }

@@ -131,6 +131,8 @@ export class Hud {
   private readonly respawn: HTMLElement;
   private readonly recall: HTMLElement;
   private readonly recallFill: HTMLElement;
+  /** A trainer/scenario result is on screen: the freeze is not a player pause. */
+  resultFreeze = false;
   private readonly pause: HTMLElement;
   private readonly pauseBy: HTMLElement;
   private readonly pauseHint: HTMLElement;
@@ -436,7 +438,7 @@ export class Hud {
     // kill feed expiry
     while (this.feedEntries.length && now - this.feedEntries[0]!.at > KILLFEED_MS) this.feedEntries.shift()!.node.remove();
     this.announcer.update(state, now);
-    toggle(this.pause, 'open', state.paused);
+    toggle(this.pause, 'open', state.paused && !this.resultFreeze);
     setText(this.pauseHint, t('hud.pausedHint', { key: keyLabel(binds.pause) }));
     if (state.winner !== null) {
       toggle(this.over, 'open', true);

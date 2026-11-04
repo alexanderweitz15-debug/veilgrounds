@@ -1,0 +1,141 @@
+{
+  "id": "lysa",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "carry",
+    "engage": 0,
+    "peel": 1,
+    "poke": 0,
+    "burst": 2
+  },
+  "keyRanges": {
+    "auto": 600,
+    "trade": 700,
+    "engage": 600,
+    "poke": 600,
+    "threat": 1500,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "lysa_data1",
+      "kind": "trade",
+      "sequence": [
+        "E",
+        "Q",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "lysa_data2",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "AA",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "lysa_data3",
+      "kind": "allin",
+      "sequence": [
+        "R"
+      ],
+      "source": "data"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "self",
+      "roles": [
+        "buff"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        750
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "line",
+      "roles": [
+        "burst"
+      ],
+      "range": 1500,
+      "useRange": [
+        0,
+        1380
+      ],
+      "speed": 2000,
+      "width": 50,
+      "radius": 0,
+      "castTime": 0.3,
+      "delay": 0,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "circle",
+      "roles": [
+        "cc"
+      ],
+      "range": 700,
+      "useRange": [
+        0,
+        644
+      ],
+      "speed": 0,
+      "width": 40,
+      "radius": 250,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 3,
+      "damage": false,
+      "dodgeable": true,
+      "threat": 2,
+      "holdFor": "peel"
+    },
+    {
+      "slot": "R",
+      "aim": "line",
+      "roles": [
+        "burst",
+        "ult"
+      ],
+      "range": 25000,
+      "useRange": [
+        0,
+        1656
+      ],
+      "speed": 3000,
+      "width": 120,
+      "radius": 0,
+      "castTime": 0.3,
+      "delay": 1,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

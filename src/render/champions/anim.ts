@@ -8,7 +8,8 @@
 //   cast   6  family A: gather, RELEASE (CAST_RELEASE), follow-through; family B: gather (CAST_B), release;
 //             self-buff flex (CAST_FLEX). Which family an ability plays: casts.ts (agent F).
 //   death  3  recoil, knees buckle, down
-// The game stretches attack/cast frames over the actual wind-up (render/championSprites.ts).
+// The game stretches attack/cast frames over the actual wind-up: state machine in render/anim/machine.ts, playback table
+// (fps, loop, event frames per id) in render/anim/data.ts, format in docs/ANIM-FORMAT.md. This file only paints poses.
 import { lerp3, norm, TAU, type V3 } from './core';
 import { bodyOf } from './humanoid';
 import { motionOf } from './motion';

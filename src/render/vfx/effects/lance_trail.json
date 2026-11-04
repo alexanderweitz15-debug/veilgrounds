@@ -1,0 +1,36 @@
+{
+  "_doc": "Schweif der Turm-Lanze (Roadmap D: Turm-Lanze), Teamfarbe.",
+  "id": "lance_trail",
+  "class": "projectile",
+  "blend": "add",
+  "glyph": "streak",
+  "tint": {
+    "mode": "team"
+  },
+  "life": [120, 240],
+  "count": 2,
+  "emitter": {
+    "shape": "point",
+    "jitter": 10,
+    "jitterH": 8
+  },
+  "velocity": {
+    "dir": "radial",
+    "speed": [20, 90],
+    "back": 120
+  },
+  "size": [120, 200],
+  "sizeOverLife": [
+    [0, 1],
+    [1, 0.4]
+  ],
+  "colorOverLife": [
+    [0, "#ffffff"],
+    [1, "#ffd2a8"]
+  ],
+  "alphaOverLife": [
+    [0, 0.9],
+    [1, 0]
+  ],
+  "maxLive": 320
+}

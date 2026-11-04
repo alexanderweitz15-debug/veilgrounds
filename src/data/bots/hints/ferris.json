@@ -1,0 +1,151 @@
+{
+  "id": "ferris",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "support",
+    "engage": 1,
+    "peel": 4,
+    "poke": 3,
+    "burst": 1
+  },
+  "keyRanges": {
+    "auto": 550,
+    "trade": 850,
+    "engage": 550,
+    "poke": 850,
+    "threat": 850,
+    "peel": 700
+  },
+  "combos": [
+    {
+      "id": "ferris_data1",
+      "kind": "trade",
+      "sequence": [
+        "Q",
+        "AA",
+        "W"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "ferris_data2",
+      "kind": "trade",
+      "sequence": [
+        "E",
+        "W"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "ferris_data3",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "W"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "ferris_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "line",
+      "roles": [
+        "poke"
+      ],
+      "range": 850,
+      "useRange": [
+        0,
+        782
+      ],
+      "speed": 1500,
+      "width": 70,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "target",
+      "roles": [
+        "peel",
+        "sustain"
+      ],
+      "range": 700,
+      "useRange": [
+        0,
+        700
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "peel"
+    },
+    {
+      "slot": "E",
+      "aim": "target",
+      "roles": [
+        "peel"
+      ],
+      "range": 700,
+      "useRange": [
+        0,
+        700
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "peel"
+    },
+    {
+      "slot": "R",
+      "aim": "self",
+      "roles": [
+        "peel",
+        "sustain",
+        "ult"
+      ],
+      "range": 650,
+      "useRange": [
+        0,
+        650
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 650,
+      "castTime": 0.3,
+      "delay": 0,
+      "cc": 2,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

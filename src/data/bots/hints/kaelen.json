@@ -1,0 +1,153 @@
+{
+  "id": "kaelen",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "assassin",
+    "engage": 3,
+    "peel": 0,
+    "poke": 3,
+    "burst": 4
+  },
+  "keyRanges": {
+    "auto": 150,
+    "trade": 850,
+    "engage": 600,
+    "poke": 850,
+    "threat": 850,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "kaelen_data1",
+      "kind": "trade",
+      "sequence": [
+        "Q",
+        "W",
+        "AA",
+        "E"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "kaelen_data2",
+      "kind": "allin",
+      "sequence": [
+        "Q",
+        "W",
+        "E",
+        "R"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "kaelen_data3",
+      "kind": "trade",
+      "sequence": [
+        "E",
+        "W"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "kaelen_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "line",
+      "roles": [
+        "poke"
+      ],
+      "range": 850,
+      "useRange": [
+        0,
+        782
+      ],
+      "speed": 1600,
+      "width": 70,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "dash",
+      "roles": [
+        "escape",
+        "engage"
+      ],
+      "range": 450,
+      "useRange": [
+        75,
+        600
+      ],
+      "speed": 1600,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "E",
+      "aim": "self",
+      "roles": [
+        "burst"
+      ],
+      "range": 300,
+      "useRange": [
+        0,
+        300
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 300,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "R",
+      "aim": "target",
+      "roles": [
+        "burst",
+        "ult"
+      ],
+      "range": 600,
+      "useRange": [
+        0,
+        600
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

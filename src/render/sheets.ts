@@ -3,9 +3,11 @@
 // only decodes them. Records carry a version derived from this module's built URL (content-hashed chunk: any art change
 // in the bundle invalidates them); the dev server bakes every time. Not Cache Storage: the PWA service worker deletes
 // every cache but its own on activate.
-import { buildChampionAtlasAsync, BIG_MONSTER_IDS, CAMP_MONSTER_IDS, CHAMPION_IDS, MINION_IDS, PLANT_IDS, STRIP_COLS, stripKey, type AnyCanvas, type AtlasCellCache, type ChampionAtlas } from './champions';
-import { buildVersion, loadStrip, saveStrip } from './atlasStore';
+import { buildChampionAtlasAsync, BIG_MONSTER_IDS, CAMP_MONSTER_IDS, CHAMPION_IDS, MINION_IDS, PLANT_IDS, STRIP_COLS, stripKey, type AnyCanvas, type AtlasCellCache, type AtlasOptions, type ChampionAtlas } from './champions';
+import { atlasStoreAvailable, buildVersion, loadStrip, saveStrip } from './atlasStore';
 import { ART_VER, staticManifest, staticStrip } from './staticAtlas';
+import { atlasAreaCap, atlasCanvasValid } from './loader/canvasProbe';
+import { MAX_CANVAS_AREA } from './loader/layout';
 
 const cache = new Map<string, Promise<ChampionAtlas>>();
 export const makeWorker = (): Worker => new Worker(new URL('./spriteWorker.ts', import.meta.url), { type: 'module' });
@@ -27,16 +29,17 @@ function cellStore(): AtlasCellCache | undefined {
     'convertToBlob' in c ? c.convertToBlob({ type: 'image/png' }) : new Promise((resolve) => (c as HTMLCanvasElement).toBlob(resolve, 'image/png'));
   return (cellCache = {
     async get(key) {
-      let r = await loadStrip(key, ATLAS_VER);
+      const idb = atlasStoreAvailable();
+      let r = idb ? await loadStrip(key, ATLAS_VER) : null;
       if (!r) {
         r = await staticStrip(key);
-        if (r) void saveStrip(key, ATLAS_VER, r.blob, r.top);
+        if (r && idb) void saveStrip(key, ATLAS_VER, r.blob, r.top);
       }
       return r ? { bmp: await createImageBitmap(r.blob), top: Number.isFinite(r.top) ? r.top : 0.2 } : null;
     },
     put(key, strip, top) {
       void toBlob(strip)
-        .then((blob) => (blob ? saveStrip(key, ATLAS_VER, blob, top) : undefined))
+        .then((blob) => (blob && atlasStoreAvailable() ? saveStrip(key, ATLAS_VER, blob, top) : undefined))
         .catch(() => undefined); // quota / private mode: the next start just bakes again
     },
   });
@@ -44,6 +47,28 @@ function cellStore(): AtlasCellCache | undefined {
 
 const listeners = new Map<string, ((done: number, total: number) => void)[]>();
 const lastProgress = new Map<string, [number, number]>();
+
+/** Set once an atlas at the probed size came out blank: every later atlas is planned within MAX_CANVAS_AREA. */
+let forceCap = false;
+
+/**
+ * Bakes one atlas and checks that its canvas really holds the pixels (a strict browser draws nothing into a canvas above
+ * its limit and says nothing). A blank result is baked again within MAX_CANVAS_AREA (smaller cells); still blank = error.
+ */
+async function bakeChecked(ids: string[], opts: AtlasOptions): Promise<ChampionAtlas> {
+  const cap = forceCap ? MAX_CANVAS_AREA : atlasAreaCap();
+  const a = await buildChampionAtlasAsync(ids, { ...opts, maxArea: cap, stallMs: STALL_MS });
+  if (atlasCanvasValid(a)) return a;
+  if (cap === undefined || cap > MAX_CANVAS_AREA) {
+    console.warn(`atlas canvas ${a.canvas.width}x${a.canvas.height} came out blank (browser canvas limit?): baking again within ${MAX_CANVAS_AREA} px`);
+    forceCap = true;
+    const b = await buildChampionAtlasAsync(ids, { ...opts, maxArea: MAX_CANVAS_AREA, stallMs: STALL_MS });
+    if (atlasCanvasValid(b)) return b;
+  }
+  throw new Error('sprite atlas canvas is blank even at the safe size');
+}
+/** A bake worker pool silent for this long counts as dead (champions/atlas.ts bakeInWorkers). */
+const STALL_MS = 20000;
 
 /** Champion atlas for the champions of a match (Hark added when Ottilie plays). Cached per id set. */
 export function getChampionAtlas(ids: string[], onProgress?: (done: number, total: number) => void): Promise<ChampionAtlas> {
@@ -63,7 +88,7 @@ export function getChampionAtlas(ids: string[], onProgress?: (done: number, tota
       lastProgress.set(key, [d, n]);
       for (const l of listeners.get(key) ?? []) l(d, n);
     };
-    p = buildChampionAtlasAsync(list, { master: CHAMP_MASTER, frame: CHAMP_FRAME, maxSize: ATLAS_MAX, autoHark: true, worker: makeWorker, cache: cellStore(), onProgress: heard }).then((a) => {
+    p = bakeChecked(list, { master: CHAMP_MASTER, frame: CHAMP_FRAME, maxSize: ATLAS_MAX, autoHark: true, worker: makeWorker, cache: cellStore(), onProgress: heard }).then((a) => {
       console.info(`champion atlas: ${list.length} champions, ${a.canvas.width}x${a.canvas.height} @${a.frameSize}px in ${Math.round(performance.now() - t0)} ms`);
       return a;
     });
@@ -143,11 +168,25 @@ async function precacheRoster(): Promise<void> {
       await buildChampionAtlasAsync([id], { master: CHAMP_MASTER, frame: CHAMP_FRAME, autoHark: false, worker: makeWorker, workers: 2, cache: store });
       baked++;
     }
+    // the jungle monsters and plants too (A1): they were the last thing a cold first match baked, with the sim already
+    // paused for them on the loading screen; their strips are then only decoded
+    for (const [ids, master, frame] of [[BIG_MONSTER_IDS, 320, 200], [CAMP_MONSTER_IDS, 192, 128]] as const) {
+      for (const id of ids) {
+        if (gameRequested) break;
+        const hit = await store.get(stripKey(id, master, frame, true)).catch(() => null);
+        if (hit) {
+          hit.bmp.close();
+          continue;
+        }
+        await buildChampionAtlasAsync([id], { master, frame, autoHark: false, worker: makeWorker, workers: 2, cache: store });
+        baked++;
+      }
+    }
   } catch {
     /* best effort: the game bakes what is missing */
   } finally {
     precaching = false;
-    if (baked) console.info(`sprite precache: ${baked} champions baked in ${Math.round(performance.now() - t0)} ms`);
+    if (baked) console.info(`sprite precache: ${baked} sprites baked in ${Math.round(performance.now() - t0)} ms`);
   }
 }
 
@@ -156,7 +195,7 @@ let minions: Promise<ChampionAtlas> | null = null;
 export function getMinionAtlas(onProgress?: (done: number, total: number) => void): Promise<ChampionAtlas> {
   if (!minions) {
     const t0 = performance.now();
-    const p = buildChampionAtlasAsync(MINION_IDS, { ...MINION_BAKE, autoHark: false, worker: makeWorker, cache: cellStore(), onProgress }).then((a) => {
+    const p = bakeChecked(MINION_IDS, { ...MINION_BAKE, autoHark: false, worker: makeWorker, cache: cellStore(), onProgress }).then((a) => {
       console.info(`minion atlas: ${MINION_IDS.length} sprites, ${a.canvas.width}x${a.canvas.height} @${a.frameSize}px in ${Math.round(performance.now() - t0)} ms`);
       // the menu backdrop asks for minions first: afterwards warm the champion cache while the player is in menus
       setTimeout(() => void precacheRoster(), 1500);
@@ -179,8 +218,9 @@ let monsters: Promise<ChampionAtlas[]> | null = null;
 export function getMonsterAtlases(onProgress?: (done: number, total: number) => void): Promise<ChampionAtlas[]> {
   if (!monsters) {
     const t0 = performance.now();
+    // ponytail: main's baked-strip path (cellStore) stays the load path; the canvas-area cap + watchdog (bakeChecked) wrap it
     const bake = (ids: string[], size: { master: number; frame: number }, from: number, span: number): Promise<ChampionAtlas> =>
-      buildChampionAtlasAsync(ids, { ...size, autoHark: false, worker: makeWorker, cache: cellStore(), onProgress: (d, n) => onProgress?.(from + (d / n) * span, 1) });
+      bakeChecked(ids, { ...size, autoHark: false, worker: makeWorker, cache: cellStore(), onProgress: (d, n) => onProgress?.(from + (d / n) * span, 1) });
     const p = bake(BIG_MONSTER_IDS, BIG_BAKE, 0, 0.4)
       .then((big) => bake(CAMP_MONSTER_IDS, CAMP_BAKE, 0.4, 0.45).then((camp) => [big, camp]))
       .then((two) => bake(PLANT_IDS, PLANT_BAKE, 0.85, 0.15).then((plants) => [...two, plants]))

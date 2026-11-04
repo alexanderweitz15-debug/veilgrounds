@@ -7,6 +7,8 @@ export const READ = data as unknown as {
   hitFlash: { minGapMs: number; ampChampion: number; ampMinion: number; ampOther: number; ampReduceMotion: number };
   airborne: { height: number; minMs: number };
   dash: { heightPer100: number; maxHeight: number };
+  /** A4: enemy telegraph rim (min alpha while shown) and the warning-spark rate along enemy rims (particles/s per shape). */
+  telegraph: { enemyRimMin: number; warnRate: number };
 };
 
 const TAU = Math.PI * 2;

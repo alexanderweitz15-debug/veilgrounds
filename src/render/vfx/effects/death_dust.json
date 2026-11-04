@@ -1,0 +1,38 @@
+{
+  "_doc": "Tod einer Einheit: grauer Staub.",
+  "id": "death_dust",
+  "class": "hit",
+  "blend": "normal",
+  "glyph": "smoke",
+  "tint": {
+    "mode": "none"
+  },
+  "life": [500, 900],
+  "count": 8,
+  "emitter": {
+    "shape": "disc",
+    "radius": 30,
+    "jitterH": 4
+  },
+  "velocity": {
+    "dir": "outward",
+    "speed": [30, 110],
+    "rise": [20, 80]
+  },
+  "drag": 2,
+  "size": [140, 220],
+  "sizeOverLife": [
+    [0, 0.5],
+    [1, 1.5]
+  ],
+  "colorOverLife": [
+    [0, "#b0aaa0"],
+    [1, "#6a645c"]
+  ],
+  "alphaOverLife": [
+    [0, 0.5],
+    [1, 0]
+  ],
+  "spin": [-1, 1],
+  "maxLive": 128
+}

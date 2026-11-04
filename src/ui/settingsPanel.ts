@@ -57,7 +57,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     i.addEventListener('change', () => updateSettings({ [key]: i.checked } as Partial<Settings>));
     return i;
   };
-  const slider = (key: 'cameraSpeed' | 'uiScale' | 'volume' | 'minimapScale' | 'renderScale', min: number, max: number, step: number, fmt: (v: number) => string): HTMLElement => {
+  const slider = (key: 'cameraSpeed' | 'uiScale' | 'volume' | 'volumeSfx' | 'volumeUi' | 'volumeAmbient' | 'volumeMusic' | 'minimapScale' | 'renderScale', min: number, max: number, step: number, fmt: (v: number) => string): HTMLElement => {
     const wrap = document.createElement('span');
     wrap.className = 'slider';
     const i = document.createElement('input');
@@ -123,6 +123,10 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.botToxicity'), check('botToxicity'));
     row(t('set.newBrain'), check('newBrain'));
     row(t('set.volume'), slider('volume', 0, 1, 0.05, (v) => `${Math.round(v * 100)} %`));
+    row(t('set.volumeSfx'), slider('volumeSfx', 0, 1, 0.05, (v) => `${Math.round(v * 100)} %`));
+    row(t('set.volumeUi'), slider('volumeUi', 0, 1, 0.05, (v) => `${Math.round(v * 100)} %`));
+    row(t('set.volumeAmbient'), slider('volumeAmbient', 0, 1, 0.05, (v) => `${Math.round(v * 100)} %`));
+    row(t('set.volumeMusic'), slider('volumeMusic', 0, 1, 0.05, (v) => `${Math.round(v * 100)} %`));
     section(t('set.graphicsTitle'));
     row(t('set.graphics'), select<Settings['graphics']>(settings.graphics, GRAPHICS_QUALITIES.map((q): [Settings['graphics'], string] => [q, t(`set.gfx.${q}`)]), (v) => {
       // a preset writes its values into the individual fields; 'custom' keeps what is shown

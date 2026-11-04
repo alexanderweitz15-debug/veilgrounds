@@ -1,0 +1,150 @@
+{
+  "id": "ilvane",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "carry",
+    "engage": 1,
+    "peel": 2,
+    "poke": 3,
+    "burst": 2
+  },
+  "keyRanges": {
+    "auto": 550,
+    "trade": 800,
+    "engage": 550,
+    "poke": 950,
+    "threat": 950,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "ilvane_data1",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "ilvane_data2",
+      "kind": "trade",
+      "sequence": [
+        "E",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "ilvane_data3",
+      "kind": "allin",
+      "sequence": [
+        "Q",
+        "AA",
+        "R",
+        "W"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "ilvane_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "line",
+      "roles": [
+        "poke"
+      ],
+      "range": 950,
+      "useRange": [
+        0,
+        874
+      ],
+      "speed": 1700,
+      "width": 60,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "circle",
+      "roles": [
+        "zone"
+      ],
+      "range": 800,
+      "useRange": [
+        0,
+        736
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 250,
+      "castTime": 0.25,
+      "delay": 0.6,
+      "cc": 1,
+      "damage": false,
+      "dodgeable": true,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "dash",
+      "roles": [
+        "escape"
+      ],
+      "range": 350,
+      "useRange": [
+        275,
+        900
+      ],
+      "speed": 1300,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "R",
+      "aim": "cone",
+      "roles": [
+        "burst",
+        "ult"
+      ],
+      "range": 1100,
+      "useRange": [
+        0,
+        1012
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.35,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

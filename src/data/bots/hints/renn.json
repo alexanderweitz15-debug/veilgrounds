@@ -1,0 +1,153 @@
+{
+  "id": "renn",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "assassin",
+    "engage": 3,
+    "peel": 0,
+    "poke": 2,
+    "burst": 3
+  },
+  "keyRanges": {
+    "auto": 150,
+    "trade": 625,
+    "engage": 875,
+    "poke": 625,
+    "threat": 625,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "renn_data1",
+      "kind": "trade",
+      "sequence": [
+        "Q",
+        "E",
+        "AA",
+        "W",
+        "E"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "renn_data2",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "E",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "renn_data3",
+      "kind": "allin",
+      "sequence": [
+        "E",
+        "R"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "renn_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "target",
+      "roles": [
+        "poke"
+      ],
+      "range": 625,
+      "useRange": [
+        0,
+        625
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "self",
+      "roles": [
+        "buff"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        300
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "blink",
+      "roles": [
+        "escape",
+        "engage"
+      ],
+      "range": 725,
+      "useRange": [
+        75,
+        875
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "R",
+      "aim": "self",
+      "roles": [
+        "burst",
+        "ult"
+      ],
+      "range": 550,
+      "useRange": [
+        0,
+        550
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 550,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

@@ -8,7 +8,7 @@ import { buffs, hasBuff } from '../src/sim/buffs';
 import { MINION_STATS, spawnMinion } from '../src/sim/systems/minions';
 import { passiveHooksOf } from '../src/sim/champions';
 import { inventory } from '../src/sim/items/inventory';
-import { HUNTER_FANG, givingLampQuestDone, minionGoldMult, stormMantleLeft } from '../src/sim/items/itemHooks';
+import { givingLampQuestDone, minionGoldMult, stormMantleLeft } from '../src/sim/items/itemHooks';
 import { buildSnapshot } from '../src/sim/snapshot';
 import { abilityHit, autos, duel } from './itemHelpers';
 
@@ -182,7 +182,7 @@ describe('starter item passives', () => {
     const mon = spawnMinion(sim, Kind.MinionMelee, 2, 0, CX + 200, CY);
     sim.c.Unit.kind[mon] = Kind.Monster;
     Hp.max[mon] = Hp.cur[mon] = 2000;
-    expect(dealDamage(sim, me, mon, 100, 'true')).toBeCloseTo(100 * HUNTER_FANG.monsterMult);
+    expect(dealDamage(sim, me, mon, 100, 'true')).toBeCloseTo(100 * 1.8);
     const m = spawnMinion(sim, Kind.MinionMelee, 1, 0, CX + 200, CY);
     const g = sim.c.Champ.gold[me]!;
     kill(sim, m, me);

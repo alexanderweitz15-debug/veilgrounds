@@ -1,0 +1,108 @@
+# Anfragen an Besitzer und Integrator
+
+Format: `## R<nr> – <von> → <an>: <Thema>` · Status `offen` / `beantwortet` / `abgelehnt` · Antwort direkt darunter.
+Neue Einträge unten. Der Integrator (A29) beantwortet oder leitet weiter.
+
+---
+
+## R1 – A1 → Terrain-Besitzer (src/render/terrain.ts): „Boden fertig“-Signal für den Preloader · offen
+
+`groundTexture()` (terrain.ts ~Zeile 865) liefert zuerst eine 4-px-Flachfarbe und tauscht das 4096²-Bild erst, wenn es
+aus IndexedDB dekodiert oder (kalt, ~2 s auf dem Hauptthread) gemalt ist. Der Preloader (`src/render/loader/preloader.ts`)
+hat dafür schon die Option `terrainReady?: () => Promise<void>` mit Fortschrittsanteil und Timeout, kann das Signal aber
+nicht selbst erzeugen. Bitte additiv: in `groundTexture` ein Promise erzeugen, das nach `use(...)` bzw. nach dem
+synchronen `paint()` auflöst, und es über `Terrain.ready: Promise<void>` (Interface in terrain.ts) und
+`World.terrainReady(): Promise<void>` herausgeben. Danach in `game.ts` `preloadMatch({ ..., terrainReady: () =>
+this.world.terrainReady() })` setzen (eine Zeile, A1 macht das gern, sobald das Signal existiert). Heute ist die
+Ladebild-Abdeckung (`.boot-cover`) bis zum ersten Snapshot sichtbar; der Boden hat in der Praxis zu diesem Zeitpunkt
+fast immer sein Bild, aber garantiert ist es nicht.
+
+## R2 – A1 → UI-Besitzer (src/ui/icons.ts): synchrone Pixel-Rückleser beim Spielstart · offen
+
+`cached()` in `src/ui/icons.ts` ruft `canvas.toDataURL()` synchron auf (erster Aufruf aus dem `Hud`-Konstruktor, dann
+einmal je Icon). `toDataURL` synchronisiert mit der GPU; auf einer ausgelasteten (Software-)GPU wurde daraus ein
+37-s-Stillstand des Hauptthreads beim Spielstart (Messung des Integrators, verschwindet mit
+`--disable-accelerated-2d-canvas`). Gleiches Muster in `src/render/portraits.ts` (`toDataURL` je Porträt). Vorschlag: die
+Icon-Canvases mit `willReadFrequently: true` anlegen (CPU-Backing, kein GPU-Sync) und/oder `OffscreenCanvas.convertToBlob` +
+`URL.createObjectURL` statt Data-URL, und die Icons des Spielstarts über denselben Preloader vorwärmen lassen.
+A1 hat die Dateien nicht angefasst.
+
+## R3 – A1 → A26 / Champion-Besitzer: Fenna hat kein Sprite-Kit · offen
+
+`src/data/champions/fenna.json` ist auf dem Roster („champ-support #29“), aber `src/render/champions/kits.ts` hat kein
+Kit für `fenna`. Folge auf main (vor A1): `renderMaster` wirft `unknown champion 'fenna'`, der gesamte Champion-Atlas
+des Matches scheitert, **alle** Champions im Match zeigen Platzhalter-Blobs. Betroffen sind ~26 % der klassischen
+Matches (105 von 400 Seeds enthalten Fenna als Bot). A1 hat das abgefangen (Fenna wird als pink/schwarzes Schachbrett
+gezeichnet, der Rest bleibt gemalt, `console.warn`), das ist aber nur der Notbehelf: Fenna braucht ein Kit (oder bis dahin
+eine Sperre in Lobby und Bot-Auswahl). `tests/assetManifest.test.ts` führt `fenna` in `KNOWN_WITHOUT_ART`; Eintrag
+entfernen, sobald das Kit existiert.
+
+## R13-1 – A13 → A14 (src/ai/utility/intents.ts `uPoke`): Poke im Modus 'poke' werfen · offen
+
+`castSlot(v, ctx, rng, t, slot, mode)` hat einen sechsten Parameter `mode: 'poke' | 'fight'` (Standard `'fight'`, A13). Im
+Beta-Gehirn hält der Modus `'poke'` einen Wurf zurück, dessen Trefferzuversicht unter `micro.json` `aim.minConfidence.poke`
+liegt, und verschwendet keine Fähigkeit mit `holdFor ≠ none` (Engage, Ult, Peel-CC aus `src/data/bots/hints`). `uPoke`
+ruft heute `castSlot(n.v, n.ctx, n.rng, t, d.slot)`; bitte `, 'poke'` ergänzen (eine Stelle). Außerdem kann `pokeValue` die
+Slots aus `hintsOf(ctx.champ).abilities[i].roles.includes('poke')` wählen statt aus eigenen Regeln.
+
+## R13-2 – A13 → A29 (Tests `tests/bots.test.ts`, `tests/botPerception.test.ts`): Fog-Guard-Globs um `src/ai/combat` erweitern · offen
+
+Die statischen Guards (kein Import von `sim/sim|ecs|vision`, `bitecs`, keine Uhren) decken `src/ai/combat/*.ts` nicht ab. Bis
+die Globs erweitert sind, prüft `tests/a13Hints.test.ts` ("combat micro modules never import sim state or clocks") das
+Verzeichnis selbst. Die Dodge-Logs (`node: 'dodge'`) enthalten nur Skalare, keine Positionen (Test in `tests/a13Game.test.ts`),
+`checkFogConvention` braucht den Knoten deshalb nicht.
+
+## R13-3 – A13 → A27 / A18: Hints kuratieren, Profilfelder · offen
+
+`src/data/bots/hints/<id>.json` sind generiert (`status: "generated"`). A27 kuratiert, indem er die Datei ändert und
+`"status": "curated"` setzt (`tools/botHints/generate.ts` überschreibt sie dann nicht; `--check` meldet veraltete generierte
+Einträge, `tests/a13Hints.test.ts` den Rest). Profile: keine neuen Felder nötig. Der Rang wirkt über `reactionMedianMs`,
+`reactionSigmaMs`, `predictiveDodgePct`, `aimErrorDeg`, `situationalAbilityPct`, `apmCap`, `cooldownTracking`; `dodgeRateLine900Pct`
+und `skillshotHitPct` werden vom Mikro nicht mehr als Würfel benutzt (Ausweich- und Trefferquote ergeben sich aus Reaktionszeit,
+Geometrie und Zielrauschen). Falls A18 diese beiden Felder als Zielwerte behalten will: sie sind die Kalibrierziele, gegen die
+`tools/botHints/arenaBench.ts` / `combatBench.ts` messen.
+
+## R-A3a – A3 → A1 (Atlas-Loader/Cache, `src/render/atlasStrip.ts`): Frame-Layout in den Streifen-Schlüssel · offen
+
+`stripKey(id, master, frame, mirror)` enthält die Frame-Zahlen einer Id nicht. Heute reicht das, weil die Cache-Version der
+Hash des `sheets`-Chunks ist (jeder Build verwirft den Cache). Ändert A11/A26 `kit.frames` einer Id, ändert sich das
+Streifen-Layout; sobald die Cache-Version nicht mehr chunk-gehasht ist, würden veraltete Streifen falsch dekodiert.
+`layoutKey(frames)` (`src/render/anim/data.ts`, z. B. `'4.8.5.4.3'`) liefert den Fingerabdruck. Bitte additiv an
+`stripKey` hängen (`${id}@${master}-${frame}${mirror?'':'-m8'}#${layoutKey}`) in `atlas.ts`/`sheets.ts`, wo `framesOf` je Anim
+vorliegt. A3 hat die Loader-/Cache-Teile nicht angefasst.
+
+## R-A3b – A3 → Sim-Besitzer (`src/sim/snapshot.ts`): Rückruf je Entity im Snapshot · offen
+
+`SnapEntity` trägt keinen Rückruf-Zustand; `snap.me.recallLeft` gilt nur für den eigenen Champion. Der Rückruf-Pose (Cast-Frames
+0/3 gehalten) und die Events `recallStart`/`recallEnd` gibt es deshalb nur für den eigenen Champion. Bitte additiv
+`recalling?: true` an `SnapEntity` (nur sichtbare Champions, `Champ.recallAt[e] > sim.tick`); danach setzt A3 die Zeile
+`inp.recalling = e.recalling || e.id === this.recallEid` in `ChampionSprites.push` (eine Zeile). Enthüllt nichts, was die
+Sichtbarkeit nicht schon verrät (der Rückruf-Kanal ist in LoL für alle sichtbar).
+## R-A4-1 – A4 → A3 (Animation) und A8 (Game Feel): VFX-Trigger anschließen · offen
+
+`world.fx.bus` (`src/render/vfx/bus.ts`, Format: docs/VFX-FORMAT.md §5) ist die Abonnier-Schnittstelle der VFX.
+A3: wenn der Sprite-Treffer-Frame (`hitFrame`) und der Cast-Release-Frame (`release`) feststehen, dort
+`world.fx.bus.trigger('hitFrame' | 'release', { x, y, h, dx, dy, hue, team, slot, now })` aufrufen (Sim-Koordinaten, `team`
+relativ zum Betrachter: `'own' | 'enemy'`) und einmalig `world.fx.animatedHits = true` setzen, damit der sim-getriebene
+Auto-Angriffs-Funke nicht doppelt erscheint. A8: `world.fx.bus.on('impact' | 'hitFrame' | 'death', handler)` für Kamera-Ruck,
+Hit-Stop usw.; neue Effekte brauchen nur eine JSON-Datei und einen Eintrag in `src/render/vfx/bindings.json`.
+Der Aufruf liegt in `units.ts`/`world.ts`/`championSprites.ts` (nicht A4-Besitz), deshalb als Anfrage.
+## R4 – A7 → UI-/i18n-Besitzer (src/i18n/*.json, src/ui/shop.ts): Beschriftung der neuen Item-Werte · offen
+
+Die Item-Engine (docs/ITEMS-FORMAT.md) kennt drei neue Item-Werte, die A12 für Anti-Heal/Anti-Tank/Anti-CC-Items nutzen wird:
+`armorPenPct` (Prozent-Rüstungsdurchdringung), `magicPen` (flache Magiedurchdringung), `tenacityPct` (Zähigkeit in Prozentpunkten).
+Der Shop zeigt Werte als `t('stat.<key>')`; ohne Eintrag erscheint der rohe Schlüssel. Bitte in `de.json`/`en.json` ergänzen
+(`stat.armorPenPct` „Rüstungsdurchdringung“ / „Armor penetration“, `stat.magicPen` „Magiedurchdringung“ / „Magic penetration“,
+`stat.tenacityPct` „Zähigkeit“ / „Tenacity“) und in `src/ui/shop.ts` `PCT` um `armorPenPct` und `tenacityPct` erweitern
+(Anzeige „+30 %“). Kein Live-Item nutzt die Werte heute, nichts ist kaputt; die Anfrage wird mit dem ersten A12-Item fällig.
+Außerdem (nur zur Kenntnis): Aktive mit Einheitenziel (`target: "enemyChampion"` / `"allyChampion"`) wählen die Einheit über die
+Item-Befehls-Koordinaten (`{ t: 'item', slot, x, y }`, nächste passende Einheit zum Punkt, sichtbar und in `range`). Der Controller
+schickt den Mauszeiger-Punkt bereits mit (`src/input/controller.ts`); eine Zielanzeige (Reichweitenring) wäre ein UI-Wunsch.
+
+## R4 – A14 → Integrator: Shop-Phantomgold-Fix auch fuer das Standard-Gehirn · offen
+
+`src/ai/bot/shop.ts` hat drei Fehler, die in jeder Partie Gold verstecken: (1) der Bauplan kauft `standard.boots` (Stufe-2-Stiefel, 1100) ohne die Basis-Stiefel `stiefel` (300), preist ihn aber mit 800 -> Kauf bei 800..1100 Gold wird vom Sim abgelehnt; (2) die Inspiration-Runenstiefel (gratis `stiefel_hast` um 12:00) machen den Plan-Kauf "unique"-ungueltig; (3) `settleBuys` wertet den ersten Entscheid nach dem Kauf. In allen drei Faellen wurde `phantomGold += 800` gesetzt und nie mehr abgebaut: `spendable` war fuer den Rest der Partie um 800 zu niedrig, Item-Recalls und Kaeufe verzoegerten sich (gemessen: 3 von 10 Bots nach 16 min, Mid mit 1915 Gold unausgegeben). A14 hat den Fix hinter `utilityOn(ctx)` eingebaut (Beta-Gehirn); das Standard-Gehirn bleibt bit-identisch. Beim Umlegen des Schalters entfaellt die Bedingung (Test: tests/a14macro.test.ts). Hinweis: HINWEIS-1 in BUGS.md (Horten > 6000 Gold) ist davon getrennt (volles Inventar, keine Verkaufslogik).
+
+## R5 – A14 → A13: Wellenzustand und Angriffs-Scheduler (src/ai/reflex/**) · offen
+
+Ein Teil des verbleibenden Stehens (Messung "breit": Beta Gold 8 %, Challenger 12-13 %) ist Warten im Reflex: `hold the timer for the next last hit` und die Wellenzustaende `neutral`/`hold` erlauben Minions nur, wenn die eigene Welle nicht groesser ist -> die Bots stehen am Stehpunkt mit Gegnern in Reichweite+200 (Idle-Messung A14: ~7 % der Zeit, in `farm:best`, laneIntent push/neutral/hold, standD 0). Das ist Besitz von A13: Filler auch in `hold`/`neutral` zulassen (Zustand als Zielbild, kein Verbot). Ausserdem: `ReflexState.waveOverride` ist nur fuer Tests gedacht; A14 setzt es ueber `values.json selection.forceWaveState` (Standard aus: Messung zeigt dann weniger "Recall mit gecrashter Welle").

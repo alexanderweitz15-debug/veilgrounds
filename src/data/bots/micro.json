@@ -1,0 +1,59 @@
+{
+  "note": "Tunables of the combat micro layer (src/ai/combat, A13). Rank differences enter ONLY through the profile fields reaction time, aim error and error rates (src/data/bots/profiles/*.json); nothing here depends on the rank. Distances in units, times in seconds unless the name says ticks.",
+  "parts": {
+    "note": "Parts of the micro layer that are on (flag.ts). tick = per-tick combo executor in the reflex layer: measured worse than the decision-rate execution in A/B games (docs/agents/wave1-a13.md), so off; BOT_MICRO_ON=tick turns it on for measurements. spacing = ranged spacing from the enemy hint ranges: self-play Gold 8 x 14 min cost ~2 kills/game (13.6 -> 11.6) and the benchmark trade balance got worse at Diamond, so off; BOT_MICRO_ON=spacing turns it on.",
+    "aim": true,
+    "dodge": true,
+    "combo": true,
+    "tick": false,
+    "spacing": false,
+    "focus": true,
+    "peel": true
+  },
+  "aim": {
+    "note": "Skillshot aim from the target's OBSERVED velocity (previous tick -> now). leadNoiseDivisor: sigma of the lead factor = profile.aimErrorDeg / divisor (a clean lead is 1.0). jukeLateral / jukeSpeed: assumed uncertainty of the target's path as a share of its lateral / total speed. minConfidence: do not throw below this hit confidence (poke = free lane harassment, fight = trade or fight, where the throw also forces the target to react). rangeShare: share of the ability range at which the intercept point may lie.",
+    "leadNoiseDivisor": 14,
+    "jukeLateral": 0.35,
+    "jukeSpeed": 0.1,
+    "jukeCircle": 0.5,
+    "minConfidence": {
+      "poke": 0.3,
+      "fight": 0.1
+    },
+    "rangeShare": 0.97
+  },
+  "dodge": {
+    "note": "Per-tick dodge of visible enemy casts (line skillshots from cast events, ground telegraphs from zone events). Reaction = the profile's reaction time (+ attention penalty); predictiveDodgePct reads the cast wind-up (reaction 0). There is no 'ignore x % of the threats' roll: the rank acts through reaction time, predictiveDodgePct and the attention model. margin: extra distance beyond the danger edge. hold: ticks the bot stops deciding after the walk out of the danger area so the next decision does not walk back into it. fightMinThreat: while trading / hitting an enemy champion only abilities with at least this hints threat (hard CC, ultimates) are dodged. minThreat: ignore abilities with a lower hints threat. dashThreat: from this threat on (hard CC, ultimates) an escape dash / blink is used when walking out is too slow.",
+    "margin": 25,
+    "holdTicks": 3,
+    "minThreat": 1,
+    "windupSlackTicks": 6,
+    "persistentZoneTicks": 15,
+    "towerPenalty": 400,
+    "enemyPenalty": 250,
+    "dashThreat": 2,
+    "fightMinThreat": 2
+  },
+  "spacing": {
+    "note": "Spacing of a ranged bot to an enemy champion (src/ai/combat/spacing.ts). safeMargin: beyond the reach of a ready gap closer / a melee auto; punishInside: step this far inside the own range when every offensive spell of the enemy is known down; minRanged: floor.",
+    "safeMargin": 80,
+    "punishInside": 20,
+    "minRanged": 150
+  },
+  "focus": {
+    "note": "Teamfight focus score (src/ai/combat/focus.ts). threat = threatBase + threatPerPower x (burst + poke + CC abilities) +- role bonus; kill = 1.3 - hp share, x squishyBonus below squishyShare of the average effective HP; access falls off over accessFalloff beyond the reach and x shieldedFactor behind a frontliner (not for assassins); retaliate / pingBonus are added.",
+    "threatBase": 0.4,
+    "threatPerPower": 0.08,
+    "carryBonus": 0.3,
+    "frontlinePenalty": 0.1,
+    "squishyShare": 0.6,
+    "squishyBonus": 1.25,
+    "minAccess": 0.2,
+    "accessFalloff": 1200,
+    "shieldWidth": 170,
+    "shieldedFactor": 0.6,
+    "allyLowHp": 0.5,
+    "retaliate": 0.25,
+    "pingBonus": 0.3
+  }
+}

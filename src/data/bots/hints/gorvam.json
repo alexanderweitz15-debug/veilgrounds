@@ -1,0 +1,152 @@
+{
+  "id": "gorvam",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "support",
+    "engage": 5,
+    "peel": 3,
+    "poke": 0,
+    "burst": 1
+  },
+  "keyRanges": {
+    "auto": 125,
+    "trade": 1050,
+    "engage": 650,
+    "poke": 125,
+    "threat": 1050,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "gorvam_data1",
+      "kind": "trade",
+      "sequence": [
+        "Q",
+        "W",
+        "E"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "gorvam_data2",
+      "kind": "trade",
+      "sequence": [
+        "FLASH",
+        "W",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "gorvam_data3",
+      "kind": "engage",
+      "sequence": [
+        "E",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "gorvam_peel",
+      "kind": "peel",
+      "sequence": [
+        "W"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "line",
+      "roles": [
+        "burst"
+      ],
+      "range": 1050,
+      "useRange": [
+        0,
+        966
+      ],
+      "speed": 1900,
+      "width": 70,
+      "radius": 0,
+      "castTime": 0.5,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "self",
+      "roles": [
+        "cc",
+        "disengage"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        275
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 4,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "E",
+      "aim": "circle",
+      "roles": [
+        "cc",
+        "engage"
+      ],
+      "range": 650,
+      "useRange": [
+        0,
+        598
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 300,
+      "castTime": 0.25,
+      "delay": 1,
+      "cc": 3,
+      "damage": false,
+      "dodgeable": true,
+      "threat": 2,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "R",
+      "aim": "self",
+      "roles": [
+        "disengage",
+        "ult"
+      ],
+      "range": 500,
+      "useRange": [
+        0,
+        500
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 500,
+      "castTime": 0.3,
+      "delay": 0,
+      "cc": 1,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

@@ -1,0 +1,149 @@
+{
+  "id": "aurel",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "carry",
+    "engage": 2,
+    "peel": 3,
+    "poke": 3,
+    "burst": 2
+  },
+  "keyRanges": {
+    "auto": 550,
+    "trade": 800,
+    "engage": 550,
+    "poke": 1000,
+    "threat": 1000,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "aurel_data1",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "Q",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "aurel_data2",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "W",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "aurel_data3",
+      "kind": "trade",
+      "sequence": [
+        "E"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "aurel_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "line",
+      "roles": [
+        "poke"
+      ],
+      "range": 1000,
+      "useRange": [
+        0,
+        920
+      ],
+      "speed": 1600,
+      "width": 70,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "circle",
+      "roles": [
+        "zone"
+      ],
+      "range": 800,
+      "useRange": [
+        0,
+        736
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 320,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 1,
+      "damage": false,
+      "dodgeable": true,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "blink",
+      "roles": [
+        "escape"
+      ],
+      "range": 0,
+      "useRange": [
+        275,
+        550
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0.5,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "R",
+      "aim": "circle",
+      "roles": [
+        "burst",
+        "ult"
+      ],
+      "range": 900,
+      "useRange": [
+        0,
+        828
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 450,
+      "castTime": 0.3,
+      "delay": 1,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

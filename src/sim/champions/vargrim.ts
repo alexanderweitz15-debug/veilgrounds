@@ -5,7 +5,7 @@ import type { Sim } from '../sim';
 import { CHAMP_ABILITY_DMG_MULT, Kind, sec } from '../types';
 import { dealDamage } from '../damage';
 import { addBuff, healUnit } from '../buffs';
-import { effectAmount, enemiesInRadius, reduceCooldown, rv } from '../systems/abilities';
+import { effectAmount, enemiesInRadius, reduceCooldown, rideAlong, rv } from '../systems/abilities';
 import type { ChampionHooks, ChampionVisuals, VisualObject } from './hooks';
 import { ctxFor, hookState, isChampLike, peekState } from './util';
 import { championData } from './index';
@@ -251,6 +251,15 @@ export const hooks: ChampionHooks = {
         s.eDist += Math.hypot(Pos.x[ctx.caster]! - s.eX, Pos.y[ctx.caster]! - s.eY);
         ctx.dmgMult = (ctx.dmgMult ?? 1) * (1 + Math.min(1, s.eDist / E_DIST_MAX));
         s.eUntil = -1;
+        // LoL Hecarim: he rides after the knocked-back target and lands right behind it
+        const t = ctx.target;
+        if (t >= 0 && sim.c.Unit.alive[t]) {
+          const dx = Pos.x[t]! - Pos.x[ctx.caster]!;
+          const dy = Pos.y[t]! - Pos.y[ctx.caster]!;
+          const l = Math.hypot(dx, dy) || 1;
+          const knock = (ctx.ability.effects.find((x) => x.kind === 'knockback') as { distance: number } | undefined)?.distance ?? 0;
+          rideAlong(sim, ctx.caster, dx / l, dy / l, knock);
+        }
       }
     },
     // R: dashStart spawns the riders along the path; the landing (phase cast) frightens champions.

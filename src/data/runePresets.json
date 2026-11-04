@@ -1,5 +1,5 @@
-﻿{
-    "note":  "Per-champion rune presets for the lobby (spec ┬º5 Pr├ñgungen). First preset = default. Generated from data/builds templates.",
+{
+    "note":  "Per-champion rune presets for the lobby (spec §5 Prägungen). First preset = default. Generated from data/builds templates.",
     "presets":  {
                     "aurel":  [
                                   {
@@ -9,7 +9,7 @@
                                                    "en":  "Standard"
                                                },
                                       "desc":  {
-                                                   "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                   "de":  "Empfohlene Prägungen für normale Matchups.",
                                                    "en":  "Recommended runes for normal matchups."
                                                },
                                       "keystone":  "dauerhafter_schaden",
@@ -26,7 +26,7 @@
                                                    "en":  "Aggressive"
                                                },
                                       "desc":  {
-                                                   "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                   "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                    "en":  "More damage for kill lanes and early trades."
                                                },
                                       "keystone":  "dauerhafter_schaden",
@@ -79,7 +79,7 @@
                                                   "en":  "Standard"
                                               },
                                      "desc":  {
-                                                  "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                  "de":  "Empfohlene Prägungen für normale Matchups.",
                                                   "en":  "Recommended runes for normal matchups."
                                               },
                                      "keystone":  "zaehigkeit",
@@ -96,7 +96,7 @@
                                                   "en":  "Aggressive"
                                               },
                                      "desc":  {
-                                                  "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                  "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                   "en":  "More damage for kill lanes and early trades."
                                               },
                                      "keystone":  "praezision",
@@ -149,7 +149,7 @@
                                                     "en":  "Standard"
                                                 },
                                        "desc":  {
-                                                    "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                    "de":  "Empfohlene Prägungen für normale Matchups.",
                                                     "en":  "Recommended runes for normal matchups."
                                                 },
                                        "keystone":  "dauerhafter_schaden",
@@ -166,7 +166,7 @@
                                                     "en":  "Aggressive"
                                                 },
                                        "desc":  {
-                                                    "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                    "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                     "en":  "More damage for kill lanes and early trades."
                                                 },
                                        "keystone":  "dauerhafter_schaden",
@@ -219,7 +219,7 @@
                                                    "en":  "Standard"
                                                },
                                       "desc":  {
-                                                   "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                   "de":  "Empfohlene Prägungen für normale Matchups.",
                                                    "en":  "Recommended runes for normal matchups."
                                                },
                                       "keystone":  "zaehigkeit",
@@ -236,7 +236,7 @@
                                                    "en":  "Aggressive"
                                                },
                                       "desc":  {
-                                                   "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                   "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                    "en":  "More damage for kill lanes and early trades."
                                                },
                                       "keystone":  "zaehigkeit",
@@ -289,7 +289,7 @@
                                                     "en":  "Standard"
                                                 },
                                        "desc":  {
-                                                    "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                    "de":  "Empfohlene Prägungen für normale Matchups.",
                                                     "en":  "Recommended runes for normal matchups."
                                                 },
                                        "keystone":  "inspiration",
@@ -306,7 +306,7 @@
                                                     "en":  "Aggressive"
                                                 },
                                        "desc":  {
-                                                    "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                    "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                     "en":  "More damage for kill lanes and early trades."
                                                 },
                                        "keystone":  "dauerhafter_schaden",
@@ -359,7 +359,7 @@
                                                     "en":  "Standard"
                                                 },
                                        "desc":  {
-                                                    "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                    "de":  "Empfohlene Prägungen für normale Matchups.",
                                                     "en":  "Recommended runes for normal matchups."
                                                 },
                                        "keystone":  "zaehigkeit",
@@ -376,7 +376,7 @@
                                                     "en":  "Aggressive"
                                                 },
                                        "desc":  {
-                                                    "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                    "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                     "en":  "More damage for kill lanes and early trades."
                                                 },
                                        "keystone":  "zaehigkeit",
@@ -429,7 +429,7 @@
                                                      "en":  "Standard"
                                                  },
                                         "desc":  {
-                                                     "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                     "de":  "Empfohlene Prägungen für normale Matchups.",
                                                      "en":  "Recommended runes for normal matchups."
                                                  },
                                         "keystone":  "zaehigkeit",
@@ -446,7 +446,7 @@
                                                      "en":  "Aggressive"
                                                  },
                                         "desc":  {
-                                                     "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                     "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                      "en":  "More damage for kill lanes and early trades."
                                                  },
                                         "keystone":  "zaehigkeit",
@@ -499,7 +499,7 @@
                                                    "en":  "Standard"
                                                },
                                       "desc":  {
-                                                   "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                   "de":  "Empfohlene Prägungen für normale Matchups.",
                                                    "en":  "Recommended runes for normal matchups."
                                                },
                                       "keystone":  "zaehigkeit",
@@ -516,7 +516,7 @@
                                                    "en":  "Aggressive"
                                                },
                                       "desc":  {
-                                                   "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                   "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                    "en":  "More damage for kill lanes and early trades."
                                                },
                                       "keystone":  "zaehigkeit",
@@ -569,7 +569,7 @@
                                                     "en":  "Standard"
                                                 },
                                        "desc":  {
-                                                    "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                    "de":  "Empfohlene Prägungen für normale Matchups.",
                                                     "en":  "Recommended runes for normal matchups."
                                                 },
                                        "keystone":  "zaehigkeit",
@@ -586,7 +586,7 @@
                                                     "en":  "Aggressive"
                                                 },
                                        "desc":  {
-                                                    "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                    "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                     "en":  "More damage for kill lanes and early trades."
                                                 },
                                        "keystone":  "praezision",
@@ -639,7 +639,7 @@
                                                     "en":  "Standard"
                                                 },
                                        "desc":  {
-                                                    "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                    "de":  "Empfohlene Prägungen für normale Matchups.",
                                                     "en":  "Recommended runes for normal matchups."
                                                 },
                                        "keystone":  "dauerhafter_schaden",
@@ -656,7 +656,7 @@
                                                     "en":  "Aggressive"
                                                 },
                                        "desc":  {
-                                                    "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                    "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                     "en":  "More damage for kill lanes and early trades."
                                                 },
                                        "keystone":  "dauerhafter_schaden",
@@ -709,7 +709,7 @@
                                                     "en":  "Standard"
                                                 },
                                        "desc":  {
-                                                    "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                    "de":  "Empfohlene Prägungen für normale Matchups.",
                                                     "en":  "Recommended runes for normal matchups."
                                                 },
                                        "keystone":  "praezision",
@@ -726,7 +726,7 @@
                                                     "en":  "Aggressive"
                                                 },
                                        "desc":  {
-                                                    "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                    "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                     "en":  "More damage for kill lanes and early trades."
                                                 },
                                        "keystone":  "praezision",
@@ -779,7 +779,7 @@
                                                     "en":  "Standard"
                                                 },
                                        "desc":  {
-                                                    "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                    "de":  "Empfohlene Prägungen für normale Matchups.",
                                                     "en":  "Recommended runes for normal matchups."
                                                 },
                                        "keystone":  "dauerhafter_schaden",
@@ -796,7 +796,7 @@
                                                     "en":  "Aggressive"
                                                 },
                                        "desc":  {
-                                                    "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                    "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                     "en":  "More damage for kill lanes and early trades."
                                                 },
                                        "keystone":  "dauerhafter_schaden",
@@ -849,7 +849,7 @@
                                                    "en":  "Standard"
                                                },
                                       "desc":  {
-                                                   "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                   "de":  "Empfohlene Prägungen für normale Matchups.",
                                                    "en":  "Recommended runes for normal matchups."
                                                },
                                       "keystone":  "dauerhafter_schaden",
@@ -866,7 +866,7 @@
                                                    "en":  "Aggressive"
                                                },
                                       "desc":  {
-                                                   "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                   "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                    "en":  "More damage for kill lanes and early trades."
                                                },
                                       "keystone":  "dauerhafter_schaden",
@@ -919,7 +919,7 @@
                                                  "en":  "Standard"
                                              },
                                     "desc":  {
-                                                 "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                 "de":  "Empfohlene Prägungen für normale Matchups.",
                                                  "en":  "Recommended runes for normal matchups."
                                              },
                                     "keystone":  "dauerhafter_schaden",
@@ -936,7 +936,7 @@
                                                  "en":  "Aggressive"
                                              },
                                     "desc":  {
-                                                 "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                 "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                  "en":  "More damage for kill lanes and early trades."
                                              },
                                     "keystone":  "dauerhafter_schaden",
@@ -989,7 +989,7 @@
                                                   "en":  "Standard"
                                               },
                                      "desc":  {
-                                                  "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                  "de":  "Empfohlene Prägungen für normale Matchups.",
                                                   "en":  "Recommended runes for normal matchups."
                                               },
                                      "keystone":  "praezision",
@@ -1006,7 +1006,7 @@
                                                   "en":  "Aggressive"
                                               },
                                      "desc":  {
-                                                  "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                  "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                   "en":  "More damage for kill lanes and early trades."
                                               },
                                      "keystone":  "praezision",
@@ -1059,7 +1059,7 @@
                                                   "en":  "Standard"
                                               },
                                      "desc":  {
-                                                  "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                  "de":  "Empfohlene Prägungen für normale Matchups.",
                                                   "en":  "Recommended runes for normal matchups."
                                               },
                                      "keystone":  "praezision",
@@ -1076,7 +1076,7 @@
                                                   "en":  "Aggressive"
                                               },
                                      "desc":  {
-                                                  "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                  "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                   "en":  "More damage for kill lanes and early trades."
                                               },
                                      "keystone":  "praezision",
@@ -1129,7 +1129,7 @@
                                                  "en":  "Standard"
                                              },
                                     "desc":  {
-                                                 "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                 "de":  "Empfohlene Prägungen für normale Matchups.",
                                                  "en":  "Recommended runes for normal matchups."
                                              },
                                     "keystone":  "dauerhafter_schaden",
@@ -1146,7 +1146,7 @@
                                                  "en":  "Aggressive"
                                              },
                                     "desc":  {
-                                                 "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                 "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                  "en":  "More damage for kill lanes and early trades."
                                              },
                                     "keystone":  "dauerhafter_schaden",
@@ -1199,7 +1199,7 @@
                                                  "en":  "Standard"
                                              },
                                     "desc":  {
-                                                 "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                 "de":  "Empfohlene Prägungen für normale Matchups.",
                                                  "en":  "Recommended runes for normal matchups."
                                              },
                                     "keystone":  "inspiration",
@@ -1216,7 +1216,7 @@
                                                  "en":  "Aggressive"
                                              },
                                     "desc":  {
-                                                 "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                 "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                  "en":  "More damage for kill lanes and early trades."
                                              },
                                     "keystone":  "dauerhafter_schaden",
@@ -1269,7 +1269,7 @@
                                                    "en":  "Standard"
                                                },
                                       "desc":  {
-                                                   "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                   "de":  "Empfohlene Prägungen für normale Matchups.",
                                                    "en":  "Recommended runes for normal matchups."
                                                },
                                       "keystone":  "zaehigkeit",
@@ -1286,7 +1286,7 @@
                                                    "en":  "Aggressive"
                                                },
                                       "desc":  {
-                                                   "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                   "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                    "en":  "More damage for kill lanes and early trades."
                                                },
                                       "keystone":  "zaehigkeit",
@@ -1339,7 +1339,7 @@
                                                      "en":  "Standard"
                                                  },
                                         "desc":  {
-                                                     "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                     "de":  "Empfohlene Prägungen für normale Matchups.",
                                                      "en":  "Recommended runes for normal matchups."
                                                  },
                                         "keystone":  "praezision",
@@ -1356,7 +1356,7 @@
                                                      "en":  "Aggressive"
                                                  },
                                         "desc":  {
-                                                     "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                     "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                      "en":  "More damage for kill lanes and early trades."
                                                  },
                                         "keystone":  "praezision",
@@ -1409,7 +1409,7 @@
                                                   "en":  "Standard"
                                               },
                                      "desc":  {
-                                                  "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                  "de":  "Empfohlene Prägungen für normale Matchups.",
                                                   "en":  "Recommended runes for normal matchups."
                                               },
                                      "keystone":  "dauerhafter_schaden",
@@ -1426,7 +1426,7 @@
                                                   "en":  "Aggressive"
                                               },
                                      "desc":  {
-                                                  "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                  "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                   "en":  "More damage for kill lanes and early trades."
                                               },
                                      "keystone":  "dauerhafter_schaden",
@@ -1479,7 +1479,7 @@
                                                        "en":  "Standard"
                                                    },
                                           "desc":  {
-                                                       "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                       "de":  "Empfohlene Prägungen für normale Matchups.",
                                                        "en":  "Recommended runes for normal matchups."
                                                    },
                                           "keystone":  "inspiration",
@@ -1496,7 +1496,7 @@
                                                        "en":  "Aggressive"
                                                    },
                                           "desc":  {
-                                                       "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                       "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                        "en":  "More damage for kill lanes and early trades."
                                                    },
                                           "keystone":  "dauerhafter_schaden",
@@ -1549,7 +1549,7 @@
                                                       "en":  "Standard"
                                                   },
                                          "desc":  {
-                                                      "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                      "de":  "Empfohlene Prägungen für normale Matchups.",
                                                       "en":  "Recommended runes for normal matchups."
                                                   },
                                          "keystone":  "dauerhafter_schaden",
@@ -1566,7 +1566,7 @@
                                                       "en":  "Aggressive"
                                                   },
                                          "desc":  {
-                                                      "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                      "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                       "en":  "More damage for kill lanes and early trades."
                                                   },
                                          "keystone":  "dauerhafter_schaden",
@@ -1619,7 +1619,7 @@
                                                    "en":  "Standard"
                                                },
                                       "desc":  {
-                                                   "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                   "de":  "Empfohlene Prägungen für normale Matchups.",
                                                    "en":  "Recommended runes for normal matchups."
                                                },
                                       "keystone":  "praezision",
@@ -1636,7 +1636,7 @@
                                                    "en":  "Aggressive"
                                                },
                                       "desc":  {
-                                                   "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                   "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                    "en":  "More damage for kill lanes and early trades."
                                                },
                                       "keystone":  "praezision",
@@ -1689,7 +1689,7 @@
                                                    "en":  "Standard"
                                                },
                                       "desc":  {
-                                                   "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                   "de":  "Empfohlene Prägungen für normale Matchups.",
                                                    "en":  "Recommended runes for normal matchups."
                                                },
                                       "keystone":  "praezision",
@@ -1706,7 +1706,7 @@
                                                    "en":  "Aggressive"
                                                },
                                       "desc":  {
-                                                   "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                   "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                    "en":  "More damage for kill lanes and early trades."
                                                },
                                       "keystone":  "dauerhafter_schaden",
@@ -1759,7 +1759,7 @@
                                                   "en":  "Standard"
                                               },
                                      "desc":  {
-                                                  "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                  "de":  "Empfohlene Prägungen für normale Matchups.",
                                                   "en":  "Recommended runes for normal matchups."
                                               },
                                      "keystone":  "praezision",
@@ -1776,7 +1776,7 @@
                                                   "en":  "Aggressive"
                                               },
                                      "desc":  {
-                                                  "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                  "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                   "en":  "More damage for kill lanes and early trades."
                                               },
                                      "keystone":  "dauerhafter_schaden",
@@ -1829,7 +1829,7 @@
                                                  "en":  "Standard"
                                              },
                                     "desc":  {
-                                                 "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                 "de":  "Empfohlene Prägungen für normale Matchups.",
                                                  "en":  "Recommended runes for normal matchups."
                                              },
                                     "keystone":  "dauerhafter_schaden",
@@ -1846,7 +1846,7 @@
                                                  "en":  "Aggressive"
                                              },
                                     "desc":  {
-                                                 "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                 "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                  "en":  "More damage for kill lanes and early trades."
                                              },
                                     "keystone":  "dauerhafter_schaden",
@@ -1899,7 +1899,7 @@
                                                    "en":  "Standard"
                                                },
                                       "desc":  {
-                                                   "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                   "de":  "Empfohlene Prägungen für normale Matchups.",
                                                    "en":  "Recommended runes for normal matchups."
                                                },
                                       "keystone":  "inspiration",
@@ -1916,7 +1916,7 @@
                                                    "en":  "Aggressive"
                                                },
                                       "desc":  {
-                                                   "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                   "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                    "en":  "More damage for kill lanes and early trades."
                                                },
                                       "keystone":  "dauerhafter_schaden",
@@ -1969,7 +1969,7 @@
                                                      "en":  "Standard"
                                                  },
                                         "desc":  {
-                                                     "de":  "Empfohlene Pr├ñgungen f├╝r normale Matchups.",
+                                                     "de":  "Empfohlene Prägungen für normale Matchups.",
                                                      "en":  "Recommended runes for normal matchups."
                                                  },
                                         "keystone":  "praezision",
@@ -1986,7 +1986,7 @@
                                                      "en":  "Aggressive"
                                                  },
                                         "desc":  {
-                                                     "de":  "Mehr Schaden f├╝r Kill-Lanes und fr├╝he Trades.",
+                                                     "de":  "Mehr Schaden für Kill-Lanes und frühe Trades.",
                                                      "en":  "More damage for kill lanes and early trades."
                                                  },
                                         "keystone":  "dauerhafter_schaden",

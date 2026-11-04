@@ -97,7 +97,7 @@ function leadChart(parent: HTMLElement, title: string, d: MatchSummary): void {
 }
 
 function lineChart(parent: HTMLElement, title: string, d: MatchSummary, pick: (s: StatSample) => number): void {
-  const yMax = niceMax(Math.max(1, ...d.samples.map(pick)));
+  const yMax = niceMax(Math.max(4, ...d.samples.map(pick))); // counts: no 0.25 ticks on an empty chart
   const { g, x, y } = frame(parent, title, d.duration, yMax);
   objectiveFlags(g, d, x);
   for (const at of d.deaths) svg('line', { x1: x(at), x2: x(at), y1: PAD.t, y2: H - PAD.b, stroke: COL.death, 'stroke-dasharray': '3 3' }, g);
@@ -114,7 +114,7 @@ function lineChart(parent: HTMLElement, title: string, d: MatchSummary, pick: (s
 
 function damageChart(parent: HTMLElement, d: MatchSummary): void {
   const n = Math.max(1, d.dealtAll.length, d.taken.length);
-  const yMax = niceMax(Math.max(1, ...d.dealtChamp, ...d.taken));
+  const yMax = niceMax(Math.max(4, ...d.dealtChamp, ...d.taken));
   const dur = n * 60;
   const { g, x, y } = frame(parent, t('post.damage'), dur, yMax);
   const bw = Math.max(2, (x(60) - x(0)) / 2 - 2);

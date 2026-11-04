@@ -662,3 +662,8 @@ Additive edits to shared files (all small):
 - `src/sim/types.ts`: additive `SimConfig.towerMult?` ({hp, dmg}); read in `src/sim/systems/towers.ts` (spawn HP, shot damage vs champions/structures, no plates when set). Only `tutorialConfig` sets it; other games keep their state hash.
 - `src/ai/runner.ts`: SUMMONERS role table: top `['geist','teleport']`, adc `['sprung','barriere']` (bot games change; seeded tests may need a re-baseline).
 - `src/i18n/{de,en}.json`: `hud.resumeIn`, `tf.st.{ad,ap,armor,mr,ms}`.
+## ui-bughunt (fix/ui-bughunt)
+
+- `src/game/game.ts`: +1 line before `this.hud.update(...)`: `this.hud.resultFreeze = this.extras.over;` (hud.ts has the new public field).
+- `src/i18n/{de,en}.json`: additive `shop.noMatch`; reworded `plan.streak.days`, `profile.streakDays`, `tutorial.step.cast.text`, three `tutorial.step.lastHit/tower` lines (de: Diener -> Vasallen). `src/modes/planStrings.json`: `plan.streak.days`.
+- `src/data/runePresets.json`: re-encoded (mojibake fixed), content unchanged.

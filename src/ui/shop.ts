@@ -266,7 +266,7 @@ export class ShopPanel {
       for (const it of items) this.card(me, it.id, grid, rec.has(it.id));
       shown += items.length;
     }
-    if (!shown) el('div', 'sp-empty', list, t('shop.none'));
+    if (!shown) el('div', 'sp-empty', list, t(q ? 'shop.noMatch' : 'shop.none'));
 
     // ---- details
     const det = el('div', 'sp-detail', body);

@@ -261,7 +261,7 @@ export class Scoreboard {
       const tab = el('table', `score-table ${own ? 'ally' : 'enemy'}`, r);
       const hr = el('tr', '', el('thead', '', tab));
       for (const h of ['score.champ', 'score.player', ...(settings.scoreBotInfo ? ['score.botInfo'] : []), 'score.summoners', 'score.level', 'score.kda', 'score.cs', 'score.vision', 'score.damage', own ? 'score.gold' : 'score.itemValue', 'score.items'])
-        el('th', '', hr, t(h));
+        el('th', h.slice(6), hr, t(h)); // class = column key: fixed widths keep the ally and enemy tables aligned
       const body = el('tbody', '', tab);
       for (const p of rows.filter((x) => x.team === team).sort((a, b) => a.slot - b.slot)) {
         const tr = el('tr', '', body);

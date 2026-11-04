@@ -510,6 +510,7 @@ export class Game {
     const t3 = performance.now();
     this.minimap.draw(st, this.world, this.world.fog, now);
     const t4 = performance.now();
+    this.hud.resultFreeze = this.extras.over; // no "Pausiert" under the result dialog
     this.hud.update(st, now);
     this.surrender.update(st.snap?.tick ?? 0);
     this.extras.frame(st.snap);

@@ -174,7 +174,7 @@
 
 /* ---------------------------------------------------------------- scoreboard */
 .panel.scoreboard.open {
-  min-width: min(760px, 96vw); max-width: 96vw; text-align: left; border-radius: 0; padding: 8px 12px;
+  min-width: min(900px, 96vw); max-width: 96vw; text-align: left; border-radius: 0; padding: 8px 12px;
   /* compact and above the minimap; scrolls instead of being cut off on small screens */
   top: 56px; z-index: 40; max-height: calc(100vh - 56px - 12px); overflow-y: auto;
 }
@@ -182,6 +182,15 @@
 .score-table th { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #c8aa6e; text-align: left; padding: 2px 6px; border-bottom: 1px solid #3a3226; white-space: nowrap; }
 .score-table td { padding: 2px 6px; border-bottom: 1px solid rgba(255,255,255,0.05); white-space: nowrap; }
 .score-table td.name { max-width: 190px; overflow: hidden; text-overflow: ellipsis; cursor: help; }
+/* ui-bughunt: both tables share one column grid (auto layout lined them up differently per content) */
+.score-table { table-layout: fixed; }
+.score-table td { overflow: hidden; text-overflow: ellipsis; }
+.score-table { min-width: 880px; }
+.score-table:has(th.botInfo) { min-width: 1080px; }
+.score-table th.botInfo { width: 200px; } .score-table th.champ, .score-table th.player { width: 165px; }
+.score-table th.summoners { width: 68px; } .score-table th.level { width: 48px; } .score-table th.kda { width: 76px; }
+.score-table th.cs { width: 40px; } .score-table th.vision { width: 52px; } .score-table th.damage { width: 60px; }
+.score-table th.gold, .score-table th.itemValue { width: 74px; } .score-table th.items { width: 160px; }
 .score-table td.kda { font-variant-numeric: tabular-nums; }
 .score-portrait { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: 6px; vertical-align: middle; border-radius: 50%; border: 1px solid #6b5a35; background: #1c1824; font-size: 11px; font-weight: 800; color: #f1e6c8; }
 .score-table.ally td.champ { color: #8fb7ea; }

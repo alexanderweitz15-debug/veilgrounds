@@ -388,7 +388,8 @@ export class BotRunner {
       }
       this.queue = keep;
     }
-    if (this.fluidOn) {
+    // ponytail: the new brain's reflex layer owns stand point, orbwalk and last-hit timing - fluid runs for the default brain only
+    if (this.fluidOn && !this.reflexOn) {
       for (const b of this.bots) {
         const slot = b.ctx.slot;
         const f = b.fluid;
@@ -407,7 +408,7 @@ export class BotRunner {
           if (out[i]!.slot === slot && c.t === 'move' && (c.x - sim.c.Pos.x[me]!) ** 2 + (c.y - sim.c.Pos.y[me]!) ** 2 < 40 * 40) out.splice(i, 1);
         }
         const ordered = out.some((o) => o.slot === slot && ORDER_CMDS.has(o.cmd.t));
-        const cmd = fluidPass(sim, sim.slots[slot]!, b.ctx.team, b.ctx.params.skill, b.fluid, b.frng, ordered || this.busy(slot, sim.tick), !this.reflexOn);
+        const cmd = fluidPass(sim, sim.slots[slot]!, b.ctx.team, b.ctx.params.skill, b.fluid, b.frng, ordered || this.busy(slot, sim.tick));
         if (cmd) out.push({ slot, cmd });
       }
     }

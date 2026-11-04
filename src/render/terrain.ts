@@ -387,7 +387,8 @@ export function buildTerrain(map: MapData, anisotropy: number, quality: string =
         for (let k = 0; k < 3; k++) crystals.push({ x: x + (rnd() - 0.5) * 60, y: topAt(x, y) - 10, z: -y + (rnd() - 0.5) * 60, sx: s, sy: s * (1.5 + rnd()), sz: s, rx: (rnd() - 0.5) * 0.7, ry: rnd() * 6, rz: (rnd() - 0.5) * 0.7, tint: 0.85 + rnd() * 0.3 });
       } else {
         const tall = ed > 160;
-        const rr = tall ? 60 + rnd() * 50 : 40 + rnd() * 35;
+        // never wider than the cliff under it: a rock overhanging walkable ground looks like units clip into it
+        const rr = Math.min(tall ? 60 + rnd() * 50 : 40 + rnd() * 35, ed - 15);
         const h = tall ? 230 + rnd() * 240 : 120 + rnd() * 110;
         pinnacles.push({ x, y: topAt(x, y) - 20, z: -y, sx: rr, sy: h, sz: rr * (0.8 + rnd() * 0.4), rx: (rnd() - 0.5) * 0.25, ry: rnd() * 6, rz: (rnd() - 0.5) * 0.25, tint: 0.85 + rnd() * 0.25 });
       }
@@ -410,6 +411,16 @@ export function buildTerrain(map: MapData, anisotropy: number, quality: string =
     }
     return false;
   };
+  // a border tree inside the map stands only where its whole crown is off the walkable ground (else units walk
+  // "into" the forest: user 2026-11-04 "die Charaktere clippen ins Gelände")
+  const offGround = (x: number, y: number, r: number): boolean => {
+    for (const [dx, dy] of [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]] as const) {
+      const px = x + dx, py = y + dy;
+      if (px < 0 || py < 0 || px > S || py > S) continue;
+      if (!map.walls.some((w) => pointInPoly(px, py, w))) return false;
+    }
+    return true;
+  };
   const borderN = low ? 900 : 2600;
   for (let i = 0; i < borderN; i++) {
     const side = i % 4;
@@ -417,8 +428,11 @@ export function buildTerrain(map: MapData, anisotropy: number, quality: string =
     const out = -rnd() * 2200 + 500; // up to 500 inside the edge
     const [x, y] = side === 0 ? [out, along] : side === 1 ? [S - out, along] : side === 2 ? [along, out] : [along, S - out];
     if (nearPlay(x, y)) continue;
-    if (rnd() < 0.82) borderPine(x, y, 340 + rnd() * 320);
-    else pinnacles.push({ x, y: 0, z: -y, sx: 80 + rnd() * 90, sy: 280 + rnd() * 380, sz: 80 + rnd() * 80, rx: (rnd() - 0.5) * 0.2, ry: rnd() * 6, rz: (rnd() - 0.5) * 0.2, tint: 0.65 + rnd() * 0.25 });
+    const pine = rnd() < 0.82;
+    const size = pine ? 340 + rnd() * 320 : 80 + rnd() * 90;
+    if (!offGround(x, y, pine ? size * 0.2 + 20 : size + 20)) continue;
+    if (pine) borderPine(x, y, size);
+    else pinnacles.push({ x, y: 0, z: -y, sx: size, sy: 280 + rnd() * 380, sz: 80 + rnd() * 80, rx: (rnd() - 0.5) * 0.2, ry: rnd() * 6, rz: (rnd() - 0.5) * 0.2, tint: 0.65 + rnd() * 0.25 });
   }
   group.add(...instanced(pinnacleGeometry(), pinnacles, 0.045));
   group.add(...instanced(pineGeometry(), pines, 0.012));

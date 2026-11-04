@@ -11,6 +11,7 @@ import { ELDER } from './drakes';
 import { passiveHooksOf } from './champions';
 import { KESSELBRUT_STRUCT_PCT, isEpicMonster, kesselbrutStacks } from './systems/jungle';
 import { petOwner } from './summons';
+import { EXPOSE, exposeTo } from './vision';
 import TOWER_DATA from '../data/towers.json';
 
 export interface DamageOpts {
@@ -136,6 +137,7 @@ export function dealDamage(sim: Sim, src: number, dst: number, amount: number, t
         if (!m) log.pair.set(dst, (m = new Map()));
         m.set(src, sim.tick);
         log.champDmg.set(src, (log.champDmg.get(src) ?? 0) + dmg);
+        if (!opts.dot) exposeTo(sim, Unit.team[dst]!, src, EXPOSE.hitTicks); // the victim's team sees the attacker briefly (fog / bush)
       }
     }
     const flash = (srcChamp && !opts.dot) || sim.tick - log.flash[dst]! >= FLASH_MIN_TICKS;

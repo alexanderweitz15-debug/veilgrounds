@@ -11,7 +11,7 @@ import { MAX_ENT } from '../ecs';
 import { Kind, TICK_HZ, Team, isStructure, type DamageType } from '../types';
 import { dealDamage } from '../damage';
 import { canAttack, hasStat, healMult, healUnit, isBlind, removeBuffs } from '../buffs';
-import { sees } from '../vision';
+import { bushAttackExpose, sees } from '../vision';
 import { findPath } from '../map';
 import { championData, passiveHooksOf } from '../champions';
 import { towerShotDamage } from './towers';
@@ -262,6 +262,7 @@ function updateUnit(sim: Sim, eid: number): void {
     st.start[eid] = sim.tick;
     st.windSerial[eid] = Atk.targetSerial[eid]!;
     face(sim, eid, t);
+    bushAttackExpose(sim, eid);
     sim.events.push({ e: 'attack', src: eid, dst: t });
     if (sim.tick >= Atk.phaseEnd[eid]!) fire(sim, eid, t); // windup 0 (towers)
   }

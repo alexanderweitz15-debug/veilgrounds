@@ -41,4 +41,14 @@ Auto-merged without conflict, checked: i18n, `main.ts`, `classicLobby.ts` (lobby
 
 ## Tests
 
-See the end of this file (filled in after the full run).
+- `npx tsc --noEmit`: clean.
+- Full suite (140 files) in 4 chunks. First run: chunks 1 and 3 green; chunk 0 and 2 had 12 failing tests in 8 files, all stale tests, none a sim/determinism regression:
+  - `animMachine`, `animData`, `loaderWorker`, `loaderLayout`: hard-coded 4-frame idle/cast layout from before agent F (now `FRAMES` / `CAST_FLEX`, atlas for 10 champions is 8192x8192 uncapped).
+  - `assetManifest`: Fenna has a kit on main now (no known art gap; the placeholder test uses a made-up id), plants are 7 not 3 -> manifest got a `monstersPlants` group from `PLANT_IDS`.
+  - `a2SimBugs` BUG-01: bush coordinates from the old map, now derived from the nearest bush.
+  - `a13Hints`: Vargrim hints regenerated (`npx tsx tools/botHints/generate.ts`) after main's Vargrim change.
+  After the fixes all of these files, plus `replay.test.ts`, `bots.test.ts`, `fennaKit`, `itemEngine`, `loaderPipeline`, pass (12 files / 179 tests).
+- `BAKE_SPRITES=0 npx vite build`: ok (35 s).
+- Determinism: `replay.test.ts` and `bots.test.ts` green. The merged sim differs from main by design (BUG-01..03 change match hashes; item engine is bit-identical per next-level's golden tests, which pass).
+- Not run: in-browser check of the merged render path (sprite machine + springs + staged loader). Do one visual pass before merging to main.
+- Merged `origin/main` again at the end (d122da5 Vargrim Q on the move / E rideAlong, 48a4c31): no conflicts.

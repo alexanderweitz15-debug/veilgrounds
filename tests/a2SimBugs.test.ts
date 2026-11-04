@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { step } from '../src/sim/sim';
 import { Kind, Lane } from '../src/sim/types';
 import { spawnMinion } from '../src/sim/systems/minions';
-import { inBush } from '../src/sim/map';
+import { inBush, MAP_SCALE } from '../src/sim/map';
 
 describe('BUG-01: minions chasing a minion hidden in a bush', () => {
   it('an enemy minion outside the bush neither stands idle chasing it forever nor loses its lane', () => {
@@ -13,12 +13,14 @@ describe('BUG-01: minions chasing a minion hidden in a bush', () => {
     // minion in the red bot-lane bush (15180, 3100): the attack system refuses unseen targets (attack.canTarget
     // needs vision), the minion aggro (minions.attackable) accepts every minion.
     const sim = newSim(false);
-    const bx = 15033;
-    const by = 3190;
+    // the map was rescaled after this test was written (MAP_SCALE): find the bush by its old position, keep the offsets
+    const bush = sim.map.bushes.reduce((best, c) => (Math.hypot(c.x - 15180 * MAP_SCALE, c.y - 3100 * MAP_SCALE) < Math.hypot(best.x - 15180 * MAP_SCALE, best.y - 3100 * MAP_SCALE) ? c : best));
+    const bx = bush.x - 147;
+    const by = bush.y + 90;
     expect(inBush(sim.map, bx, by)).toBeGreaterThanOrEqual(0);
     const hidden = spawnMinion(sim, Kind.MinionCaster, 0, Lane.Bot, bx, by);
-    const red = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Bot, 15025, 3286);
-    expect(inBush(sim.map, 15025, 3286)).toBe(-1);
+    const red = spawnMinion(sim, Kind.MinionMelee, 1, Lane.Bot, bush.x - 155, bush.y + 186);
+    expect(inBush(sim.map, bush.x - 155, bush.y + 186)).toBe(-1);
     sim.c.Hp.max[hidden] = sim.c.Hp.cur[hidden] = 1e9; // keeps the target alive; it stays where it stands
     const x0 = sim.c.Pos.x[red]!;
     const y0 = sim.c.Pos.y[red]!;

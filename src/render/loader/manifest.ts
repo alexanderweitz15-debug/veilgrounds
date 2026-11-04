@@ -5,11 +5,11 @@
 import { champions } from '../../data/champions';
 import { MONSTER_TYPES, PLANT_TYPES } from '../../sim/types';
 import { ANIMS, framesOf, rendererOf, type Anim } from '../champions/atlas';
-import { BIG_MONSTER_IDS, CAMP_MONSTER_IDS, MINION_IDS, MONSTER_SPRITE } from '../champions';
+import { BIG_MONSTER_IDS, CAMP_MONSTER_IDS, MINION_IDS, MONSTER_SPRITE, PLANT_IDS } from '../champions';
 
 export type AssetKind = 'champion' | 'pet' | 'minion' | 'monster' | 'plant';
 /** The atlas (one texture) an asset is baked into: see src/render/sheets.ts. */
-export type AtlasGroup = 'champions' | 'minions' | 'monstersBig' | 'monstersCamp';
+export type AtlasGroup = 'champions' | 'minions' | 'monstersBig' | 'monstersCamp' | 'monstersPlants';
 export type Renderer = 'kit' | 'drawer' | 'wolf';
 
 export interface AssetEntry {
@@ -41,6 +41,8 @@ export function buildManifest(): AssetEntry[] {
     const plant = (PLANT_TYPES as readonly string[]).includes(id);
     out.push({ id, kind: plant ? 'plant' : 'monster', atlas: 'monstersCamp', renderers: ['drawer'], requiredAnims: plant ? PLANT_ANIMS : MONSTER_ANIMS });
   }
+  // third atlas (the camp atlas is near its cell limit): the newer fruits and the honey piece
+  for (const id of PLANT_IDS) out.push({ id, kind: 'plant', atlas: 'monstersPlants', renderers: ['drawer'], requiredAnims: PLANT_ANIMS });
   return out;
 }
 

@@ -1,7 +1,7 @@
 // Sprite state machine (src/render/anim/machine.ts): the animation follows the sim, never decides it.
 import './loaderEnv';
 import { describe, expect, it } from 'vitest';
-import { CHAMP_FPS, FRAMES, LEGACY_FRAMES, LOOP } from '../src/render/champions/anim';
+import { CAST_FLEX, CHAMP_FPS, FRAMES, LEGACY_FRAMES, LOOP } from '../src/render/champions/anim';
 import { AFTER_MS } from '../src/render/spriteTiming';
 import { CC_INTERRUPT, STOP_GRACE_MS, TICK_MS, UnitAnim, buildClipSet, newInput, type AnimEventName, type AnimInput, type ClipSet } from '../src/render/anim';
 
@@ -181,7 +181,7 @@ describe('cast', () => {
     const a = rig();
     a.u.onCast(a.now(), 0, 'self');
     a.step(TICK_MS);
-    expect(a.u.frame).toBe(3);
+    expect(a.u.frame).toBe(CAST_FLEX); // 6-frame cast layout since agent F (was 3)
     const b = rig();
     b.u.onCast(b.now(), 0, 'dash');
     b.step(TICK_MS);
@@ -244,7 +244,7 @@ describe('recall, hit', () => {
     expect(r.u.anim).toBe('cast');
     expect(r.u.frame).toBe(0);
     r.step(400);
-    expect(r.u.frame).toBe(3);
+    expect(r.u.frame).toBe(CAST_FLEX);
     r.step(TICK_MS, { recalling: false, moving: true });
     expect(r.u.state).toBe('walk');
     expect(r.names()).toEqual(['recallStart', 'recallEnd']);

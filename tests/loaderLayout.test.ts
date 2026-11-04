@@ -25,9 +25,9 @@ describe('atlas layout vs canvas area limit', () => {
     expect(p.frame).toBeGreaterThanOrEqual(96);
   });
 
-  it('without a cap (browsers that draw big canvases) the layout is unchanged: 8192x4096 @152', () => {
+  it('without a cap (browsers that draw big canvases) the layout is unchanged: 8192x8192 @152', () => {
     const p = planAtlas(TEN, { frame: 152, maxSize: 8192 });
-    expect([p.width, p.height, p.frame]).toEqual([8192, 4096, 152]);
+    expect([p.width, p.height, p.frame]).toEqual([8192, 8192, 152]); // idle/cast grew to 6 frames (agent F): was 8192x4096
     expect(area(p)).toBeGreaterThan(MAX_CANVAS_AREA); // the case the cap exists for
   });
 

@@ -14,7 +14,8 @@
 //  - run -> idle waits one missed tick (STOP_GRACE_MS) so a single dropped `moving` flag does not flicker;
 //  - the run cycle keeps its phase across attacks/casts and its speed follows the real movement speed.
 import { AFTER_MS, afterFrame, backswingScale, castPoseActive, runSpeedScale } from '../spriteTiming';
-import { CAST_B, castFamily, castSelfPose } from '../champions/anim';
+import { CAST_B } from '../champions/anim';
+import { castFamily, castSelfPose } from '../champions/casts';
 import type { Anim, Dir } from '../champions/types';
 import type { AnimEventName, CastKind, ClipSet, LogicalState } from './types';
 

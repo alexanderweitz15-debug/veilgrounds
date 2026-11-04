@@ -1,9 +1,10 @@
 // Sprite bake worker pool: a worker that never answers, answers garbage or dies must not leave the loading screen stuck
 // (root cause: bakeInWorkers waited for `left === 0` with no timeout and no messageerror handler), and one painter that
-// throws must not take every other champion down with it (renderMaster threw for ids without a kit, e.g. 'fenna').
+// throws must not take every other champion down with it (renderMaster threw for ids without a kit, e.g. an id without a kit).
 import './loaderEnv';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildChampionAtlasAsync, resetBakePool, type AtlasCellCache, type BakeRequest, type BakeResult } from '../src/render/champions/atlas';
+import { FRAMES } from '../src/render/champions/anim';
 
 // a canvas that accepts the atlas builder's calls but cannot paint a sprite: renderMaster() throws on it, which stands
 // in for a painter bug
@@ -53,7 +54,7 @@ describe('bake worker pool robustness', () => {
     const seen: number[] = [];
     const a = await buildChampionAtlasAsync(['mira'], { ...opts, onProgress: (d, n) => seen.push(d / n) });
     expect(a.placeholders).toEqual([]);
-    expect(a.frames.mira!.idle.S).toHaveLength(4);
+    expect(a.frames.mira!.idle.S).toHaveLength(FRAMES.idle);
     expect(a.top.mira).toBe(0.25);
     expect(seen.at(-1)).toBe(1);
     expect(made.every((w) => w.terminated)).toBe(true);
@@ -113,12 +114,12 @@ describe('bake worker pool robustness', () => {
     expect(console.warn).not.toHaveBeenCalledWith('sprite bake workers failed, baking on the main thread', expect.anything());
   });
 
-  it('an id without a painter (fenna) does not break the atlas of the others', async () => {
+  it('an id without a painter (nokit) does not break the atlas of the others', async () => {
     behaviour = (w, req) => req.jobs.forEach((j) => queueMicrotask(() => w.reply({ cell: j.cell, bmp: bmp() })));
-    const a = await buildChampionAtlasAsync(['mira', 'fenna'], opts);
-    expect(a.placeholders).toEqual(['fenna']);
-    expect(a.frames.fenna!.idle.S.length).toBeGreaterThan(0);
-    expect(a.frames.mira!.idle.S).toHaveLength(4);
+    const a = await buildChampionAtlasAsync(['mira', 'nokit'], opts);
+    expect(a.placeholders).toEqual(['nokit']);
+    expect(a.frames.nokit!.idle.S.length).toBeGreaterThan(0);
+    expect(a.frames.mira!.idle.S).toHaveLength(FRAMES.idle);
     expect(a.check.x).toBeGreaterThan(0);
   });
 });

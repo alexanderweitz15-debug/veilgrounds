@@ -2,7 +2,7 @@
 import './loaderEnv';
 import { describe, expect, it } from 'vitest';
 import { champions } from '../src/data/champions';
-import { CHAMP_FPS, FRAMES, LOOP } from '../src/render/champions/anim';
+import { CAST_FLEX, CHAMP_FPS, FRAMES, LOOP } from '../src/render/champions/anim';
 import { ANIMS, framesOf, hitOf, rateOf, rendererOf } from '../src/render/champions/atlas';
 import { MINION_IDS, BIG_MONSTER_IDS, CAMP_MONSTER_IDS } from '../src/render/champions';
 import { buildClipSet, defaultEvents, layoutKey, validateClipSet, type AnimOverride } from '../src/render/anim';
@@ -33,7 +33,7 @@ describe('defaults and overrides', () => {
     expect(cs.clips.run.events.map((e) => e.frame)).toEqual([0, 4]);
     expect(cs.hit).toBe(2);
     expect(cs.release).toBe(1);
-    expect(cs.flex).toBe(3);
+    expect(cs.flex).toBe(CAST_FLEX);
     expect(cs.clips.death.events).toEqual([{ frame: 2, name: 'land' }]);
   });
 
@@ -62,7 +62,7 @@ describe('defaults and overrides', () => {
 
   it('layoutKey changes with any frame count (atlas cache fingerprint)', () => {
     const a = layoutKey({ ...FRAMES });
-    expect(a).toBe('4.8.5.4.3');
+    expect(a).toBe('6.8.5.6.3'); // idle 6 and cast 6 frames since agent F
     expect(layoutKey({ ...FRAMES, attack: 6 })).not.toBe(a);
   });
 });

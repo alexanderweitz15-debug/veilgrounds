@@ -8,7 +8,7 @@ import { planAtlas, rendererOf } from '../src/render/champions/atlas';
 // Champions that are on the roster (sim data) but have no sprite kit yet. The test lists them on purpose: the game
 // draws them as the checkerboard (never an invisible unit), and a new entry here must be a conscious decision.
 // fenna: WIP champion (docs: "champ-support #29"), art pending (agent A26).
-const KNOWN_WITHOUT_ART = ['fenna'];
+const KNOWN_WITHOUT_ART: string[] = []; // fenna got her kit on main (4e8a58a)
 
 describe('asset manifest', () => {
   const manifest = buildManifest();
@@ -17,7 +17,7 @@ describe('asset manifest', () => {
     for (const id of Object.keys(champions)) expect(manifest.find((e) => e.id === id)?.kind).toBe('champion');
     expect(manifest.find((e) => e.id === 'hark')?.kind).toBe('pet');
     expect(manifest.filter((e) => e.kind === 'minion')).toHaveLength(8);
-    expect(manifest.filter((e) => e.kind === 'plant').map((e) => e.id).sort()).toEqual(['honigfrucht', 'spaehfrucht', 'sprungfrucht']);
+    expect(manifest.filter((e) => e.kind === 'plant').map((e) => e.id).sort()).toEqual(['honigfrucht', 'honigstueck', 'manafrucht', 'schildfrucht', 'spaehfrucht', 'sprungfrucht', 'windfrucht']);
     expect(idsOf('monstersBig')).toContain('leviathan');
     expect(new Set(manifest.map((e) => e.id)).size).toBe(manifest.length); // ids are unique across atlases
   });
@@ -53,15 +53,15 @@ describe('asset manifest', () => {
 describe('atlas without a painter for an id', () => {
   it('does not bake the unknown id (the painter would throw and take the whole atlas down) but keeps a placeholder slot', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    expect(rendererOf('fenna')).toBeNull();
-    const p = planAtlas(['mira', 'fenna'], { frame: 128, maxSize: 4096 });
+    expect(rendererOf('nokit')).toBeNull();
+    const p = planAtlas(['mira', 'nokit'], { frame: 128, maxSize: 4096 });
     expect(p.list).toEqual(['mira']);
-    expect(p.missing).toEqual(['fenna']);
+    expect(p.missing).toEqual(['nokit']);
     expect(p.jobs.every((j) => j.id === 'mira')).toBe(true);
     // the checkerboard cell is the one after the last job and lies inside the grid
     expect(p.placeholderCell).toBe(p.jobs.length);
     expect(Math.floor(p.placeholderCell / p.perRow) * p.frame + p.frame).toBeLessThanOrEqual(p.height);
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("'fenna' has no renderer"));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("'nokit' has no renderer"));
     warn.mockRestore();
   });
 });

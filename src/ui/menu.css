@@ -69,7 +69,19 @@ body { font-family: var(--font-body); }
 
 @media (max-width: 900px) {
   .notes { display: none; }
-  .client-nav { display: none; }
+  /* ui-bughunt: the nav (profile, encyclopedia, replays, settings) must stay reachable on small windows */
+  .client-bar { gap: 14px; padding: 0 14px; }
+  .wordmark { font-size: 24px; }
+  .play-btn { padding: 0 22px; font-size: 17px; }
+  .nav-item { padding: 0 10px; font-size: 13px; letter-spacing: 0.08em; }
+  .nav-item:hover::after { left: 10px; right: 10px; }
+}
+@media (max-width: 680px) {
+  .brand-sub { display: none; }
+  .client-bar { gap: 8px; padding: 0 8px; }
+  .wordmark { font-size: 18px; }
+  .play-btn { padding: 0 14px; font-size: 15px; }
+  .nav-item { padding: 0 6px; font-size: 12px; letter-spacing: 0.04em; }
 }
 
 /* shared panel look for sub-screens */

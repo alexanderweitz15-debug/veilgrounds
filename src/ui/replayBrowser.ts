@@ -4,6 +4,7 @@ import { deleteReplay, listReplays, REPLAY_CAP, type ReplayMeta } from '../repla
 import { clockOf } from '../replay/timeline';
 import { champName } from './names';
 import { t } from '../i18n';
+import { settings } from '../settings';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?: HTMLElement, text?: string): HTMLElementTagNameMap[K] => {
   const e = document.createElement(tag);
@@ -32,7 +33,7 @@ export function renderReplayBrowser(root: HTMLElement, onBack: () => void, onWat
       const main = el('div', 'main', li);
       el('span', 'champ', main, champName(m.champion));
       el('span', 'res', main, t(m.win === null ? 'rp.undecided' : m.win ? 'rp.win' : 'rp.loss'));
-      el('span', 'meta', main, `${clockOf(m.ticks)} · ${t('rp.kd', { k: m.kills, d: m.deaths })} · ${new Date(m.at).toLocaleString(document.documentElement.lang || 'de')}`);
+      el('span', 'meta', main, `${clockOf(m.ticks)} · ${t('rp.kd', { k: m.kills, d: m.deaths })} · ${new Date(m.at).toLocaleString(settings.lang)}`);
       const btns = el('div', 'row-buttons', li);
       el('button', 'menu-btn', btns, t('rp.open')).addEventListener('click', () => onWatch(m.id));
       el('button', 'menu-btn secondary', btns, t('rp.delete')).addEventListener('click', () => void deleteReplay(m.id).then(() => listReplays().then(draw)));

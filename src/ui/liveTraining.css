@@ -1,0 +1,18 @@
+/* Live training widget (src/ui/liveTraining.ts): right side below the top bar, clear of the minimap and the trainer panel. */
+.lt-panel {
+  position: absolute; right: 12px; top: 150px; z-index: 29; min-width: 190px; padding: 8px 10px;
+  background: rgba(10, 12, 14, 0.82); border: 1px solid var(--line, rgba(201, 162, 78, 0.35));
+  color: #e8e0cc; font: 12px var(--font-body, system-ui); pointer-events: none;
+  transform: scale(var(--ui, 1)); transform-origin: top right;
+}
+.lt-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 4px; }
+.lt-title { font-family: var(--font-label, sans-serif); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold, #c8aa6e); font-size: 11px; }
+.lt-rank { pointer-events: auto; cursor: pointer; background: rgba(200, 170, 110, 0.12); border: 1px solid var(--line, rgba(201, 162, 78, 0.35)); color: var(--gold-hi, #f0e6d2); font: 11px var(--font-label, sans-serif); padding: 1px 6px; }
+.lt-rank:hover { background: rgba(200, 170, 110, 0.28); }
+.lt-grid { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 8px; font-variant-numeric: tabular-nums; }
+.lt-grid .k { color: var(--text-dim, #a09b8c); }
+.lt-grid .v { text-align: right; color: #f2ead6; }
+.lt-grid .g { text-align: right; color: var(--text-dim, #a09b8c); min-width: 44px; }
+.lt-grid .v.good { color: #7dff6a; }
+.lt-grid .v.bad { color: #ff9a7a; }
+.high-contrast .lt-panel { background: #000; text-shadow: 0 0 2px #000, 0 1px 0 #000; }

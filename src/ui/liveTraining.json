@@ -1,0 +1,14 @@
+{
+  "_doc": "Live training widget (src/ui/liveTraining.ts). autoModes: SimConfig.mode values where the setting 'auto' shows the widget (classic and the minion-free trainers stay off). missRangeU: an enemy minion that dies this close to the own champion without the own last hit counts as missed CS. farmStartSec / minSpanSec: CS@10 projection extrapolates from the first wave reaching the lane (not from 0:00) and stays hidden until minSpanSec of farming exist. windupSec / projectileSpeed / rangedFrom: delay between the attack command and the hit (ranged hits need flight time). hpWindowSec: HP history used to estimate the damage a minion takes per second. soonSec: 'soon' state when the kill window opens within this time. markRangeU: minions further from the own champion get no timing bar. defaultRank: first rank target.",
+  "autoModes": ["sandbox", "lastHit", "laneOnly", "laneDuel", "jungleDuel", "scenario"],
+  "missRangeU": 850,
+  "farmStartSec": 85,
+  "minSpanSec": 30,
+  "windupSec": 0.2,
+  "projectileSpeed": 1800,
+  "rangedFrom": 300,
+  "hpWindowSec": 0.7,
+  "soonSec": 0.6,
+  "markRangeU": 1400,
+  "defaultRank": "gold"
+}

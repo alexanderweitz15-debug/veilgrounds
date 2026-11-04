@@ -2,6 +2,7 @@
 import { kvGet, kvSet } from './store/kv';
 import type { CastKey, CastMode } from './input/castMode';
 import type { LevelUpMod, SelfCastMod } from './input/keybinds';
+import type { Rank } from './ai/profiles/schema';
 
 export type ColorMode = 'normal' | 'deuteranopia' | 'protanopia' | 'tritanopia';
 export type GraphicsPreset = 'veryLow' | 'low' | 'medium' | 'high' | 'veryHigh';
@@ -87,6 +88,10 @@ export interface Settings {
   scoreBotInfo: boolean;
   /** S3 "LoL telegraphs": enemy skillshots show only the projectile plus a thin outline, no ground strip / fill (own unchanged). */
   lolTelegraphs: boolean;
+  /** Live training widget (src/ui/liveTraining.ts): auto = on in trainer / lane modes, off in classic. */
+  trainingHud: 'auto' | 'on' | 'off';
+  /** Rank whose Table A targets the training widget compares against. */
+  trainingRank: Rank;
 }
 
 const DEFAULTS: Settings = {
@@ -131,6 +136,8 @@ const DEFAULTS: Settings = {
   attackMoveNearCursor: true,
   voiceLines: true,
   scoreBotInfo: false,
+  trainingHud: 'auto',
+  trainingRank: 'gold',
 };
 
 /** Default values (settings import validates keys and types against them). */

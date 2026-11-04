@@ -1,0 +1,42 @@
+{
+  "_doc": "Migriert: schwarze Flammenzungen (Sev, Schwarzglut).",
+  "id": "blackflame",
+  "class": "projectile",
+  "glyph": "dot",
+  "count": 8,
+  "emitter": {
+    "shape": "point",
+    "jitter": 8,
+    "jitterH": 6
+  },
+  "velocity": {
+    "dir": "radial",
+    "speed": [12, 30],
+    "rise": [96, 224]
+  },
+  "sizeOverLife": [
+    [0, 1],
+    [1, 1]
+  ],
+  "colorOverLife": [
+    [0, "#ffffff"],
+    [1, "#ffffff"]
+  ],
+  "maxLive": 640,
+  "blend": "normal",
+  "tint": {
+    "mode": "hue",
+    "saturation": 0.95,
+    "lightness": 0.12,
+    "hueJitter": 12,
+    "lightnessJitter": 0.08
+  },
+  "life": [490, 910],
+  "size": [150, 150],
+  "alphaOverLife": [
+    [0, 1],
+    [0.286, 1],
+    [1, 0]
+  ],
+  "flicker": 0.3
+}

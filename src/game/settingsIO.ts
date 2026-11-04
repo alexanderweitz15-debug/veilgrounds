@@ -32,6 +32,10 @@ const RANGES: Partial<Record<keyof Settings, [number, number]>> = {
   gfxParticles: [0, 150],
   gfxPixelRatio: [0.5, 2],
   gfxShadowMap: [1024, 4096],
+  volumeSfx: [0, 1],
+  volumeUi: [0, 1],
+  volumeAmbient: [0, 1],
+  volumeMusic: [0, 1],
 };
 
 export function exportSettings(settings: Settings, binds: Record<Action, string>): string {

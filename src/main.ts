@@ -10,6 +10,7 @@ import type { Replay } from './replay/replay';
 import { buildSettingsPanel } from './ui/settingsPanel';
 import { renderMainMenu, type MenuEntry } from './ui/mainMenu';
 import { installDisplaySettings } from './ui/display';
+import { installPreloadErrorReload } from './render/loader/preloadError';
 // Code-split (Phase 6): the game view (three.js, renderer, HUD), encyclopedia, trainer hub and post-game screen
 // load on demand, so the main menu starts without them.
 const loadGame = () => import('./game/game');
@@ -22,6 +23,8 @@ const loadPlay = async () => {
 };
 
 const app = document.getElementById('app')!;
+// a lazy chunk of an older build 404s after a deploy: one guarded reload instead of a dead "Play" button
+installPreloadErrorReload();
 
 function h<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, text?: string, parent?: HTMLElement): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);

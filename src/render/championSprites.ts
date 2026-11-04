@@ -6,19 +6,17 @@ import { gouacheSprite } from './materials';
 import type { SnapEntity } from '../sim/snapshot';
 import { Kind } from '../sim/types';
 import { PITCH } from './camera';
-import { CAST_B, CAST_FLEX, CAST_RELEASE, castFamily, castSelfPose, dirFromAngle, type Anim, type ChampionAtlas, type Dir } from './champions';
+import { dirFromAngle, ANIMS, type Anim, type ChampionAtlas, type Dir } from './champions';
 import { champions } from '../data/champions';
-import { AFTER_MS, afterFrame, castPoseActive, runRate, windupMsOf } from './spriteTiming';
 import { turnToward } from './readability';
 import { dynIdle, KICKS, newDyn, stepDyn, type DynState } from './spriteDynamics';
 import { settings } from '../settings';
+import { ANIM_OVERRIDES, animEvents, buildClipSet, newInput, UnitAnim, type AnimEventBus, type AnimEventName, type CastKind, type ClipSet } from './anim';
 
-/** How a cast plays: directed spells release forward, self buffs flex, dashes lunge. */
-export type CastKind = 'directed' | 'self' | 'dash';
-/** hit flinch: knock-back distance (champions a bit more than minions, G/A7) and duration */
-const FLINCH = 9;
+export type { CastKind } from './anim';
+/** hit flinch distance of champions (G/A7: a bit more than minions) and of everything else */
 const FLINCH_CHAMPION = 13;
-const FLINCH_MS = 150;
+const FLINCH_OTHER = 9;
 /** G/A3: a click's intent facing is shown for at most this long, or until the sim facing changes. */
 const INTENT_MS = 300;
 /** fallback wind-ups until one was measured (sim: 0.3 s of the attack period for minions) */
@@ -30,8 +28,10 @@ function windEstimate(e: SnapEntity): number {
   return WIND_MS[e.kind] ?? 330;
 }
 
-/** Ability type → cast playback. */
-export function castKindOf(type: string | undefined): CastKind {
+/** Ability type → cast playback. `champ` + `slot` (0..3) apply the per-slot override of the animation data table. */
+export function castKindOf(type: string | undefined, champ?: string | null, slot?: number): CastKind {
+  const o = champ && slot !== undefined && slot >= 0 && slot < 4 ? ANIM_OVERRIDES[champ]?.castKinds?.[slot as 0 | 1 | 2 | 3] : undefined;
+  if (o) return o;
   if (type === 'self') return 'self';
   if (type === 'dash' || type === 'blink') return 'dash';
   return 'directed';
@@ -50,6 +50,8 @@ export interface SpriteBatchOptions {
   idFor: (e: SnapEntity, atlas: ChampionAtlas) => string | null;
   /** size multiplier per entity (small camp members reuse their leader's frames), default 1 */
   scaleFor?: (e: SnapEntity) => number;
+  /** raise `footstep` animation events (champions only; 60 minions would flood the audio) */
+  footsteps?: boolean;
   /** amplitude of the runtime squash / stretch / lean springs (spriteDynamics.ts), default 1; 0 disables */
   dynAmp?: number;
   /** soft contact-shadow blob under every sprite: peak opacity 0..1 (camps, epics); undefined = none */
@@ -86,6 +88,7 @@ export const CHAMPION_BATCH: SpriteBatchOptions = {
   cap: 24,
   // champions ~11 % of the screen height like LoL (were ~8 % next to towers, trees and cliffs built at map scale)
   scaleFor: () => CHAMPION_SCALE,
+  footsteps: true,
   ghosts: 12,
   corpseMs: 1800,
   idFor: (e, atlas) => {
@@ -101,48 +104,38 @@ interface AnimState {
   serial: number;
   seen: number;
   id: string;
-  anim: Anim;
-  t0: number;
-  dir: Dir;
-  phase: number;
-  x: number;
-  y: number;
-  /** attack: wind-up start, hit time (0 = not yet), measured wind-up length (ms) */
-  atk0: number;
-  atkHit: number;
-  wind: number;
-  /** last hit flinch: time + knock direction */
-  hitT: number;
-  hx: number;
-  hy: number;
+  /** the state machine (src/render/anim) */
+  u: UnitAnim;
+  /** clip set of `id`, cached per unit (saves a map lookup per frame) */
+  cs: ClipSet | null;
   /** D2: displayed facing angle (radians, smoothed toward the sim facing) and its last update time; NaN = unset. */
   ang: number;
   angT: number;
-  /** G/A2: run-cycle phase in frames (advanced by the speed-dependent rate, so a rate change never jumps a frame). */
-  runPh: number;
   /** G/A3: facing the player's own click asked for, shown until the sim facing moves or INTENT_MS pass. */
   intent: { ang: number; until: number; fx: number; fy: number } | null;
-  /** F: squash / stretch / lean springs and the run-cycle phase carried across stops (ms into the cycle) */
+  /** F: squash / stretch / lean springs (spriteDynamics.ts) */
   dyn: DynState;
+  /** this unit attacks from range (recoil instead of lunge on the strike) */
+  ranged: boolean;
+  /** screen-x sign of the facing (E +1, W -1, N/S 0) for the spring kicks */
+  dirX: number;
 }
-interface CastState {
+interface PendingCast {
   t0: number;
-  /** wind-up until the release (ms) */
   dur: number;
   kind: CastKind;
-  /** ability slot (0..3; Sev's R choices 4..6 count as R) -> cast family (casts.ts) */
   slot: number;
-  /** release pop already fired */
-  popped: boolean;
 }
 interface Ghost {
   scale: number;
   on: boolean;
   id: string;
+  eid: number;
   dir: Dir;
   x: number;
   y: number;
   t0: number;
+  landed: boolean;
 }
 
 /** Selects the frame rect via the instanced `aUvRect` attribute (works for the colour and the depth material). */
@@ -171,7 +164,11 @@ export class ChampionSprites {
   private readonly uv: THREE.InstancedBufferAttribute;
   private readonly st = new Map<number, AnimState>(); // by serial
   private readonly byEid = new Map<number, AnimState>();
-  private readonly castAt = new Map<number, CastState>(); // by eid
+  private readonly pendingCast = new Map<number, PendingCast>(); // cast events that arrived before the first draw, by eid
+  private readonly clipSets = new Map<string, ClipSet>();
+  private readonly inp = newInput();
+  private readonly bus: AnimEventBus;
+  private recallEid = -1;
   private readonly ghosts: Ghost[];
   private readonly cap: number;
   private lastPrune = 0;
@@ -201,8 +198,10 @@ export class ChampionSprites {
     private readonly qVis: THREE.Quaternion,
     private readonly qCast: THREE.Quaternion,
     private readonly opts: SpriteBatchOptions = CHAMPION_BATCH,
+    bus: AnimEventBus = animEvents,
   ) {
-    this.ghosts = Array.from({ length: opts.ghosts }, () => ({ scale: 1, on: false, id: '', dir: 'S' as Dir, x: 0, y: 0, t0: 0 }));
+    this.bus = bus;
+    this.ghosts = Array.from({ length: opts.ghosts }, () => ({ scale: 1, on: false, id: '', eid: -1, dir: 'S' as Dir, x: 0, y: 0, t0: 0, landed: false }));
     const CAP = (this.cap = opts.cap + opts.ghosts);
     const tex = new THREE.CanvasTexture(atlas.canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
@@ -238,8 +237,8 @@ export class ChampionSprites {
     if (opts.groundBlob) {
       const bm = new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, opacity: opts.groundBlob, depthWrite: false });
       // the whole blob takes the depth of its centre (the feet), a hair BEHIND the sprite quad (which sits 0.0004 in front)
-      bm.onBeforeCompile = (s) => {
-        s.vertexShader = s.vertexShader.replace(
+      bm.onBeforeCompile = (sh) => {
+        sh.vertexShader = sh.vertexShader.replace(
           '#include <project_vertex>',
           '#include <project_vertex>\nvec4 footClip = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);\ngl_Position.z = (footClip.z / footClip.w + 0.0002) * gl_Position.w;',
         );
@@ -263,10 +262,55 @@ export class ChampionSprites {
     return (this.atlas.foot[id]! - this.atlas.top[id]!) * this.atlas.worldSize[id]! * (e && this.opts.scaleFor ? this.opts.scaleFor(e) : 1);
   }
 
-  /** A cast started: `durMs` = wind-up until the release (sim cast time), `kind` from the ability type, `slot` picks
-   *  the baked cast family (Q W E R may differ: casts.ts). */
-  onCast(eid: number, now: number, durMs = 0, kind: CastKind = 'directed', slot = 0): void {
-    this.castAt.set(eid, { t0: now, dur: Math.max(0, Math.min(1500, durMs)), kind, slot, popped: false });
+  /** Clip description of an id (frame counts and rates the atlas baked + the data table of src/render/anim/data.ts). */
+  clipsOf(id: string): ClipSet {
+    let cs = this.clipSets.get(id);
+    if (!cs) {
+      const f = this.atlas.frames[id]!;
+      const frames = {} as Record<Anim, number>;
+      for (const anim of ANIMS) frames[anim] = f[anim].S.length;
+      const rate = this.atlas.rate[id] ?? ({} as Partial<Record<Anim, number>>);
+      const fps = {} as Record<Anim, number>;
+      for (const anim of ANIMS) fps[anim] = rate[anim] ?? this.atlas.fps[anim];
+      cs = buildClipSet(id, { frames, fps, hit: this.atlas.hit[id] ?? 1, loop: this.atlas.loop });
+      this.clipSets.set(id, cs);
+    }
+    return cs;
+  }
+
+  /** Animation event hand-off of one unit to the bus (only built when somebody listens). */
+  private readonly sink = (name: AnimEventName, u: UnitAnim, slot: number, kind: CastKind, foot: number): void => {
+    // F springs: the strike lands (hitFrame) / the cast releases, whether or not anybody listens on the bus
+    const a = name === 'hitFrame' || name === 'release' ? this.byEid.get(u.eid) : undefined;
+    if (a) {
+      if (name === 'release') KICKS.castRelease(a.dyn, this.amp());
+      else if (a.ranged) KICKS.strikeRanged(a.dyn, a.dirX, this.amp());
+      else KICKS.strikeMelee(a.dyn, a.dirX, this.amp());
+    }
+    if (name === 'footstep' && !this.opts.footsteps) return;
+    this.fire(name, u.eid, u.id, u.x, u.y, u.dir, this.lastNow, slot, kind, foot);
+  };
+  private lastNow = 0;
+  private fire(name: AnimEventName, eid: number, id: string, x: number, y: number, dir: Dir, t: number, slot = -1, kind: CastKind = 'directed', foot = -1): void {
+    const bus = this.bus;
+    if (!bus.wants(name)) return;
+    const ev = bus.scratch;
+    ev.name = name;
+    ev.eid = eid;
+    ev.id = id;
+    ev.t = t;
+    ev.x = x;
+    ev.y = y;
+    ev.dir = dir;
+    ev.slot = slot;
+    ev.kind = kind;
+    ev.foot = foot;
+    bus.dispatch();
+  }
+
+  /** The viewer's own champion is channelling a recall (the snapshot only carries it for `me`). */
+  setRecall(eid: number, on: boolean): void {
+    this.recallEid = on ? eid : -1;
   }
 
   /**
@@ -279,48 +323,41 @@ export class ChampionSprites {
     a.intent = { ang: Math.atan2(dy, dx), until: now + INTENT_MS, fx: NaN, fy: NaN };
   }
 
+  /** A cast started: `durMs` = wind-up until the release (sim cast time), `kind` from the ability type, `slot` 0..3. */
+  onCast(eid: number, now: number, durMs = 0, kind: CastKind = 'directed', slot = -1): void {
+    this.lastNow = now;
+    const a = this.byEid.get(eid);
+    if (a) a.u.onCast(now, durMs, kind, slot);
+    else this.pendingCast.set(eid, { t0: now, dur: durMs, kind, slot });
+  }
+
   /** Took a hit from (sx, sy): short knock-back flinch (rate-limited so damage over time does not jitter). */
   onHit(eid: number, now: number, sx: number, sy: number): void {
+    this.lastNow = now;
     const a = this.byEid.get(eid);
-    if (!a || now - a.hitT < 320) return;
-    const dx = a.x - sx;
-    const dy = a.y - sy;
-    const d = Math.hypot(dx, dy) || 1;
-    a.hitT = now;
-    a.hx = dx / d;
-    a.hy = dy / d;
+    if (!a) return;
+    a.u.onHit(now, sx, sy);
     // squash + tip away from the source (screen x: sim +x is screen-right)
+    const dx = a.u.x - sx;
     KICKS.hit(a.dyn, dx > 20 ? -1 : dx < -20 ? 1 : 0, this.amp());
   }
 
-  /** Cast frame: family A (gather 0, release 1, follow 2) or B (gather 3, release 4) by the ability slot, flex last. */
-  private castFrame(c: CastState, ms: number, n: number, id: string): number {
-    // the 6-frame layout has both families; older 4-frame sheets (minion-like kits) only A
-    const fam = n >= CAST_FLEX + 1 ? castFamily(id, c.slot) : 0;
-    const gather = c.dur;
-    const g = fam ? CAST_B : 0;
-    if (ms < gather) return g; // castTime 0 (instant): skip the gather
-    const k = ms - gather;
-    if (c.kind === 'self') return Math.min(n - 1, n >= CAST_FLEX + 1 && castSelfPose(id, c.slot) ? g + 1 : n >= CAST_FLEX + 1 ? CAST_FLEX : n - 1);
-    if (c.kind === 'dash') return Math.min(n - 1, g + 1);
-    if (fam) return Math.min(n - 1, CAST_B + 1); // B has no follow-through: hold the release
-    return Math.min(n - 1, k < AFTER_MS * 1.3 ? CAST_RELEASE : CAST_RELEASE + 1);
-  }
-  private castLen(c: CastState): number {
-    return c.dur + (c.kind === 'self' ? 300 : c.kind === 'dash' ? 280 : AFTER_MS * 3.6);
-  }
-
   onDeath(eid: number, now: number): void {
+    this.pendingCast.delete(eid);
     const a = this.byEid.get(eid);
     if (!a) return;
+    this.lastNow = now;
+    a.u.onDeath();
     const g = this.ghosts.find((x) => !x.on) ?? this.ghosts[0]!;
     g.on = true;
     g.scale = a.scale;
     g.id = a.id;
-    g.dir = a.dir;
-    g.x = a.x;
-    g.y = a.y;
+    g.eid = eid;
+    g.dir = a.u.dir;
+    g.x = a.u.x;
+    g.y = a.u.y;
     g.t0 = now;
+    g.landed = false;
     this.byEid.delete(eid);
     this.st.delete(a.serial);
   }
@@ -332,104 +369,73 @@ export class ChampionSprites {
   /** Draws one living entity; `id` from idFor, (x, y) = interpolated feet incl. lunge, c = brightness. */
   push(e: SnapEntity, id: string, x: number, y: number, c: number, now: number, lift = 0): void {
     if (this.n >= this.opts.cap) return;
+    this.lastNow = now;
     let a = this.st.get(e.serial);
     if (!a) {
-      a = { scale: this.opts.scaleFor?.(e) ?? 1, serial: e.serial, seen: now, id, anim: 'idle', t0: now, dir: 'S', phase: 0, x, y, atk0: 0, atkHit: 0, wind: 0, hitT: -1e9, hx: 0, hy: 0, ang: NaN, angT: now, runPh: ((e.id * 97) / 1000) * (this.atlas.rate[id]?.run ?? this.atlas.fps.run), intent: null, dyn: newDyn(now) };
+      a = { scale: this.opts.scaleFor?.(e) ?? 1, serial: e.serial, seen: now, id, u: new UnitAnim(e.id, id, this.sink, now), cs: null, ang: NaN, angT: now, intent: null, dyn: newDyn(now), ranged: rangedKind(e), dirX: 0 };
       this.st.set(e.serial, a);
+      const pc = this.pendingCast.get(e.id);
+      if (pc) {
+        this.pendingCast.delete(e.id);
+        if (now - pc.t0 < 1500) a.u.onCast(pc.t0, pc.dur, pc.kind, pc.slot);
+      }
     }
-    const dtMs = now - a.seen;
     a.seen = now;
     this.byEid.set(e.id, a);
-    a.x = x;
-    a.y = y;
+    let dir = a.u.dir;
     // G/A3: an intent facing (own click) overrides the sim facing until the sim facing itself changes
     const it = a.intent;
     if (it) {
       if (Number.isNaN(it.fx)) (it.fx = e.fx), (it.fy = e.fy); // sim facing at the time of the click
       else if (e.fx !== it.fx || e.fy !== it.fy || now > it.until) a.intent = null;
     }
-    const amp = this.amp();
     if (a.intent || e.fx || e.fy) {
       // D2: turn through the in-between directions (180 deg in ~80 ms) instead of flipping in one tick
       const target = a.intent ? a.intent.ang : Math.atan2(e.fy, e.fx);
       const prevX = ChampionSprites.dirX(a.ang);
       a.ang = Number.isNaN(a.ang) ? target : turnToward(a.ang, target, now - a.angT);
-      a.dir = dirFromAngle(a.ang);
+      dir = dirFromAngle(a.ang);
       // about-face while running: a little sway into the new direction
       const dx = ChampionSprites.dirX(a.ang);
-      if (e.moving && prevX && dx && prevX !== dx) KICKS.turn(a.dyn, dx, amp);
+      if (e.moving && prevX && dx && prevX !== dx) KICKS.turn(a.dyn, dx, this.amp());
     }
     a.angT = now;
-    const dirX = ChampionSprites.dirX(a.ang);
-    const fr = this.atlas.frames[id]!;
-    // attack state machine: the strike frame lands exactly on the sim's hit point (phase 1 -> 2)
-    if (e.atkPhase === 1 && a.phase !== 1) {
-      a.atk0 = now;
-      a.atkHit = 0;
-    } else if (e.atkPhase === 2 && a.phase !== 2) {
-      if (a.phase === 1 && a.atk0) a.wind = Math.max(80, Math.min(1500, now - a.atk0));
-      a.atkHit = now;
-      // the strike lands: melee squashes into the blow, ranged recoils
-      if (rangedKind(e)) KICKS.strikeRanged(a.dyn, dirX, amp);
-      else KICKS.strikeMelee(a.dyn, dirX, amp);
-    } else if (e.atkPhase === 0 && a.phase === 1) a.atk0 = 0; // cancelled wind-up
-    a.phase = e.atkPhase;
-    const nA = fr.attack.S.length;
-    const hit = Math.min(nA - 1, this.atlas.hit[id] ?? 1);
-    const ca = this.castAt.get(e.id);
-    let anim: Anim = e.moving ? 'run' : 'idle';
-    let frame = -1;
-    // G/A1: the cast pose ends early when the champion walks (castPoseActive), like the attack backswing below
-    if (ca && fr.cast.S.length && castPoseActive(now - ca.t0, ca.dur, this.castLen(ca), e.moving)) {
-      anim = 'cast';
-      frame = this.castFrame(ca, now - ca.t0, fr.cast.S.length, id);
-      if (!ca.popped && now - ca.t0 >= ca.dur) {
-        ca.popped = true;
-        KICKS.castRelease(a.dyn, amp);
-      }
-    } else if (e.atkPhase === 1 && nA && a.atk0) {
-      // anticipation spread over the wind-up: from the snapshot (G/A6), else measured, else estimated
-      anim = 'attack';
-      const est = windupMsOf(e.atkStart, e.atkEnd) ?? (a.wind || windEstimate(e));
-      frame = hit > 0 ? Math.min(hit - 1, Math.floor(((now - a.atk0) / est) * hit)) : 0;
-    } else if (a.atkHit && nA && now - a.atkHit < (nA - hit) * AFTER_MS + 60 && (!e.moving || now - a.atkHit < AFTER_MS)) {
-      // strike, follow-through, recover (moving during the backswing cancels it: orbwalking)
-      anim = 'attack';
-      frame = hit + afterFrame(now - a.atkHit, nA - hit);
+    a.dirX = ChampionSprites.dirX(a.ang);
+    const cs = a.cs?.id === id ? a.cs : (a.cs = this.clipsOf(id));
+    const inp = this.inp;
+    inp.atkPhase = e.atkPhase;
+    inp.atkStart = e.atkStart;
+    inp.atkEnd = e.atkEnd;
+    inp.moving = e.moving;
+    inp.cc = e.cc ?? 0;
+    inp.recalling = e.id === this.recallEid;
+    const mdx = e.x - e.px;
+    const mdy = e.y - e.py;
+    const sp = e.moving ? Math.sqrt(mdx * mdx + mdy * mdy) * 30 : 0; // (Math.hypot is slow in V8)
+    inp.speed = sp === sp && sp < 1e5 ? sp : 0;
+    inp.x = x;
+    inp.y = y;
+    inp.dir = dir;
+    inp.windGuess = windEstimate(e);
+    const u = a.u;
+    u.flinch = e.kind === Kind.Champion ? FLINCH_CHAMPION : FLINCH_OTHER; // G/A7
+    const was = u.anim;
+    u.update(inp, cs, now);
+    // starts and stops get a spring impulse (the run phase itself lives in the machine and survives stops)
+    if (was !== u.anim) {
+      if (was === 'run' && u.anim === 'idle') KICKS.runStop(a.dyn, a.dirX, this.amp());
+      else if (was === 'idle' && u.anim === 'run') KICKS.runStart(a.dyn, a.dirX, this.amp());
     }
-    if (anim !== a.anim) {
-      // starts and stops get a spring impulse; the run cycle keeps its phase across a stop instead of restarting
-      if (a.anim === 'run') {
-        if (anim === 'idle') KICKS.runStop(a.dyn, dirX, amp);
-      }
-      if (anim === 'run' && a.anim === 'idle') KICKS.runStart(a.dyn, dirX, amp);
-      a.anim = anim;
-      a.t0 = now; // runPh is seeded once per unit (desync) and kept across stops: no cycle restart while orbwalking
-    }
-    if (frame < 0 && anim === 'run') {
-      // G/A2: run cycle paced by the distance walked in the last tick (boots faster, slows slower), phase-continuous
-      const base = this.atlas.rate[id]?.run ?? this.atlas.fps.run;
-      a.runPh += (Math.min(100, Math.max(0, dtMs)) / 1000) * runRate(base, Math.hypot(e.x - e.px, e.y - e.py));
-      frame = Math.floor(a.runPh);
-    }
-    if (frame < 0) frame = Math.floor(((now - a.t0 + e.id * 97) / 1000) * (this.atlas.rate[id]?.[anim] ?? this.atlas.fps[anim]));
-    // hit flinch: a quick knock away from the source
-    const fk = (now - a.hitT) / FLINCH_MS;
-    if (fk >= 0 && fk < 1) {
-      const d = Math.sin(fk * Math.PI) * (e.kind === Kind.Champion ? FLINCH_CHAMPION : FLINCH) * (1 - fk * 0.5);
-      x += a.hx * d;
-      y += a.hy * d;
-    }
-    this.draw(id, anim, a.dir, frame, x, y, c, a.scale, lift, a.dyn, now);
+    this.draw(id, u.anim, u.dir, u.frame, x + u.ox, y + u.oy, c, a.scale, lift, cs.clips[u.anim].loop, a.dyn, now);
   }
 
   /** `lift` = height above the ground (knock-up hop, dash arc); the shadow quad stays on the ground. */
-  private draw(id: string, anim: Anim, dir: Dir, k: number, x: number, y: number, c: number, scale = 1, lift = 0, dyn?: DynState, now = 0): void {
+  private draw(id: string, anim: Anim, dir: Dir, k: number, x: number, y: number, c: number, scale = 1, lift = 0, loop = this.atlas.loop[anim], dyn?: DynState, now = 0): void {
     const list = this.atlas.frames[id]?.[anim]?.[dir];
     if (!list?.length) return;
     // frame index from timers can be negative (clock offsets) or NaN (missing rate): clamp, never index out of range
     const kk = Number.isFinite(k) ? Math.max(0, Math.floor(k)) : 0;
-    const r = list[this.atlas.loop[anim] ? kk % list.length : Math.min(kk, list.length - 1)];
+    const r = list[loop ? kk % list.length : Math.min(kk, list.length - 1)];
     if (!r) return;
     if (this.n >= this.cap) return;
     const i = this.n++;
@@ -470,15 +476,22 @@ export class ChampionSprites {
       if (!g.on) continue;
       if (now - g.t0 > this.opts.corpseMs) g.on = false;
       else {
-        const anim: Anim = this.atlas.frames[g.id]!.death.S.length ? 'death' : 'idle';
-        this.draw(g.id, anim, g.dir, Math.floor(((now - g.t0) / 1000) * (this.atlas.rate[g.id]?.[anim] ?? this.atlas.fps[anim])), g.x, g.y, 1, g.scale);
+        const cs = this.clipsOf(g.id);
+        const anim: Anim = cs.clips.death.frames ? 'death' : 'idle';
+        const clip = cs.clips[anim];
+        const k = Math.floor(((now - g.t0) / 1000) * clip.fps);
+        if (!g.landed && anim === 'death' && clip.events.some((ev) => ev.name === 'land' && k >= ev.frame)) {
+          g.landed = true;
+          this.fire('land', g.eid, g.id, g.x, g.y, g.dir, now);
+        }
+        this.draw(g.id, anim, g.dir, k, g.x, g.y, 1, g.scale, 0, clip.loop);
       }
     }
     if (now - this.lastPrune > STALE_MS) {
       this.lastPrune = now;
       for (const [serial, a] of this.st) if (now - a.seen > STALE_MS) this.st.delete(serial);
       for (const [eid, a] of this.byEid) if (now - a.seen > STALE_MS) this.byEid.delete(eid);
-      for (const [eid, t] of this.castAt) if (now - t.t0 > STALE_MS) this.castAt.delete(eid);
+      for (const [eid, t] of this.pendingCast) if (now - t.t0 > STALE_MS) this.pendingCast.delete(eid);
     }
     this.vis.count = this.cast.count = this.n;
     if (this.blob) {

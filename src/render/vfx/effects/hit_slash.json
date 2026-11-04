@@ -1,0 +1,42 @@
+{
+  "_doc": "Schnitt-Streifen beim Treffer, Farbton der Fähigkeit.",
+  "id": "hit_slash",
+  "class": "hit",
+  "blend": "add",
+  "glyph": "streak",
+  "tint": {
+    "mode": "hue",
+    "saturation": 0.95,
+    "lightness": 0.62,
+    "hueJitter": 10,
+    "lightnessJitter": 0.06
+  },
+  "life": [120, 220],
+  "count": 4,
+  "emitter": {
+    "shape": "point",
+    "jitter": 8,
+    "jitterH": 5
+  },
+  "velocity": {
+    "dir": "radial",
+    "speed": [220, 520]
+  },
+  "drag": 6,
+  "size": [140, 220],
+  "sizeOverLife": [
+    [0, 1],
+    [1, 0.4]
+  ],
+  "colorOverLife": [
+    [0, "#ffffff"],
+    [1, "#ffffff"]
+  ],
+  "alphaOverLife": [
+    [0, 1],
+    [0.5, 0.7],
+    [1, 0]
+  ],
+  "spin": [-3, 3],
+  "maxLive": 192
+}

@@ -2,7 +2,7 @@
 import { ChatBox } from '../ui/chat';
 import { SurrenderPanel } from '../ui/surrenderPanel';
 import { soundForEvent, soundForFire } from '../audio/eventSounds';
-import { audioUnlock, playFizzle, setListener, setVolume } from '../audio/sfx';
+import { audioStop, audioUnlock, playFizzle, setListener, setVolume } from '../audio/sfx';
 import { blockBrowserShortcuts, enterGameFullscreen, exitGameFullscreen } from './fullscreen';
 import { loadMap } from '../sim/map';
 import type { SimConfig } from '../sim/types';
@@ -23,7 +23,10 @@ import { actionFor } from '../input/keybinds';
 import { presetFields } from '../render/gfxPreset';
 import { Benchmark, FrameLimiter, pickPreset } from './gfxTune';
 import { t } from '../i18n';
-import { getChampionAtlas, getMinionAtlas, getMonsterAtlases, getStandInAtlas } from '../render/sheets';
+import { getStandInAtlas } from '../render/sheets';
+import { preloadChampions, preloadMinions, preloadMonsters } from '../render/loader';
+import { createLoadingBar } from '../render/loader/progressBar';
+import type { ChampionAtlas } from '../render/champions';
 
 /** Full champion atlas not ready after this long: start with the low-res stand-in (see Game constructor). */
 const STAND_IN_AFTER_MS = 2500;
@@ -134,16 +137,34 @@ export class Game {
     this.world = new World(canvas, map);
     const f = map.sides[0].fountain;
     this.world.rig.focus(f.x + 600, f.y + 600);
-    // bake the animated champion sprites (worker pool); champions show the placeholder sprite until it is done
+    // A1 asset pipeline: champion, minion and monster atlases are loaded by ONE preloader (src/render/loader) with a
+    // combined progress bar; the sim stays paused until it resolves (a step that fails or times out becomes the
+    // pink/black checkerboard and is swapped for the real sprites if it still finishes).
     this.cover = document.createElement('div');
     this.cover.className = 'boot-cover';
     this.root.appendChild(this.cover);
     const loading = document.createElement('div');
-    // centred on the dark cover; the sim stays paused until the atlases are ready (loading must not eat game time)
+    // centred on the dark cover; loading must not eat game time
     loading.className = 'sprite-loading';
-    loading.textContent = t('hud.loadingChamps', { p: 0 });
+    const label = document.createElement('div');
+    const bar = createLoadingBar();
+    loading.append(label, bar.root);
+    const paint = (k: number): void => {
+      bar.set(k);
+      label.textContent = t('loading.graphics', { p: Math.round(bar.value() * 100) });
+    };
+    paint(0);
     this.cover.appendChild(loading);
     const champIds = config?.players.map((p) => p.champion) ?? ['mira'];
+    const applyAtlas = (kind: 'champions' | 'minions' | 'monsters', atlas: ChampionAtlas | ChampionAtlas[]): void => {
+      try {
+        if (kind === 'champions') this.world.setChampionAtlas(atlas as ChampionAtlas);
+        else if (kind === 'minions') this.world.setMinionAtlas(atlas as ChampionAtlas);
+        else this.world.setMonsterAtlases(atlas as ChampionAtlas[]);
+      } catch (e) {
+        console.warn(`${kind} atlas could not be used, keeping placeholder sprites`, e);
+      }
+    };
     // champions ready: start the clock (minions only appear at 1:05, they keep baking in the background)
     const begin = (): void => {
       if (this.atlasReady) return;
@@ -151,9 +172,13 @@ export class Game {
       this.atlasReady = true;
       this.link.pause(this.state.paused);
     };
+    // ponytail: two loaders did the same job. Kept: A1's preloader steps (shared per session, no-progress watchdog, hard
+    // limit, checkerboard fallback, real atlas swapped in via onLate) with S3's staged start (clock after the champions,
+    // minions 2.5 s later, monsters last; strips baked by the build) and S3's low-res stand-in.
     // S3 progressive loading: when the full atlas takes longer than STAND_IN_AFTER_MS (cold start without shipped strips),
     // a cheap low-res one starts the match and the full one replaces it when ready.
     let fullDone = false;
+    let standIn = false;
     window.setTimeout(() => {
       if (fullDone) return;
       const t0 = performance.now();
@@ -161,17 +186,18 @@ export class Game {
         .then((atlas) => {
           console.info(`champion stand-in atlas: ${atlas.canvas.width}x${atlas.canvas.height} in ${Math.round(performance.now() - t0)} ms${fullDone ? ' (full atlas was faster)' : ''}`);
           if (fullDone) return;
-          this.world.setChampionAtlas(atlas);
+          standIn = true;
+          applyAtlas('champions', atlas);
           begin();
         })
         .catch(() => undefined); // the full atlas is still on its way
     }, STAND_IN_AFTER_MS);
-    void getChampionAtlas(champIds, (done, total) => {
-      loading.textContent = t('hud.loadingChamps', { p: Math.round((done / total) * 100) });
-    })
-      .then((atlas) => {
+    void preloadChampions(champIds, paint, (a) => applyAtlas('champions', a))
+      .then((o) => {
         fullDone = true;
-        this.world.setChampionAtlas(atlas);
+        if (o.degraded && standIn) return; // the stand-in is better than the checkerboard; the real atlas still arrives via onLate
+        applyAtlas('champions', o.value);
+        if (o.degraded) console.warn(`[loader] started with placeholder sprites for the champions: ${o.reason}`);
       })
       .catch((e) => console.warn('champion atlas failed, keeping placeholder sprites', e))
       .then(begin)
@@ -179,12 +205,12 @@ export class Game {
       // G/A4: wait 2.5 s after the clock started so the bakes do not compete with the first snapshots (the first
       // minute showed snapshot jitter up to 71 ms = frozen frames; minions only appear at 1:05 anyway)
       .then(() => new Promise<void>((r) => window.setTimeout(r, 2500)))
-      .then(() => getMinionAtlas())
-      .then((atlas) => this.world.setMinionAtlas(atlas))
+      .then(() => preloadMinions(undefined, (a) => applyAtlas('minions', a)))
+      .then((o) => applyAtlas('minions', o.value))
       .catch((e) => console.warn('minion atlas failed, keeping placeholder sprites', e))
       // jungle monsters + plants appear at 1:30: baked last, in the background
-      .then(() => getMonsterAtlases())
-      .then((atlases) => this.world.setMonsterAtlases(atlases))
+      .then(() => preloadMonsters(undefined, (a) => applyAtlas('monsters', a)))
+      .then((o) => applyAtlas('monsters', o.value))
       .catch((e) => console.warn('monster atlases failed, keeping placeholder sprites', e));
     this.link = opts.link ?? (config ? workerLink(config, 0) : mockLink());
     this.link.pause(true); // sim builds in the worker meanwhile but does not tick until the sprites are baked
@@ -202,10 +228,9 @@ export class Game {
         this.hud.onEvent(ev, this.state, now);
         this.chat?.onEvent(ev);
         this.surrender?.onEvent(ev);
-        soundForEvent(ev, this.state);
         if (!quiet) soundForEvent(ev, this.state);
       }
-      if (!quiet) for (const e of this.state.fired) soundForFire(e);
+      if (!quiet) for (const e of this.state.fired) soundForFire(e, this.state);
     };
 
     this.hud = new Hud(
@@ -578,6 +603,7 @@ export class Game {
     window.removeEventListener('keydown', this.armUnload, true);
     window.removeEventListener('keydown', blockBrowserShortcuts, true);
     window.removeEventListener('keydown', audioUnlock);
+    audioStop();
     exitGameFullscreen();
     this.world.dispose();
     this.root.remove();

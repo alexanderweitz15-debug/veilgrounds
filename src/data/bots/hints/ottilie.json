@@ -1,0 +1,153 @@
+{
+  "id": "ottilie",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "carry",
+    "engage": 2,
+    "peel": 2,
+    "poke": 3,
+    "burst": 1
+  },
+  "keyRanges": {
+    "auto": 525,
+    "trade": 1000,
+    "engage": 525,
+    "poke": 1000,
+    "threat": 1000,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "ottilie_data1",
+      "kind": "trade",
+      "sequence": [
+        "Q",
+        "AA",
+        "E",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "ottilie_data2",
+      "kind": "allin",
+      "sequence": [
+        "W",
+        "Q",
+        "R"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "ottilie_data3",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "Q",
+        "AA",
+        "E"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "ottilie_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "line",
+      "roles": [
+        "poke"
+      ],
+      "range": 1000,
+      "useRange": [
+        0,
+        920
+      ],
+      "speed": 2000,
+      "width": 60,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "circle",
+      "roles": [
+        "summon"
+      ],
+      "range": 2000,
+      "useRange": [
+        0,
+        1656
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": true,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "dash",
+      "roles": [
+        "escape"
+      ],
+      "range": 300,
+      "useRange": [
+        262.5,
+        825
+      ],
+      "speed": 1300,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "R",
+      "aim": "self",
+      "roles": [
+        "buff",
+        "ult"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        675
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "kill"
+    }
+  ]
+}

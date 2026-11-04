@@ -1,0 +1,41 @@
+{
+  "_doc": "Stufenaufstieg: goldene Funken steigen um den Champion.",
+  "id": "levelup_sparks",
+  "class": "hit",
+  "blend": "add",
+  "glyph": "spark",
+  "tint": {
+    "mode": "none"
+  },
+  "life": [600, 1000],
+  "count": 24,
+  "emitter": {
+    "shape": "ring",
+    "radius": 70,
+    "thickness": 20,
+    "jitterH": 4
+  },
+  "velocity": {
+    "dir": "outward",
+    "speed": [0, 30],
+    "rise": [120, 260]
+  },
+  "drag": 0.6,
+  "size": [90, 140],
+  "sizeOverLife": [
+    [0, 0.6],
+    [0.3, 1],
+    [1, 0.2]
+  ],
+  "colorOverLife": [
+    [0, "#fff1b8"],
+    [1, "#ffc23a"]
+  ],
+  "alphaOverLife": [
+    [0, 0],
+    [0.15, 1],
+    [1, 0]
+  ],
+  "spin": [-4, 4],
+  "maxLive": 160
+}

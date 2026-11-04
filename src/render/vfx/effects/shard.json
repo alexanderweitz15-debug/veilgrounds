@@ -1,0 +1,42 @@
+{
+  "_doc": "Migriert: Splitter, sprühen entgegen der Flugrichtung (velocity.back).",
+  "id": "shard",
+  "class": "projectile",
+  "glyph": "dot",
+  "count": 8,
+  "emitter": {
+    "shape": "point",
+    "jitter": 8,
+    "jitterH": 6
+  },
+  "velocity": {
+    "dir": "radial",
+    "speed": [56, 140],
+    "back": 160
+  },
+  "sizeOverLife": [
+    [0, 1],
+    [1, 1]
+  ],
+  "colorOverLife": [
+    [0, "#ffffff"],
+    [1, "#ffffff"]
+  ],
+  "maxLive": 640,
+  "blend": "normal",
+  "tint": {
+    "mode": "hue",
+    "saturation": 0.95,
+    "lightness": 0.74,
+    "hueJitter": 12,
+    "lightnessJitter": 0.08
+  },
+  "life": [224, 416],
+  "gravity": 260,
+  "size": [90, 90],
+  "alphaOverLife": [
+    [0, 1],
+    [0.286, 1],
+    [1, 0]
+  ]
+}

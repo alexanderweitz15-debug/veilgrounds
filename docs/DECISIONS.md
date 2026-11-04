@@ -2,6 +2,41 @@
 
 Jede Abweichung vom Design-Prompt steht hier mit Grund. Neue Einträge oben.
 
+## Master-Prompt „Nächstes Level" (29 Agents): Pfad-Mapping und Abweichungen (A29 Integrator, 2026-10-24)
+
+Der Master-Prompt beschreibt Pfade eines Neuprojekts. Das Repo hat diese Struktur nicht; Besitzbereiche gelten
+deshalb für die **realen** Pfade unten. Bestehende Systeme werden erweitert, nicht neu gebaut.
+
+| Prompt | Reales Repo |
+|---|---|
+| `src/render/loader*` | `src/render/sheets.ts`, `atlasStore.ts`, `spriteWorker.ts`, Bake-Teil von `src/render/champions/atlas.ts`; neu `src/render/loader/**` |
+| `public/`, `assets/` | `public/` enthält nur Icon/Manifest/Service-Worker. **Es gibt keine Bilddateien**: alle Sprites, Icons und das Terrain werden prozedural im Code gemalt (Canvas 2D, im Worker gebacken, IndexedDB-Cache) |
+| `src/core/contracts.ts` | existiert noch nicht. Heutige Verträge: `src/sim/protocol.ts` (Sim↔Client), `src/sim/snapshot.ts`, `src/sim/types.ts`, `src/ai/contract.ts` (Bot). Der Integrator legt `src/core/contracts.ts` an, sobald Welle 1 neue gemeinsame Typen braucht |
+| `data/items/**` | `src/data/items.json`, Schema `src/sim/items/schema.ts`, Effekte `src/sim/items/itemHooks.ts` |
+| `data/champions/<name>/kit.json` | `src/data/champions/<id>.json` (Werte/Texte) + `src/sim/champions/<id>.ts` (Hooks = Code) + Optik in `src/render/champions/kits.ts` + `src/data/builds/<id>.json` |
+| `src/ai/combat`, `macro`, `profiles` | `src/ai/bot/*`, `src/ai/reflex/*`, `src/ai/utility/*`, Profile `src/data/bots/profiles/*.json` + `src/ai/profiles/*` |
+| `assets/units/**` | `src/render/champions/**` (prozedurale Paper-Doll-Rigs) |
+| `src/render/anim/**` | `src/render/champions/anim.ts`, `src/render/championSprites.ts`, `src/render/spriteTiming.ts` |
+| `src/render/vfx/**` | `src/render/fx.ts`, `particles.ts`, `telegraph.ts`, `sevFx.ts` |
+| `src/audio/**` | `src/audio/sfx.ts`, `eventSounds.ts` (prozedural, keine Dateien) |
+| `src/render/camera/**` | `src/render/camera.ts` |
+| `src/ui/shop/**` | `src/ui/shop.ts`, `shopLayout.ts`, `shop.css` |
+| `tools/benchmark/**` | `tools/botSim.ts` existiert (Report, `--jobs`, `--brain=new`); Erweiterung statt Neubau |
+
+Abweichungen, mit Grund:
+- **Branches:** Agents arbeiten auf lokalen Branches `feat/a<nr>-<thema>` in eigenen Worktrees; gepusht wird nur der
+  Sammelbranch dieser Sitzung (`claude/veilgrounds-next-level-f6na23`), weil die Sitzung nur dorthin pushen darf.
+- **Parallelität:** Die Maschine hat 4 Kerne / 15 GB. Die volle Testsuite braucht allein ~4 min auf allen Kernen.
+  Statt ~6 laufen höchstens 2–3 Arbeits-Agents gleichzeitig.
+- **Schaden auf dem Hit-Frame (A3):** Die Sim läuft deterministisch mit 30 Hz im Worker, auch headless für Bots und
+  Replays. Render-Animationen dürfen den Schadenszeitpunkt deshalb nicht bestimmen. Umgekehrt ist es richtig und
+  schon so gebaut: die Sim legt den Wind-up fest, die Animation trifft genau darauf (`spriteTiming.ts`).
+- **„Klick → Bewegung im selben Frame" (A9):** Ohne Client-Vorhersage unmöglich (Sim im Worker, 33 ms Takt). Ziel
+  wird: Klick-Marker und Blickrichtung im selben Frame, Bewegung im nächsten Sim-Tick.
+- **Winrate 47–53 % aus 1.000 Matches (A28):** Statistisch nicht prüfbar. Bei ~47 Champions spielt jeder ~210 Partien;
+  der Standardfehler ist dann ±3,4 Punkte, das 95-%-Intervall ±6,7. Für ±3 Punkte braucht es ~1.100 Partien je
+  Champion, also ~5.000 Matches. A28 muss das Ziel als Konfidenzintervall formulieren.
+
 ## Gehirn-Rework Phase 1: Reflex-Schicht + Angriffs-Scheduler – Gate-Messung (S, 2026-10-22, main f343d7b)
 
 Gemessen vom Aufsichts-Agenten in einem sauberen Worktree auf f343d7b (A1 4ce5cc5 gemergt, Hitbox 65 aktiv):

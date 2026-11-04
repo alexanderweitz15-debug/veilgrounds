@@ -16,6 +16,9 @@ import type { NodeCtx } from '../bt/types';
 import { dst, unit } from './geo';
 import { hpPct } from './combat';
 import treeData from '../../data/bots/tree.json';
+import { microOn } from '../combat/flag';
+import { microSpacing } from '../combat/spacing';
+import { microFightRole, microFocusScore } from '../combat/focus';
 
 export const ORBWALK = treeData.params.orbwalk as { marginMs: number; windowMs: number };
 
@@ -49,6 +52,10 @@ function gapCloser(e: SnapEntity): number {
 
 /** Desired distance to `t` (spacing, §7). */
 export function spacing(n: NodeCtx, t: SnapEntity): number {
+  if (microOn(n.ctx, 'spacing')) {
+    const m = microSpacing(n, t); // A13: the enemy's key ranges (hints) and the casts the bot has seen
+    if (m !== null) return m;
+  }
   const range = n.v.me.stats.range + n.v.self.radius + t.radius;
   let want = range - n.p.knobs.spacingBuffer;
   if (n.ctx.champ.attackType === 'ranged' && n.p.knobs.kiteBack) {
@@ -140,6 +147,7 @@ export const cancelOrbwalk = (n: NodeCtx): void => {
 export type FightRole = 'carry' | 'frontline' | 'assassin' | 'support';
 
 export function fightRole(n: NodeCtx): FightRole {
+  if (microOn(n.ctx, 'focus')) return microFightRole(n); // A13: role from the champion's hints, not from archetype regexes
   const a = n.ctx.champ.archetype;
   if (n.ctx.role === 'support' && !/tank|engage/.test(a)) return 'support';
   if (/tank|juggernaut|bruiser|engage|battlemage/.test(a)) return 'frontline';
@@ -149,6 +157,7 @@ export function fightRole(n: NodeCtx): FightRole {
 
 /** Focus score (§7): killProb x threat x reachability; player focus ping +0.3 (team axis via obedience). */
 export function focusScore(n: NodeCtx, e: SnapEntity, focusSerial: number): number {
+  if (microOn(n.ctx, 'focus')) return microFocusScore(n, e, n.v.enemies.filter((x) => dst(x, n.v.self) < 1600), focusSerial);
   const reach = Math.max(0.2, 1 - Math.max(0, dst(n.v.self, e) - n.v.reach) / 1200);
   const c = championData(e.champ ?? '');
   const threat = 0.5 + 0.1 * c.scores.range + (/marksman|mage|assassin/.test(c.archetype) ? 0.3 : 0);

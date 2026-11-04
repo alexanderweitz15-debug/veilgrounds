@@ -1,0 +1,11 @@
+/* Self-hosted fonts (SIL Open Font License 1.1, see docs/ASSETS-LICENSES.md). Latin subset only (covers German umlauts, ß, €,
+   typographic quotes and dashes). Same family names as the former Google Fonts stylesheet, so the CSS does not change.
+   font-display: swap = text shows at once in the fallback font and switches when the file arrives. */
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 400; font-display: swap; src: url('./barlow-400.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: swap; src: url('./barlow-500.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 600; font-display: swap; src: url('./barlow-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 500; font-display: swap; src: url('./barlow-condensed-500.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url('./barlow-condensed-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url('./barlow-condensed-700.woff2') format('woff2'); }
+@font-face { font-family: 'Spectral SC'; font-style: normal; font-weight: 600; font-display: swap; src: url('./spectral-sc-600.woff2') format('woff2'); }
+@font-face { font-family: 'Spectral SC'; font-style: normal; font-weight: 700; font-display: swap; src: url('./spectral-sc-700.woff2') format('woff2'); }

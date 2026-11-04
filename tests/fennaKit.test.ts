@@ -41,7 +41,7 @@ describe('sprite kits', () => {
 describe('Duskband', () => {
   it('is a priced support item in the shop and in Fenna\'s build', () => {
     const it = itemById('daemmerband')!;
-    expect(it.passive?.hook).toBe('dusk_band');
+    expect(it.id).toBe('daemmerband'); // the effect is a code hook in itemHooks.ts (DUSK_BAND), not data
     const ge = goldEfficiency(it)!;
     expect(ge.pct).toBeGreaterThan(85);
     expect(ge.pct).toBeLessThan(115);

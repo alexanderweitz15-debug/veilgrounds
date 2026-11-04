@@ -1,0 +1,39 @@
+{
+  "_doc": "Einschlag eines Turmschusses, Teamfarbe.",
+  "id": "tower_impact",
+  "class": "hit",
+  "blend": "add",
+  "glyph": "spark",
+  "tint": {
+    "mode": "team"
+  },
+  "life": [200, 380],
+  "count": 14,
+  "emitter": {
+    "shape": "point",
+    "jitter": 10,
+    "jitterH": 8
+  },
+  "velocity": {
+    "dir": "radial",
+    "speed": [100, 320],
+    "rise": [0, 120]
+  },
+  "gravity": 200,
+  "drag": 2,
+  "size": [100, 170],
+  "sizeOverLife": [
+    [0, 1],
+    [1, 0.3]
+  ],
+  "colorOverLife": [
+    [0, "#ffffff"],
+    [1, "#ffffff"]
+  ],
+  "alphaOverLife": [
+    [0, 1],
+    [1, 0]
+  ],
+  "spin": [-6, 6],
+  "maxLive": 256
+}

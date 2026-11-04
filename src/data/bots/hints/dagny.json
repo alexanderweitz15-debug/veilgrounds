@@ -1,0 +1,145 @@
+{
+  "id": "dagny",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "frontline",
+    "engage": 3,
+    "peel": 3,
+    "poke": 0,
+    "burst": 3
+  },
+  "keyRanges": {
+    "auto": 150,
+    "trade": 300,
+    "engage": 650,
+    "poke": 150,
+    "threat": 450,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "dagny_data1",
+      "kind": "trade",
+      "sequence": [
+        "E",
+        "Q",
+        "AA",
+        "W"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "dagny_data2",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "Q",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "dagny_data3",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "AA",
+        "Q"
+      ],
+      "source": "data"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "self",
+      "roles": [
+        "burst"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        300
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "cone",
+      "roles": [
+        "burst"
+      ],
+      "range": 450,
+      "useRange": [
+        0,
+        414
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "self",
+      "roles": [
+        "utility"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        300
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "R",
+      "aim": "dash",
+      "roles": [
+        "escape",
+        "engage",
+        "ult"
+      ],
+      "range": 500,
+      "useRange": [
+        75,
+        650
+      ],
+      "speed": 1200,
+      "width": 0,
+      "radius": 400,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

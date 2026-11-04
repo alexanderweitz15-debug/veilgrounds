@@ -1,0 +1,147 @@
+{
+  "id": "vargrim",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "frontline",
+    "engage": 4,
+    "peel": 1,
+    "poke": 0,
+    "burst": 4
+  },
+  "keyRanges": {
+    "auto": 175,
+    "trade": 325,
+    "engage": 1175,
+    "poke": 175,
+    "threat": 450,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "vargrim_data1",
+      "kind": "trade",
+      "sequence": [
+        "E",
+        "AA",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "vargrim_data2",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "Q",
+        "AA",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "vargrim_data3",
+      "kind": "allin",
+      "sequence": [
+        "E",
+        "R",
+        "W",
+        "Q"
+      ],
+      "source": "data"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "self",
+      "roles": [
+        "burst"
+      ],
+      "range": 350,
+      "useRange": [
+        0,
+        350
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 350,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "self",
+      "roles": [
+        "burst"
+      ],
+      "range": 450,
+      "useRange": [
+        0,
+        450
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 450,
+      "castTime": 0,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "self",
+      "roles": [
+        "cc",
+        "burst"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        325
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0,
+      "delay": 0,
+      "cc": 3,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 2,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "R",
+      "aim": "dash",
+      "roles": [
+        "escape",
+        "engage",
+        "ult"
+      ],
+      "range": 1000,
+      "useRange": [
+        87.5,
+        1175
+      ],
+      "speed": 1700,
+      "width": 0,
+      "radius": 300,
+      "castTime": 0.35,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

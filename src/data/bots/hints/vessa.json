@@ -1,0 +1,147 @@
+{
+  "id": "vessa",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "frontline",
+    "engage": 4,
+    "peel": 1,
+    "poke": 0,
+    "burst": 2
+  },
+  "keyRanges": {
+    "auto": 150,
+    "trade": 300,
+    "engage": 850,
+    "poke": 150,
+    "threat": 300,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "vessa_data1",
+      "kind": "allin",
+      "sequence": [
+        "E",
+        "R",
+        "Q",
+        "AA",
+        "W"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "vessa_data2",
+      "kind": "trade",
+      "sequence": [
+        "E",
+        "AA",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "vessa_data3",
+      "kind": "trade",
+      "sequence": [
+        "Q",
+        "AA",
+        "W"
+      ],
+      "source": "data"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "target",
+      "roles": [
+        "burst"
+      ],
+      "range": 300,
+      "useRange": [
+        0,
+        300
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "self",
+      "roles": [
+        "utility"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        300
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "self",
+      "roles": [
+        "utility"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        300
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "R",
+      "aim": "dash",
+      "roles": [
+        "escape",
+        "engage",
+        "cc",
+        "ult"
+      ],
+      "range": 700,
+      "useRange": [
+        75,
+        850
+      ],
+      "speed": 1400,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 4,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

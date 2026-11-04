@@ -214,6 +214,18 @@ export class Game {
       .catch((e) => console.warn('monster atlases failed, keeping placeholder sprites', e));
     this.link = opts.link ?? (config ? workerLink(config, 0) : mockLink());
     this.link.pause(true); // sim builds in the worker meanwhile but does not tick until the sprites are baked
+    // fast forward for bug hunting (not in classic games): ?speed=50 at start, F7 cycles x1 / x5 / x20 / x50
+    if (config?.mode !== 'classic' || new URLSearchParams(location.search).has('speed')) {
+      const speeds = [1, 5, 20, 50];
+      let sp = Number(new URLSearchParams(location.search).get('speed')) || 1;
+      if (sp !== 1) this.link.setGameSpeed?.(sp);
+      window.addEventListener('keydown', (e) => {
+        if (e.code !== 'F7' || !this.root.isConnected) return;
+        e.preventDefault();
+        sp = speeds[(speeds.indexOf(sp) + 1) % speeds.length] ?? 1;
+        this.link.setGameSpeed?.(sp);
+      });
+    }
     this.link.onBotDebug = (rows, tick) => this.hud.botDebug.update(rows, tick);
     this.link.onError = (msg) => this.showSimError(msg);
     this.link.onGhost = (m) => this.extras.setGhost(m); // Challenger-Geist timeline for the post-game screen

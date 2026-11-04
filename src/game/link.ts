@@ -8,6 +8,8 @@ import type { BotDebugRow } from '../ai/log';
 export interface SimLink {
   send(cmd: Command): void;
   pause(paused: boolean): void;
+  /** Worker link only: game speed multiplier (fast forward for bug hunting, `?speed=50`). */
+  setGameSpeed?(s: number): void;
   /** Called for EVERY snapshot (several may arrive per frame; events must not be dropped). */
   onSnap: ((s: Snapshot) => void) | null;
   dispose(): void;
@@ -29,6 +31,7 @@ export function workerLink(config: SimConfig, slot: number): SimLink {
     onSnap: null,
     send: (cmd) => post({ type: 'cmd', cmd }),
     pause: (paused) => post({ type: 'pause', paused }),
+    setGameSpeed: (s) => post({ type: 'speed', speed: s }),
     dispose: () => worker.terminate(),
     requestBotDebug: () => post({ type: 'getBotDebug' }),
     onBotDebug: null,

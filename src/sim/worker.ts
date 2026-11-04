@@ -68,8 +68,10 @@ setInterval(() => {
     acc = 0;
     return;
   }
+  let n = 0;
   while (acc >= TICK_MS && !matchOver(sim)) {
     acc -= TICK_MS;
+    n++;
     // human first, then bots: the merge order is part of the replay
     const human = queued;
     const inputs = bots ? [...queued, ...bots.tick(sim)] : queued;
@@ -77,6 +79,10 @@ setInterval(() => {
     rec!.record(sim.tick, inputs);
     step(sim, inputs);
     rec!.observe(sim); // S2: replay markers + player pattern detector (read-only)
+    // fast forward (speed > 4, bug hunting): only every few ticks and the last one go to the client - skipped ticks'
+    // events (sounds, fx) are dropped, the state stays exact because every snapshot is the full state
+    // ponytail: skip ratio = speed / 4, raise it if the client cannot keep up
+    if (speed > 4 && !ghost && acc >= TICK_MS && n % Math.ceil(speed / 4) !== 0) continue;
     const snap = buildSnapshot(sim, sim.config.players.find((p) => p.slot === slot)?.team ?? 0, slot);
     post({ type: 'snap', snap });
     // after posting (the client got its clone): the ghost reads the same snapshot, never the sim

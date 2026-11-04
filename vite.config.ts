@@ -47,12 +47,15 @@ function bakeSprites(): Plugin {
   };
 }
 
-export default defineConfig({
+/** Test files that play full bot games (minutes each). `vitest run` = fast set, `--mode slow` / `--mode all`. */
+const SLOW_TESTS = ['bots', 'brainReflex', 'utilityRecall', 'utilityGame', 'replay', 'replaySeek', 'attention', 'botHumanize', 'botLastHit', 'botPerception', 'botStyle', 'ghost', 'rage', 'exchange', 'sim/wardStealth'].map((f) => `tests/${f}.test.ts`);
+export default defineConfig(({ mode }) => ({
   base: './',
   worker: { format: 'es' },
   define: { __ATLAS_VER__: JSON.stringify(hashFiles(SPRITE_FILES)), __GROUND_VER__: JSON.stringify(hashFiles(GROUND_FILES)) },
   plugins: [bakeSprites()],
   // three.js as its own long-cached vendor chunk (~530 kB min, shared by the menu backdrop and the game view)
   build: { rollupOptions: { input: { main: 'index.html', bake: 'bake.html' }, output: { manualChunks: { three: ['three'] } } } },
-  test: { include: ['tests/**/*.test.ts'] },
-});
+  // npm test = fast set (< ~1 min); npm run test:slow = full-game brain/determinism tests; CI runs both (test:all)
+  test: mode === 'slow' ? { include: SLOW_TESTS } : { include: ['tests/**/*.test.ts'], exclude: mode === 'all' ? [] : SLOW_TESTS },
+}));

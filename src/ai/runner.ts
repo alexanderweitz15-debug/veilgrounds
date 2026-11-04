@@ -3,6 +3,7 @@
 // fog-filtered snapshot; brains get Snapshot + static data (see src/ai/bot/types.ts).
 // Used by the sim worker (merged with the human's inputs, recorded in replays), tests and tools/botSim.ts.
 
+import { fluidPass, newFluid, type FluidState } from './fluid';
 import { query } from 'bitecs';
 import { buildSnapshot, teamEvents, type Snapshot, type SnapAudio, type SnapEntity, type PlayerHud } from '../sim/snapshot';
 import type { Sim } from '../sim/sim';
@@ -54,6 +55,9 @@ interface BotSlot {
   /** New bot brain on for this bot (reflex layer or utility model): the BRAIN-REWORK §9 attention model and error
    *  episodes run only then (src/ai/humanize/attention.ts); off = pre-rework behaviour, bit-identical. */
   human: boolean;
+  /** Orbwalk shuffle + idle strafe (src/ai/fluid.ts), own Rng so the brain's stream is untouched. */
+  fluid: FluidState;
+  frng: Rng;
 }
 
 const NO_TAGS: ReadonlySet<string> = new Set();
@@ -77,6 +81,8 @@ export interface RunnerOptions {
   /** Last-hit trainer scenario (harness runLaneAlone, the Phase 1 gate of the reflex layer): no §9 attention model
    *  even with the new brain - it measures execution alone (A3, 22 Oct; open question to S in docs/agents/a3.md). */
   trainer?: boolean;
+  /** Turn off the fluid movement pass (src/ai/fluid.ts) - for measurements that need the old standing behaviour. */
+  noFluid?: boolean;
 }
 
 /** Accumulated brain cost (bot-sim reflexCostMs / thinkCostMs). */
@@ -114,11 +120,13 @@ export class BotRunner {
   private readonly clock: (() => number) | undefined;
   private readonly noSpells: boolean;
   private readonly reflexOn: boolean;
+  private readonly fluidOn: boolean;
 
   constructor(config: SimConfig, private readonly brain: Brain = think, opts: RunnerOptions = {}) {
     this.clock = opts.clock;
     this.noSpells = !!opts.noSpells;
     this.reflexOn = !!opts.reflex;
+    this.fluidOn = !opts.noFluid;
     const rng = new Rng((config.seed ^ 0x5eed_b075) >>> 0);
     this.teams = [new TeamAI(0, staticMap(), config.players, config.seed, this.log), new TeamAI(1, staticMap(), config.players, config.seed, this.log)];
     for (const p of [...config.players].sort((a, b) => a.slot - b.slot)) {
@@ -164,7 +172,7 @@ export class BotRunner {
         ensureAttention(mem, ctx, 0);
         reflexState(mem).attention = attentionProbe(mem);
       }
-      this.bots.push({ ctx, mem, rng: new Rng(rng.u32()), interval, next: rng.int(interval), events: [], eventTicks: [], audio: [], hud: null, human });
+      this.bots.push({ ctx, mem, rng: new Rng(rng.u32()), interval, next: rng.int(interval), events: [], eventTicks: [], audio: [], hud: null, human, fluid: newFluid(), frng: new Rng((config.seed ^ (0xf1d0 + p.slot * 7919)) >>> 0) });
     }
   }
 
@@ -379,6 +387,29 @@ export class BotRunner {
         else if (!this.busy(q.slot, sim.tick) || !['move', 'attack', 'attackMove', 'stop'].includes(q.action.cmd.t)) out.push({ slot: q.slot, cmd: q.action.cmd });
       }
       this.queue = keep;
+    }
+    if (this.fluidOn) {
+      for (const b of this.bots) {
+        const slot = b.ctx.slot;
+        const f = b.fluid;
+        // orbwalking: a brain re-issuing the same attack during the shuffle step would freeze the bot again - the
+        // pass re-attacks itself just before the attack timer is ready
+        if (f.reTarget >= 0 && sim.tick < f.reAt) {
+          for (let i = out.length - 1; i >= 0; i--) {
+            const c = out[i]!;
+            if (c.slot === slot && c.cmd.t === 'attack' && c.cmd.target === f.reTarget) out.splice(i, 1);
+          }
+        }
+        // a brain "move" onto its own spot is a hold order: drop it, the idle strafe keeps the bot alive around there
+        const me = sim.slots[slot]!;
+        for (let i = out.length - 1; i >= 0; i--) {
+          const c = out[i]!.cmd;
+          if (out[i]!.slot === slot && c.t === 'move' && (c.x - sim.c.Pos.x[me]!) ** 2 + (c.y - sim.c.Pos.y[me]!) ** 2 < 40 * 40) out.splice(i, 1);
+        }
+        const ordered = out.some((o) => o.slot === slot && ORDER_CMDS.has(o.cmd.t));
+        const cmd = fluidPass(sim, sim.slots[slot]!, b.ctx.team, b.ctx.params.skill, b.fluid, b.frng, ordered || this.busy(slot, sim.tick), !this.reflexOn);
+        if (cmd) out.push({ slot, cmd });
+      }
     }
     return out;
   }

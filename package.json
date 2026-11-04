@@ -8,6 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:slow": "vitest run --mode slow",
+    "test:all": "vitest run --mode all",
     "typecheck": "tsc --noEmit",
     "bot-sim": "tsx tools/botSim.ts"
   },

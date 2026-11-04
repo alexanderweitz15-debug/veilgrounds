@@ -108,6 +108,14 @@ function apply(sim: Sim, eid: number, cmd: Command): void {
     }
     case 'attackMove':
       newOrder(sim, eid, false);
+      // a repeated attack-move during a wind-up keeps that auto (LoL: spamming A-click does not reset the attack);
+      // bots re-issue attack-move every decision, which used to cancel every wind-up of slow-windup champions
+      if (Atk.attackMove[eid] && Atk.phase[eid] === 1 && Atk.target[eid]! >= 0) {
+        setAttackMoveCursor(sim, eid, !!cmd.cursor);
+        Atk.amx[eid] = cmd.x;
+        Atk.amy[eid] = cmd.y;
+        break;
+      }
       onMoveCommand(sim, eid);
       cancelRecall(sim, eid);
       Atk.target[eid] = -1;

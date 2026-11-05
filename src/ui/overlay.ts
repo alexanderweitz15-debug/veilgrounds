@@ -5,7 +5,7 @@ import type { SnapEntity } from '../sim/snapshot';
 import type { World } from '../render/world';
 import { Kind, type SimEvent } from '../sim/types';
 import { REL } from '../render/palette';
-import { settings } from '../settings';
+import { settings, txtPx } from '../settings';
 import { t } from '../i18n';
 import { champName, variantName } from './names';
 import { VisualCues } from './cues';
@@ -119,7 +119,7 @@ export class Overlay {
     const [, key, color] = hit;
     const text = key === 'slow' ? `${t('cc.slow')} ${Math.round(e.slow ?? 0)} %` : t(`cc.${key}`);
     const ctx = this.ctx;
-    ctx.font = `700 ${champ ? 12 : 10}px system-ui, sans-serif`;
+    ctx.font = `700 ${txtPx(champ ? 12 : 10)}px system-ui, sans-serif`;
     // D2: one symbol per CC type (shape, not only colour) left of the text
     const icon = champ ? 14 : 10;
     const w = ctx.measureText(text).width + 10 + icon + 2;
@@ -209,7 +209,7 @@ export class Overlay {
       ctx.fillRect(-5, -5, 10, 10);
       ctx.restore();
       if (m.n !== undefined && m.n > 1) {
-        ctx.font = 'bold 10px system-ui, sans-serif';
+        ctx.font = `bold ${txtPx(10)}px system-ui, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#1b1612';
@@ -260,7 +260,7 @@ export class Overlay {
 
   private label(text: string, x: number, y: number, color: string): void {
     const ctx = this.ctx;
-    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.font = `600 ${txtPx(12)}px system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.lineWidth = 3;
@@ -274,7 +274,7 @@ export class Overlay {
   private drawJungleLabels(state: ClientState, world: World): void {
     if (!state.jungle.enabled) return;
     const ctx = this.ctx;
-    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.font = `700 ${txtPx(15)}px system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.lineWidth = 4;
@@ -384,13 +384,13 @@ export class Overlay {
           ctx.fillStyle = 'rgba(12,10,8,0.9)';
           ctx.fillRect(x - 24, y - 4, 22, bh + 10);
           ctx.fillStyle = '#f1e6c8';
-          ctx.font = 'bold 13px system-ui, sans-serif';
+          ctx.font = `bold ${txtPx(13)}px system-ui, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(String(e.level), x - 13, y + bh / 2 + 2);
           // name label (Agent H)
           const name = champName(e.look ?? e.champ);
-          ctx.font = '600 12px system-ui, sans-serif';
+          ctx.font = `600 ${txtPx(12)}px system-ui, sans-serif`;
           ctx.textBaseline = 'bottom';
           ctx.lineWidth = 3;
           ctx.strokeStyle = 'rgba(12,10,8,0.9)';
@@ -403,7 +403,7 @@ export class Overlay {
         if (e.marks?.length || e.emp) this.drawMarks(e, x, y, bw, bh);
         if (dummy) {
           ctx.fillStyle = '#fff';
-          ctx.font = 'bold 11px system-ui, sans-serif';
+          ctx.font = `bold ${txtPx(11)}px system-ui, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'bottom';
           ctx.fillText(`${Math.ceil(e.hp)} / ${Math.round(e.maxHp)}`, a.sx, y - 4);

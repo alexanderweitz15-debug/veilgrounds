@@ -39,6 +39,7 @@ import knarr from './knarr.json';
 import truda from './truda.json';
 import marga from './marga.json';
 import torben from './torben.json';
+import lumi from './lumi.json';
 import svea from './svea.json';
 import rovena from './rovena.json';
 import dorrak from './dorrak.json';
@@ -81,6 +82,7 @@ const raw = {
   truda,
   marga,
   torben,
+  lumi,
   knarr,
   rovena,
   dorrak,

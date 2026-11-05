@@ -367,3 +367,10 @@ Total: 110 hook ids across 26 champions.
 ## Generic bot field `botManual` (auto/champions)
 
 `AbilityData.botManual: true` (champion JSON): bots never cast that ability on their own (`ready()` in `src/ai/bot/combat.ts`). Used by Knarr W (stance toggle: bots stay in Fortress instead of flipping every cooldown).
+
+## Lumi Sternenwiege (`lumi`) (auto/champions)
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `lumi_wishdust` | Passive | `modifyHeal`: x1.3 on targets below 40 % HP (heals and shields). Snapshot badge glows while an ally within 1000 is that low. |
+| `lumi_r_wish` | R | After the data effects (untargetable + projImmune + shield on the ally): removes slow/root/stun/silence/blind/fear/airborne/suppress/taunt from the targeted ally. |

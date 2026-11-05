@@ -1,0 +1,152 @@
+{
+  "id": "lumi",
+  "name": "Lumi Sternenwiege",
+  "title": { "de": "die Wunschwahrerin", "en": "the Wishkeeper" },
+  "roles": ["support"],
+  "archetype": "guardian_enchanter",
+  "botBias": { "teamplay": 2, "aggression": -2 },
+  "trainingPurpose": {
+    "de": "Einen Schutz-Enchanter lesen: den Verbündeten mit dem Letzten Wunsch nicht in Zielsuchern oder Skillshots verheizen, sondern Flächenschaden und CC abwarten, bis der Wunsch endet.",
+    "en": "Reading a guardian enchanter: do not waste targeted spells or skillshots on the ally under Last Wish, wait out the area damage and crowd control until the wish ends."
+  },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 565,
+    "hpGrowth": 94,
+    "hpRegen": 5.5,
+    "hpRegenGrowth": 0.55,
+    "mana": 430,
+    "manaGrowth": 40,
+    "manaRegen": 11,
+    "manaRegenGrowth": 0.8,
+    "ad": 53,
+    "adGrowth": 2.5,
+    "armor": 25,
+    "armorGrowth": 4,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.625,
+    "asGrowth": 1.5,
+    "range": 550,
+    "ms": 335,
+    "windup": 0.2,
+    "projectileSpeed": 1500,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Wunschstaub", "en": "Wish Dust" },
+    "desc": {
+      "de": "Heilung und Schilde auf Verbündete unter 40 % HP sind 30 % stärker.",
+      "en": "Heals and shields on allies below 40% HP are 30% stronger."
+    },
+    "hooks": ["lumi_wishdust"]
+  },
+  "abilities": [
+    {
+      "id": "lumi_q",
+      "name": { "de": "Sternschnuppe", "en": "Shooting Star" },
+      "desc": {
+        "de": "Linie 900: 55/90/125/160/195 (+50 % AP) magischer Schaden, 20 % Slow für 1 s.",
+        "en": "Line 900: 55/90/125/160/195 (+50% AP) magic damage, 20% slow for 1 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 900,
+      "cooldown": [7, 6.5, 6, 5.5, 5],
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "width": 70,
+      "speed": 1800,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [55, 90, 125, 160, 195], "ap": 0.5 } },
+        { "kind": "slow", "pct": 20, "duration": 1 }
+      ]
+    },
+    {
+      "id": "lumi_w",
+      "name": { "de": "Wunschband", "en": "Wish Bond" },
+      "desc": {
+        "de": "Verbündeter in 800: er und Lumi erhalten 2,5 s lang einen Schild über 60/95/130/165/200 (+40 % AP).",
+        "en": "Ally within 800: they and Lumi gain a shield of 60/95/130/165/200 (+40% AP) for 2.5 s."
+      },
+      "type": "targeted",
+      "castTime": 0.2,
+      "movesWhileCasting": true,
+      "range": 800,
+      "cooldown": [12, 11.5, 11, 10.5, 10],
+      "cost": [60, 65, 70, 75, 80],
+      "costType": "mana",
+      "flags": ["ally_target"],
+      "effects": [
+        { "kind": "shield", "amount": { "base": [60, 95, 130, 165, 200], "ap": 0.4 }, "duration": 2.5, "target": "ally" },
+        { "kind": "shield", "amount": { "base": [60, 95, 130, 165, 200], "ap": 0.4 }, "duration": 2.5, "target": "self" }
+      ]
+    },
+    {
+      "id": "lumi_e",
+      "name": { "de": "Sternenwirbel", "en": "Star Swirl" },
+      "desc": {
+        "de": "Verbündete in 450 um Lumi: heilt 40/65/90/115/140 (+30 % AP) und +15 % Bewegung für 2 s.",
+        "en": "Allies within 450 of Lumi: heal 40/65/90/115/140 (+30% AP) and +15% move speed for 2 s."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": [70, 75, 80, 85, 90],
+      "costType": "mana",
+      "radius": 450,
+      "effects": [
+        { "kind": "heal", "amount": { "base": [40, 65, 90, 115, 140], "ap": 0.3 }, "target": "allies" },
+        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 2, "target": "allies" }
+      ]
+    },
+    {
+      "id": "lumi_r",
+      "name": { "de": "Letzter Wunsch", "en": "Last Wish" },
+      "desc": {
+        "de": "Verbündeter in 1.100: wird 2/2,5/3 s unzielbar, entfesselt, schlägt keine Geschosse an und erhält einen Schild über 150/250/350 (+50 % AP).",
+        "en": "Ally within 1100: becomes untargetable for 2/2.5/3 s, is freed from crowd control, ignores enemy projectiles and gains a shield of 150/250/350 (+50% AP)."
+      },
+      "type": "targeted",
+      "castTime": 0.2,
+      "movesWhileCasting": true,
+      "range": 1100,
+      "cooldown": [120, 100, 80],
+      "cost": 100,
+      "costType": "mana",
+      "flags": ["ally_target"],
+      "effects": [
+        { "kind": "buff", "stat": "untargetable", "duration": [2, 2.5, 3], "target": "ally" },
+        { "kind": "buff", "stat": "projImmune", "duration": [2, 2.5, 3], "target": "ally" },
+        { "kind": "shield", "amount": { "base": [150, 250, 350], "ap": 0.5 }, "duration": 4, "target": "ally" },
+        { "kind": "hook", "id": "lumi_r_wish" }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3 (Wunschband + Sternenwirbel schützen die Lane) und Level 6 (Letzter Wunsch rettet den Carry im Teamfight).",
+    "en": "Level 3 (Wish Bond + Star Swirl protect the lane) and level 6 (Last Wish saves the carry in a teamfight)."
+  },
+  "maxOrder": ["W", "E", "Q"],
+  "combos": [
+    { "name": { "de": "Band und Funke", "en": "Bond and spark" }, "sequence": ["W", "Q", "AA"] },
+    { "name": { "de": "Wirbel und Sternschnuppe", "en": "Swirl and star" }, "sequence": ["E", "Q", "AA"] },
+    { "name": { "de": "Wunsch erfüllt", "en": "Wish granted" }, "sequence": ["R", "W", "E"] }
+  ],
+  "scores": { "engage": 0, "peel": 5, "range": 3, "scaling": 4, "waveclear": 1, "mobility": 1 },
+  "voiceLines": {
+    "pick": { "de": "Ein Wunsch ist frei. Wer braucht ihn?", "en": "One wish is free. Who needs it?" },
+    "firstBlood": { "de": "Der erste Stern fällt.", "en": "The first star falls." },
+    "kill": { "de": "Wunsch abgelehnt.", "en": "Wish denied." },
+    "death": { "de": "Der Himmel ... verlischt.", "en": "The sky ... goes out." },
+    "recall": { "de": "Zurück unter die Sterne.", "en": "Back beneath the stars." },
+    "taunt": { "de": "Wünsch dir nichts. Es erfüllt sich nur für uns.", "en": "Do not wish for anything. It only comes true for us." }
+  },
+  "silhouette": "tall robed woman in an indigo star-spangled cloak with long silver-blue hair, a big silver crescent moon floating behind her head like a cradle, a wishing staff topped with a golden star and tiny twinkling stars drifting around her"
+}

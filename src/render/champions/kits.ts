@@ -51,6 +51,7 @@ import { gustBow, gustSwirl, featherCrest, windStreamers } from './svea';
 import { backShrooms, mushroomCap, sporeMotes, sporeStaff } from './truda';
 import { mortarPack, ramrod, sootPuffs } from './marga';
 import { rageHaze, skullBelt, warAxes } from './torben';
+import { moonCrescent, twinkleStars, wishStaff } from './lumi';
 import { DORRAK_KIT } from './worm';
 import { bloodDrips, bloodOrbs, thornCrown } from './rovena';
 import { floatNotes, hatPlume, luteBack } from './tilda';
@@ -1174,6 +1175,33 @@ kit({
   cast: 'sweep',
   gait: 'heavy',
   props: [warAxes, skullBelt, rageHaze],
+});
+// Lumi Sternenwiege: guardian enchanter under a floating crescent moon, star staff
+kit({
+  id: 'lumi',
+  name: 'Lumi Sternenwiege',
+  world: 198,
+  look: 'tall slender woman in a deep indigo star-spangled robe with a long midnight cloak, silver-blue hair to the waist, pale lilac skin; a big silver crescent moon floats behind her head like a cradle, her wishing staff is topped with a golden five-point star and tiny stars twinkle round her',
+  feature: 'floating crescent moon behind the head + star staff',
+  body: { ...FEMALE, H: 186, shW: 16.5, hipW: 13.5, girth: 0.88, legs: 0.5, headR: 12.6, bust: 0.3 },
+  outfit: {
+    skin: '#e0d4ea',
+    face: { eyes: '#b8c8ff', brows: 0.8 },
+    top: cloth('#2c2a5a'),
+    sleeves: cloth('#3a3878'),
+    forearms: cloth('#d8d4ea'),
+    legs: cloth('#22204a'),
+    boots: leather('#3a3050'),
+    coat: { mat: cloth('#2c2a5a'), len: 1.5, flare: 0.65, open: cloth('#d8d4ea'), split: true },
+    cape: { mat: cloth('#1c1a42'), len: 1.45 },
+    belt: { mat: cloth('#c8b070'), y: 0.2 },
+    hair: { style: 'long', mat: hair('#b8c4e8') },
+  },
+  hold: 'pole',
+  attack: 'palm',
+  cast: 'raise',
+  gait: 'light',
+  props: [moonCrescent, wishStaff, twinkleStars],
 });
 // Knarr: giant crab, painted by the SpriteDrawer in crab.ts (atlas.ts DRAWERS); the Kit stub carries the icon colours
 kit(KNARR_KIT);

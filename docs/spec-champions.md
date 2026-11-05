@@ -265,3 +265,6 @@ Musikerin: Noten (grün/blau/rot) erscheinen auf der Karte, nur für ihr Team si
 
 34. **Torben Wutmähne, der Berserker** – Top, Berserker (AD, keine Ressource), Melee 175. Training: Zorn nicht füttern, in kurzen Fenstern traden, nach dem Unsterblichen Ruf ausmanövrieren.
     - Passiv Zorn (0-100): Autos +4, Fähigkeitstreffer +6, erlittener Schaden +1 pro 1 % Max-HP; +0,3 AD pro Punkt, bei 100 +20 % Bewegung; verfliegt 4 s nach dem Kampf. Q Spaltschlag (Kegel), W Kriegsgebrüll (AS + Slow), E Blutsprung (Aufprallkreis), R Unsterblicher Ruf (5 s nicht unter 1 HP, danach Heilung).
+
+35. **Lumi Sternenwiege, die Wunschwahrerin** – Support, Schutz-Enchanter (AP), Ranged 550. Training: den Verbündeten unter Letztem Wunsch nicht mit Zielsuchern/Skillshots verheizen, Flächenschaden und CC abwarten.
+    - Passiv Wunschstaub: Heilung und Schilde auf Verbündete unter 40 % HP +30 %. Q Sternschnuppe (Linie), W Wunschband (Schild auf Verbündeten und Lumi), E Sternenwirbel (Heilung + Tempo in 450), R Letzter Wunsch (Verbündeter 2-3 s unzielbar, projektilimmun, Schild, CC weg).

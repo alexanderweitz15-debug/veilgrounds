@@ -21,6 +21,7 @@ import kerrin from './kerrin.json';
 import kiran from './kiran.json';
 import knarr from './knarr.json';
 import lio from './lio.json';
+import lumi from './lumi.json';
 import lysa from './lysa.json';
 import marga from './marga.json';
 import mira from './mira.json';
@@ -63,6 +64,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   kiran,
   knarr,
   lio,
+  lumi,
   lysa,
   marga,
   mira,

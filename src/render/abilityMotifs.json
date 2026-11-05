@@ -69,6 +69,7 @@
     "truda": [["leaf",110],["root",95],["spiral",125],["bomb",80]],
     "marga": [["bomb",30],["flame",18],["boot",35],["sun",25]],
     "torben": [["axe",5],["horn",12],["boot",8],["heart",355]],
+    "lumi": [["moon",250],["ring",48],["wing",200],["sun",52]],
     "knarr": [["claw",15],["shield",205],["boot",190],["axe",5]]
   }
 }

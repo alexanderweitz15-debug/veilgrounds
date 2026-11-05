@@ -100,7 +100,7 @@ export const SCENARIOS: Record<ScenarioId, ScenarioInfo> = {
     id: 'dragonSteal', startMin: 10, limitSec: 22, playerRole: 'jungle', needSummoner: 'bannen', items: true,
     units: [
       { slot: 6, team: 1, role: 'jungle', champs: JG, bot: false, summoners: ['sprung', 'bannen'] },
-      { slot: 9, team: 1, role: 'support', champs: ['kiran', 'gorvam', 'hagen'], bot: false, summoners: ['sprung', 'erschoepfen'] },
+      { slot: 9, team: 1, role: 'support', champs: ['kiran', 'gorvam', 'hagen', 'lumi'], bot: false, summoners: ['sprung', 'erschoepfen'] },
     ],
   },
   freezeWave: { id: 'freezeWave', startMin: 5, limitSec: 60, playerRole: 'mid', minions: true, units: [] },

@@ -45,6 +45,7 @@ import { hooks as sveaHooks } from './svea';
 import { hooks as trudaHooks } from './truda';
 import { hooks as margaHooks } from './marga';
 import { hooks as tobenHooks } from './torben';
+import { hooks as lumiHooks } from './lumi';
 import { hooks as knarrHooks } from './knarr';
 import { hooks as rovenaHooks } from './rovena';
 import { hooks as dorrakHooks } from './dorrak';
@@ -94,6 +95,7 @@ export const CHAMPION_HOOKS: Record<string, ChampionHooks> = {
   truda: trudaHooks,
   marga: margaHooks,
   torben: tobenHooks,
+  lumi: lumiHooks,
   knarr: knarrHooks,
   rovena: rovenaHooks,
   dorrak: dorrakHooks,

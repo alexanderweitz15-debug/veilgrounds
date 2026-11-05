@@ -55,6 +55,7 @@ export const CAST_FAMILIES: Record<string, CastFamilies> = {
   truda: F('lob', 'raise', 'abbb'), // Q spores lobbed, W/E/R raised
   marga: F('lob', 'stomp', 'abba'), // Q/W/R shells lobbed, E recoil stomp
   torben: F('sweep', 'stomp', 'abba'), // Q axe sweep, W roar stomp, E leap landing slam, R roar sweep
+  lumi: F('point', 'raise', 'abba'), // Q star shot, W/E blessings raised, R wish pointed at an ally
   svea: F('draw', 'raise', 'abba'), // Q arrow drawn, W/E wind raised, R hurricane arrow drawn
 };
 

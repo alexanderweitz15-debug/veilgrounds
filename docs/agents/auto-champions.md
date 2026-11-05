@@ -14,7 +14,8 @@ Gaps (ordered, picked top-down):
 | 2 | Artillery poke mage (mid): **Marga Kartaune** | shipped |
 | 3 | Berserker with undying ult (top): **Torben Wutmähne** | shipped |
 | 4 | Generic bot hint `botManual` (Knarr stance toggle) | shipped |
-| 5 | Shapeshifter (two forms, jungle) | idea |
+| 5 | Guardian enchanter with an ally ultimate (support): **Lumi Sternenwiege** | shipped |
+| 5b | Shapeshifter (two forms, jungle) | idea |
 | 6 | Summoner with killable pets (support/jungle) | idea |
 | 7 | Henrike turret killable (needs pet unit) | idea, not cheap |
 | 8 | Rune options from docs/IDEAS-FEEL-SHOP.md: Eroberer, Komet + 4 stat minors | shipped (Flinkfuß and the rest still open) |
@@ -28,6 +29,7 @@ Gaps (ordered, picked top-down):
 - **botManual**: `AbilityData.botManual`, checked in `ready()` of `src/ai/bot/combat.ts`; Knarr W uses it, so bots stay in Fortress.
 
 - **Runes**: keystones Eroberer (+2 adaptive per champion hit, 8 stacks, heal at full) and Komet (ability hit proc 30-100, CD 12 s) in `src/sim/items/runeHooks.ts`; minors Durchdringung (+6 magic pen), Letalität (+5), Heilkraft (+6 % heal/shield power), Standhaft (+8 % tenacity). Icons in itemIcons.json. Marga defaults to Komet, Torben to Eroberer. Test `tests/autoRunes.test.ts`; `tests/items.test.ts` rune counts are now `>=`.
+- **Lumi Sternenwiege** (`lumi`, support guardian enchanter): Wish Dust passive, Q star shot, W shield bond, E heal + speed swirl, R Last Wish (ally untargetable + projectile immune + shield + cleanse). Painted kit (floating crescent moon, star staff, twinkles), item **Sterndiadem** (+50 AP, +12 % heal/shield power, +15 haste, Star Spark shield after a cast). Test `tests/lumi.test.ts`.
 
 ## Open
 

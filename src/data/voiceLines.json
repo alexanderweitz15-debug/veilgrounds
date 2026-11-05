@@ -1358,5 +1358,39 @@
       "de": "Kurz Blut lecken.",
       "en": "A moment to lick the wounds."
     }
+  },
+  "lumi": {
+    "pick": {
+      "de": "Ein Wunsch ist frei. Wer braucht ihn?",
+      "en": "One wish is free. Who needs it?"
+    },
+    "move1": {
+      "de": "Den Sternen nach.",
+      "en": "Following the stars."
+    },
+    "move2": {
+      "de": "Ich halte Wache.",
+      "en": "I keep watch."
+    },
+    "attack": {
+      "de": "Funkenflug!",
+      "en": "Sparks fly!"
+    },
+    "ability": {
+      "de": "Es sei dir gewährt.",
+      "en": "Be it granted."
+    },
+    "kill": {
+      "de": "Wunsch abgelehnt.",
+      "en": "Wish denied."
+    },
+    "death": {
+      "de": "Der Himmel ... verlischt.",
+      "en": "The sky ... goes out."
+    },
+    "recall": {
+      "de": "Zurück unter die Sterne.",
+      "en": "Back beneath the stars."
+    }
   }
 }

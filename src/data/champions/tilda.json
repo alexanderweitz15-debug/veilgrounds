@@ -1,0 +1,148 @@
+{
+  "id": "tilda",
+  "name": "Tilda Federwerk",
+  "title": { "de": "die Uhrenschmiedin", "en": "the Springwright" },
+  "roles": ["adc"],
+  "archetype": "clockwork_marksman",
+  "botBias": { "kiting": 1, "teamplay": 1 },
+  "trainingPurpose": {
+    "de": "Volle Spannung der Zugfeder erkennen: der nächste Zauber schlägt 40 % härter. Den Uhrwerkturm schnell zerstören oder meiden.",
+    "en": "Read a full mainspring: her next ability hits 40% harder. Burst the clockwork turret down or stay out of its range."
+  },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 610,
+    "hpGrowth": 100,
+    "hpRegen": 6,
+    "hpRegenGrowth": 0.6,
+    "mana": 320,
+    "manaGrowth": 45,
+    "manaRegen": 7,
+    "manaRegenGrowth": 0.65,
+    "ad": 59,
+    "adGrowth": 3,
+    "armor": 26,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.8,
+    "as": 0.65,
+    "asGrowth": 3,
+    "range": 550,
+    "ms": 335,
+    "windup": 0.19,
+    "projectileSpeed": 2100,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Zugfeder", "en": "Mainspring" },
+    "desc": {
+      "de": "Jeder Auto-Angriff spannt die Feder (max. 5, verfällt nach 4 s ohne Angriff): +3 % Angriffstempo pro Spannung. Bei voller Spannung ist ihr nächster Zauber überdreht: +40 % Schaden (2 s), 30 % der Abklingzeit zurück.",
+      "en": "Each basic attack winds the spring (max 5, decays after 4 s without attacking): +3% attack speed per wind. At full tension her next ability is overwound: +40% damage (2 s) and 30% of its cooldown back."
+    },
+    "hooks": ["tilda_mainspring"]
+  },
+  "abilities": [
+    {
+      "id": "tilda_q",
+      "name": { "de": "Federbolzen", "en": "Spring Bolt" },
+      "desc": {
+        "de": "Schießt einen Bolzen (950): 50/85/120/155/190 (+90 % AD) physisch, 25 % Slow 1 s.",
+        "en": "Fires a bolt (950): 50/85/120/155/190 (+90% AD) physical, 25% slow for 1 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 950,
+      "cooldown": [9, 8.5, 8, 7.5, 7],
+      "cost": [45, 50, 55, 60, 65],
+      "costType": "mana",
+      "width": 70,
+      "speed": 2200,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [50, 85, 120, 155, 190], "ad": 0.9 } },
+        { "kind": "slow", "pct": 25, "duration": 1 }
+      ]
+    },
+    {
+      "id": "tilda_w",
+      "name": { "de": "Uhrwerkturm", "en": "Clockwork Turret" },
+      "desc": {
+        "de": "Stellt 700 vor sich einen Turm auf (6 s, höchstens einer): er schießt alle 0,75 s auf ihr Ziel (sonst den nächsten Champion in 600), je 12/18/24/30/36 (+30 % AD) physisch. Ein überdrehter Turm schießt 40 % härter.",
+        "en": "Deploys a turret 700 ahead (6 s, one at a time): it shoots her target every 0.75 s (else the nearest champion within 600) for 12/18/24/30/36 (+30% AD) physical each. An overwound turret hits 40% harder."
+      },
+      "type": "summon",
+      "castTime": 0.25,
+      "movesWhileCasting": true,
+      "range": 700,
+      "cooldown": [18, 17, 16, 15, 14],
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "radius": 40,
+      "effects": [
+        { "kind": "hook", "id": "tilda_w_turret" }
+      ]
+    },
+    {
+      "id": "tilda_e",
+      "name": { "de": "Federsprung", "en": "Spring Hop" },
+      "desc": {
+        "de": "Springt 300 zum Zeiger und gibt 1,5 s +20 % Lauftempo.",
+        "en": "Hops 300 toward the cursor and grants +20% move speed for 1.5 s."
+      },
+      "type": "dash",
+      "castTime": 0,
+      "movesWhileCasting": true,
+      "range": 300,
+      "cooldown": [18, 16, 14, 12, 10],
+      "cost": 30,
+      "costType": "mana",
+      "speed": 1600,
+      "distance": 300,
+      "effects": [{ "kind": "buff", "stat": "ms", "pct": 20, "duration": 1.5, "target": "self" }]
+    },
+    {
+      "id": "tilda_r",
+      "name": { "de": "Stundenschlag", "en": "Hour Strike" },
+      "desc": {
+        "de": "Nach 0,9 s schlägt eine Turmuhr auf 1000 Entfernung (Radius 280): 140/230/320 (+90 % AD) physisch, 50 % Slow 1,5 s.",
+        "en": "After 0.9 s a clock tower strikes at 1000 range (radius 280): 140/230/320 (+90% AD) physical, 50% slow for 1.5 s."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.3,
+      "movesWhileCasting": false,
+      "range": 1000,
+      "cooldown": [100, 85, 70],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 280,
+      "delay": 0.9,
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [140, 230, 320], "ad": 0.9 } },
+        { "kind": "slow", "pct": 50, "duration": 1.5 }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": {
+    "de": "Level 6: Stundenschlag trifft mit dem Turm zusammen - Spannung vorher aufziehen.",
+    "en": "Level 6: Hour Strike lands with the turret - wind the spring first."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Aufziehen und Bolzen", "en": "Wind and bolt" }, "sequence": ["AA", "AA", "AA", "Q"] },
+    { "name": { "de": "Turm und Sprung", "en": "Turret and hop" }, "sequence": ["W", "AA", "E", "AA"] },
+    { "name": { "de": "Stunde der Wahrheit", "en": "Hour of reckoning" }, "sequence": ["W", "Q", "R", "AA"] }
+  ],
+  "scores": { "engage": 1, "peel": 2, "range": 4, "scaling": 5, "waveclear": 3, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Alles läuft nach Federspannung.", "en": "Everything runs on spring tension." },
+    "firstBlood": { "de": "Auf die Sekunde genau.", "en": "Right on the second." },
+    "kill": { "de": "Aufgezogen und abgelaufen.", "en": "Wound up and run down." },
+    "death": { "de": "Die Feder ist gesprungen.", "en": "The spring has snapped." },
+    "recall": { "de": "Zurück in die Werkstatt.", "en": "Back to the workshop." },
+    "taunt": { "de": "Tick. Tack. Tick.", "en": "Tick. Tock. Tick." }
+  },
+  "silhouette": "small goggled clockmaker with a big brass clockwork backpack and a spring-loaded crossbow"
+}

@@ -1052,5 +1052,39 @@
       "de": "Zurück in den Schatten.",
       "en": "Back into the shadows."
     }
+  },
+  "tilda": {
+    "pick": {
+      "de": "Alles läuft nach Federspannung.",
+      "en": "Everything runs on spring tension."
+    },
+    "move1": {
+      "de": "Die Uhr tickt.",
+      "en": "The clock is ticking."
+    },
+    "move2": {
+      "de": "Aufziehen und los.",
+      "en": "Wind her up and go."
+    },
+    "attack": {
+      "de": "Klick-klack.",
+      "en": "Click-clack."
+    },
+    "ability": {
+      "de": "Federspannung!",
+      "en": "Spring tension!"
+    },
+    "kill": {
+      "de": "Aufgezogen und abgelaufen.",
+      "en": "Wound up and run down."
+    },
+    "death": {
+      "de": "Die Feder ist gesprungen.",
+      "en": "The spring has snapped."
+    },
+    "recall": {
+      "de": "Zurück in die Werkstatt.",
+      "en": "Back to the workshop."
+    }
   }
 }

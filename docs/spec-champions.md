@@ -211,11 +211,19 @@ Design-Prinzipien:
     - R Henkersketten: Ziel 650, springt hin, 120/200/280 (+90 % Bonus-AD); drei Male und danach unter 18/24/30 % Max-HP = Hinrichtung (Linie auf dem Lebensbalken). CD 90/75/60.
     - Spike 6. Combos: Q→W→Auto, E→Auto→Q→W, Q→W→E→Auto→R. Item: Fesselklinge.
 
+32. **Tilda Federwerk, die Uhrenschmiedin** – ADC, Uhrwerk-Schützin, Ranged 550. Training: volle Zugfeder erkennen (nächster Zauber +40 %), Uhrwerkturm zerstören oder meiden. Kit: `src/data/champions/tilda.json`.
+    - Passiv Zugfeder: jeder Auto spannt (max. 5, verfällt nach 4 s), +3 % Angriffstempo pro Spannung; bei voller Spannung ist der nächste Zauber überdreht (+40 % Schaden 2 s, 30 % Abklingzeit zurück).
+    - Q Federbolzen: Linie 950, 50–190 (+90 % AD), 25 % Slow. CD 9–7.
+    - W Uhrwerkturm: Turm 700 vor ihr, 6 s, schießt alle 0,75 s auf ihr Ziel (sonst nächster Champion in 600), 12–36 (+30 % AD). CD 18–14.
+    - E Federsprung: Sprung 300 zum Zeiger, +20 % Tempo 1,5 s. CD 18–10.
+    - R Stundenschlag: Kreis 1000/280, 0,9 s Verzögerung, 140/230/320 (+90 % AD), 50 % Slow. CD 100/85/70.
+    - Spike 6. Combos: AA→AA→AA→Q, W→AA→E→AA, W→Q→R→AA. Item: Hemmwerk.
+
 ## Rollen (Primär; Sekundär in Klammern)
 - Top: Brom, Sister Oleth (Jungle), Old Harrow, Seraphyne (Mid), Isolde, Dagny, Gneis
 - Jungle: Vessa, Nyx, Grimald, Lio, Ottilie, Kaelen (Mid), Sev (Mid), Kerrin
 - Mid: Ilvane, Thessaly, Kaelen, Renn, Aurel, Seraphyne, Sev
-- ADC: Mira, Corvin, Lysa, Tobin, Wren
+- ADC: Mira, Corvin, Lysa, Tobin, Wren, Tilda
 - Support: Ferris, Gorvam, Mutter Hagen, Kiran, Oda
 
 ## Welt und Ton (§11)

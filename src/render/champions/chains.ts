@@ -5,8 +5,8 @@ import { add, at, frameYZ, lerp3, m, madd, mix, norm, scl, sub, TAU, type V3 } f
 import { aimW, bladePts, glowOrb } from './props';
 import type { PropCtx } from './types';
 
-const LINK = '#aeb8c2';
-const LINK_DARK = '#5a626c';
+const LINK = '#f2f6fa';
+const LINK_DARK = '#7a8494';
 const IRON = m('#4a4f58', 'metal');
 const HOOK_STEEL = m('#c9d2da', 'metal');
 const GLOW = '#9a7cff';
@@ -27,8 +27,8 @@ function drawChain(c: PropCtx, pts: V3[], w: number): void {
   const q = st.pts2(pts);
   const k = st.view.k;
   return void st.add(lerp3(pts[0]!, pts[pts.length - 1]!, 0.5), 3.1, (p) => {
-    p.rope(q, LINK_DARK, w * 1.5);
-    q.forEach((s, i) => p.dot(s.x, s.y, (i % 2 ? 1.6 : 2.1) * k * (w / 2.4), 1.4 * k * (w / 2.4), LINK));
+    p.rope(q, LINK_DARK, w * 1.9);
+    q.forEach((s, i) => p.dot(s.x, s.y, (i % 2 ? 2.2 : 2.8) * k * (w / 2.4), 1.9 * k * (w / 2.4), LINK));
   });
 }
 

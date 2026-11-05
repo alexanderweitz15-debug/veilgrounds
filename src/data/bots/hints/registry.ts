@@ -28,6 +28,7 @@ import renn from './renn.json';
 import seraphyne from './seraphyne.json';
 import sev from './sev.json';
 import thessaly from './thessaly.json';
+import tilda from './tilda.json';
 import tobin from './tobin.json';
 import vargrim from './vargrim.json';
 import vessa from './vessa.json';
@@ -61,6 +62,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   seraphyne,
   sev,
   thessaly,
+  tilda,
   tobin,
   vargrim,
   vessa,

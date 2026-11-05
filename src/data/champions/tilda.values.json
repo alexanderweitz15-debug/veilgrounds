@@ -1,0 +1,5 @@
+{
+  "_doc": "Tunables of the tilda hooks (src/sim/champions/tilda.ts) that the generic ability schema cannot hold. Ability numbers live in tilda.json.",
+  "spring": { "max": 5, "decaySec": 4, "asPerStack": 0.03, "overDmg": 1.4, "overSec": 2, "cdRefund": 0.3 },
+  "turret": { "dmgBase": [12, 18, 24, 30, 36], "dmgAd": 0.3, "sec": 6, "everyTicks": 22, "range": 600, "targetSeek": 600, "shotTicks": 4 }
+}

@@ -40,6 +40,7 @@
     "wallherz": { "glyph": "wallHeart", "hue": 30, "sat": 18, "accent": "shield", "accentHue": 30 },
     "schollenpanzer": { "glyph": "fist", "hue": 30, "sat": 18, "accent": "shield", "accentHue": 205 },
     "fesselklinge": { "glyph": "chainBall", "hue": 350, "sat": 60, "accent": "hook", "accentHue": 205 },
+    "hemmwerk": { "glyph": "wingBlade", "hue": 48, "sat": 70, "accent": "gear", "accentHue": 30 },
     "sturmgewand": { "glyph": "stormRobe", "hue": 205, "sat": 45, "accent": "bolt", "accentHue": 52 },
     "lebenswurzel": { "glyph": "root", "hue": 120, "sat": 35, "accent": "leaf", "accentHue": 110 },
     "hueterstab": { "glyph": "sunStaff", "hue": 190, "sat": 55, "accent": "sun", "accentHue": 48 },

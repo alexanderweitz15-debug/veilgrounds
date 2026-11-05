@@ -1591,6 +1591,33 @@
           { "on": "modifyDamage", "if": { "target": { "kind": ["champion"], "hasBuff": "stun" } }, "do": [{ "type": "damageMult", "mult": 1.08 }] }
         ]
       }
+    },
+    {
+      "id": "hemmwerk",
+      "name": { "de": "Hemmwerk", "en": "Escapement" },
+      "tier": "legendary",
+      "cost": 2900,
+      "from": ["eiferschwert", "kaltstahl"],
+      "stats": { "ad": 40, "asPct": 30, "haste": 10 },
+      "tags": ["ad", "onhit"],
+      "passive": {
+        "name": { "de": "Gleichtakt", "en": "Even Tempo" },
+        "desc": {
+          "de": "Jeder 3. Treffer eines Auto-Angriffs innerhalb von 4 s verursacht 35 (+20 % AD) magischen Zusatzschaden.",
+          "en": "Every 3rd basic attack hit within 4 s deals 35 (+20% AD) bonus magic damage."
+        },
+        "rules": [
+          { "on": "onHit", "if": { "target": { "team": "enemy", "notKind": ["structure"] } }, "do": [{ "type": "addStack", "name": "tempo", "max": 3, "seconds": 4 }] },
+          {
+            "on": "onHit",
+            "if": { "target": { "team": "enemy", "notKind": ["structure"] }, "stacksAtLeast": { "tempo": 3 } },
+            "do": [
+              { "type": "damage", "to": "target", "dmgType": "magic", "value": { "base": 35, "scale": { "ad": 0.2 } } },
+              { "type": "clearStack", "name": "tempo" }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

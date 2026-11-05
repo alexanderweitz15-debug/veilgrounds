@@ -45,6 +45,7 @@ import { VARGRIM_KIT } from './cavalry';
 import { antennae, flameLamp, lightThread, mothWings } from './fenna';
 import { boulderFists, mossTufts, rockHump, runeCracks } from './golem';
 import { chainMantle, hookBlade, wristManacles } from './chains';
+import { hipGears, mainspringPack, springCrossbow } from './clockwork';
 import type { Kit } from './types';
 
 const SKIN = { fair: '#e9c6a4', light: '#ddb08a', tan: '#c08a62', brown: '#946244', dark: '#6a4430', pale: '#e8cfba', old: '#d6b094', ash: '#c8b8a8' };
@@ -952,19 +953,46 @@ kit({
   outfit: {
     skin: '#d6ccd2',
     face: { eyes: '#b79cff', brows: 1.1 },
-    top: cloth('#34303f'),
-    sleeves: cloth('#2a2733'),
+    top: cloth('#5a5470'),
+    sleeves: cloth('#464158'),
     forearms: m('#4a4f58', 'metal'),
-    legs: cloth('#2a2733'),
-    boots: leather('#2c2830'),
+    legs: cloth('#3e3a52'),
+    boots: leather('#46404e'),
     belt: { mat: leather('#3a3036'), buckle: IRON },
-    hood: { mat: cloth('#2e2a3a') },
-    scarf: { mat: cloth('#6a4f8a'), tail: 1.1 },
-    cape: { mat: cloth('#25222d'), len: 0.9, tatter: true, short: true },
+    hood: { mat: cloth('#4c4766') },
+    scarf: { mat: cloth('#9a74d0'), tail: 1.1 },
+    cape: { mat: cloth('#3a3548'), len: 0.9, tatter: true, short: true },
   },
   hold: 'relaxed',
   attack: 'chain',
   cast: 'draw',
   gait: 'light',
   props: [chainMantle, wristManacles, hookBlade],
+});
+kit({
+  id: 'tilda',
+  name: 'Tilda Federwerk',
+  world: 188,
+  look: 'young clockmaker marksman: goggles pushed up on her forehead, short copper ponytail, olive work jacket with rolled sleeves, a deep brass mainspring drum on her back with a tall T-shaped winding key above her shoulder, a spring-loaded crossbow with a visible coil, small brass gears at her hip',
+  feature: 'T-shaped winding key behind the head + brass spring drum + coil crossbow',
+  body: { ...FEMALE, H: 170, shW: 17, hipW: 14, girth: 0.92, headR: 12.8, bust: 0.4 },
+  outfit: {
+    skin: SKIN.light,
+    face: { eyes: '#6aa0b8', brows: 1 },
+    top: cloth('#5a6a3e'),
+    sleeves: cloth('#e0d4b4'),
+    forearms: leather('#7a5636'),
+    hands: leather('#5a4030'),
+    legs: cloth('#3c3a44'),
+    boots: leather(P.leatherDark),
+    belt: { mat: leather(P.leatherDark), buckle: BRASS, y: 0.2 },
+    hat: { kind: 'goggles', mat: leather('#6a4a30') },
+    hair: { style: 'tied', mat: hair('#b4622e') },
+    pouches: { mat: leather(), n: 2 },
+  },
+  hold: 'rifle',
+  attack: 'rifle',
+  cast: 'forward',
+  gait: 'light',
+  props: [mainspringPack, springCrossbow, hipGears],
 });

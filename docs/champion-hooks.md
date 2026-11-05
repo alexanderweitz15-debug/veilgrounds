@@ -307,5 +307,15 @@ mark `kerrin_mal` carries `exec` (fraction of max HP, set once R is learned): th
 | `kerrin_e_next_auto` | E | Engine hook: ms buff on cast, damage + root (0.6..1.0 s) on the empowered auto. |
 | `kerrin_r_execute` | R | Leaps beside the target after the R damage; at three marks and HP + shield <= 18/24/30 % max HP after the hit the target takes lethal true damage. Marks are consumed either way. |
 
+## Tilda Federwerk (`tilda`)
+
+Tunables in `src/data/champions/tilda.values.json`. State: `sim.state.tildaSpring` (tension, last wind, overwound window) and `tildaTurret`.
+The turret is hook state (not a pet unit: pets with HP draw as Hark), drawn from snapshot objects `tilda_w_turret` / `tilda_w_shot`.
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `tilda_mainspring` | Passive | `onAutoHit`: +1 tension (max 5, decays to 0 after 4 s without an auto). `onComputeStats`: attack speed x (1 + 3 % per tension). `onCast`: at full tension the cast is overwound: tension resets, 2 s window of +40 % ability damage (`modifyDamage`, not autos), 30 % of the remaining cooldown of that slot refunded. Passive badge = tension, aura while full. |
+| `tilda_w_turret` | W | Deploys the turret at the target point (one at a time, 6 s). Overwound deploy (full tension at cast) fixes +40 % shot damage. `onTick` module hook: every 22 ticks it shoots her attack target if within 600 of the turret, else the nearest champion within 600; physical `12..36 + 30 % AD` (counted as an auto for modifiers). |
+
 ---
 Total: 110 hook ids across 26 champions.

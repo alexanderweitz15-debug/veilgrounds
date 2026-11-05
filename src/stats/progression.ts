@@ -312,11 +312,15 @@ export async function loadProgress(now = Date.now()): Promise<Progress> {
   if (!raw || typeof raw.ladder !== 'number') return base;
   const p = rollMissions({ ...base, ...raw, mastery: raw.mastery ?? {}, daily: raw.daily ?? [], weekly: raw.weekly ?? [] }, now);
   masteryCache = p.mastery;
+  ladderCache = p.ladder;
   return p;
 }
 
 /** Mastery of the last loaded progress (lobby badges read it synchronously; empty until a load). */
 let masteryCache: Record<string, MasteryEntry> = {};
+let ladderCache = L.startLadder;
+/** Bot rank index (0..9) of the player's current ladder rank (lobby shortcut play at my rank). */
+export const cachedTier = (): number => rankInfo(ladderCache).tier;
 export const cachedMasteryLevel = (champion: string): number => masteryLevel(masteryCache[champion]?.score ?? 0);
 
 /** Counts one finished game: load, apply, save. Null when the game does not count. */
@@ -324,6 +328,7 @@ export async function recordMatch(s: MatchSummary, opp: number | null, now = Dat
   if (!counts(s)) return null;
   const { next, delta } = applyMatch(await loadProgress(now), s, recordFromSummary(s, now), opp, now);
   masteryCache = next.mastery;
+  ladderCache = next.ladder;
   await kvSet(PROGRESS_KEY, next);
   return delta;
 }

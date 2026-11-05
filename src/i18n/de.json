@@ -1170,5 +1170,7 @@
   "dm.true": "Absolut",
   "sandbox.dummyResist": "Puppe: Rüstung/MR {n}",
   "sandbox.save": "Stand speichern (F2)",
-  "sandbox.load": "Stand laden (F4)"
+  "sandbox.load": "Stand laden (F4)",
+  "classic.rankMineTip": "Bots auf deinem Ranglisten-Rang. Rang und LP steigen nur in Klassik-Partien.",
+  "classic.rankMine": "Mein Rang: {rank}"
 }

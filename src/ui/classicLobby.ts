@@ -26,7 +26,7 @@ import { renderShowcase } from './showcase';
 import { renderPickLine } from './voiceBubbles';
 import { roleIcon, runeIcon, setIcon, summonerIcon } from './icons';
 import { preloadMatch } from '../render/loader';
-import { cachedMasteryLevel } from '../stats/progression';
+import { cachedMasteryLevel, cachedTier } from '../stats/progression';
 import { createLoadingBar } from '../render/loader/progressBar';
 
 type Role = PlayerSetup['role'];
@@ -281,6 +281,15 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
         pick.overrides.clear();
         draw();
       });
+    });
+    // ladder shortcut: bots at the player's own ladder rank (LP gain depends on the opponents' rank, progression.ts)
+    const mine = cachedTier();
+    const same = el('button', 'rank-btn rank-mine', right, t('classic.rankMine', { rank: t(`rank.${RANKS[mine]}`) }));
+    same.title = t('classic.rankMineTip');
+    same.addEventListener('click', () => {
+      pick.rank = mine;
+      pick.overrides.clear();
+      draw();
     });
     if (pick.overrides.size) el('div', 'rank-mixed', right, t('classic.rankMixed'));
 

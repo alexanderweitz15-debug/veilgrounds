@@ -1170,5 +1170,7 @@
   "dm.true": "True",
   "sandbox.dummyResist": "Dummy armor/MR {n}",
   "sandbox.save": "Save state (F2)",
-  "sandbox.load": "Load state (F4)"
+  "sandbox.load": "Load state (F4)",
+  "classic.rankMineTip": "Bots at your ladder rank. Rank and LP only change in classic games.",
+  "classic.rankMine": "My rank: {rank}"
 }

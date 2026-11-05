@@ -53,4 +53,4 @@ Branch `swarm/champs-b` from main 2f72f4f. One commit per champion.
 
 ## Not done / decisions
 - No clear-time comparison for Dorrak against vessa/grimald (numbers set from the same-role table: 670 HP, 62 AD, 36 armor).
-- Sandbox screenshots: see the final lines of this file.
+- Visual check: one champion-lab contact sheet (tools/scratch/champLab.html, idle SE, game-size row) with all three on a vite server from this worktree; tab and server closed. Rovena: thorn crown reads like antlers plus orbs; Tilda: plumed hat, teal coat; Dorrak: worm barrel on a sand mound. No in-match sandbox shot (the lobby has no champion URL switch).

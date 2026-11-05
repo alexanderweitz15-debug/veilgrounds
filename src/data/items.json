@@ -1633,6 +1633,92 @@
           }
         ]
       }
+    },
+    {
+      "id": "wuehlerzahn",
+      "name": {
+        "de": "Wühlerzahn",
+        "en": "Burrower's Tooth"
+      },
+      "tier": "component",
+      "cost": 1100,
+      "from": [
+        "langschwert",
+        "rubinsplitter"
+      ],
+      "stats": {
+        "ad": 20,
+        "hp": 150
+      },
+      "tags": [
+        "ad",
+        "tank"
+      ]
+    },
+    {
+      "id": "sandpanzer",
+      "name": {
+        "de": "Sandpanzer",
+        "en": "Sand Carapace"
+      },
+      "tier": "legendary",
+      "cost": 3000,
+      "from": [
+        "wuehlerzahn",
+        "riesenguertel"
+      ],
+      "stats": {
+        "ad": 40,
+        "hp": 500
+      },
+      "tags": [
+        "ad",
+        "tank"
+      ],
+      "passive": {
+        "name": {
+          "de": "Staubhaut",
+          "en": "Duststeel"
+        },
+        "desc": {
+          "de": "Fähigkeitstreffer auf Champions geben dir 2,5 s +25 Rüstung und Magieresistenz (8 s Abklingzeit).",
+          "en": "Ability hits on champions grant you +25 armor and magic resist for 2.5 s (8 s cooldown)."
+        },
+        "rules": [
+          {
+            "on": "onAbilityHit",
+            "if": {
+              "target": {
+                "kind": [
+                  "champion"
+                ],
+                "team": "enemy"
+              }
+            },
+            "cooldown": 8,
+            "do": [
+              {
+                "type": "applyBuff",
+                "to": "self",
+                "kind": "stat",
+                "stat": "armor",
+                "id": "sandpanzer_armor",
+                "flat": 25,
+                "seconds": 2.5
+              },
+              {
+                "type": "applyBuff",
+                "to": "self",
+                "kind": "stat",
+                "stat": "mr",
+                "id": "sandpanzer_mr",
+                "flat": 25,
+                "seconds": 2.5
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

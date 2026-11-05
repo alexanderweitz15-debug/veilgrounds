@@ -1,0 +1,8 @@
+const fs=require('fs');const id=process.argv[2];
+const V={
+rovena:{pick:["Ein kleiner Schnitt. Du spürst ihn kaum.","A small cut. You'll hardly feel it."],move1:["Es tropft schon.","Already dripping."],move2:["Rot steht mir.","Red suits me."],attack:["Ein Tropfen genügt.","One drop will do."],ability:["Zur Ader gelassen.","Bled dry."],kill:["Danke fürs Auffüllen.","Thanks for the refill."],death:["Zu viel gezahlt.","Paid too much."],recall:["Ich blute zurück zur Quelle.","Bleeding back to the source."]},
+dorrak:{pick:["Unter dem Sand wartet alles.","Everything waits beneath the sand."],move1:["Der Sand ist hungrig.","The sand is hungry."],move2:["Rieselt, rieselt.","Trickle, trickle."],attack:["Zähne im Dunkeln.","Teeth in the dark."],ability:["Von unten!","From below!"],kill:["Verschluckt.","Swallowed."],death:["Die Dünen schlucken mich ...","The dunes swallow me ..."],recall:["Zurück in die Tiefe.","Back into the deep."]},
+tilda:{pick:["Hört ihr das? Das sind wir.","Hear that? That's us."],move1:["Im Takt bleiben.","Keep to the beat."],move2:["Eine Note für unterwegs.","A note for the road."],attack:["Ein falscher Ton!","A sour note!"],ability:["Und eins, und zwei ...","And one, and two ..."],kill:["Applaus, bitte.","Applause, please."],death:["Das Lied ... bricht ab.","The song ... cuts off."],recall:["Pause. Zurück zur Bühne.","Intermission. Back to the stage."]}};
+const f='src/data/voiceLines.json';const j=JSON.parse(fs.readFileSync(f,'utf8'));
+j[id]=Object.fromEntries(Object.entries(V[id]).map(([k,[de,en]])=>[k,{de,en}]));
+fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');

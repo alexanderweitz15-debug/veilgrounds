@@ -18,3 +18,22 @@ Branch `swarm/champs-b` from main 2f72f4f. One commit per champion.
   tests/items.test.ts component count `>=14`.
 - Shared registries touched (additive): champions index (data + sim), builds.ts, bot hints (generated), runePresets, voiceLines,
   abilityMotifs, kits/motion/casts, trainer MID pool, items.json, itemIcons.json, combat.ts `ready`.
+
+## 2. Dorrak Sandschlund, "der Dünenwühler" (id `dorrak`, jungle, non-human worm)
+- Data `dorrak.json` + `dorrak.values.json`, hooks `src/sim/champions/dorrak.ts`, custom painted drawer `src/render/champions/worm.ts`
+  (16 ringed ochre segments rearing on a curve, ring-of-teeth maw, bony back plates, sand mound; registered as DRAWER + kit stub; made
+  by a helper agent, one contact-sheet check: idle SE / attack E / cast S looked right, run/death not inspected).
+- Engine change (shared, tiny): new buff kind `disarm` (`src/sim/buffs.ts` type) checked in `src/sim/systems/attack.ts` `able`
+  (not in canAttack: summoners/items use that). Not a CC, cleanses leave it alone.
+- W Burrow (self, recast flag, 4-6 s): hook keeps `until`; onTick re-applies `untargetable`, ms +35 %, `disarm` (2 ticks each), heals
+  3 % max HP/s (passive Sandgut), pushes dust-trail points; snapshot objects `dorrak_trail` (discs, NOT hidden: the enemy sees them
+  where it has vision). Recast / timer / Q / E / R surface him. Q cone: damage + armor -15 % 3 s (hook, data forbids negative pct).
+  E self AoE 330 delay 0.45: knock-up 0.75 s; from underground x1.3 damage and +0.25 s knock-up (hook prep/finish). R circle 380 at 750,
+  1.25 s knock-up.
+- Bot: `src/ai/bot/burrow.ts` (called from `utilitySpells`): burrow when the last move target is > 1800 away and no enemy champion within
+  1200; combat.ts `castSlot` never casts `dorrak_w` in fights (disarmed underground). E/Q/R surface him on arrival.
+- Items: `wuehlerzahn` Burrower's Tooth (component 1100, +20 AD +150 HP), `sandpanzer` Sand Carapace (legendary 3000, +40 AD +500 HP;
+  Duststeel: ability hit on a champion gives +25 armor and MR for 2.5 s, 8 s icd; item-engine data). In his builds (jg_bruiser).
+- Motion hover/heave, casts stomp + slam, motifs fang/claw/spiral/wave, trainer JG pool.
+- Tests: tests/dorrak.test.ts (9: burrow flags, regen, trail visible to enemy, no attack, recast, Q shred, E + underground bonus,
+  R, item, bot rule), tests/dorrakKit.test.ts. Not done: jungle clear-time comparison against vessa/grimald.

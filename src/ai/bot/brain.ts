@@ -9,6 +9,7 @@ import type { LaneName, Pt } from '../../sim/map';
 import { sampleReactionMs } from '../profiles';
 import type { BotAction, BotMemory, BotStatic, Brain, PlayerHud, SnapEntity } from './types';
 import { near, ticksOfMs, towerCovering, type View } from './perception';
+import { burrowStep } from './burrow';
 import { escapeCast, hpPct, offensiveCast, supportCast } from './combat';
 import { jungle, laneSpot, pushTarget, incomingDps, structureToHit } from './laning';
 import { reflexState, setIntent, type LaneIntent } from '../reflex/state';
@@ -122,6 +123,7 @@ export function utilitySpells(n: NodeCtx): NodeResult {
   push(n, exhaustStep(n.v));
   push(n, barrierStep(n.v, n.ctx, n.rng, reactionPenaltyMs(n.mem, n.v.tick)));
   push(n, ghostStep(n.v, n.ctx, n.mem));
+  push(n, burrowStep(n.v, n.ctx, n.mem));
   if (!inFountain(n)) {
     push(n, drinkPotion(n.v, n.v.me, n.mem));
     // seal ward / sweeper on spots the bot walks past (item and trinket use do not stop the walk)

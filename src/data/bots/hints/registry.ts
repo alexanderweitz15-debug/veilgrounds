@@ -5,6 +5,7 @@ import aurel from './aurel.json';
 import brom from './brom.json';
 import corvin from './corvin.json';
 import dagny from './dagny.json';
+import dorrak from './dorrak.json';
 import fenna from './fenna.json';
 import ferris from './ferris.json';
 import gorvam from './gorvam.json';
@@ -37,6 +38,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   brom,
   corvin,
   dagny,
+  dorrak,
   fenna,
   ferris,
   gorvam,

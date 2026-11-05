@@ -42,6 +42,7 @@ import {
 } from './props2';
 import { crimsonHem, crowRing, featherMarks, genjutsuEyes, highCollar, longHair, palmCrow, ringNecklace, SEV_CRIMSON } from './sev';
 import { VARGRIM_KIT } from './cavalry';
+import { DORRAK_KIT } from './worm';
 import { antennae, flameLamp, lightThread, mothWings } from './fenna';
 import { bloodDrips, bloodOrbs, thornCrown } from './rovena';
 import type { Kit } from './types';
@@ -939,3 +940,4 @@ kit({
 
 // Vargrim: icon-colour stub; the sprite is painted by the SpriteDrawer in cavalry.ts (atlas.ts DRAWERS)
 kit(VARGRIM_KIT);
+kit(DORRAK_KIT);

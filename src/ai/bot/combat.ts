@@ -98,6 +98,7 @@ export function castSlot(v: View, ctx: BotStatic, rng: Rng, t: SnapEntity, slot:
   // Sev's Tsukuyomi roots Sev while it suppresses: only with an ally near or on a low target (utility flag)
   if (slot === 3 && utilityOn(ctx) && !sevUltAllowed(v, ctx, t)) return null;
   const ab = ctx.champ.abilities[slot];
+  if (ab.id === 'dorrak_w') return null; // Burrow: disarmed underground, only burrow.ts casts it
   if (!offensive(ab) && !(ab.type === 'self' && !supportive(ab))) return null;
   // A13: free harassment never spends the engage, the ultimate or the peel CC (hints: holdFor)
   if (mode === 'poke' && microOn(ctx, 'aim') && hintsOf(ctx.champ).abilities[slot]!.holdFor !== 'none') return null;

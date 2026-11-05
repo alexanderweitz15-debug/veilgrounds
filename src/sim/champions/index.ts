@@ -39,6 +39,7 @@ import { hooks as sevHooks } from './sev';
 import { hooks as fennaHooks } from './fenna'; // champ-support (#29)
 import { hooks as vargrimHooks } from './vargrim';
 import { hooks as rovenaHooks } from './rovena';
+import { hooks as dorrakHooks } from './dorrak';
 import { extraHooksOf } from '../items/itemHooks';
 
 export const CHAMPION_DATA: Record<string, ChampionData> = {
@@ -78,6 +79,7 @@ export const CHAMPION_HOOKS: Record<string, ChampionHooks> = {
   fenna: fennaHooks,
   vargrim: vargrimHooks,
   rovena: rovenaHooks,
+  dorrak: dorrakHooks,
 };
 
 export const FALLBACK_CHAMPION = 'mira';

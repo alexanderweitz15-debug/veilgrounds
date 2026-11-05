@@ -1018,5 +1018,39 @@
       "de": "Ich blute zurück zur Quelle.",
       "en": "Bleeding back to the source."
     }
+  },
+  "dorrak": {
+    "pick": {
+      "de": "Unter dem Sand wartet alles.",
+      "en": "Everything waits beneath the sand."
+    },
+    "move1": {
+      "de": "Der Sand ist hungrig.",
+      "en": "The sand is hungry."
+    },
+    "move2": {
+      "de": "Rieselt, rieselt.",
+      "en": "Trickle, trickle."
+    },
+    "attack": {
+      "de": "Zähne im Dunkeln.",
+      "en": "Teeth in the dark."
+    },
+    "ability": {
+      "de": "Von unten!",
+      "en": "From below!"
+    },
+    "kill": {
+      "de": "Verschluckt.",
+      "en": "Swallowed."
+    },
+    "death": {
+      "de": "Die Dünen schlucken mich ...",
+      "en": "The dunes swallow me ..."
+    },
+    "recall": {
+      "de": "Zurück in die Tiefe.",
+      "en": "Back into the deep."
+    }
   }
 }

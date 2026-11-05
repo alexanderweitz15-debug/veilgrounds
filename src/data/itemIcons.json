@@ -42,6 +42,8 @@
     "lebenswurzel": { "glyph": "root", "hue": 120, "sat": 35, "accent": "leaf", "accentHue": 110 },
     "hueterstab": { "glyph": "sunStaff", "hue": 190, "sat": 55, "accent": "sun", "accentHue": 48 },
     "daemmerband": { "glyph": "ring", "hue": 190, "sat": 55, "accent": "wing", "accentHue": 280 },
+    "wuehlerzahn": { "glyph": "fang", "hue": 38, "sat": 50, "accent": "claw", "accentHue": 30 },
+    "sandpanzer": { "glyph": "vest", "hue": 38, "sat": 50, "accent": "claw", "accentHue": 30 },
     "aderglas": { "glyph": "rubyShard", "hue": 355, "sat": 55, "accent": "drop", "accentHue": 355 },
     "blutkelch": { "glyph": "chalice", "hue": 355, "sat": 55, "accent": "drop", "accentHue": 350 },
     "zeitglas": { "glyph": "hourglass", "hue": 272, "sat": 45, "accent": "gear", "accentHue": 42 },

@@ -22,6 +22,7 @@ import { despawn, isRef, spawnUnit } from './sim';
 import { Kind, enemyOf, sec } from './types';
 import { addBuff, buffs, canAttack, reveal } from './buffs';
 import { dist2 } from './vec';
+import { towerTrueSight } from './vision';
 import { nearestWalkable, walkable } from './map';
 import { champions } from './systems/economy';
 import { canShop } from './items/inventory';
@@ -34,7 +35,9 @@ export type TrinketId = 'schleierward' | 'suchfeuer';
 export const WARD_RADIUS = WARDS.wardRadius;
 export const WARD_PLACE_RANGE = WARDS.placeRange;
 export const WARD_VISION = WARDS.vision;
-export const VEIL = { hp: WARDS.veil.hp, ticks: sec(WARDS.veil.lifeS), maxPerPlayer: WARDS.veil.maxPerPlayer, stealth: WARDS.veil.stealth };
+/** Schleierward lifetime: 90 s at level 1 -> 120 s at level 18 (LoL yellow trinket). `ticks` = the level-1 value. */
+const VEIL_LIFE_S = WARDS.veil.lifeS as [number, number];
+export const VEIL = { hp: WARDS.veil.hp, ticks: sec(VEIL_LIFE_S[0]), maxPerPlayer: WARDS.veil.maxPerPlayer, stealth: WARDS.veil.stealth };
 export const SEAL = { hp: WARDS.seal.hp, maxPerPlayer: WARDS.seal.maxPerPlayer, revealR: WARDS.seal.revealR, stealth: WARDS.seal.stealth };
 export const TRINKET = { maxCharges: WARDS.trinket.maxCharges, startCharges: WARDS.trinket.startCharges, rechargeS: WARDS.trinket.rechargeS as [number, number] };
 export const SWEEP = { unlockLevel: WARDS.sweep.unlockLevel, range: WARDS.sweep.range, r: WARDS.sweep.r, ticks: sec(WARDS.sweep.durationS), cooldownS: WARDS.sweep.cooldownS as [number, number] };
@@ -114,7 +117,7 @@ export function isStealthUnit(sim: Sim, eid: number): boolean {
  */
 export function trueSight(sim: Sim, team: number, x: number, y: number, r = 0): boolean {
   const s = sim.state.wards as WardState | undefined;
-  if (!s) return false;
+  if (!s) return towerTrueSight(sim, team, x, y, r);
   const { Pos } = sim.c;
   for (const w of s.list) {
     if (w.type !== 'seal' || w.team !== team || !isRef(sim, w.eid, w.serial)) continue;
@@ -125,7 +128,7 @@ export function trueSight(sim: Sim, team: number, x: number, y: number, r = 0): 
     const rr = q.r + r;
     if (q.team === team && q.until > sim.tick && dist2(q.x, q.y, x, y) <= rr * rr) return true;
   }
-  return false;
+  return towerTrueSight(sim, team, x, y, r);
 }
 
 /** Active true-sight areas of `team` (snapshot `reveals`): own Siegelward circles and running Suchfeuer sweeps. Read-only. */
@@ -242,9 +245,10 @@ function spawnWard(sim: Sim, eid: number, type: WardType, x: number, y: number):
   const hp = type === 'veil' ? VEIL.hp : SEAL.hp;
   Hp.max[w] = Hp.cur[w] = hp;
   Vision.r[w] = WARD_VISION;
-  const until = type === 'veil' ? sim.tick + VEIL.ticks : -1;
+  const life = sec(byLevel(sim, eid, VEIL_LIFE_S));
+  const until = type === 'veil' ? sim.tick + life : -1;
   // stealth flag for the whole lifetime (+1: the buff outlives the expiry tick, no visible last tick)
-  if (type === 'veil' ? VEIL.stealth : SEAL.stealth) addBuff(sim, w, { kind: 'stat', stat: 'invisible', id: STEALTH_BUFF, src: eid, ticks: type === 'veil' ? VEIL.ticks + 1 : 1 << 29 });
+  if (type === 'veil' ? VEIL.stealth : SEAL.stealth) addBuff(sim, w, { kind: 'stat', stat: 'invisible', id: STEALTH_BUFF, src: eid, ticks: type === 'veil' ? life + 1 : 1 << 29 });
   s.list.push({ eid: w, serial: Unit.serial[w]!, type, owner: eid, slot: Unit.slot[eid]!, team, placed: sim.tick, until });
   return w;
 }

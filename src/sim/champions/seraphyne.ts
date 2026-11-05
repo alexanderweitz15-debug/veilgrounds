@@ -4,8 +4,9 @@ import type { Sim } from '../sim';
 import { sec } from '../types';
 import { addBuff, buffs } from '../buffs';
 import { applyEffects, enemiesInRadius } from '../systems/abilities';
-import type { ChampionHooks, EffectCtx } from './hooks';
-import { ctxFor, hookState } from './util';
+import type { ChampionHooks, ChampionVisuals, EffectCtx } from './hooks';
+import { ctxFor, hookState, peekState } from './util';
+import { abilityOf } from './dagny';
 
 interface Strike {
   x: number;
@@ -43,12 +44,18 @@ export const hooks: ChampionHooks = {
     },
   },
   // HUD: the passive badge glows while the move speed bonus runs (timer = longest remaining ability ms buff).
+  // R: the strikes still to come (2 and 3, same circle) as a tightening ring with the strike count; visible to everyone
+  // so the enemy can step out (the zone event only telegraphs the first strike).
   visuals(sim, eid) {
     let until = 0;
     let start = 0;
     for (const b of buffs(sim, eid)) if (b.kind === 'stat' && b.stat === 'ms' && b.id === PASSIVE_MS && b.until > until) (until = b.until), (start = b.start);
     const left = until - sim.tick;
-    return { passive: left > 0 ? { ready: true, cdLeft: left, cdTotal: until - start } : { ready: false } };
+    const v: ChampionVisuals = { passive: left > 0 ? { ready: true, cdLeft: left, cdTotal: until - start } : { ready: false } };
+    const next = peekState<Strike[]>(sim, 'seraphyneR')?.get(eid)?.[0];
+    if (next && sim.c.Unit.alive[eid])
+      v.objects = [{ key: `${eid}`, tag: 'seraphyne_r_strike', x: next.x, y: next.y, r: abilityOf(sim, eid, 3).radius ?? 220, shape: 'ring', n: next.n === 2 ? 2 : 1, left: Math.max(0, next.at - sim.tick), total: GAP }];
+    return v;
   },
   onTick(sim, eid) {
     const l = strikes(sim, eid);

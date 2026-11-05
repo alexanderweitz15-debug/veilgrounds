@@ -11,7 +11,7 @@ import { applyEffects, channelOf, cooldownLeft, enemiesInRadius, landingPoint, r
 import { addGroundObject, groundObjects, removeGroundObject, type GroundObject } from '../summons';
 import { sees } from '../vision';
 import type { ChampionHooks, EffectCtx } from './hooks';
-import { byLevel, ctxFor, hookState, isChampLike } from './util';
+import { byLevel, ctxFor, hookState, isChampLike, peekState } from './util';
 
 interface RennState {
   /** Position at the start of the tick (E origin). */
@@ -33,6 +33,7 @@ const state = (sim: Sim, eid: number): RennState => {
 
 const BLADE = 'renn_blade';
 const BLADE_TICKS = sec(4);
+const DROP_TICKS = sec(1.25);
 const PICKUP_REACH = 50;
 const VOLLEY_TICKS = 4.5; // 0.15 s
 /** E reach (from the start) and cursor tolerance around a blade / unit. */
@@ -77,7 +78,10 @@ export const hooks: ChampionHooks = {
     const blades = groundObjects(sim, BLADE, eid);
     const eReady = cooldownLeft(sim, eid, 2) === 0 && Unit.alive[eid] === 1;
     const reach = (E_RANGE + 60) * (E_RANGE + 60);
+    // W: the blade that lands 1.25 s after the cast (own team only: the landed blade is visible to everyone)
+    const drops = peekState<RennState>(sim, 'renn')?.get(eid)?.drops ?? [];
     return {
+      objects: drops.map((d) => ({ key: `${eid}:drop${d.at}`, tag: 'renn_w_drop', x: d.x, y: d.y, r: 40, shape: 'pin' as const, left: Math.max(0, d.at - sim.tick), total: DROP_TICKS, hidden: true })),
       hints: blades.map((b) => ({ slot: 2, x: b.x, y: b.y, r: E_CURSOR, ok: eReady && dist2(b.x, b.y, Pos.x[eid]!, Pos.y[eid]!) <= reach, link: true })),
       passive: { stacks: blades.length, ready: blades.length > 0 },
     };
@@ -158,7 +162,7 @@ export const hooks: ChampionHooks = {
     renn_w_blade_drop(sim, ctx) {
       if (ctx.phase !== 'cast') return;
       const { Pos } = sim.c;
-      state(sim, ctx.caster).drops.push({ at: sim.tick + sec(1.25), x: Pos.x[ctx.caster]!, y: Pos.y[ctx.caster]! });
+      state(sim, ctx.caster).drops.push({ at: sim.tick + DROP_TICKS, x: Pos.x[ctx.caster]!, y: Pos.y[ctx.caster]! });
     },
     // Blink onto a blade (picked up at once) or beside a unit near the cursor, within 725 of the start.
     // Without a valid target near the cursor it is a plain blink (ponytail: LoL would refuse the cast).

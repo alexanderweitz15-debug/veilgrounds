@@ -21,6 +21,7 @@ export class SandboxPanel {
   readonly root: HTMLElement;
   private readonly noCd: HTMLButtonElement;
   private readonly god: HTMLButtonElement;
+  private readonly onKey: (e: KeyboardEvent) => void;
 
   constructor(parent: HTMLElement, send: SendCheat, arm?: (a: 'teleport' | 'spawnDummy') => void) {
     this.root = el('div', 'sbx-panel', parent);
@@ -54,6 +55,21 @@ export class SandboxPanel {
       btn(this.root, t('cheat.teleport'), () => arm('teleport'));
       btn(this.root, t('cheat.spawnDummy'), () => arm('spawnDummy'));
     }
+    const RESIST = [0, 60, 150, 300];
+    let ri = 0;
+    const resist = btn(this.root, t('sandbox.dummyResist', { n: 0 }), () => {
+      ri = (ri + 1) % RESIST.length;
+      send('dummyResist', RESIST[ri]);
+      resist.textContent = t('sandbox.dummyResist', { n: RESIST[ri] });
+    });
+    btn(this.root, t('sandbox.save'), () => send('saveState'));
+    btn(this.root, t('sandbox.load'), () => send('loadState'));
+    // F2 / F4 while the panel exists (typing in a field is left alone)
+    this.onKey = (e: KeyboardEvent): void => {
+      if (e.altKey || e.ctrlKey || e.metaKey || (e.target as HTMLElement | null)?.closest?.('input, textarea, select')) return;
+      if (e.code === 'F2' || e.code === 'F4') (e.preventDefault(), send(e.code === 'F2' ? 'saveState' : 'loadState'));
+    };
+    document.addEventListener('keydown', this.onKey);
     btn(this.root, t('sandbox.wave'), () => send('spawnWave'));
     btn(this.root, t('sandbox.camps'), () => send('respawnCamps'));
     // client-side toggle state (the sim flags are not in the snapshot)
@@ -67,6 +83,7 @@ export class SandboxPanel {
   }
 
   dispose(): void {
+    document.removeEventListener('keydown', this.onKey);
     this.root.remove();
   }
 }

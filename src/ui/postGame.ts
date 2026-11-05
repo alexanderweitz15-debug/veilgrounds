@@ -10,6 +10,8 @@ import { renderDodgeAnalysis, renderDodgeTrend } from './dodgeReview';
 import { renderErrorList } from './errorListView';
 import type { ErrorList } from '../stats/errorList';
 import { recordFromSummary } from '../stats/history';
+import type { ProgressDelta } from '../stats/progression';
+import { renderProgressDelta } from './progressView';
 import { calibrateMatch, CATEGORY_IDS } from '../stats/rankCalibration';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -131,7 +133,7 @@ function damageChart(parent: HTMLElement, d: MatchSummary): void {
 
 const sum = (a: number[]): number => a.reduce((p, v) => p + v, 0);
 
-export function renderPostGame(root: HTMLElement, d: MatchSummary, onBack: () => void, onRetry?: () => void, errors?: { list: ErrorList; onJump?: (tick: number) => void }): void {
+export function renderPostGame(root: HTMLElement, d: MatchSummary, onBack: () => void, onRetry?: () => void, errors?: { list: ErrorList; onJump?: (tick: number) => void }, progress?: ProgressDelta | null): void {
   root.textContent = '';
   root.classList.add('menu-screen', 'pg-screen');
   const panel = el('div', 'menu-panel pg-panel', root);
@@ -162,6 +164,8 @@ export function renderPostGame(root: HTMLElement, d: MatchSummary, onBack: () =>
     renderDodgeAnalysis(panel, d.trainer.dodge);
     renderDodgeTrend(panel, d.trainer, d.duration);
   }
+
+  if (progress) renderProgressDelta(panel, progress);
 
   // rank calibration per category (Table A targets): which rank this match plays like - classic / lane games only
   if ((d.mode === 'classic' || d.mode === 'laneOnly') && d.duration >= 300) {

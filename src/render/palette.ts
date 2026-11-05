@@ -42,6 +42,9 @@ export interface RelPalette {
   /** Homing projectile cores. */
   ownHoming: string;
   enemyHoming: string;
+  /** Minimap ward (Siegel) diamonds. */
+  allySeal: string;
+  enemySeal: string;
 }
 
 /**
@@ -52,22 +55,22 @@ export const REL_PALETTES: Record<'normal' | 'deuteranopia' | 'protanopia' | 'tr
   normal: {
     me: '#e8d25a', ally: '#4aa6e8', enemy: '#e0473a', ownShot: '#58b8ff', enemyShot: '#ff4a2e',
     meBar: '#59d35a', allyText: '#cfe0ff', enemyText: '#ffc9bd', moveClick: '#7dff8a', attackClick: '#ff5a3c',
-    ownHoming: '#bfe4ff', enemyHoming: '#ffc29a',
+    ownHoming: '#bfe4ff', enemyHoming: '#ffc29a', allySeal: '#f2d36b', enemySeal: '#ff8a5a',
   },
   deuteranopia: {
-    me: '#f0e442', ally: '#56b4e9', enemy: '#e07000', ownShot: '#7cc8ff', enemyShot: '#ff8c00',
-    meBar: '#f0e442', allyText: '#cfe6ff', enemyText: '#ffd2a0', moveClick: '#9fd8ff', attackClick: '#ff8c00',
-    ownHoming: '#cfeaff', enemyHoming: '#ffd09a',
+    me: '#ffffff', ally: '#56b4e9', enemy: '#e07000', ownShot: '#7cc8ff', enemyShot: '#ff8c00',
+    meBar: '#f4f4f4', allyText: '#cfe6ff', enemyText: '#ffd2a0', moveClick: '#9fd8ff', attackClick: '#ff8c00',
+    ownHoming: '#cfeaff', enemyHoming: '#ffd09a', allySeal: '#8fd0ff', enemySeal: '#ff9a2e',
   },
   protanopia: {
-    me: '#f0e442', ally: '#3d8fe0', enemy: '#e69f00', ownShot: '#6cb4ff', enemyShot: '#ffb000',
-    meBar: '#f0e442', allyText: '#cfe0ff', enemyText: '#ffe0a0', moveClick: '#9fd8ff', attackClick: '#ffb000',
-    ownHoming: '#cfe4ff', enemyHoming: '#ffe0a0',
+    me: '#ffffff', ally: '#3d8fe0', enemy: '#e69f00', ownShot: '#6cb4ff', enemyShot: '#ffb000',
+    meBar: '#f4f4f4', allyText: '#cfe0ff', enemyText: '#ffe0a0', moveClick: '#9fd8ff', attackClick: '#ffb000',
+    ownHoming: '#cfe4ff', enemyHoming: '#ffe0a0', allySeal: '#8fd0ff', enemySeal: '#ffb000',
   },
   tritanopia: {
     me: '#ffffff', ally: '#1fb8a8', enemy: '#e8336b', ownShot: '#3fd8c8', enemyShot: '#ff3f7a',
     meBar: '#b8f04a', allyText: '#c8fff6', enemyText: '#ffc8da', moveClick: '#3fd8c8', attackClick: '#ff3f7a',
-    ownHoming: '#c8fff6', enemyHoming: '#ffc8da',
+    ownHoming: '#c8fff6', enemyHoming: '#ffc8da', allySeal: '#6fe8d8', enemySeal: '#ff6a98',
   },
 };
 
@@ -75,4 +78,15 @@ export const REL: RelPalette = { ...REL_PALETTES.normal };
 
 export function applyColorMode(mode: keyof typeof REL_PALETTES): void {
   Object.assign(REL, REL_PALETTES[mode] ?? REL_PALETTES.normal);
+}
+
+/**
+ * Ping colour overrides of a colour mode (pure; display.ts merges them over the base ping colours): team-semantic
+ * pings follow the relation palette, green "safe" pings move off the red-green axis. Normal mode: no override.
+ */
+export function pingColors(mode: keyof typeof REL_PALETTES): Partial<Record<'danger' | 'focus' | 'onMyWay' | 'help' | 'vision' | 'ok', string>> {
+  if (mode === 'normal') return {};
+  const p = REL_PALETTES[mode];
+  const o = { danger: p.enemy, focus: p.enemy, onMyWay: p.ally, help: p.ally };
+  return mode === 'tritanopia' ? o : { ...o, vision: '#bfe4ff', ok: '#bfe4ff' };
 }

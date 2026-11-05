@@ -57,7 +57,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     i.addEventListener('change', () => updateSettings({ [key]: i.checked } as Partial<Settings>));
     return i;
   };
-  const slider = (key: 'cameraSpeed' | 'uiScale' | 'volume' | 'volumeSfx' | 'volumeUi' | 'volumeAmbient' | 'volumeMusic' | 'minimapScale' | 'renderScale', min: number, max: number, step: number, fmt: (v: number) => string): HTMLElement => {
+  const slider = (key: 'cameraSpeed' | 'uiScale' | 'textScale' | 'volume' | 'volumeSfx' | 'volumeUi' | 'volumeAmbient' | 'volumeMusic' | 'minimapScale' | 'renderScale', min: number, max: number, step: number, fmt: (v: number) => string): HTMLElement => {
     const wrap = document.createElement('span');
     wrap.className = 'slider';
     const i = document.createElement('input');
@@ -114,6 +114,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.hpBarStyle'), select<Settings['hpBarStyle']>(settings.hpBarStyle, [['segmented', t('set.hpBar.segmented')], ['thousands', t('set.hpBar.thousands')], ['plain', t('set.hpBar.plain')]], (v) => updateSettings({ hpBarStyle: v })));
     row(t('set.enemySkillshotOutline'), check('enemySkillshotOutline'));
     row(t('set.lolTelegraphs'), check('lolTelegraphs'));
+    row(t('set.trainingHud'), select<Settings['trainingHud']>(settings.trainingHud, [['auto', t('set.trainingHud.auto')], ['on', t('set.trainingHud.on')], ['off', t('set.trainingHud.off')]], (v) => updateSettings({ trainingHud: v })));
     row(t('set.attackMoveOnCursor'), check('attackMoveOnCursor'));
     row(t('set.attackMoveTargetCursor'), check('attackMoveNearCursor'));
     row(t('set.castIndicator'), check('castIndicator'));
@@ -180,6 +181,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     note.textContent = t('set.graphicsNote');
     root.appendChild(note);
     section(t('set.a11yTitle'));
+    row(t('set.textScale'), slider('textScale', 90, 150, 5, (v) => `${v}%`));
     row(t('set.colorMode'), select<Settings['colorMode']>(settings.colorMode, [
       ['normal', t('set.cb.normal')], ['deuteranopia', t('set.cb.deuteranopia')], ['protanopia', t('set.cb.protanopia')], ['tritanopia', t('set.cb.tritanopia')],
     ], (v) => updateSettings({ colorMode: v })));

@@ -10,6 +10,8 @@ import { streaks, type MatchRecord } from '../stats/history';
 import { championStats, currentEstimate, kdaOf, overview, rankOfIndex, rankTrend, recent, type TrendPoint } from '../game/profile';
 import { champName } from './names';
 import { setPortrait } from '../render/portraits';
+import { renderProgressCard } from './progressView';
+import type { Progress } from '../stats/progression';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?: HTMLElement, text?: string): HTMLElementTagNameMap[K] => {
   const e = document.createElement(tag);
@@ -180,15 +182,37 @@ function renderMatches(root: HTMLElement, history: readonly MatchRecord[]): void
     el('td', '', tr, String(Math.round(r.goldPerMin)));
     const tp = rankTrend([r])[0];
     el('td', 'pf-rank', tr, tp ? rankName(tp.index) : '–');
+    // click: detail row with the match metrics and the rank each category plays like
+    tr.classList.add('pf-clickable');
+    let detail: HTMLElement | null = null;
+    tr.addEventListener('click', () => {
+      if (detail) return void (detail.remove(), (detail = null), tr.classList.remove('open'));
+      tr.classList.add('open');
+      detail = el('tr', 'pf-detail', undefined);
+      const cell = el('td', '', detail);
+      cell.colSpan = 8;
+      const chips = el('div', 'pf-chips', cell);
+      const chip = (k: string, v: string): void => void el('span', 'pf-chip', chips, `${k}: ${v}`);
+      chip('CS@10', fix1(r.cs10));
+      chip(t('profile.dmgPerMin'), String(Math.round(r.dmgChampPerMin)));
+      chip(t('profile.deathsPer30'), fix1(r.deathsPer30));
+      chip(t('profile.killsPer30'), fix1(r.killsPer30));
+      for (const id of CATEGORY_IDS) {
+        const v = r.calibration[id];
+        if (v !== undefined) chip(t(`plan.cat.${id}`), rankName(v.index));
+      }
+      tr.after(detail);
+    });
   }
 }
 
 /** Renders the profile into the menu `root`; `history` is already loaded (empty = no games yet). */
-export function renderProfile(root: HTMLElement, history: readonly MatchRecord[], onBack: () => void, now = Date.now()): void {
+export function renderProfile(root: HTMLElement, history: readonly MatchRecord[], onBack: () => void, now = Date.now(), progress?: Progress): void {
   root.textContent = '';
   root.classList.add('menu-screen', 'classic-lobby');
   const panel = el('div', 'menu-panel classic-panel pf', root);
   el('h2', 'menu-title', panel, t('profile.title'));
+  if (progress) renderProgressCard(panel, progress);
   if (!history.length) {
     el('div', 'pf-empty big', panel, t('profile.empty'));
   } else {

@@ -113,7 +113,12 @@ export type CheatOp =
   | 'noCooldowns'
   | 'godMode'
   | 'spawnWave'
-  | 'respawnCamps';
+  | 'respawnCamps'
+  /** Sandbox: armor and magic resist of every practice dummy = value (0..500). */
+  | 'dummyResist'
+  /** Sandbox, handled by the sim worker (not the sim): keep a checkpoint of the whole game / go back to it. */
+  | 'saveState'
+  | 'loadState';
 
 /** One input as recorded in replays: which player slot issued what on which tick. */
 export interface TickInput {

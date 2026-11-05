@@ -272,3 +272,6 @@
 .ping-glyph { display: inline-block; margin-right: 6px; color: var(--c); font-size: 15px; letter-spacing: 0; }
 .ping-centre { padding: 2px 9px; border-radius: 50%; font-size: 15px; color: var(--c); }
 .ping-centre.on { box-shadow: 0 0 10px var(--c); }
+
+.champ-card { position: relative; }
+.champ-mastery { position: absolute; right: 6px; top: 4px; font: 700 10px var(--font-label, sans-serif); color: #14110f; background: var(--gold, #c8aa6e); padding: 0 5px; border-radius: 7px; }

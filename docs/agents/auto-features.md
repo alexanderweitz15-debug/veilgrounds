@@ -14,3 +14,4 @@ Branch `auto/features` (from origin/main). Area: game features, UI/UX, QoL, poli
 ## Status / shipped
 - [x] 1a: merged 6 WIP checkpoints (cherry-picked, conflicts in settingsPanel.ts/attack.ts resolved). Bush-attack expose limited to champions (a2SimBugs BUG-01 regression: minions in bushes must stay hidden). `npm test` green after fix.
 - [x] a11y: canvas labels in overlay.ts use `txtPx` (text size setting).
+- [x] 3: progression wired: profile card (rank/LP bar, level, daily+weekly missions, top mastery), post-game 'this game' card (LP/XP/missions/mastery, promo/demotion chips), recordMatch called from main.ts afterGame for classic games. src/ui/progressView.ts, i18n prog.*/mission.*.

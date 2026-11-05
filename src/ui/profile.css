@@ -42,3 +42,25 @@
 .pf-rank { color: var(--gold-hi, #f0e6d2); }
 .pf-matches tbody tr:hover { background: rgba(200, 170, 110, 0.07); }
 @media (max-width: 700px) { .pf-table { font-size: 12px; } .pf-table th, .pf-table td { padding: 3px 4px; } }
+
+/* progression card (progressView.ts) */
+.pr-card .pr-top { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 8px; }
+.pr-rank, .pr-level { flex: 1 1 220px; }
+.pr-rank-name { font-size: 20px; font-weight: 700; color: var(--gold-hi, #f0e6d2); }
+.pr-rank-lp { font-size: 12px; color: var(--text-dim, #a09b8c); margin-bottom: 4px; }
+.pr-bar { height: 6px; background: #1d1c20; border: 1px solid #3a352a; border-radius: 3px; overflow: hidden; }
+.pr-fill { height: 100%; background: var(--gold, #c8aa6e); }
+.pr-bar.xp .pr-fill { background: #5b9bd5; }
+.pr-bar.done .pr-fill { background: #8fd07a; }
+.pr-sub { margin: 10px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim, #a09b8c); }
+.pr-mission { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 10px; font-size: 13px; padding: 3px 0; }
+.pr-mission .pr-bar { grid-column: 1 / -1; }
+.pr-mission.done .pr-m-name { color: #8fd07a; }
+.pr-m-prog, .pr-m-xp { color: var(--text-dim, #a09b8c); font-variant-numeric: tabular-nums; }
+.pr-mastery { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; font-size: 13px; padding: 2px 0; }
+.pr-delta { border: 1px solid #3a352a; padding: 8px 12px; background: rgba(0, 0, 0, 0.25); }
+.pr-line { display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 2px 0; flex-wrap: wrap; }
+.pr-big { font-size: 20px; font-weight: 700; }
+.pr-big.up, .pr-chip.up { color: #8fd07a; }
+.pr-big.down, .pr-chip.down { color: #d9614c; }
+.pr-chip { border: 1px solid currentColor; border-radius: 8px; padding: 0 7px; font-size: 11px; font-weight: 600; }

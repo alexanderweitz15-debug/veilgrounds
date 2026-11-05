@@ -10,6 +10,8 @@ import { streaks, type MatchRecord } from '../stats/history';
 import { championStats, currentEstimate, kdaOf, overview, rankOfIndex, rankTrend, recent, type TrendPoint } from '../game/profile';
 import { champName } from './names';
 import { setPortrait } from '../render/portraits';
+import { renderProgressCard } from './progressView';
+import type { Progress } from '../stats/progression';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent?: HTMLElement, text?: string): HTMLElementTagNameMap[K] => {
   const e = document.createElement(tag);
@@ -184,11 +186,12 @@ function renderMatches(root: HTMLElement, history: readonly MatchRecord[]): void
 }
 
 /** Renders the profile into the menu `root`; `history` is already loaded (empty = no games yet). */
-export function renderProfile(root: HTMLElement, history: readonly MatchRecord[], onBack: () => void, now = Date.now()): void {
+export function renderProfile(root: HTMLElement, history: readonly MatchRecord[], onBack: () => void, now = Date.now(), progress?: Progress): void {
   root.textContent = '';
   root.classList.add('menu-screen', 'classic-lobby');
   const panel = el('div', 'menu-panel classic-panel pf', root);
   el('h2', 'menu-title', panel, t('profile.title'));
+  if (progress) renderProgressCard(panel, progress);
   if (!history.length) {
     el('div', 'pf-empty big', panel, t('profile.empty'));
   } else {

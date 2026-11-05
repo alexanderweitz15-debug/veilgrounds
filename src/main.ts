@@ -102,7 +102,8 @@ function profileScreen(): void {
   const s = screen();
   void Promise.all([import('./ui/profileScreen'), import('./stats/history')]).then(async ([{ renderProfile }, h]) => {
     const history = await h.loadHistory().catch(() => []);
-    if (s.isConnected) renderProfile(s, history, mainMenu);
+    const progress = await import('./stats/progression').then((p) => p.loadProgress()).catch(() => undefined);
+    if (s.isConnected) renderProfile(s, history, mainMenu, Date.now(), progress);
   });
 }
 
@@ -189,17 +190,19 @@ function afterGame(config: SimConfig | null, r?: SessionResult): void {
   if (r.summary.duration >= 60 && config.trainer?.scenario !== 'tutorial') void import('./stats/history').then((h) => h.saveRecord(h.recordFromSummary(r.summary, Date.now()))).catch(() => undefined);
   const auto = (config.mode === 'classic' || config.mode === 'laneOnly') && r.summary.duration >= 60;
   if (!r.analysis && !auto) return mainMenu();
-  showPostGame(config, r);
+  if (config.mode !== 'classic') return showPostGame(config, r);
+  // ladder / XP / missions / mastery (IndexedDB; null when the game does not count or storage fails)
+  void import('./stats/progression').then((p) => p.recordMatch(r.summary, p.opponentTier(config.players))).catch(() => null).then((d) => showPostGame(config, r, d));
 }
 
-function showPostGame(config: SimConfig, r: SessionResult): void {
+function showPostGame(config: SimConfig, r: SessionResult, progress?: import('./stats/progression').ProgressDelta | null): void {
   const s = screen();
   void Promise.all([import('./ui/postGame'), import('./game/session'), import('./stats/errorList')]).then(([{ renderPostGame }, { isTrainerMode }, { buildErrorList }]) => {
     if (!s.isConnected) return;
     const replay = r.replay;
     // mistake list: bots from the bot log, the player from the replay; "replay moment" opens the viewer 5 s before it
-    const errors = replay && (replay.botLog || replay.player) ? { list: buildErrorList(replay), onJump: (tick: number) => void import('./replay/timeline').then(({ momentTick }) => watchReplay(replay, momentTick(replay, tick), () => showPostGame(config, r))) } : undefined;
-    renderPostGame(s, r.summary, mainMenu, isTrainerMode(config.mode) || config.mode === 'classic' ? () => afterGame(config, { ...r, retry: true, replay: undefined }) : undefined, errors);
+    const errors = replay && (replay.botLog || replay.player) ? { list: buildErrorList(replay), onJump: (tick: number) => void import('./replay/timeline').then(({ momentTick }) => watchReplay(replay, momentTick(replay, tick), () => showPostGame(config, r, progress))) } : undefined;
+    renderPostGame(s, r.summary, mainMenu, isTrainerMode(config.mode) || config.mode === 'classic' ? () => afterGame(config, { ...r, retry: true, replay: undefined }) : undefined, errors, progress);
   });
 }
 

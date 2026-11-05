@@ -44,6 +44,7 @@ import { crimsonHem, crowRing, featherMarks, genjutsuEyes, highCollar, longHair,
 import { VARGRIM_KIT } from './cavalry';
 import { antennae, flameLamp, lightThread, mothWings } from './fenna';
 import { gustBow, gustSwirl, featherCrest, windStreamers } from './svea';
+import { backShrooms, mushroomCap, sporeMotes, sporeStaff } from './truda';
 import type { Kit } from './types';
 
 const SKIN = { fair: '#e9c6a4', light: '#ddb08a', tan: '#c08a62', brown: '#946244', dark: '#6a4430', pale: '#e8cfba', old: '#d6b094', ash: '#c8b8a8' };
@@ -936,6 +937,35 @@ kit({
   cast: 'draw',
   props: [windStreamers, featherCrest, gustBow, gustSwirl],
   gait: 'light',
+});
+
+// Truda Sporenhauch: hunched spore hexer under a huge red cap hat
+kit({
+  id: 'truda',
+  name: 'Truda Sporenhauch',
+  world: 192,
+  look: 'hunched old hexer under a huge red spotted mushroom cap worn as a hat; moss-brown patched dress with a dark green shawl, grey-lilac skin, long grey hair under the cap; gnarled staff with a small glowing toadstool, toadstools growing from her back and spore motes drifting round her',
+  feature: 'huge red mushroom-cap hat',
+  body: { ...FEMALE, H: 160, shW: 17, hipW: 15, girth: 1.02, hunch: 0.16, bust: 0.3, headR: 12.6 },
+  outfit: {
+    skin: '#b9a8b0',
+    face: { eyes: '#c8f08a', brows: 1.1, old: true },
+    top: cloth('#5b5a3c'),
+    sleeves: cloth('#6a5a3a'),
+    forearms: cloth('#4a4a34'),
+    legs: cloth('#3a3a2c'),
+    boots: leather('#3a2c20'),
+    coat: { mat: cloth('#62603f'), len: 1.45, flare: 0.5, tatter: true },
+    shawl: cloth('#3c5a3a'),
+    belt: { mat: leather('#4a3a28'), buckle: BRASS },
+    hair: { style: 'long', mat: hair('#c4c0b6') },
+    pouches: { mat: leather('#4a3a28'), n: 2 },
+  },
+  hold: 'pole',
+  attack: 'staff',
+  cast: 'lob',
+  props: [backShrooms, mushroomCap, sporeStaff, sporeMotes],
+  gait: 'normal',
 });
 
 // Vargrim: icon-colour stub; the sprite is painted by the SpriteDrawer in cavalry.ts (atlas.ts DRAWERS)

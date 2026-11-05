@@ -49,7 +49,8 @@
     "stiefel_ruestung": { "glyph": "bootPlate", "hue": 25, "sat": 20, "accent": "shield", "accentHue": 30 },
     "stiefel_mr": { "glyph": "bootFelt", "hue": 210, "sat": 40, "accent": "rune", "accentHue": 210 },
     "stiefel_hast": { "glyph": "bootGear", "hue": 44, "sat": 60, "accent": "gear", "accentHue": 42 },
-    "windschwinge": { "glyph": "arrowBundle", "hue": 42, "sat": 70, "accent": "wing", "accentHue": 190 }
+    "windschwinge": { "glyph": "arrowBundle", "hue": 42, "sat": 70, "accent": "wing", "accentHue": 190 },
+    "faeulnisstab": { "glyph": "knotStaff", "hue": 110, "sat": 45, "accent": "leaf", "accentHue": 100 }
   },
   "runes": {
     "_doc": "path hues: Präzision 48, Dominanz 355, Zauberei 215, Entschlossenheit 120, Inspiration 180",

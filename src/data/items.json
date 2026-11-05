@@ -1596,6 +1596,56 @@
           }
         ]
       }
+    },
+    {
+      "id": "faeulnisstab",
+      "name": {
+        "de": "Fäulnisstab",
+        "en": "Rotwood Staff"
+      },
+      "tier": "legendary",
+      "cost": 2650,
+      "from": [
+        "uhrwerk",
+        "lehrlingsstab"
+      ],
+      "stats": {
+        "ap": 80,
+        "haste": 15
+      },
+      "tags": [
+        "ap"
+      ],
+      "passive": {
+        "name": {
+          "de": "Fäulnis",
+          "en": "Rot"
+        },
+        "desc": {
+          "de": "Fähigkeitstreffer auf Gegner verringern deren Heilung um 40 % für 3 s.",
+          "en": "Ability hits on enemies reduce their healing by 40% for 3 s."
+        },
+        "rules": [
+          {
+            "on": "onAbilityHit",
+            "if": {
+              "target": {
+                "team": "enemy"
+              }
+            },
+            "do": [
+              {
+                "type": "applyBuff",
+                "to": "target",
+                "kind": "grievous",
+                "id": "rotwood",
+                "pct": 40,
+                "seconds": 3
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

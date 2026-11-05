@@ -92,7 +92,7 @@ function hueOf(o: SnapObject): number | null {
   return champ && slot !== undefined ? abilityHue(champ, slot) : null;
 }
 
-const SWARM_C = /^(svea|myko|krab)_/;
+const SWARM_C = /^(svea|truda|knarr)_/;
 
 export class GroundObjects {
   readonly group = new THREE.Group();

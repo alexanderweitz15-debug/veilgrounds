@@ -1018,5 +1018,39 @@
       "de": "Mit Rückenwind nach Hause.",
       "en": "Home on a tailwind."
     }
+  },
+  "truda": {
+    "pick": {
+      "de": "Aus Moder wächst Macht.",
+      "en": "From rot grows power."
+    },
+    "move1": {
+      "de": "Der Boden ist feucht genug.",
+      "en": "The ground is damp enough."
+    },
+    "move2": {
+      "de": "Hier wächst bald was.",
+      "en": "Something will grow here soon."
+    },
+    "attack": {
+      "de": "Verfaule!",
+      "en": "Rot!"
+    },
+    "ability": {
+      "de": "Sporen, wachset.",
+      "en": "Spores, grow."
+    },
+    "kill": {
+      "de": "Gut gedüngt.",
+      "en": "Well fertilised."
+    },
+    "death": {
+      "de": "Ich verrotte ... und wachse wieder.",
+      "en": "I rot ... and grow again."
+    },
+    "recall": {
+      "de": "Zurück ins Moos.",
+      "en": "Back to the moss."
+    }
   }
 }

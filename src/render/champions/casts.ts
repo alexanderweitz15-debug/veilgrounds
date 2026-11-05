@@ -45,6 +45,7 @@ export const CAST_FAMILIES: Record<string, CastFamilies> = {
   vargrim: F('stomp', 'raise', 'abab'), // Q/R lance stomp, W mist raised, E gallop
   vessa: F('point', 'stomp', 'abba'), // Q pounce, W/E howl stomp, R dash
   wren: F('forward', 'raise', 'babb'), // Q embers raised, W ash pushed, E wing dash, R firestorm called down
+  truda: F('lob', 'raise', 'abbb'), // Q spores lobbed, W/E/R raised
   svea: F('draw', 'raise', 'abba'), // Q arrow drawn, W/E wind raised, R hurricane arrow drawn
 };
 

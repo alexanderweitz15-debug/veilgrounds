@@ -38,6 +38,27 @@ export function drawSwarmCObject(o: SnapObject, now: number, g: SevFxApi): boole
       }
       return true;
     }
+    case 'truda_field': {
+      // spore field: murky green pool, paler core, spotted rim; bubbles and spore motes rise; children (n = generation) are paler
+      const fade = Math.min(1, life * 5) * (o.n ? 0.85 : 1);
+      circle(g.disc, o.r, '#3f6a2a', 0.5 * fade);
+      circle(g.disc, o.r * 0.62, '#7fb23c', 0.32 * fade, 4);
+      circle(g.ring, o.r * (0.98 + 0.02 * flick(now, 2, 200)), '#c8f08a', 0.85 * fade, 5);
+      for (let i = 0; i < 9; i++) {
+        const a = i * 2.39 + o.id;
+        const rr = o.r * (0.2 + 0.65 * (((i * 0.43) % 1) + 0));
+        const rise = (((now / 1700 + i * 0.27) % 1) + 1) % 1;
+        circle(g.disc, 7 + 5 * flick(now, i), i % 3 ? '#d6f59a' : '#f4ead2', 0.85 * (1 - rise) * fade, 6 + rise * 70, o.x + Math.cos(a) * rr, o.y + Math.sin(a) * rr);
+      }
+      return true;
+    }
+    case 'truda_burst': {
+      // Spore Burst: a bright ring racing outward plus a pale-green flash that fades
+      const k = 1 - life;
+      circle(g.disc, o.r * (0.6 + 0.6 * k), '#e6ff9e', 0.55 * life, 5);
+      circle(g.ring, o.r * (0.7 + 0.5 * k), '#ffffff', 0.9 * life, 7);
+      return true;
+    }
     default:
       return false;
   }

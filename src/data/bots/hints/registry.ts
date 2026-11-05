@@ -28,6 +28,7 @@ import sev from './sev.json';
 import svea from './svea.json';
 import thessaly from './thessaly.json';
 import tobin from './tobin.json';
+import truda from './truda.json';
 import vargrim from './vargrim.json';
 import vessa from './vessa.json';
 import wren from './wren.json';
@@ -60,6 +61,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   svea,
   thessaly,
   tobin,
+  truda,
   vargrim,
   vessa,
   wren,

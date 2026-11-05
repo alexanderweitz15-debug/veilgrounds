@@ -41,6 +41,9 @@ import { hooks as vargrimHooks } from './vargrim';
 import { hooks as gneisHooks } from './gneis'; // swarm champs-a
 import { hooks as kerrinHooks } from './kerrin';
 import { hooks as henrikeHooks } from './henrike';
+import { hooks as rovenaHooks } from './rovena';
+import { hooks as dorrakHooks } from './dorrak';
+import { hooks as tildaHooks } from './tilda';
 import { extraHooksOf } from '../items/itemHooks';
 
 export const CHAMPION_DATA: Record<string, ChampionData> = {
@@ -82,6 +85,9 @@ export const CHAMPION_HOOKS: Record<string, ChampionHooks> = {
   gneis: gneisHooks,
   kerrin: kerrinHooks,
   henrike: henrikeHooks,
+  rovena: rovenaHooks,
+  dorrak: dorrakHooks,
+  tilda: tildaHooks,
 };
 
 export const FALLBACK_CHAMPION = 'mira';

@@ -1,0 +1,6 @@
+{
+  "_doc": "Tunables of the dorrak hooks (src/sim/champions/dorrak.ts) that the generic ability schema cannot hold. Ability numbers live in dorrak.json.",
+  "burrow": { "msPct": 35, "regenPctPerSec": 3, "trailEveryTicks": 5, "trailLifeSec": 2.2, "trailMax": 9, "recastDelaySec": 0.4 },
+  "shred": { "pct": 15, "sec": 3 },
+  "erupt": { "airSec": 0.75, "burrowDmgMult": 1.3, "burrowExtraAirSec": 0.25 }
+}

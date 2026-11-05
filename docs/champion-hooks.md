@@ -316,6 +316,21 @@ The turret is hook state (not a pet unit: pets with HP draw as Hark), drawn from
 |---|---|---|
 | `henrike_mainspring` | Passive | `onAutoHit`: +1 tension (max 5, decays to 0 after 4 s without an auto). `onComputeStats`: attack speed x (1 + 3 % per tension). `onCast`: at full tension the cast is overwound: tension resets, 2 s window of +40 % ability damage (`modifyDamage`, not autos), 30 % of the remaining cooldown of that slot refunded. Passive badge = tension, aura while full. |
 | `henrike_w_turret` | W | Deploys the turret at the target point (one at a time, 6 s). Overwound deploy (full tension at cast) fixes +40 % shot damage. `onTick` module hook: every 22 ticks it shoots her attack target if within 600 of the turret, else the nearest champion within 600; physical `12..36 + 30 % AD` (counted as an auto for modifiers). |
+### Rovena, Dorrak, Tilda (swarm/champs-b)
+
+| Hook id | Slot | Behaviour |
+|---|---|---|
+| `rovena_bloodtithe` | Passive | `modifyCast`: Q/W/E cost +3 % max HP; `modifyDamage` (non-auto, enemy non-structure): heals 25 % (champion) / 10 % of the estimated dealt damage, Bloodrush below 35 % HP (x1.2 damage, x1.5 heal). |
+| `rovena_e_detonate` | E | Before the damage: a `rovena_blood` mark (Q) is consumed: x1.4 damage, root 0.75 s. |
+| `rovena_r_drain` | R | Before the damage: this tick's heal-back is doubled. |
+| `dorrak_sandgut` | Passive | Module `onTick`: while burrowed re-applies untargetable, ms +35 %, `disarm`, heals 3 % max HP/s, records the dust trail (snapshot objects `dorrak_trail`, not hidden). |
+| `dorrak_w_burrow` | W | Starts the burrow (recast window opens); phase `recast` surfaces. |
+| `dorrak_q_surface`, `dorrak_r_surface` | Q, R | Surface before the damage. |
+| `dorrak_q_shred` | Q | -15 % armor 3 s on every hit. |
+| `dorrak_e_prep` / `dorrak_e_finish` | E | Prep: from underground x1.3 damage. Finish: +0.25 s knock-up from underground, then surface. |
+| `tilda_notes` | Passive | Module `onTick`: spawns a note every 6 s (max 4, 25 s, own team only), collects on walk-over (3 per colour). |
+| `tilda_q_notes` / `tilda_w_notes` / `tilda_e_notes` | Q W E | Green: +25 % heal per note; blue: +8 % ms per note; red: stun 0.4 s + 0.2 s per note. The colour is used up. |
+| `tilda_r_notes` | R | All colours: heal / speed / stun (+0.15 s per red note); all notes used up. |
 
 ---
 Total: 110 hook ids across 26 champions.

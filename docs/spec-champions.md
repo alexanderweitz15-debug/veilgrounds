@@ -228,3 +228,12 @@ Design-Prinzipien:
 
 ## Welt und Ton (§11)
 Handwerker, Deserteure, Gelehrte – kein Pantheon. Ton trocken, leicht ironisch, ohne Pathos. Je Champion 6 Voice-Lines (Pick, Erstes Blut, Kill, Tod, Recall, Taunt) als Text. Silhouette muss auf 64 px erkennbar sein (Renns sieben Klingen, Isoldes Drahtwerk, Mutter Hagens Glocke).
+
+## Rovena Aderlass, die Aderlasserin (`rovena`, Mid)
+Blutmagierin: Fähigkeiten kosten Leben, Fähigkeitsschaden heilt sie (25 % Champions, 10 % andere), unter 35 % Leben Blutrausch (+20 % Schaden, +50 % Heilung). Q Aderschnitt zeichnet, E Blutfessel verbraucht die Zeichnung (+40 %, Wurzel), W Blutlache, R Blutflut saugt alle Gegner in 650 (doppelte Heilung). Items: Aderglas, Blutkelch.
+
+## Dorrak Sandschlund, der Dünenwühler (`dorrak`, Dschungel)
+Riesiger Sandwurm: W Untertauchen (nicht anvisierbar, +35 % Tempo, kein Angriff, regeneriert 3 %/s, Staubpfad sichtbar), E Sandausbruch (Luftstoß, aus der Erde +30 % Schaden), Q Schlundbiss (-15 % Rüstung), R Dünenschlund. Items: Wühlerzahn, Sandpanzer.
+
+## Tilda Saitenwind, die Notensammlerin (`tilda`, Support)
+Musikerin: Noten (grün/blau/rot) erscheinen auf der Karte, nur für ihr Team sichtbar, Überlaufen sammelt sie. Grün stärkt Q (Heilung), blau W (Tempo), rot E (Betäubung); R verbraucht alle. Items: Taktstock, Liederbuch.

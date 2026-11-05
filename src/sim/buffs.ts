@@ -27,7 +27,8 @@ export type StatKey =
   | 'projImmune'
   /** Outgoing damage in percent points (Exhaust: -40). Applied by damage.dealDamage. */
   | 'dmgDealt';
-export type BuffKind = CcKind | 'stat' | 'shield' | 'unstoppable' | 'dot' | 'grievous' | 'mark';
+/** disarm: cannot attack (not a CC: casts, movement and cleanses are untouched; Dorrak's burrow). */
+export type BuffKind = CcKind | 'stat' | 'shield' | 'unstoppable' | 'dot' | 'grievous' | 'mark' | 'disarm';
 
 export interface Buff {
   kind: BuffKind;

@@ -35,6 +35,9 @@ import vargrim from './vargrim.json';
 import gneis from './gneis.json'; // swarm champs-a
 import kerrin from './kerrin.json';
 import henrike from './henrike.json';
+import rovena from './rovena.json';
+import dorrak from './dorrak.json';
+import tilda from './tilda.json';
 
 const raw = {
   ilvane,
@@ -69,6 +72,9 @@ const raw = {
   gneis,
   kerrin,
   henrike,
+  rovena,
+  dorrak,
+  tilda,
 } satisfies Record<string, Json<ChampionData>>;
 
 export const champions: Record<string, ChampionData> = Object.fromEntries(

@@ -348,7 +348,7 @@ export class TeamAI {
     const { own, enemy } = this.aliveCounts(n);
     const p = this.map.objectives[o];
     const prio = 1 + 0.15 * Math.max(-2, Math.min(2, n.v.ownMinions.length > n.v.enemyMinions.length ? 1 : n.v.ownMinions.length < n.v.enemyMinions.length ? -1 : 0));
-    const vision = n.snap.entities.some((e) => e.ward && e.team === this.team && dst(e, p) < 1500) ? 1.2 : 0.85;
+    const vision = n.snap.entities.some((e) => e.ward && e.team === this.team && dst(e, p) < 1500) ? 1.2 : 0.95; // unwarded: a little riskier, not a veto (bots rarely ward the pit in time)
     const numbers = 1 + 0.25 * (own - enemy);
     const ownJg = this.players.find((q) => q.team === this.team && q.role === 'jungle');
     const enJg = this.players.find((q) => q.team !== this.team && q.role === 'jungle');
@@ -368,6 +368,9 @@ export class TeamAI {
     const latency = this.members.find((m) => m.role === 'jungle')?.profile.behavior.objectiveLatencyS ?? this.members[0]?.profile.behavior.objectiveLatencyS ?? null;
     const alive = (s: number): boolean => !n.snap.players.find((r) => r.slot === s)?.dead;
     const free = this.members.filter((m) => alive(m.slot) && !busy.has(m.slot));
+    // an epic objective may pull a split pusher back (LoL: the side laner joins for dragon / baron)
+    const splitOnly = new Set(keep.filter((d) => d.kind === 'split_push').flatMap((d) => d.slots));
+    const objFree = this.members.filter((m) => alive(m.slot) && (!busy.has(m.slot) || splitOnly.has(m.slot)));
     const byDist = (p: Pt): Member[] =>
       [...free].sort((a, b) => {
         const pa = n.snap.entities.find((e) => e.kind === Kind.Champion && e.slot === a.slot);
@@ -413,13 +416,18 @@ export class TeamAI {
         if (grubs && rankCurve(VALUES.macro.kesselbrutRank, skill) < 0.5) continue;
         const s = this.safety(n, o) + ping;
         const thr = (o === 'schleierwaechter' ? th.baron : th.dragon) + riskShift;
-        const jg0 = free.find((m) => m.role === 'jungle');
-        // who goes: baron = the team; dragon = jungler + support + the nearest laner; Kesselbrut = jungler + support
-        // (laners keep farming: an objective is not a reason to empty the lanes)
-        const sup0 = free.find((m) => m.role === (grubs ? 'top' : 'support'));
+        const jg0 = objFree.find((m) => m.role === 'jungle');
+        // who goes: baron = the team; dragon = jungler + support + the nearest laner; Kesselbrut = jungler + top/support
+        // + the nearest laner (two bots took ~45 s, so the take was almost never "feasible")
+        const sup0 = objFree.find((m) => m.role === (grubs ? 'top' : 'support'));
         const core = [...(jg0 ? [jg0] : []), ...(sup0 ? [sup0] : [])];
-        const extra = o === 'schleierwaechter' ? 5 : o === 'leviathan' ? 1 : 0;
-        const laners = byDist(p).filter((m) => !core.includes(m)).slice(0, o === 'schleierwaechter' ? 5 : extra);
+        const extra = o === 'schleierwaechter' ? 5 : 1;
+        const near = (q: Pt): Member[] => [...objFree].sort((a, b) => {
+          const pa = n.snap.entities.find((e) => e.kind === Kind.Champion && e.slot === a.slot);
+          const pb = n.snap.entities.find((e) => e.kind === Kind.Champion && e.slot === b.slot);
+          return (pa ? dst(pa, q) : 1e9) - (pb ? dst(pb, q) : 1e9);
+        });
+        const laners = near(p).filter((m) => !core.includes(m)).slice(0, o === 'schleierwaechter' ? 5 : extra);
         const team = [...core, ...laners].slice(0, o === 'schleierwaechter' ? 5 : 3).map((m) => m.slot);
         // feasibility: rough team DPS (level-based) must kill the monster within KILL_WITHIN_S; monster HP as the sim
         // scales it (public game knowledge): Baron + BARON_HP_PER_MIN per minute after 20:00, others by the average
@@ -435,6 +443,7 @@ export class TeamAI {
           this.retryAt[o] = tick + OBJECTIVE_RETRY_S * 30;
           out.push({ kind: 'take_objective', obj: o, score: s, x: p.x, y: p.y, slots: team, reason: `safety ${s.toFixed(2)} >= ${thr.toFixed(2)}`, from: tick + Math.round(latency * 30 * 0.3), until: tick + 45 * 30 });
           team.forEach((x) => busy.add(x));
+          for (const d of out) if (d.kind === 'split_push') d.slots = d.slots.filter((x) => !team.includes(x));
         } else {
           // contest / steal: enemies at the pit, steal knob + Platinum+
           const foes = n.v.enemies.filter((e) => dst(e, p) < 1200).length;

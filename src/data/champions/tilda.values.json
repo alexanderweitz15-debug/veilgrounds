@@ -1,0 +1,7 @@
+{
+  "_doc": "Tunables of the tilda hooks (src/sim/champions/tilda.ts) that the generic ability schema cannot hold. Ability numbers live in tilda.json.",
+  "notes": { "everySec": 6, "firstSec": 3, "maxOnMap": 4, "lifeSec": 25, "maxPerColor": 3, "minDist": 450, "maxDist": 1000, "pickupRadius": 110 },
+  "heal": { "perNote": 0.25 },
+  "speed": { "pctPerNote": 8, "sec": 2.5 },
+  "stun": { "baseSec": 0.4, "perNoteSec": 0.2, "rPerNoteSec": 0.15 }
+}

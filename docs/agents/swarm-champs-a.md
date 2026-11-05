@@ -46,3 +46,9 @@ Branch `swarm/champs-a` (from main 5f8eb20, merged 2f72f4f). One commit per cham
 - Item **Hemmwerk / Escapement** (legendary 2900 G, eiferschwert + kaltstahl; ad 40, as 30 %, haste 10): Even Tempo, every 3rd auto hit within 4 s
   deals 35 (+20 % AD) magic damage (item engine addStack + stacksAtLeast + clearStack). Icon `wingBlade`@48 + gear.
 - Tests: `tests/henrike.test.ts` (14).
+
+## Notes
+- Main added its own champion `tilda` while this branch was open: the clockwork ADC was renamed **Henrike Federwerk (`henrike`)** (section 3 above: read "Tilda" as Henrike, files `*henrike*`).
+- Merge of origin/main 4402d3e: registry conflicts kept both sides; `items.json` / `voiceLines.json` re-built from main's version plus our entries (main reformatted them).
+- Visuals checked with the champion lab contact sheet (`tools/scratch/champLab.html?mode=anim&id=...`, vite on a worktree port, tab + server closed); no full sandbox screenshot taken. Kerrin kit was brightened after the sheet (chains had low contrast).
+- Final state: tsc clean, `npm test` 141 files / 1755 tests green.

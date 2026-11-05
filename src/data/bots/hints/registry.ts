@@ -5,6 +5,7 @@ import aurel from './aurel.json';
 import brom from './brom.json';
 import corvin from './corvin.json';
 import dagny from './dagny.json';
+import dorrak from './dorrak.json';
 import fenna from './fenna.json';
 import ferris from './ferris.json';
 import gneis from './gneis.json';
@@ -12,6 +13,7 @@ import gorvam from './gorvam.json';
 import grimald from './grimald.json';
 import hagen from './hagen.json';
 import harrow from './harrow.json';
+import henrike from './henrike.json';
 import ilvane from './ilvane.json';
 import isolde from './isolde.json';
 import kaelen from './kaelen.json';
@@ -25,10 +27,11 @@ import oda from './oda.json';
 import oleth from './oleth.json';
 import ottilie from './ottilie.json';
 import renn from './renn.json';
+import rovena from './rovena.json';
 import seraphyne from './seraphyne.json';
 import sev from './sev.json';
 import thessaly from './thessaly.json';
-import henrike from './henrike.json';
+import tilda from './tilda.json';
 import tobin from './tobin.json';
 import vargrim from './vargrim.json';
 import vessa from './vessa.json';
@@ -39,6 +42,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   brom,
   corvin,
   dagny,
+  dorrak,
   fenna,
   ferris,
   gneis,
@@ -46,6 +50,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   grimald,
   hagen,
   harrow,
+  henrike,
   ilvane,
   isolde,
   kaelen,
@@ -59,10 +64,11 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   oleth,
   ottilie,
   renn,
+  rovena,
   seraphyne,
   sev,
   thessaly,
-  henrike,
+  tilda,
   tobin,
   vargrim,
   vessa,

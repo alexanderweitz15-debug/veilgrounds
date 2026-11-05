@@ -74,7 +74,7 @@ describe('axis -> knob mapping (playstyleAxes.json)', () => {
       ['fightWeight', 'aggression', 0.6, 1, 1.6],
       ['diveTolerancePctShift', 'aggression', -15, 0, 15],
       ['chaseChanceShift', 'aggression', -25, 0, 25],
-      ['escapeFightThreshold', 'aggression', 0.85, 0.6, 0.4],
+      ['escapeFightThreshold', 'aggression', 0.75, 0.5, 0.35],
       ['gankRiskShift', 'aggression', -0.15, 0, 0.15],
       ['gankThreshold', 'aggression', 0.7, 0.55, 0.4],
       ['roamDesireBase', 'roam', 0.1, 0.4, 0.7],

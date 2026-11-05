@@ -30,6 +30,7 @@ import { play } from '../audio/sfx';
 import { castFailText } from './castFailText';
 import { abilityPingText, cooldownPingText } from '../game/pingText';
 import { LiveTraining } from './liveTraining';
+import { DummyMeter } from './dummyMeter';
 
 const KILLFEED_MS = 9000;
 
@@ -127,6 +128,8 @@ export class Hud {
   private jungleSetup = false;
   /** Live training widget (CS/min vs rank target, missed CS, CS@10; src/ui/liveTraining.ts). */
   private readonly training: LiveTraining;
+  /** Practice-dummy damage meter (sandbox only; src/ui/dummyMeter.ts). */
+  private readonly dummyMeter: DummyMeter | null;
   private readonly jungleMode: boolean;
   private readonly junglers: PlayerSetup[];
   private epicKey = '';
@@ -205,6 +208,8 @@ export class Hud {
     r.appendChild(this.jungle.root);
     this.training = new LiveTraining(mode);
     r.appendChild(this.training.root);
+    this.dummyMeter = mode === 'sandbox' || sandbox ? new DummyMeter() : null;
+    if (this.dummyMeter) r.appendChild(this.dummyMeter.root);
 
     // ---- kill feed
     this.feed = el('div', 'killfeed', r);
@@ -392,6 +397,7 @@ export class Hud {
   onEvent(ev: SimEvent, state: ClientState, now: number): void {
     this.announcer.onEvent(ev, state);
     this.training.onEvent(ev, state);
+    this.dummyMeter?.onEvent(ev, state);
     this.recap.onEvent(ev, state);
     const me = state.snap?.me;
     if (ev.e === 'castFail' && me && ev.src === me.eid && ev.reason !== 'busy') {
@@ -471,6 +477,7 @@ export class Hud {
     this.jungle.update(state, now);
     this.target.update(state);
     this.training.update(state);
+    this.dummyMeter?.update(state);
     const me = snap.me;
     setTipContext(me ?? null);
     toggle(this.noChamp, 'open', !me);

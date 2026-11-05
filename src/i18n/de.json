@@ -1159,5 +1159,13 @@
   "mission.games5": "Spiele {n} Partien",
   "mission.cs800": "Farme {n} CS",
   "mission.kills20": "Erziele {n} Kills",
-  "mission.noDeath20": "Überlebe die ersten 20 Minuten ohne Tod"
+  "mission.noDeath20": "Überlebe die ersten 20 Minuten ohne Tod",
+  "dm.auto": "Auto-Angriffe",
+  "dm.magic": "Magisch",
+  "dm.phys": "Körperlich",
+  "dm.reset": "Zurücksetzen",
+  "dm.time": "Dauer",
+  "dm.title": "Puppen-Schaden",
+  "dm.total": "Gesamtschaden",
+  "dm.true": "Absolut"
 }

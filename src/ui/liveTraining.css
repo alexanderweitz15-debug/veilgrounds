@@ -16,3 +16,5 @@
 .lt-grid .v.good { color: #7dff6a; }
 .lt-grid .v.bad { color: #ff9a7a; }
 .high-contrast .lt-panel { background: #000; text-shadow: 0 0 2px #000, 0 1px 0 #000; }
+.dm-panel { position: absolute; left: 12px; top: 210px; z-index: 29; min-width: 170px; padding: 8px 10px; background: rgba(10, 12, 14, 0.82); border: 1px solid var(--line, rgba(201, 162, 78, 0.35)); color: #e8e0cc; font: 12px var(--font-body, system-ui); transform: scale(var(--ui, 1)); transform-origin: top left; }
+.dm-panel.done { opacity: 0.8; }

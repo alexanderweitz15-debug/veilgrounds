@@ -1159,5 +1159,13 @@
   "mission.games5": "Play {n} games",
   "mission.cs800": "Farm {n} CS",
   "mission.kills20": "Get {n} kills",
-  "mission.noDeath20": "Survive the first 20 minutes without dying"
+  "mission.noDeath20": "Survive the first 20 minutes without dying",
+  "dm.auto": "Basic attacks",
+  "dm.magic": "Magic",
+  "dm.phys": "Physical",
+  "dm.reset": "Reset",
+  "dm.time": "Duration",
+  "dm.title": "Dummy damage",
+  "dm.total": "Total damage",
+  "dm.true": "True"
 }

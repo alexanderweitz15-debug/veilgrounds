@@ -1,0 +1,44 @@
+{
+  "champion": "gneis",
+  "template": "tank",
+  "starter": [
+    "dornenklinge",
+    "trank"
+  ],
+  "standard": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "schollenpanzer",
+      "lebenswurzel",
+      "wallherz",
+      "sturmgewand"
+    ]
+  },
+  "vsAD": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "schollenpanzer",
+      "wallherz",
+      "lebenswurzel",
+      "kettenrelais"
+    ]
+  },
+  "vsAP": {
+    "boots": "stiefel_mr",
+    "core": [
+      "sturmgewand",
+      "schollenpanzer",
+      "lebenswurzel",
+      "wallherz"
+    ]
+  },
+  "runes": {
+    "keystone": "zaehigkeit",
+    "minor": [
+      "zweiter_wind",
+      "lebenskraft",
+      "ruestung"
+    ]
+  },
+  "note": "Component order follows items.json \"from\"; Diamond+ bots reorder components situationally (spec §5)."
+}

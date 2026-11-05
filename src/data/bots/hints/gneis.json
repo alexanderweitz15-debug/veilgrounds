@@ -1,0 +1,164 @@
+{
+  "id": "gneis",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "frontline",
+    "engage": 4,
+    "peel": 3,
+    "poke": 3,
+    "burst": 4
+  },
+  "keyRanges": {
+    "auto": 150,
+    "trade": 650,
+    "engage": 650,
+    "poke": 850,
+    "threat": 850,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "gneis_data1",
+      "kind": "engage",
+      "sequence": [
+        "W",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "gneis_data2",
+      "kind": "engage",
+      "sequence": [
+        "E",
+        "AA",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "gneis_data3",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "W",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "gneis_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    },
+    {
+      "id": "gneis_peel",
+      "kind": "peel",
+      "sequence": [
+        "W"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "line",
+      "roles": [
+        "poke"
+      ],
+      "range": 850,
+      "useRange": [
+        0,
+        782
+      ],
+      "speed": 1100,
+      "width": 110,
+      "radius": 0,
+      "castTime": 0.3,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "circle",
+      "roles": [
+        "cc",
+        "engage",
+        "zone",
+        "burst"
+      ],
+      "range": 650,
+      "useRange": [
+        0,
+        598
+      ],
+      "speed": 0,
+      "width": 100,
+      "radius": 190,
+      "castTime": 0.3,
+      "delay": 0.45,
+      "cc": 4,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 3,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "E",
+      "aim": "dash",
+      "roles": [
+        "escape",
+        "engage",
+        "sustain"
+      ],
+      "range": 475,
+      "useRange": [
+        75,
+        625
+      ],
+      "speed": 1400,
+      "width": 130,
+      "radius": 0,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 1,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "R",
+      "aim": "circle",
+      "roles": [
+        "zone",
+        "burst",
+        "ult"
+      ],
+      "range": 900,
+      "useRange": [
+        0,
+        828
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 300,
+      "castTime": 0.4,
+      "delay": 0.9,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

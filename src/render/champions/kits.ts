@@ -43,6 +43,7 @@ import {
 import { crimsonHem, crowRing, featherMarks, genjutsuEyes, highCollar, longHair, palmCrow, ringNecklace, SEV_CRIMSON } from './sev';
 import { VARGRIM_KIT } from './cavalry';
 import { antennae, flameLamp, lightThread, mothWings } from './fenna';
+import { boulderFists, mossTufts, rockHump, runeCracks } from './golem';
 import type { Kit } from './types';
 
 const SKIN = { fair: '#e9c6a4', light: '#ddb08a', tan: '#c08a62', brown: '#946244', dark: '#6a4430', pale: '#e8cfba', old: '#d6b094', ash: '#c8b8a8' };
@@ -911,3 +912,32 @@ kit({
 
 // Vargrim: icon-colour stub; the sprite is painted by the SpriteDrawer in cavalry.ts (atlas.ts DRAWERS)
 kit(VARGRIM_KIT);
+
+// ---- swarm champs-a
+kit({
+  id: 'gneis',
+  name: 'Gneis Mauerherz',
+  world: 230,
+  look: 'stone golem: a wide boulder body with a pinhead, two giant rock fists, a stacked rock hump on the back, glowing amber rune cracks across the chest and moss tufts on shoulders and crown',
+  feature: 'very wide rock block + tiny head + giant fists + glowing rune cracks',
+  body: { ...MALE, H: 196, shW: 42, hipW: 24, chestD: 24, girth: 1.75, belly: 0.2, stance: 20, headR: 10.5, legs: 0.36, hunch: 0.12 },
+  outfit: {
+    skin: '#8a8478',
+    skinKind: 'stone',
+    top: m('#8a8478', 'stone'),
+    sleeves: m('#7c766b', 'stone'),
+    forearms: m('#8a8478', 'stone'),
+    hands: m('#8a8478', 'stone'),
+    legs: m('#6f6a60', 'stone'),
+    boots: m('#5c574e', 'stone'),
+    bootH: 0.4,
+    pauldrons: { mat: m('#7c766b', 'stone'), size: 1.75 },
+    hair: { style: 'none', mat: hair('#000000') },
+    face: { brows: 2.4, eyes: '#ffb347' },
+  },
+  hold: 'fists',
+  attack: 'bash',
+  cast: 'slam',
+  gait: 'heavy',
+  props: [rockHump, boulderFists, runeCracks, mossTufts],
+});

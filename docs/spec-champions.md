@@ -195,8 +195,16 @@ Design-Prinzipien:
     - R (Wahl ab Level 6, dauerhaft): Amaterasu (unlöschbare schwarze Flammen, schwere Wunden, springt beim Tod) / Susanoo (6 s Schild, Schwerthiebe, Schwertstoß-Re-Cast) / Tsukuyomi (1,5 s Unterdrückung, Schaden nach fehlendem Leben).
     - Spike 6. Combos: E→Q→Auto, Q→W→E, E→R→Q→Auto.
 
+30. **Gneis Mauerherz, der Wandelnde Fels** – Top, Wand-Tank (Steingolem), Melee 150. Training: nie mit dem Rücken zur Wand kämpfen (Slam = Betäubung). Kit: `src/data/champions/gneis.json`.
+    - Passiv Grundmauer: +12 Rüstung/MR pro eigener Erdwand in 450 (max. 2).
+    - Q Felsbrocken: Linie 850, 70–210 (+50 % Bonus-AD, +8 % Bonus-HP), schleudert 260 zurück; Wand/Geländekante = Betäubung 0,9–1,3 s + 40 % Bonusschaden. CD 11–9.
+    - W Erdwall: Wand (Länge 380) 650 vor ihm, 0,45 s Verzögerung, Schaden + Luftstoß, blockt 3–5 s. CD 16–12.
+    - E Steinschulter: Dash 475, stoppt am ersten Gegner, schiebt ihn 300 weiter (Wand: Betäubung), Schild. CD 14–10.
+    - R Bergsturz: Kreis 900/300, 0,9 s Verzögerung, 120/200/280 (+10 % Max-HP), Slow, Kraterwall (4 s, Öffnung zu Gneis) fängt weggeschleuderte Gegner (Betäubung). CD 110/100/90.
+    - Spike 6. Combos: W→Q, E→Auto→Q, R→W→Q. Item: Schollenpanzer.
+
 ## Rollen (Primär; Sekundär in Klammern)
-- Top: Brom, Sister Oleth (Jungle), Old Harrow, Seraphyne (Mid), Isolde, Dagny
+- Top: Brom, Sister Oleth (Jungle), Old Harrow, Seraphyne (Mid), Isolde, Dagny, Gneis
 - Jungle: Vessa, Nyx, Grimald, Lio, Ottilie, Kaelen (Mid), Sev (Mid)
 - Mid: Ilvane, Thessaly, Kaelen, Renn, Aurel, Seraphyne, Sev
 - ADC: Mira, Corvin, Lysa, Tobin, Wren

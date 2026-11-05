@@ -75,7 +75,9 @@ function blocked(v: View, to: { x: number; y: number }, width: number): boolean 
 
 /** One offensive cast against `t` if any slot fits; null otherwise. Order: Q W E, R last with a kill/teamfight gate. */
 export function offensiveCast(v: View, ctx: BotStatic, rng: Rng, t: SnapEntity): BotAction | null {
-  for (const slot of [0, 1, 2, 3] as const) {
+  // champs-a: a wall W (zone line) goes first, then the Q skillshot slams the target into it (Gneis: wall, boulder)
+  const order = ctx.champ.abilities[1]?.line === 'perpendicular' ? ([1, 0, 2, 3] as const) : ([0, 1, 2, 3] as const);
+  for (const slot of order) {
     if (slot === 3 && hpPct(t) > 0.65 && near(v.enemies, t, 800).length < 2) continue;
     const a = castSlot(v, ctx, rng, t, slot);
     if (a) return a;

@@ -1540,6 +1540,36 @@
           "en": "Shields and heals you give another champion grant her +12% move speed for 1.5 s (once per ally every 6 s)."
         }
       }
+    },
+    {
+      "id": "schollenpanzer",
+      "name": { "de": "Schollenpanzer", "en": "Slabplate" },
+      "tier": "legendary",
+      "cost": 2800,
+      "from": ["kettenhemd", "wetterhorn"],
+      "stats": { "armor": 60, "hp": 300, "haste": 15 },
+      "tags": ["tank"],
+      "passive": {
+        "name": { "de": "Gesteinsschicht", "en": "Strata" },
+        "desc": {
+          "de": "Fähigkeiten, die Gegner-Champions treffen, geben einen Stapel (max. 4, 5 s): je +6 Rüstung und Magieresistenz.",
+          "en": "Abilities that hit enemy champions grant a stack (max 4, 5 s): +6 armor and magic resist each."
+        },
+        "rules": [
+          {
+            "on": "onAbilityHit",
+            "if": { "target": { "kind": ["champion"], "team": "enemy" } },
+            "do": [{ "type": "addStack", "name": "strata", "max": 4, "seconds": 5 }]
+          },
+          {
+            "on": "onComputeStats",
+            "do": [
+              { "type": "statAdd", "stat": "armor", "value": { "scale": { "stacks": { "strata": 6 } } } },
+              { "type": "statAdd", "stat": "mr", "value": { "scale": { "stacks": { "strata": 6 } } } }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

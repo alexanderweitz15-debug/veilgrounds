@@ -984,5 +984,39 @@
       "de": "Meiler prüfen.",
       "en": "Checking the kiln."
     }
+  },
+  "gneis": {
+    "pick": {
+      "de": "Ich war vor euren Karten da.",
+      "en": "I was here before your maps."
+    },
+    "move1": {
+      "de": "Der Berg kommt.",
+      "en": "The mountain comes."
+    },
+    "move2": {
+      "de": "Langsam. Aber nicht aufzuhalten.",
+      "en": "Slow. But unstoppable."
+    },
+    "attack": {
+      "de": "Zermalmen.",
+      "en": "Crush."
+    },
+    "ability": {
+      "de": "Stein auf Stein!",
+      "en": "Stone on stone!"
+    },
+    "kill": {
+      "de": "Zerrieben.",
+      "en": "Ground down."
+    },
+    "death": {
+      "de": "Berge fallen langsam. Aber sie fallen.",
+      "en": "Mountains fall slowly. But they fall."
+    },
+    "recall": {
+      "de": "Ich rolle heim.",
+      "en": "Rolling home."
+    }
   }
 }

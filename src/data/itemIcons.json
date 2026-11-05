@@ -38,6 +38,7 @@
     "brandglas": { "glyph": "lens", "hue": 272, "sat": 45, "accent": "flame", "accentHue": 22 },
     "funkenkelch": { "glyph": "chalice", "hue": 272, "sat": 45, "accent": "bolt", "accentHue": 52 },
     "wallherz": { "glyph": "wallHeart", "hue": 30, "sat": 18, "accent": "shield", "accentHue": 30 },
+    "schollenpanzer": { "glyph": "fist", "hue": 30, "sat": 18, "accent": "shield", "accentHue": 205 },
     "sturmgewand": { "glyph": "stormRobe", "hue": 205, "sat": 45, "accent": "bolt", "accentHue": 52 },
     "lebenswurzel": { "glyph": "root", "hue": 120, "sat": 35, "accent": "leaf", "accentHue": 110 },
     "hueterstab": { "glyph": "sunStaff", "hue": 190, "sat": 55, "accent": "sun", "accentHue": 48 },

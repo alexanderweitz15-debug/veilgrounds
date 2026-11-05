@@ -282,5 +282,18 @@ Amaterasu jump, Tsukuyomi end, Susanoo slow immunity + recast close), `targetOk`
 | `sev_r2_susanoo` | R2 | Self: generic shield; 6 s slow immunity and sword sweeps; recast window opens: instant sword thrust 1000 × 120 (1st damage effect) on every enemy in the line, once. |
 | `sev_r3_tsukuyomi` | R3 | Suppress the target 1.5 s (+ mark `sev_r3_moon` = red-black tint on its HUD), root Sev as long; at the end damage incl. 25 % of the target's missing health. |
 
+## Gneis Mauerherz (`gneis`)
+
+Walls are `blockTerrain` (like Oleth R / Isolde dome); numbers in `src/data/champions/gneis.values.json`. Slam rule: a
+displaced unit stops at non-walkable cells (walls or terrain); stopping short = slam (stun + bonus damage).
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `gneis_foundation` | Passive | `onComputeStats`: +12 armor and MR per own wall / crater rim within 450 (max 2). HUD badge shows the count. |
+| `gneis_q_boulder` | Q | Hit units are knocked 260 along the throw. Slam into a wall or terrain edge: stun 0.9..1.3 s and +40 % of the Q damage as bonus damage. |
+| `gneis_w_wall` | W | Line wall (data geometry, perpendicular) blocks 3..5 s (`wall.sec`); stored for passive + visuals (`gneis_w_wall`). |
+| `gneis_e_shove` | E | Dash stops at the first enemy (half width 65); the hit enemy is shoved 300 on along the dash. Slam: stun 0.8..1.2 s + 30 % bonus damage. |
+| `gneis_r_rim` | R | Crater rim (radius 330, thickness 100, 4 s) around the impact with an opening toward Gneis (cos 0.7); enemies hit are thrown 260 outward, slam into the rim: stun 1.0..1.5 s. |
+
 ---
 Total: 110 hook ids across 26 champions.

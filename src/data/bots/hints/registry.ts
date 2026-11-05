@@ -7,6 +7,7 @@ import corvin from './corvin.json';
 import dagny from './dagny.json';
 import fenna from './fenna.json';
 import ferris from './ferris.json';
+import gneis from './gneis.json';
 import gorvam from './gorvam.json';
 import grimald from './grimald.json';
 import hagen from './hagen.json';
@@ -38,6 +39,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   dagny,
   fenna,
   ferris,
+  gneis,
   gorvam,
   grimald,
   hagen,

@@ -667,3 +667,9 @@ Additive edits to shared files (all small):
 - `src/game/game.ts`: +1 line before `this.hud.update(...)`: `this.hud.resultFreeze = this.extras.over;` (hud.ts has the new public field).
 - `src/i18n/{de,en}.json`: additive `shop.noMatch`; reworded `plan.streak.days`, `profile.streakDays`, `tutorial.step.cast.text`, three `tutorial.step.lastHit/tower` lines (de: Diener -> Vasallen). `src/modes/planStrings.json`: `plan.streak.days`.
 - `src/data/runePresets.json`: re-encoded (mojibake fixed), content unchanged.
+## champs-a (swarm/champs-a)
+
+- Registries, additive one-liners per champion: `src/data/champions/index.ts`, `src/sim/champions/index.ts`, `src/ai/bot/builds.ts`, `src/render/champions/{kits,casts,motion}.ts`,
+  `src/render/{abilityMotifs.json,groundObjects.ts}` (new `src/render/champsAFx.ts`), `src/sim/trainer/scenarios.ts`, `src/data/{runePresets,voiceLines,items,itemIcons}.json`,
+  `src/data/bots/hints/*` (generated), `tests/{championData,loaderLayout}.test.ts` roster lists.
+- `src/ai/bot/combat.ts` `offensiveCast`: a champion whose W is a `line: perpendicular` zone casts W before Q (wall, then skillshot).

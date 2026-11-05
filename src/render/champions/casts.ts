@@ -43,6 +43,7 @@ export const CAST_FAMILIES: Record<string, CastFamilies> = {
   thessaly: F('point', 'raise', 'abaa'), // Q/E/R light pointed, W prism raised
   tobin: F('draw', 'lob', 'abba'), // Q harpoon drawn, W dash, E net lobbed, R wave
   vargrim: F('stomp', 'raise', 'abab'), // Q/R lance stomp, W mist raised, E gallop
+  gneis: F('lob', 'slam', 'abba'), // Q boulder lobbed, W wall + E shoulder slam, R landslide lobbed
   vessa: F('point', 'stomp', 'abba'), // Q pounce, W/E howl stomp, R dash
   wren: F('forward', 'raise', 'babb'), // Q embers raised, W ash pushed, E wing dash, R firestorm called down
 };

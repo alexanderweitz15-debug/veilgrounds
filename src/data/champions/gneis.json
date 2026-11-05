@@ -1,0 +1,158 @@
+{
+  "id": "gneis",
+  "name": "Gneis Mauerherz",
+  "title": { "de": "der Wandelnde Fels", "en": "the Walking Cliff" },
+  "roles": ["top"],
+  "archetype": "wall_tank",
+  "botBias": { "teamplay": 1, "objectiveRisk": 1 },
+  "trainingPurpose": {
+    "de": "Nie mit dem Rücken zur Wand kämpfen: Felsbrocken und Bergsturz schleudern in Mauern und Geländekanten und betäuben.",
+    "en": "Never fight with your back to a wall: boulder and landslide slam into walls and terrain edges and stun."
+  },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 700,
+    "hpGrowth": 116,
+    "hpRegen": 9,
+    "hpRegenGrowth": 0.85,
+    "mana": 330,
+    "manaGrowth": 45,
+    "manaRegen": 7.5,
+    "manaRegenGrowth": 0.7,
+    "ad": 58,
+    "adGrowth": 3.2,
+    "armor": 40,
+    "armorGrowth": 5,
+    "mr": 32,
+    "mrGrowth": 2.05,
+    "as": 0.6,
+    "asGrowth": 2,
+    "range": 150,
+    "ms": 330,
+    "windup": 0.3,
+    "radius": 75
+  },
+  "passive": {
+    "name": { "de": "Grundmauer", "en": "Bedrock" },
+    "desc": {
+      "de": "Pro eigener Erdwall in 450 Reichweite (max. 2) erhält Gneis +12 Rüstung und Magieresistenz.",
+      "en": "For each of his own earth walls within 450 (max 2), Gneis gains +12 armor and magic resist."
+    },
+    "hooks": ["gneis_foundation"]
+  },
+  "abilities": [
+    {
+      "id": "gneis_q",
+      "name": { "de": "Felsbrocken", "en": "Boulder" },
+      "desc": {
+        "de": "Wirft einen Felsbrocken (850): 70/105/140/175/210 (+50 % Bonus-AD, +8 % Bonus-HP) physisch und stößt 260 zurück. Prallt das Ziel an eine Wand oder Geländekante, erhält es 40 % Bonusschaden und ist 0,9-1,3 s betäubt.",
+        "en": "Throws a boulder (850): 70/105/140/175/210 (+50% bonus AD, +8% bonus HP) physical and knocks back 260. If the target hits a wall or terrain edge, it takes 40% bonus damage and is stunned for 0.9-1.3 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.3,
+      "movesWhileCasting": false,
+      "range": 850,
+      "cooldown": [11, 10.5, 10, 9.5, 9],
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "width": 110,
+      "speed": 1100,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [70, 105, 140, 175, 210], "bonusAd": 0.5, "bonusHp": 0.08 } },
+        { "kind": "hook", "id": "gneis_q_boulder" }
+      ]
+    },
+    {
+      "id": "gneis_w",
+      "name": { "de": "Erdwall", "en": "Earth Wall" },
+      "desc": {
+        "de": "Nach 0,45 s bricht eine Erdwand (Länge 380) 650 vor ihm aus dem Boden: 40/70/100/130/160 (+6 % Bonus-HP) magisch und 0,6 s hochgeschleudert. Die Wand blockt 3/3,5/4/4,5/5 s.",
+        "en": "After 0.45 s an earth wall (length 380) erupts 650 ahead: 40/70/100/130/160 (+6% bonus HP) magic damage and 0.6 s airborne. The wall blocks for 3/3.5/4/4.5/5 s."
+      },
+      "type": "zone",
+      "castTime": 0.3,
+      "movesWhileCasting": false,
+      "range": 650,
+      "cooldown": [16, 15, 14, 13, 12],
+      "cost": 70,
+      "costType": "mana",
+      "width": 100,
+      "radius": 190,
+      "line": "perpendicular",
+      "delay": 0.45,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [40, 70, 100, 130, 160], "bonusHp": 0.06 } },
+        { "kind": "airborne", "duration": 0.6 },
+        { "kind": "hook", "id": "gneis_w_wall" }
+      ]
+    },
+    {
+      "id": "gneis_e",
+      "name": { "de": "Steinschulter", "en": "Stone Shoulder" },
+      "desc": {
+        "de": "Rammt 475 vorwärts, stoppt am ersten Gegner: 40/65/90/115/140 (+40 % Bonus-AD) physisch, schiebt ihn 300 weiter (Wand: Betäubung) und gibt Gneis 2 s einen Schild von 50/80/110/150/190.",
+        "en": "Charges 475 forward, stops at the first enemy: 40/65/90/115/140 (+40% bonus AD) physical, shoves it 300 further (wall: stun) and gives Gneis a 50/80/110/150/190 shield for 2 s."
+      },
+      "type": "dash",
+      "castTime": 0.2,
+      "movesWhileCasting": true,
+      "range": 475,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": 50,
+      "costType": "mana",
+      "width": 130,
+      "speed": 1400,
+      "distance": 475,
+      "effects": [
+        { "kind": "hook", "id": "gneis_e_shove" },
+        { "kind": "damage", "type": "phys", "amount": { "base": [40, 65, 90, 115, 140], "bonusAd": 0.4 } },
+        { "kind": "shield", "amount": { "base": [50, 80, 110, 150, 190], "bonusHp": 0.08 }, "duration": 2, "target": "self" }
+      ]
+    },
+    {
+      "id": "gneis_r",
+      "name": { "de": "Bergsturz", "en": "Landslide" },
+      "desc": {
+        "de": "Nach 0,9 s stürzt ein Felsen auf 900 Entfernung (Radius 300): 120/200/280 (+10 % Max-HP) magisch, 40 % verlangsamt 1,5 s. Gegner werden nach außen geschleudert, ein Kraterwall (4 s, Öffnung zu Gneis) fängt sie ab: Betäubung.",
+        "en": "After 0.9 s a rock falls at 900 range (radius 300): 120/200/280 (+10% max HP) magic, 40% slow for 1.5 s. Enemies are thrown outward, a crater rim (4 s, opening toward Gneis) catches them: stun."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.4,
+      "movesWhileCasting": false,
+      "range": 900,
+      "cooldown": [110, 100, 90],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 300,
+      "delay": 0.9,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [120, 200, 280], "maxHp": 0.1 } },
+        { "kind": "slow", "pct": 40, "duration": 1.5 },
+        { "kind": "hook", "id": "gneis_r_rim" }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": {
+    "de": "Level 6: Bergsturz mit Kraterwall - wer drin steht, kommt nicht weg.",
+    "en": "Level 6: Landslide with a crater rim - whoever is inside cannot leave."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Wand und Brocken", "en": "Wall and boulder" }, "sequence": ["W", "Q"] },
+    { "name": { "de": "Rammen und Schieben", "en": "Ram and shove" }, "sequence": ["E", "AA", "Q"] },
+    { "name": { "de": "Kessel", "en": "Cauldron" }, "sequence": ["R", "W", "Q"] }
+  ],
+  "scores": { "engage": 4, "peel": 3, "range": 2, "scaling": 3, "waveclear": 1, "mobility": 1 },
+  "voiceLines": {
+    "pick": { "de": "Ich war schon da, bevor ihr eine Karte hattet.", "en": "I was here before you had a map." },
+    "firstBlood": { "de": "Erster Stein, erster Treffer.", "en": "First stone, first hit." },
+    "kill": { "de": "Zerrieben.", "en": "Ground down." },
+    "death": { "de": "Berge fallen langsam. Aber sie fallen.", "en": "Mountains fall slowly. But they fall." },
+    "recall": { "de": "Ich rolle heim.", "en": "Rolling home." },
+    "taunt": { "de": "Lauf ruhig. Hinter dir ist eine Wand.", "en": "Go ahead, run. There is a wall behind you." }
+  },
+  "silhouette": "wide boulder-bodied golem with a tiny head, huge stone fists and glowing rune cracks"
+}

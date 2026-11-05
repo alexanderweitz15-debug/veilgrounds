@@ -20,3 +20,14 @@ Branch `auto/features` (from origin/main). Area: game features, UI/UX, QoL, poli
 - [x] 5: main-menu rank/level chip (opens profile); mastery badges (M1..M10) on champion tiles in the classic and practice lobby (progression cache warmed before the lobby opens).
 - [x] 6: classic lobby 'Mein Rang' shortcut (bots at own ladder rank). Browser-checked: menu chip + lobby button.
 - [x] 7: profile match history: click a row for a detail line (CS@10, damage/min, deaths and kills per 30, rank per category).
+- [x] training widget no longer hidden under the sandbox cheat panel.
+
+## Not done (ideas, why)
+- Honor vote after a game: needs players plumbed into postGame; low value vs bots.
+- Spectator for live bot-vs-bot: needs an all-bot config + spectator snapshot (no human team); the replay viewer already covers watching finished games.
+- Emote wheel, Clash-like bracket: larger; start from voiceBubbles.ts / progression ladder.
+- Tooltips: summoner / rune tips still static text (plan in docs/agents/feat-tooltips.md steps 4-5).
+- Verified in browser only partly (headless pane throttles); post-game progression card not seen live (logic covered by tests/progression.test.ts).
+
+## Test status
+- npm test: 151 files / 1880 tests green at the end.

@@ -39,7 +39,7 @@ export class LiveTraining {
   private lastTick = -1;
 
   constructor(private readonly mode: string | undefined) {
-    this.root.className = 'lt-panel';
+    this.root.className = mode === 'sandbox' ? 'lt-panel lt-beside' : 'lt-panel'; // sandbox: the cheat panel owns the right edge
     const head = el('div', 'lt-head', this.root);
     el('span', 'lt-title', head, t('lt.title'));
     this.rank = el('button', 'lt-rank', head) as HTMLButtonElement;

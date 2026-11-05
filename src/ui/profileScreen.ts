@@ -182,6 +182,27 @@ function renderMatches(root: HTMLElement, history: readonly MatchRecord[]): void
     el('td', '', tr, String(Math.round(r.goldPerMin)));
     const tp = rankTrend([r])[0];
     el('td', 'pf-rank', tr, tp ? rankName(tp.index) : '–');
+    // click: detail row with the match metrics and the rank each category plays like
+    tr.classList.add('pf-clickable');
+    let detail: HTMLElement | null = null;
+    tr.addEventListener('click', () => {
+      if (detail) return void (detail.remove(), (detail = null), tr.classList.remove('open'));
+      tr.classList.add('open');
+      detail = el('tr', 'pf-detail', undefined);
+      const cell = el('td', '', detail);
+      cell.colSpan = 8;
+      const chips = el('div', 'pf-chips', cell);
+      const chip = (k: string, v: string): void => void el('span', 'pf-chip', chips, `${k}: ${v}`);
+      chip('CS@10', fix1(r.cs10));
+      chip(t('profile.dmgPerMin'), String(Math.round(r.dmgChampPerMin)));
+      chip(t('profile.deathsPer30'), fix1(r.deathsPer30));
+      chip(t('profile.killsPer30'), fix1(r.killsPer30));
+      for (const id of CATEGORY_IDS) {
+        const v = r.calibration[id];
+        if (v !== undefined) chip(t(`plan.cat.${id}`), rankName(v.index));
+      }
+      tr.after(detail);
+    });
   }
 }
 

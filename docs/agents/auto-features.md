@@ -19,3 +19,4 @@ Branch `auto/features` (from origin/main). Area: game features, UI/UX, QoL, poli
 - [x] 4: practice tool: dummy damage meter (src/ui/dummyMeter.ts), dummy armor/MR cycle (cheat dummyResist), save/load game state in sandbox (F2 / F4 or panel buttons; worker-side freezeSim/thawSim, replay cut to 0 ticks after a load). tests/dummyMeter.test.ts, tests/sandboxState.test.ts.
 - [x] 5: main-menu rank/level chip (opens profile); mastery badges (M1..M10) on champion tiles in the classic and practice lobby (progression cache warmed before the lobby opens).
 - [x] 6: classic lobby 'Mein Rang' shortcut (bots at own ladder rank). Browser-checked: menu chip + lobby button.
+- [x] 7: profile match history: click a row for a detail line (CS@10, damage/min, deaths and kills per 30, rank per category).

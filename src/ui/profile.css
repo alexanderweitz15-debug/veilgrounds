@@ -64,3 +64,7 @@
 .pr-big.up, .pr-chip.up { color: #8fd07a; }
 .pr-big.down, .pr-chip.down { color: #d9614c; }
 .pr-chip { border: 1px solid currentColor; border-radius: 8px; padding: 0 7px; font-size: 11px; font-weight: 600; }
+
+.pf-clickable { cursor: pointer; }
+.pf-detail td { text-align: left; background: rgba(200, 170, 110, 0.05); padding: 6px 10px; }
+.pf-matches tbody tr.open { background: rgba(200, 170, 110, 0.07); }

@@ -80,6 +80,8 @@ export interface AbilityData {
   delay?: number;
   /** Zones/buffs lasting over time. */
   duration?: Ranked;
+  /** Bots never cast this ability on their own (stance toggles, abilities a dedicated bot module drives). */
+  botManual?: boolean;
   /** Dash/blink distance (if different from range). Dashes go the full distance unless flag ground_target
    *  (then up to the cursor). */
   distance?: number;

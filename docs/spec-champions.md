@@ -262,3 +262,6 @@ Musikerin: Noten (grün/blau/rot) erscheinen auf der Karte, nur für ihr Team si
 
 33. **Marga Kartaune, die Büchsenmeisterin** – Mid, Artillerie-Magierin (AP), Ranged 575. Training: Mörserkreise früh sehen und verlassen, nach dem Rückstoß nicht blind nachsetzen, den Belagerungsschlag aus der Ferne erwarten.
     - Passiv Fernschuss: Fähigkeitsschaden +4 % pro 100 Entfernung über 500 (höchstens +24 %). Q Mörserwurf (Kreis, 0,9 s Verzögerung, Reichweite 1.300), W Splitterhagel (Zone), E Rückstoß (Sprung vom Cursor weg, stößt Gegner an der alten Position zurück), R Belagerungsschlag (Reichweite 3.000, 1,8 s Verzögerung).
+
+34. **Torben Wutmähne, der Berserker** – Top, Berserker (AD, keine Ressource), Melee 175. Training: Zorn nicht füttern, in kurzen Fenstern traden, nach dem Unsterblichen Ruf ausmanövrieren.
+    - Passiv Zorn (0-100): Autos +4, Fähigkeitstreffer +6, erlittener Schaden +1 pro 1 % Max-HP; +0,3 AD pro Punkt, bei 100 +20 % Bewegung; verfliegt 4 s nach dem Kampf. Q Spaltschlag (Kegel), W Kriegsgebrüll (AS + Slow), E Blutsprung (Aufprallkreis), R Unsterblicher Ruf (5 s nicht unter 1 HP, danach Heilung).

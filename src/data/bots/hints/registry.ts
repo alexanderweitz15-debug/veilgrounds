@@ -36,6 +36,7 @@ import svea from './svea.json';
 import thessaly from './thessaly.json';
 import tilda from './tilda.json';
 import tobin from './tobin.json';
+import torben from './torben.json';
 import truda from './truda.json';
 import vargrim from './vargrim.json';
 import vessa from './vessa.json';
@@ -77,6 +78,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   thessaly,
   tilda,
   tobin,
+  torben,
   truda,
   vargrim,
   vessa,

@@ -1,0 +1,148 @@
+{
+  "id": "torben",
+  "name": "Torben Wutmähne",
+  "title": { "de": "der Berserker", "en": "the Berserker" },
+  "roles": ["top"],
+  "archetype": "berserker",
+  "botBias": { "aggression": 2, "tradeLength": 2 },
+  "trainingPurpose": {
+    "de": "Einen Berserker nicht unter 100 Zorn füttern: Schaden nur in kurzen Fenstern austeilen, vor dem Unsterblich-Ruf aufhören zu jagen und ihn danach ausmanövrieren.",
+    "en": "Do not feed a berserker Rage: trade in short windows, stop chasing when Undying Roar goes off and outplay him after it ends."
+  },
+  "attackType": "melee",
+  "resource": "none",
+  "base": {
+    "hp": 670,
+    "hpGrowth": 110,
+    "hpRegen": 9,
+    "hpRegenGrowth": 0.9,
+    "mana": 0,
+    "manaGrowth": 0,
+    "manaRegen": 0,
+    "manaRegenGrowth": 0,
+    "ad": 66,
+    "adGrowth": 3.6,
+    "armor": 35,
+    "armorGrowth": 4.6,
+    "mr": 32,
+    "mrGrowth": 2,
+    "as": 0.67,
+    "asGrowth": 2.2,
+    "range": 175,
+    "ms": 345,
+    "windup": 0.26,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Zorn", "en": "Rage" },
+    "desc": {
+      "de": "Autos (+4), Fähigkeitstreffer (+6) und erlittener Schaden (+1 pro 1 % Max-HP) laden Zorn bis 100; außerhalb des Kampfes verfliegt er. Pro Punkt +0,3 AD. Bei 100 Zorn: +20 % Bewegung.",
+      "en": "Basic attacks (+4), ability hits (+6) and damage taken (+1 per 1% max HP) build Rage up to 100; it fades out of combat. +0.3 AD per point. At 100 Rage: +20% move speed."
+    },
+    "hooks": ["torben_rage"]
+  },
+  "abilities": [
+    {
+      "id": "torben_q",
+      "name": { "de": "Spaltschlag", "en": "Cleaving Blow" },
+      "desc": {
+        "de": "Kegel 350 (100°): 70/110/150/190/230 (+90 % Bonus-AD) physischer Schaden, 20 % Slow für 1 s.",
+        "en": "Cone 350 (100°): 70/110/150/190/230 (+90% bonus AD) physical damage, 20% slow for 1 s."
+      },
+      "type": "cone",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 350,
+      "cooldown": [7, 6.5, 6, 5.5, 5],
+      "cost": 0,
+      "costType": "none",
+      "angle": 100,
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [70, 110, 150, 190, 230], "bonusAd": 0.9 } },
+        { "kind": "slow", "pct": 20, "duration": 1 }
+      ]
+    },
+    {
+      "id": "torben_w",
+      "name": { "de": "Kriegsgebrüll", "en": "War Cry" },
+      "desc": {
+        "de": "4 s +30/35/40/45/50 % Angriffstempo, Gegner in 400 werden 1,5 s um 30 % verlangsamt. +15 Zorn.",
+        "en": "4 s +30/35/40/45/50% attack speed, enemies within 400 are slowed 30% for 1.5 s. +15 Rage."
+      },
+      "type": "self",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [16, 15, 14, 13, 12],
+      "cost": 0,
+      "costType": "none",
+      "radius": 400,
+      "effects": [
+        { "kind": "buff", "stat": "as", "pct": [30, 35, 40, 45, 50], "duration": 4, "target": "self" },
+        { "kind": "slow", "pct": 30, "duration": 1.5, "target": "enemies" },
+        { "kind": "hook", "id": "torben_w_cry" }
+      ]
+    },
+    {
+      "id": "torben_e",
+      "name": { "de": "Blutsprung", "en": "Blood Leap" },
+      "desc": {
+        "de": "Sprung 420 zum Cursor, Aufprall im Kreis 220: 60/95/130/165/200 (+60 % Bonus-AD) physischer Schaden.",
+        "en": "Leap 420 toward the cursor, landing in a 220 circle: 60/95/130/165/200 (+60% bonus AD) physical damage."
+      },
+      "type": "dash",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 420,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": 0,
+      "costType": "none",
+      "radius": 220,
+      "speed": 1400,
+      "distance": 420,
+      "flags": ["ground_target"],
+      "effects": [{ "kind": "damage", "type": "phys", "amount": { "base": [60, 95, 130, 165, 200], "bonusAd": 0.6 }, "target": "enemies" }]
+    },
+    {
+      "id": "torben_r",
+      "name": { "de": "Unsterblicher Ruf", "en": "Undying Roar" },
+      "desc": {
+        "de": "5 s: Torben kann nicht unter 1 HP fallen, +20 % Bewegung, Zorn bleibt auf 100. Am Ende heilt er 15/25/35 % seiner Max-HP.",
+        "en": "5 s: Torben cannot drop below 1 HP, +20% move speed, Rage stays at 100. At the end he heals 15/25/35% of his max HP."
+      },
+      "type": "self",
+      "castTime": 0,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [120, 100, 80],
+      "cost": 0,
+      "costType": "none",
+      "duration": 5,
+      "effects": [
+        { "kind": "buff", "stat": "ms", "pct": 20, "duration": 5, "target": "self" },
+        { "kind": "hook", "id": "torben_r_undying" }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3 (Blutsprung + Kriegsgebrüll) und Level 6 (Unsterblicher Ruf macht jeden Tower-Dive zur Falle).",
+    "en": "Level 3 (Blood Leap + War Cry) and level 6 (Undying Roar turns every dive into a trap)."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Sprung und Spaltschlag", "en": "Leap and cleave" }, "sequence": ["E", "Q", "AA"] },
+    { "name": { "de": "Schrei und Hiebe", "en": "Cry and blows" }, "sequence": ["W", "AA", "AA", "Q"] },
+    { "name": { "de": "Ruf und Rausch", "en": "Roar and rampage" }, "sequence": ["R", "E", "Q", "AA"] }
+  ],
+  "scores": { "engage": 3, "peel": 1, "range": 1, "scaling": 3, "waveclear": 3, "mobility": 3 },
+  "voiceLines": {
+    "pick": { "de": "Lasst mich von der Kette!", "en": "Let me off the chain!" },
+    "firstBlood": { "de": "Das war erst der Anfang!", "en": "That was only the beginning!" },
+    "kill": { "de": "Noch einer!", "en": "One more!" },
+    "death": { "de": "Ich ... bin noch nicht ... fertig ...", "en": "I ... am not ... done yet ..." },
+    "recall": { "de": "Kurz Blut lecken.", "en": "A moment to lick the wounds." },
+    "taunt": { "de": "Je mehr du triffst, desto wütender werde ich.", "en": "The more you hit me, the angrier I get." }
+  },
+  "silhouette": "huge bare-chested brute with wild untamed hair and a full beard, red war paint, a wolf-fur mantle over the shoulders, a hand axe in each fist, a trophy skull belt and red rage haze rising off his shoulders"
+}

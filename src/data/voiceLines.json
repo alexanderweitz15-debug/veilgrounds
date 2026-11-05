@@ -1324,5 +1324,39 @@
       "de": "Pulver nachfüllen.",
       "en": "Time to restock powder."
     }
+  },
+  "torben": {
+    "pick": {
+      "de": "Lasst mich von der Kette!",
+      "en": "Let me off the chain!"
+    },
+    "move1": {
+      "de": "Blut will fließen.",
+      "en": "Blood wants to flow."
+    },
+    "move2": {
+      "de": "Ich rieche Angst.",
+      "en": "I smell fear."
+    },
+    "attack": {
+      "de": "Zerreißen!",
+      "en": "Tear them apart!"
+    },
+    "ability": {
+      "de": "Aaargh!",
+      "en": "Aaargh!"
+    },
+    "kill": {
+      "de": "Noch einer!",
+      "en": "One more!"
+    },
+    "death": {
+      "de": "Ich ... bin noch nicht ... fertig ...",
+      "en": "I ... am not ... done yet ..."
+    },
+    "recall": {
+      "de": "Kurz Blut lecken.",
+      "en": "A moment to lick the wounds."
+    }
   }
 }

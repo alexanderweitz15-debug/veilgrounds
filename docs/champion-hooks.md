@@ -355,3 +355,15 @@ Total: 110 hook ids across 26 champions.
 |---|---|---|
 | `marga_range` | Passive | `modifyDamage` (abilities and DoTs, not autos): x(1 + 4 % per 100 distance beyond 500), capped at +24 % at 1100. |
 | `marga_e_recoil` | E | Phase `dashStart`: reverses the dash direction (hop away from the cursor), shoves every enemy within 300 of the start 220 back over 0.25 s and slows 20 % for 1.2 s. |
+
+## Torben Wutmähne (`torben`) (auto/champions)
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `torben_rage` | Passive | Rage 0-100: `onAutoHit` +4, `onAbilityHit` +6 (once per tick), `onDamageTaken` +1 per 1 % max HP; module `onTick` fades it 10/s after 4 s out of combat. `onComputeStats`: +0.3 AD per point, x1.2 move speed at 100. While Undying Roar runs `onDamageTaken` lifts HP back to 1. |
+| `torben_w_cry` | W | +15 Rage. |
+| `torben_r_undying` | R | Starts the 5 s window (Rage locked at 100); `onTick` heals 15/25/35 % max HP when it ends. |
+
+## Generic bot field `botManual` (auto/champions)
+
+`AbilityData.botManual: true` (champion JSON): bots never cast that ability on their own (`ready()` in `src/ai/bot/combat.ts`). Used by Knarr W (stance toggle: bots stay in Fortress instead of flipping every cooldown).

@@ -50,6 +50,7 @@ import { hipGears, mainspringPack, springCrossbow } from './clockwork';
 import { gustBow, gustSwirl, featherCrest, windStreamers } from './svea';
 import { backShrooms, mushroomCap, sporeMotes, sporeStaff } from './truda';
 import { mortarPack, ramrod, sootPuffs } from './marga';
+import { rageHaze, skullBelt, warAxes } from './torben';
 import { DORRAK_KIT } from './worm';
 import { bloodDrips, bloodOrbs, thornCrown } from './rovena';
 import { floatNotes, hatPlume, luteBack } from './tilda';
@@ -1143,6 +1144,36 @@ kit({
   cast: 'lob',
   gait: 'heavy',
   props: [mortarPack, ramrod, sootPuffs],
+});
+// Torben Wutmähne: bare-chested berserker, a hand axe in each fist, red haze off the shoulders
+kit({
+  id: 'torben',
+  name: 'Torben Wutmähne',
+  world: 200,
+  look: 'huge bare-chested brute with a wild rust-red mane and a full beard, red war paint across the eyes, a grey wolf-fur mantle over his shoulders, leather harness and kilt, a bearded hand axe in each fist, a belt of three bone skulls and a red rage haze rising off his shoulders',
+  feature: 'two hand axes + red rage haze + fur mantle',
+  body: { ...MALE, H: 192, shW: 25, hipW: 15.5, girth: 1.12, headR: 13.2, hunch: 0.1 },
+  outfit: {
+    skin: SKIN.tan,
+    skinKind: 'skin',
+    face: { brows: 1.5, paint: '#b0262a', scar: true, eyes: '#e8c060' },
+    top: leather('#5a3a28'),
+    sleeves: leather('#5a3a28'),
+    forearms: leather('#3a2a20'),
+    hands: leather('#3a2a20'),
+    legs: cloth('#4a3a32'),
+    boots: leather('#2c2018'),
+    coat: { mat: leather('#6a4a32'), len: 0.7, flare: 0.5, tatter: true, split: true },
+    belt: { mat: leather('#3a2a20'), buckle: BRASS },
+    pauldrons: { mat: m('#8a8a90', 'fur'), size: 1.35 },
+    hair: { style: 'wild', mat: hair('#a8482a') },
+    beard: { style: 'full', mat: hair('#a8482a') },
+  },
+  hold: 'blade',
+  attack: 'chop',
+  cast: 'sweep',
+  gait: 'heavy',
+  props: [warAxes, skullBelt, rageHaze],
 });
 // Knarr: giant crab, painted by the SpriteDrawer in crab.ts (atlas.ts DRAWERS); the Kit stub carries the icon colours
 kit(KNARR_KIT);

@@ -1167,5 +1167,6 @@
   "dm.time": "Dauer",
   "dm.title": "Puppen-Schaden",
   "dm.total": "Gesamtschaden",
-  "dm.true": "Absolut"
+  "dm.true": "Absolut",
+  "sandbox.dummyResist": "Puppe: Rüstung/MR {n}"
 }

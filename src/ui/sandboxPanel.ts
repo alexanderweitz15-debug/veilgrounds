@@ -54,6 +54,13 @@ export class SandboxPanel {
       btn(this.root, t('cheat.teleport'), () => arm('teleport'));
       btn(this.root, t('cheat.spawnDummy'), () => arm('spawnDummy'));
     }
+    const RESIST = [0, 60, 150, 300];
+    let ri = 0;
+    const resist = btn(this.root, t('sandbox.dummyResist', { n: 0 }), () => {
+      ri = (ri + 1) % RESIST.length;
+      send('dummyResist', RESIST[ri]);
+      resist.textContent = t('sandbox.dummyResist', { n: RESIST[ri] });
+    });
     btn(this.root, t('sandbox.wave'), () => send('spawnWave'));
     btn(this.root, t('sandbox.camps'), () => send('respawnCamps'));
     // client-side toggle state (the sim flags are not in the snapshot)

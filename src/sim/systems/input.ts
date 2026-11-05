@@ -1,5 +1,6 @@
 // Player-equivalent commands -> unit intents. Same path for humans and bots.
 
+import { query } from 'bitecs';
 import type { Sim } from '../sim';
 import type { System } from './index';
 import { findPath, nearestWalkable } from '../map';
@@ -7,7 +8,7 @@ import { canTarget, onMoveCommand, setHoldFire, setAttackMoveCursor } from './at
 import { cancelCastIntents, chooseUlt, commandCast, levelAbility, refreshCooldowns, updateCastIntents } from './abilities';
 import { cancelRecall, grantGold, grantXp, startRecall, xpToNext } from './economy';
 import { spawnDummy } from './champions';
-import { PING_KINDS, type Command } from '../types';
+import { Kind, PING_KINDS, type Command } from '../types';
 import { PING_MAX, PING_WINDOW, cleanPingLabel } from '../pingRules'; // window/limit: anti-spam, LoL-like
 import { sees } from '../vision';
 import { buyItem, sellItem, undoLast } from '../items/inventory';
@@ -200,6 +201,12 @@ function cheat(sim: Sim, eid: number, cmd: Extract<Command, { t: 'cheat' }>): vo
       break;
     case 'respawnCamps':
       respawnCamps(sim);
+      break;
+    case 'dummyResist':
+      if (cmd.value !== undefined && Number.isFinite(cmd.value)) {
+        const v = Math.max(0, Math.min(500, cmd.value));
+        for (const e of query(sim.world, [Unit])) if (Unit.kind[e] === Kind.Dummy) sim.c.Stats.armor[e] = sim.c.Stats.mr[e] = v;
+      }
       break;
     case 'skipTime':
       break; // ponytail: needs fast-forward stepping in the worker; Phase 5 sandbox

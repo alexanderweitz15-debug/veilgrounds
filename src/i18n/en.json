@@ -1167,5 +1167,6 @@
   "dm.time": "Duration",
   "dm.title": "Dummy damage",
   "dm.total": "Total damage",
-  "dm.true": "True"
+  "dm.true": "True",
+  "sandbox.dummyResist": "Dummy armor/MR {n}"
 }

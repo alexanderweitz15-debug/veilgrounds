@@ -2040,6 +2040,164 @@
           }
         ]
       }
+    },
+    {
+      "id": "windschwinge",
+      "name": {
+        "de": "Windschwinge",
+        "en": "Windwing"
+      },
+      "tier": "legendary",
+      "cost": 2850,
+      "from": [
+        "eiferschwert",
+        "kaltstahl"
+      ],
+      "stats": {
+        "ad": 55,
+        "asPct": 25,
+        "msPct": 7
+      },
+      "tags": [
+        "ad",
+        "onhit"
+      ],
+      "passive": {
+        "name": {
+          "de": "Federtanz",
+          "en": "Featherstep"
+        },
+        "desc": {
+          "de": "Auto-Treffer auf gegnerische Champions geben dir 1,5 s +20 % Bewegung.",
+          "en": "Basic attack hits on enemy champions give you +20% move speed for 1.5 s."
+        },
+        "rules": [
+          {
+            "on": "onHit",
+            "if": {
+              "target": {
+                "kind": [
+                  "champion"
+                ],
+                "team": "enemy"
+              }
+            },
+            "do": [
+              {
+                "type": "applyBuff",
+                "to": "self",
+                "kind": "stat",
+                "stat": "ms",
+                "id": "windwing",
+                "pct": 20,
+                "seconds": 1.5
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "faeulnisstab",
+      "name": {
+        "de": "Fäulnisstab",
+        "en": "Rotwood Staff"
+      },
+      "tier": "legendary",
+      "cost": 2650,
+      "from": [
+        "uhrwerk",
+        "lehrlingsstab"
+      ],
+      "stats": {
+        "ap": 80,
+        "haste": 15
+      },
+      "tags": [
+        "ap"
+      ],
+      "passive": {
+        "name": {
+          "de": "Fäulnis",
+          "en": "Rot"
+        },
+        "desc": {
+          "de": "Fähigkeitstreffer auf Gegner verringern deren Heilung und Schilde um 40 % für 3 s.",
+          "en": "Ability hits on enemies reduce their healing by 40% for 3 s."
+        },
+        "rules": [
+          {
+            "on": "onAbilityHit",
+            "if": {
+              "target": {
+                "team": "enemy"
+              }
+            },
+            "do": [
+              {
+                "type": "applyBuff",
+                "to": "target",
+                "kind": "grievous",
+                "id": "rotwood",
+                "pct": 40,
+                "seconds": 3
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "seeigelpanzer",
+      "name": {
+        "de": "Seeigelpanzer",
+        "en": "Urchin Plate"
+      },
+      "tier": "legendary",
+      "cost": 2650,
+      "from": [
+        "zauberschutzmantel",
+        "kettenhemd"
+      ],
+      "stats": {
+        "armor": 55,
+        "mr": 45,
+        "hp": 250
+      },
+      "tags": [
+        "tank"
+      ],
+      "passive": {
+        "name": {
+          "de": "Stachelkleid",
+          "en": "Spine Coat"
+        },
+        "desc": {
+          "de": "Gegner, die dich mit einem Auto-Angriff treffen, erleiden 25 (+15 % deiner Rüstung) magischen Schaden.",
+          "en": "Enemies that hit you with a basic attack take 25 (+15% of your armor) magic damage."
+        },
+        "rules": [
+          {
+            "on": "onDamageTaken",
+            "if": {
+              "isAuto": true
+            },
+            "do": [
+              {
+                "type": "damage",
+                "to": "source",
+                "dmgType": "magic",
+                "value": {
+                  "base": 25,
+                  "scale": {
+                    "armor": 0.15
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

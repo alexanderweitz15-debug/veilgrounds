@@ -16,6 +16,7 @@ import { motionOf } from './motion';
 import { applyRateOverrides, hitOverride } from '../anim/data';
 import { drawWolf, GALLOP_FPS, HARK } from './wolf';
 import { VARGRIM_DRAWER } from './cavalry';
+import { KNARR_DRAWER } from './crab';
 import { DORRAK_DRAWER } from './worm';
 import { MINION_DRAWERS, MINION_KITS } from './minions';
 import { MONSTER_DRAWERS } from './monsters';
@@ -55,7 +56,7 @@ export interface SpriteDrawer {
 // minions are defined here (not registered from game code) so the bake workers know them too
 const EXTRA_KITS: Record<string, Kit> = Object.fromEntries(MINION_KITS.map((k) => [k.id, k]));
 // vargrim: champion with a custom painter (quadruped rider, cavalry.ts); its Kit stub lives in kits.ts
-const DRAWERS: Record<string, SpriteDrawer> = { ...MINION_DRAWERS, ...MONSTER_DRAWERS, vargrim: VARGRIM_DRAWER, dorrak: DORRAK_DRAWER };
+const DRAWERS: Record<string, SpriteDrawer> = { ...MINION_DRAWERS, ...MONSTER_DRAWERS, vargrim: VARGRIM_DRAWER, dorrak: DORRAK_DRAWER, knarr: KNARR_DRAWER };
 export function registerSpriteKit(kit: Kit): void {
   EXTRA_KITS[kit.id] = kit;
 }

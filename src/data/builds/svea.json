@@ -1,0 +1,44 @@
+{
+  "champion": "svea",
+  "template": "marksman",
+  "starter": [
+    "kurzschwert",
+    "trank"
+  ],
+  "standard": {
+    "boots": "stiefel_schnelligkeit",
+    "core": [
+      "windschwinge",
+      "sturmbogen",
+      "scharfrichterbeil",
+      "blutkrone"
+    ]
+  },
+  "vsAD": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "windschwinge",
+      "sturmbogen",
+      "wallherz",
+      "scharfrichterbeil"
+    ]
+  },
+  "vsAP": {
+    "boots": "stiefel_mr",
+    "core": [
+      "windschwinge",
+      "sturmbogen",
+      "sturmgewand",
+      "scharfrichterbeil"
+    ]
+  },
+  "runes": {
+    "keystone": "praezision",
+    "minor": [
+      "angriffstempo",
+      "blutdurst",
+      "gnadenstoss"
+    ]
+  },
+  "note": "Component order follows items.json \"from\"; Diamond+ bots reorder components situationally (spec §5)."
+}

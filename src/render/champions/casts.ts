@@ -51,6 +51,9 @@ export const CAST_FAMILIES: Record<string, CastFamilies> = {
   henrike: F('draw', 'lob', 'abbb'), // Q bolt drawn, W turret lobbed, E hop, R clock tower lobbed
   vessa: F('point', 'stomp', 'abba'), // Q pounce, W/E howl stomp, R dash
   wren: F('forward', 'raise', 'babb'), // Q embers raised, W ash pushed, E wing dash, R firestorm called down
+  knarr: F('point', 'stomp', 'abaa'), // Q claw pointed, W stance stomp, E/R pointed
+  truda: F('lob', 'raise', 'abbb'), // Q spores lobbed, W/E/R raised
+  svea: F('draw', 'raise', 'abba'), // Q arrow drawn, W/E wind raised, R hurricane arrow drawn
 };
 
 /** Cast family (0 = A, 1 = B) of a slot for an id; unknown ids / extra slots (Sev's R choices) use A / the R slot. */

@@ -1,0 +1,6 @@
+{
+  "_doc": "Tunables of the knarr hooks (src/sim/champions/knarr.ts) that the generic ability schema cannot hold. Ability numbers live in knarr.json; the per-rank arrays here are indexed by the W rank (1..5).",
+  "fortress": { "msMult": 0.8, "resist": [30, 40, 50, 60, 70], "tauntSec": [1, 1.1, 1.2, 1.3, 1.4], "tauntRadius": 450, "stepDist": 150, "stepDmgMult": 0.6 },
+  "sidestep": { "msMult": 1.15, "autoDmgPct": [10, 14, 18, 22, 26] },
+  "tidal": { "perEnemy": 3, "max": 15, "radius": 600 }
+}

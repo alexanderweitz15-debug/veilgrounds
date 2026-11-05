@@ -1,0 +1,149 @@
+{
+  "id": "truda",
+  "name": "Truda Sporenhauch",
+  "title": { "de": "die Pilzhexe", "en": "the Spore Hexer" },
+  "roles": ["mid"],
+  "archetype": "spore_control_mage",
+  "botBias": { "aggression": -1, "tradeLength": 1, "resourceUse": 1 },
+  "trainingPurpose": {
+    "de": "Zonen-Magierin lesen: Sporenfelder wachsen, wenn man hindurchläuft. Felder meiden statt durchqueren, Sporenbruch nach einem langen Feld-Kampf erwarten.",
+    "en": "Reading a zone mage: spore fields grow when you walk through them. Go around fields instead of crossing, and expect Spore Burst after a long fight in the fields."
+  },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 590,
+    "hpGrowth": 90,
+    "hpRegen": 5.5,
+    "hpRegenGrowth": 0.55,
+    "mana": 440,
+    "manaGrowth": 40,
+    "manaRegen": 11,
+    "manaRegenGrowth": 0.8,
+    "ad": 53,
+    "adGrowth": 2.8,
+    "armor": 24,
+    "armorGrowth": 4,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.625,
+    "asGrowth": 2,
+    "range": 525,
+    "ms": 330,
+    "windup": 0.25,
+    "projectileSpeed": 1600,
+    "radius": 60
+  },
+  "passive": {
+    "name": { "de": "Giftfäule", "en": "Blight" },
+    "desc": {
+      "de": "Autos auf vergiftete Gegner richten 8-36 (nach Level) magischen Zusatzschaden an. Sporenfelder vergiften (Schaden über Zeit), verlangsamen 20-35 % und wachsen auf angrenzenden Boden, wenn Gegner 0,5 s darin stehen (höchstens 6 Felder).",
+      "en": "Autos on poisoned enemies deal 8-36 (by level) bonus magic damage. Spore fields poison (damage over time), slow 20-35% and spread to adjacent ground when enemies stand in them for 0.5 s (at most 6 fields)."
+    },
+    "hooks": ["truda_blight"]
+  },
+  "abilities": [
+    {
+      "id": "truda_q",
+      "name": { "de": "Sporenwurf", "en": "Spore Toss" },
+      "desc": {
+        "de": "Kreis 190 auf 850: 60/95/130/165/200 (+55 % AP) magischer Schaden; hinterlässt ein Sporenfeld (5 s).",
+        "en": "Circle 190 at 850: 60/95/130/165/200 (+55% AP) magic damage; leaves a spore field (5 s)."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 850,
+      "cooldown": [8, 7.5, 7, 6.5, 6],
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "radius": 190,
+      "delay": 0.25,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [60, 95, 130, 165, 200], "ap": 0.55 } },
+        { "kind": "hook", "id": "truda_q_field" }
+      ]
+    },
+    {
+      "id": "truda_w",
+      "name": { "de": "Myzelgriff", "en": "Mycelium Grasp" },
+      "desc": {
+        "de": "Ziel (650): 40/70/100/130/160 (+40 % AP) magischer Schaden, Wurzel 1-1,4 s; unter dem Ziel wächst ein Sporenfeld.",
+        "en": "Target (650): 40/70/100/130/160 (+40% AP) magic damage, root for 1-1.4 s; a spore field grows under the target."
+      },
+      "type": "targeted",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 650,
+      "cooldown": [15, 14, 13, 12, 11],
+      "cost": [60, 65, 70, 75, 80],
+      "costType": "mana",
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [40, 70, 100, 130, 160], "ap": 0.4 } },
+        { "kind": "root", "duration": [1, 1.1, 1.2, 1.3, 1.4] },
+        { "kind": "hook", "id": "truda_w_field" }
+      ]
+    },
+    {
+      "id": "truda_e",
+      "name": { "de": "Wucherung", "en": "Overgrowth" },
+      "desc": {
+        "de": "Alle deine Sporenfelder wachsen sofort auf angrenzenden Boden (Obergrenze 6). +15 % Bewegung für 2 s.",
+        "en": "All your spore fields spread at once to adjacent ground (cap 6). +15% move speed for 2 s."
+      },
+      "type": "self",
+      "castTime": 0.15,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [16, 15, 14, 13, 12],
+      "cost": 50,
+      "costType": "mana",
+      "effects": [
+        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 2, "target": "self" },
+        { "kind": "hook", "id": "truda_e_spread" }
+      ]
+    },
+    {
+      "id": "truda_r",
+      "name": { "de": "Sporenbruch", "en": "Spore Burst" },
+      "desc": {
+        "de": "Alle deine Sporenfelder platzen: Gegner darin erleiden 150/250/350 (+60 % AP) magischen Schaden (je Gegner einmal) und sind 0,75 s betäubt. Die Felder verschwinden. Ohne Felder wirkt die Fähigkeit nicht (kein Verbrauch).",
+        "en": "All your spore fields burst: enemies inside take 150/250/350 (+60% AP) magic damage (once per enemy) and are stunned for 0.75 s. The fields vanish. With no fields nothing happens (no cost)."
+      },
+      "type": "self",
+      "castTime": 0.3,
+      "movesWhileCasting": false,
+      "range": 0,
+      "cooldown": [100, 85, 70],
+      "cost": 100,
+      "costType": "mana",
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [150, 250, 350], "ap": 0.6 } },
+        { "kind": "stun", "duration": 0.75 },
+        { "kind": "hook", "id": "truda_r_burst" }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3 (Wurzel + Feld) und Level 6 (Sporenbruch: Felder werden zur Falle).",
+    "en": "Level 3 (root plus field) and level 6 (Spore Burst turns the fields into a trap)."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Wurzel und Feld", "en": "Root and field" }, "sequence": ["W", "Q", "AA"] },
+    { "name": { "de": "Feld wuchern lassen", "en": "Let the field grow" }, "sequence": ["Q", "E", "AA"] },
+    { "name": { "de": "Felder platzen lassen", "en": "Burst the fields" }, "sequence": ["Q", "W", "E", "R"] }
+  ],
+  "scores": { "engage": 2, "peel": 3, "range": 3, "scaling": 4, "waveclear": 4, "mobility": 1 },
+  "voiceLines": {
+    "pick": { "de": "Aus Moder wächst Macht.", "en": "From rot grows power." },
+    "firstBlood": { "de": "Der erste Pilz ist gepflanzt.", "en": "The first mushroom is planted." },
+    "kill": { "de": "Gut gedüngt.", "en": "Well fertilised." },
+    "death": { "de": "Ich verrotte ... und wachse wieder.", "en": "I rot ... and grow again." },
+    "recall": { "de": "Zurück ins Moos.", "en": "Back to the moss." },
+    "taunt": { "de": "Trittst du ruhig rein. Es wächst gern.", "en": "Go on, step in. It likes to grow." }
+  },
+  "silhouette": "stooped hexer under a huge red spotted mushroom cap hat, hunched shoulders, glowing spore cloud around a gnarled staff with a small mushroom"
+}

@@ -1,0 +1,147 @@
+{
+  "id": "knarr",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "frontline",
+    "engage": 3,
+    "peel": 2,
+    "poke": 0,
+    "burst": 3
+  },
+  "keyRanges": {
+    "auto": 170,
+    "trade": 520,
+    "engage": 590,
+    "poke": 170,
+    "threat": 590,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "knarr_data1",
+      "kind": "trade",
+      "sequence": [
+        "Q",
+        "AA",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "knarr_data2",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "E",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "knarr_data3",
+      "kind": "allin",
+      "sequence": [
+        "Q",
+        "R",
+        "AA"
+      ],
+      "source": "data"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "line",
+      "roles": [
+        "cc",
+        "burst"
+      ],
+      "range": 520,
+      "useRange": [
+        0,
+        478.4
+      ],
+      "speed": 1500,
+      "width": 140,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 3,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 2,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "W",
+      "aim": "self",
+      "roles": [
+        "utility"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        320
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "dash",
+      "roles": [
+        "escape",
+        "engage"
+      ],
+      "range": 420,
+      "useRange": [
+        85,
+        590
+      ],
+      "speed": 1300,
+      "width": 0,
+      "radius": 230,
+      "castTime": 0.15,
+      "delay": 0,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 1,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "R",
+      "aim": "target",
+      "roles": [
+        "cc",
+        "sustain",
+        "burst",
+        "ult"
+      ],
+      "range": 450,
+      "useRange": [
+        0,
+        450
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 4,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

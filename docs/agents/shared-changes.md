@@ -673,6 +673,12 @@ Additive edits to shared files (all small):
   `src/render/{abilityMotifs.json,groundObjects.ts}` (new `src/render/champsAFx.ts`), `src/sim/trainer/scenarios.ts`, `src/data/{runePresets,voiceLines,items,itemIcons}.json`,
   `src/data/bots/hints/*` (generated), `tests/{championData,loaderLayout}.test.ts` roster lists.
 - `src/ai/bot/combat.ts` `offensiveCast`: a champion whose W is a `line: perpendicular` zone casts W before Q (wall, then skillshot).
+## champs-c (swarm/champs-c)
+
+- Registries, one additive line group per champion (svea, truda, knarr): `src/data/champions/index.ts`, `src/sim/champions/index.ts`, `src/ai/bot/builds.ts`, `src/data/bots/hints/registry.ts` (generated), `src/data/runePresets.json`, `src/data/voiceLines.json`, `src/render/abilityMotifs.json`, `src/render/champions/{casts,motion,kits}.ts`, `src/render/champions/atlas.ts` (DRAWERS: `knarr`), `src/sim/trainer/scenarios.ts` (ADC / MID / TOP pools).
+- `src/render/groundObjects.ts`: one import + one `SWARM_C` prefix block calling `drawSwarmCObject` (new `src/render/swarmCFx.ts`).
+- `src/data/items.json`, `src/data/itemIcons.json`: +3 items (`windschwinge`, `faeulnisstab`, `seeigelpanzer`).
+- docs: `docs/spec-champions.md` roster 28-30, `docs/champion-hooks.md` table.
 
 ## champs-b (swarm/champs-b)
 

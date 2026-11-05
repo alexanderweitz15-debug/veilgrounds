@@ -218,12 +218,34 @@ Design-Prinzipien:
     - E Federsprung: Sprung 300 zum Zeiger, +20 % Tempo 1,5 s. CD 18–10.
     - R Stundenschlag: Kreis 1000/280, 0,9 s Verzögerung, 140/230/320 (+90 % AD), 50 % Slow. CD 100/85/70.
     - Spike 6. Combos: AA→AA→AA→Q, W→AA→E→AA, W→Q→R→AA. Item: Hemmwerk.
+28. **Svea Böenhall, die Sturmschützin** – ADC, Windschützin (AD), Ranged 550. Training: Böen-Auto nach dem Laufen erwarten, Windwand nicht durchschießen.
+    - Passiv Böenlauf: 500 Laufweg laden eine Böe; der nächste Auto richtet 25–70 magischen Zusatzschaden an und verlangsamt 20 % 1 s.
+    - Q Windpfeil: Linie 1.100, 40/70/100/130/160 (+90 % AD), 30 % Slow 1,25 s. CD 9–7.
+    - W Windwand: Kreis 280 auf 800, 3,5–5,5 s; feindliche Skillshots darin werden einmal zur Seite gedrückt und fliegen halb so schnell. CD 20–16.
+    - E Aufwind: Sprung 350, 1,5 s +20 % Bewegung, Böe sofort geladen. CD 16–12. Einziger Dash.
+    - R Orkanpfeil: Linie 2.500, 150/250/350 (+80 % AD) magisch, 1 s Luftstoß (erster Champion). CD 100–70.
+    - Spike 3, 6. Combos: E→Auto→Q, Q→Auto→Auto, R→Q→Auto. Item: Windschwinge (Federtanz: Auto-Treffer auf Champions +20 % Bewegung).
+29. **Truda Sporenhauch, die Pilzhexe** – Mid, Kontroll-Magierin (AP), Ranged 525. Training: Sporenfelder meiden, Wachstum und Sporenbruch lesen.
+    - Passiv Giftfäule: Autos auf vergiftete Gegner +8–36 magisch. Sporenfelder vergiften (Schaden/s), verlangsamen 20–35 % und wachsen auf angrenzenden Boden, wenn Gegner 0,5 s darin stehen (höchstens 6 Felder, 2 Generationen).
+    - Q Sporenwurf: Kreis 190 auf 850, 60/95/130/165/200 (+55 % AP), hinterlässt ein Feld (5 s). CD 8–6.
+    - W Myzelgriff: Ziel 650, 40–160 (+40 % AP), Wurzel 1–1,4 s, Feld unter dem Ziel. CD 15–11.
+    - E Wucherung: alle Felder wachsen sofort (Cap 6), +15 % Bewegung 2 s. CD 16–12.
+    - R Sporenbruch: alle Felder platzen: 150/250/350 (+60 % AP) je Gegner einmal, 0,75 s Betäubung; ohne Felder kein Verbrauch. CD 100–70.
+    - Spike 3, 6. Combos: W→Q→Auto, Q→E→Auto, Q→W→E→R. Item: Fäulnisstab (Fäulnis: Fähigkeitstreffer −40 % Heilung 3 s).
+30. **Knarr Zangenfels, der Gezeitenpanzer** – Top, Haltungs-Tank (nicht menschlich: Riesenkrabbe), Melee 170. Training: Provokation und Scherengriff lesen.
+    - Passiv Panzerschale: Bollwerk (Standard, ab Level 1): −20 % Tempo, +30–70 Rüstung/MR; Seitschritt: +15 % Tempo, Autos +10–26 %. +3 Rüstung/MR je Gegner-Champion in 600 (bis +15).
+    - Q Scherengriff: Linie 520, 70–210 (+60 % Bonus-AD), zieht 300 heran, Wurzel 0,75 s. CD 14–10.
+    - W Panzerhaltung: Haltungswechsel; beim Wechsel ins Bollwerk müssen Gegner-Champions in 450 1–1,4 s ihn angreifen. CD 8–4.
+    - E Seitschritt: Sprung 420 (im Bollwerk 150, 60 % Schaden), 60–200 (+50 % Bonus-AD) Kreis 230, 30 % Slow 1,5 s. CD 16–12.
+    - R Zangenbruch: Ziel 450, 200/300/400 (+80 % Bonus-AD), Betäubung 1,25–1,75 s, Schild 12 % Max-HP. CD 110–80.
+    - Spike 3, 6. Combos: Q→Auto→Auto, W→E→Auto, Q→R→Auto. Item: Seeigelpanzer (Stachelkleid: 25 (+15 % Rüstung) Magie auf Auto-Angreifer).
 
 ## Rollen (Primär; Sekundär in Klammern)
 - Top: Brom, Sister Oleth (Jungle), Old Harrow, Seraphyne (Mid), Isolde, Dagny, Gneis
 - Jungle: Vessa, Nyx, Grimald, Lio, Ottilie, Kaelen (Mid), Sev (Mid), Kerrin
 - Mid: Ilvane, Thessaly, Kaelen, Renn, Aurel, Seraphyne, Sev
 - ADC: Mira, Corvin, Lysa, Tobin, Wren, Henrike
+- ADC: Mira, Corvin, Lysa, Tobin, Wren, Svea
 - Support: Ferris, Gorvam, Mutter Hagen, Kiran, Oda
 
 ## Welt und Ton (§11)

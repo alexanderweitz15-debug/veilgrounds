@@ -1,0 +1,149 @@
+{
+  "id": "knarr",
+  "name": "Knarr Zangenfels",
+  "title": { "de": "der Gezeitenpanzer", "en": "the Tidal Bulwark" },
+  "roles": ["top"],
+  "archetype": "stance_tank",
+  "botBias": { "aggression": 1, "tradeLength": 2, "teamplay": 1 },
+  "trainingPurpose": {
+    "de": "Haltungs-Tank lesen: im Bollwerk lockt er an und hält aus, im Seitschritt ist er schnell und beißt zu. Nicht in die Provokation laufen, Scherengriff-Linie meiden.",
+    "en": "Reading a stance tank: in Fortress he taunts and soaks, in Sidestep he is fast and bites. Do not stand in the taunt, sidestep the Claw Grab line."
+  },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 690,
+    "hpGrowth": 110,
+    "hpRegen": 9,
+    "hpRegenGrowth": 0.8,
+    "mana": 320,
+    "manaGrowth": 40,
+    "manaRegen": 7,
+    "manaRegenGrowth": 0.65,
+    "ad": 64,
+    "adGrowth": 3.5,
+    "armor": 37,
+    "armorGrowth": 4.8,
+    "mr": 32,
+    "mrGrowth": 1.9,
+    "as": 0.625,
+    "asGrowth": 1.8,
+    "range": 170,
+    "ms": 340,
+    "windup": 0.28,
+    "radius": 80
+  },
+  "passive": {
+    "name": { "de": "Panzerschale", "en": "Shell" },
+    "desc": {
+      "de": "Knarr trägt die Schale in zwei Haltungen (W). Bollwerk: 20 % langsamer, viel Rüstung und Magieresistenz. Seitschritt: 15 % schneller, Autos richten mehr Schaden an. Pro gegnerischem Champion in 600: +3 Rüstung und MR (bis +15).",
+      "en": "Knarr wears his shell in two stances (W). Fortress: 20% slower, lots of armor and magic resist. Sidestep: 15% faster, autos deal more damage. For each enemy champion within 600: +3 armor and MR (up to +15)."
+    },
+    "hooks": ["knarr_shell"]
+  },
+  "abilities": [
+    {
+      "id": "knarr_q",
+      "name": { "de": "Scherengriff", "en": "Claw Grab" },
+      "desc": {
+        "de": "Linie 520: 70/105/140/175/210 (+60 % Bonus-AD) Schaden, zieht den ersten getroffenen Gegner 300 heran und wurzelt ihn 0,75 s.",
+        "en": "Line 520: 70/105/140/175/210 (+60% bonus AD) damage, pulls the first enemy hit 300 toward him and roots it for 0.75 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 520,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": [45, 50, 55, 60, 65],
+      "costType": "mana",
+      "width": 140,
+      "speed": 1500,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [70, 105, 140, 175, 210], "bonusAd": 0.6 } },
+        { "kind": "pull", "distance": 300 },
+        { "kind": "root", "duration": 0.75 }
+      ]
+    },
+    {
+      "id": "knarr_w",
+      "name": { "de": "Panzerhaltung", "en": "Shell Stance" },
+      "desc": {
+        "de": "Wechselt die Haltung. Bollwerk: 20 % langsamer, +30/40/50/60/70 Rüstung und MR; beim Wechsel ins Bollwerk müssen Gegner-Champions in 450 1-1,4 s ihn angreifen. Seitschritt: 15 % schneller, Autos +10/14/18/22/26 % Schaden und E ist ein langer Sprung.",
+        "en": "Switches stance. Fortress: 20% slower, +30/40/50/60/70 armor and MR; on entering Fortress enemy champions within 450 must attack him for 1-1.4 s. Sidestep: 15% faster, autos +10/14/18/22/26% damage and E is a long leap."
+      },
+      "type": "self",
+      "castTime": 0,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [8, 7, 6, 5, 4],
+      "cost": 0,
+      "costType": "none",
+      "effects": [{ "kind": "hook", "id": "knarr_w_stance" }]
+    },
+    {
+      "id": "knarr_e",
+      "name": { "de": "Seitschritt", "en": "Sidestep" },
+      "desc": {
+        "de": "Sprung 420 zum Cursor (im Bollwerk nur 150, mit 60 % Schaden): 60/95/130/165/200 (+50 % Bonus-AD) Schaden im Kreis 230 am Ziel, 30 % Slow 1,5 s.",
+        "en": "Dash 420 toward the cursor (only 150 in Fortress, at 60% damage): 60/95/130/165/200 (+50% bonus AD) damage in a 230 circle at the end, 30% slow for 1.5 s."
+      },
+      "type": "dash",
+      "castTime": 0.15,
+      "movesWhileCasting": true,
+      "range": 420,
+      "cooldown": [16, 15, 14, 13, 12],
+      "cost": 50,
+      "costType": "mana",
+      "speed": 1300,
+      "radius": 230,
+      "distance": 420,
+      "effects": [
+        { "kind": "hook", "id": "knarr_e_step" },
+        { "kind": "damage", "type": "phys", "amount": { "base": [60, 95, 130, 165, 200], "bonusAd": 0.5 } },
+        { "kind": "slow", "pct": 30, "duration": 1.5 }
+      ]
+    },
+    {
+      "id": "knarr_r",
+      "name": { "de": "Zangenbruch", "en": "Pincer Break" },
+      "desc": {
+        "de": "Gegner (450): 200/300/400 (+80 % Bonus-AD) Schaden und 1,25/1,5/1,75 s betäubt; Knarr erhält einen Schild über 12 % seiner Max-HP für 3 s.",
+        "en": "Enemy (450): 200/300/400 (+80% bonus AD) damage and stunned for 1.25/1.5/1.75 s; Knarr gains a shield of 12% of his max HP for 3 s."
+      },
+      "type": "targeted",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 450,
+      "cooldown": [110, 95, 80],
+      "cost": 100,
+      "costType": "mana",
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [200, 300, 400], "bonusAd": 0.8 } },
+        { "kind": "stun", "duration": [1.25, 1.5, 1.75] },
+        { "kind": "shield", "amount": { "base": 0, "maxHp": 0.12 }, "duration": 3, "target": "self" }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3 (Bollwerk-Wurzel-Kombination) und Level 6 (Zangenbruch fängt den Carry).",
+    "en": "Level 3 (Fortress plus root combo) and level 6 (Pincer Break catches the carry)."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Greifen und Zubeißen", "en": "Grab and bite" }, "sequence": ["Q", "AA", "AA"] },
+    { "name": { "de": "Seitschritt, Haltung, Schlag", "en": "Step, stance, strike" }, "sequence": ["W", "E", "AA"] },
+    { "name": { "de": "Heranziehen und Brechen", "en": "Pull and break" }, "sequence": ["Q", "R", "AA"] }
+  ],
+  "scores": { "engage": 3, "peel": 2, "range": 1, "scaling": 3, "waveclear": 2, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Knack.", "en": "Snap." },
+    "firstBlood": { "de": "Der Erste ist gepackt.", "en": "The first one is caught." },
+    "kill": { "de": "Zerknackt.", "en": "Cracked." },
+    "death": { "de": "Die Schale ist gesprungen.", "en": "The shell has cracked." },
+    "recall": { "de": "Zurück in die Brandung.", "en": "Back to the surf." },
+    "taunt": { "de": "Komm näher. Ich beiße nur ein bisschen.", "en": "Come closer. I only bite a little." }
+  },
+  "silhouette": "giant armored crab walking on four legs, one huge crusher claw and a smaller pincer, eye stalks, barnacle-crusted shell"
+}

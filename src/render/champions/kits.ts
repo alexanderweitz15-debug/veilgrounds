@@ -42,11 +42,14 @@ import {
 } from './props2';
 import { crimsonHem, crowRing, featherMarks, genjutsuEyes, highCollar, longHair, palmCrow, ringNecklace, SEV_CRIMSON } from './sev';
 import { VARGRIM_KIT } from './cavalry';
-import { DORRAK_KIT } from './worm';
+import { KNARR_KIT } from './crab';
 import { antennae, flameLamp, lightThread, mothWings } from './fenna';
 import { boulderFists, mossTufts, rockHump, runeCracks } from './golem';
 import { chainMantle, hookBlade, wristManacles } from './chains';
 import { hipGears, mainspringPack, springCrossbow } from './clockwork';
+import { gustBow, gustSwirl, featherCrest, windStreamers } from './svea';
+import { backShrooms, mushroomCap, sporeMotes, sporeStaff } from './truda';
+import { DORRAK_KIT } from './worm';
 import { bloodDrips, bloodOrbs, thornCrown } from './rovena';
 import { floatNotes, hatPlume, luteBack } from './tilda';
 import type { Kit } from './types';
@@ -915,6 +918,63 @@ kit({
   props: [mothWings, antennae, flameLamp, lightThread],
 });
 
+// Svea Böenhall: wind archer, slim and fast; long ribbons, feather crest, no cape
+kit({
+  id: 'svea',
+  name: 'Svea Böenhall',
+  world: 196,
+  look: 'slim wind archer in a short sea-teal tunic with white-cream sleeves and leather bracers, tall boots, white-blonde high tail; two long teal ribbons stream from her shoulders, a three-feather crest on a brow band, a pale feathered bow tied with ribbons and a small gust swirling at her boots',
+  feature: 'two long streamers + feather crest',
+  body: { ...FEMALE, H: 178, shW: 17, hipW: 14, girth: 0.9, legs: 0.53 },
+  outfit: {
+    skin: SKIN.light,
+    face: { eyes: '#62b8c8', brows: 0.8 },
+    top: cloth('#3f8f94'),
+    sleeves: cloth('#efe8d2'),
+    forearms: leather('#8a6a46'),
+    legs: cloth('#d9d2bc'),
+    boots: leather('#7a5a3a'),
+    bootH: 0.66,
+    coat: { mat: cloth('#3f8f94'), len: 0.5, flare: 0.7, split: true },
+    belt: { mat: leather('#8a6a46'), buckle: BRASS },
+    hair: { style: 'tied', mat: hair('#f1ead2') },
+  },
+  hold: 'bow',
+  attack: 'snap',
+  cast: 'draw',
+  props: [windStreamers, featherCrest, gustBow, gustSwirl],
+  gait: 'light',
+});
+
+// Truda Sporenhauch: hunched spore hexer under a huge red cap hat
+kit({
+  id: 'truda',
+  name: 'Truda Sporenhauch',
+  world: 192,
+  look: 'hunched old hexer under a huge red spotted mushroom cap worn as a hat; moss-brown patched dress with a dark green shawl, grey-lilac skin, long grey hair under the cap; gnarled staff with a small glowing toadstool, toadstools growing from her back and spore motes drifting round her',
+  feature: 'huge red mushroom-cap hat',
+  body: { ...FEMALE, H: 160, shW: 17, hipW: 15, girth: 1.02, hunch: 0.16, bust: 0.3, headR: 12.6 },
+  outfit: {
+    skin: '#b9a8b0',
+    face: { eyes: '#c8f08a', brows: 1.1, old: true },
+    top: cloth('#5b5a3c'),
+    sleeves: cloth('#6a5a3a'),
+    forearms: cloth('#4a4a34'),
+    legs: cloth('#3a3a2c'),
+    boots: leather('#3a2c20'),
+    coat: { mat: cloth('#62603f'), len: 1.45, flare: 0.5, tatter: true },
+    shawl: cloth('#3c5a3a'),
+    belt: { mat: leather('#4a3a28'), buckle: BRASS },
+    hair: { style: 'long', mat: hair('#c4c0b6') },
+    pouches: { mat: leather('#4a3a28'), n: 2 },
+  },
+  hold: 'pole',
+  attack: 'staff',
+  cast: 'lob',
+  props: [backShrooms, mushroomCap, sporeStaff, sporeMotes],
+  gait: 'normal',
+});
+
 kit({
   id: 'rovena',
   name: 'Rovena Aderlass',
@@ -1053,4 +1113,6 @@ kit({
   gait: 'light',
   props: [mainspringPack, springCrossbow, hipGears],
 });
+// Knarr: giant crab, painted by the SpriteDrawer in crab.ts (atlas.ts DRAWERS); the Kit stub carries the icon colours
+kit(KNARR_KIT);
 kit(DORRAK_KIT);

@@ -316,6 +316,20 @@ The turret is hook state (not a pet unit: pets with HP draw as Hark), drawn from
 |---|---|---|
 | `henrike_mainspring` | Passive | `onAutoHit`: +1 tension (max 5, decays to 0 after 4 s without an auto). `onComputeStats`: attack speed x (1 + 3 % per tension). `onCast`: at full tension the cast is overwound: tension resets, 2 s window of +40 % ability damage (`modifyDamage`, not autos), 30 % of the remaining cooldown of that slot refunded. Passive badge = tension, aura while full. |
 | `henrike_w_turret` | W | Deploys the turret at the target point (one at a time, 6 s). Overwound deploy (full tension at cast) fixes +40 % shot damage. `onTick` module hook: every 22 ticks it shoots her attack target if within 600 of the turret, else the nearest champion within 600; physical `12..36 + 30 % AD` (counted as an auto for modifiers). |
+## Svea Böenhall (`svea`), Truda Sporenhauch (`truda`), Knarr Zangenfels (`knarr`) (swarm/champs-c)
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `svea_gust` | Passive | `onTick` sums walked distance (jumps over 120 per tick = recall/flash are ignored); 500 = gust ready. `onAutoFire` consumes it, `onAutoHit` adds 25-70 magic damage and a 20 % slow for 1 s. |
+| `svea_w_zone` | W | Zone state per caster; each tick enemy line projectiles (Proj.kind 1) inside are bent 22 degrees away from the zone centre once and run at half speed until they leave (original speed restored). |
+| `svea_e_gust` | E | Phase `cast` (dash end): gust charged at once. |
+| `truda_blight` | Passive | `modifyDamage`: autos on enemies with the `truda_poison` dot deal 8-36 more. |
+| `truda_q_field`, `truda_w_field` | Q, W | Add a spore field (radius 190 / 170, 5 s; over the cap of 6 the oldest is dropped). Fields poison (dot), slow and spread: an enemy standing in a field for 0.5 s makes a child field 1.5 radii toward it (generation 2 max, children 4 s). |
+| `truda_e_spread` | E | Every field spreads once in the first free hex direction. |
+| `truda_r_burst` | R | `ownsHits`: every enemy inside any field is hit once (data damage + stun via `applyEffects`), fields removed; no fields = cooldown and mana refunded. |
+| `knarr_shell` | Passive | `onComputeStats`: Fortress (default, from level 1) -20 % move speed and +resist; Sidestep +15 % move speed; +3 armor/MR per enemy champion within 600. `modifyDamage`: Sidestep autos +10-26 %. Numbers in `knarr.values.json`. |
+| `knarr_w_stance` | W | Toggle; entering Fortress taunts enemy champions within 450 for 1-1.4 s (`onTick` writes the attack order each tick). The snapshot aura `knarr_w` = Fortress (bots read it). |
+| `knarr_e_step` | E | Fortress: dash plan distance 150 (phase `dashStart`) and damage x0.6. |
 ### Rovena, Dorrak, Tilda (swarm/champs-b)
 
 | Hook id | Slot | Behaviour |

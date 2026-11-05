@@ -64,6 +64,9 @@
     "henrike": [["arrow",38],["gear",30],["boot",48],["bell",42]],
     "rovena": [["dagger", 355], ["drop", 350], ["chain", 5], ["heart", 345]],
     "dorrak": [["fang", 38], ["claw", 30], ["spiral", 42], ["wave", 36]],
-    "tilda": [["heart", 120], ["boot", 195], ["bell", 345], ["horn", 48]]
+    "tilda": [["heart", 120], ["boot", 195], ["bell", 345], ["horn", 48]],
+    "svea": [["arrow",190],["spiral",175],["wing",185],["bow",205]],
+    "truda": [["leaf",110],["root",95],["spiral",125],["bomb",80]],
+    "knarr": [["claw",15],["shield",205],["boot",190],["axe",5]]
   }
 }

@@ -1188,5 +1188,107 @@
       "de": "Zurück in die Werkstatt.",
       "en": "Back to the workshop."
     }
+  },
+  "svea": {
+    "pick": {
+      "de": "Der Wind kennt mein Ziel.",
+      "en": "The wind knows my target."
+    },
+    "move1": {
+      "de": "Mit dem Wind.",
+      "en": "With the wind."
+    },
+    "move2": {
+      "de": "Leicht wie eine Feder.",
+      "en": "Light as a feather."
+    },
+    "attack": {
+      "de": "Böe voraus!",
+      "en": "Gust ahead!"
+    },
+    "ability": {
+      "de": "Der Wind dreht.",
+      "en": "The wind turns."
+    },
+    "kill": {
+      "de": "Fortgeweht.",
+      "en": "Blown away."
+    },
+    "death": {
+      "de": "Der Wind hat sich gedreht.",
+      "en": "The wind has turned."
+    },
+    "recall": {
+      "de": "Mit Rückenwind nach Hause.",
+      "en": "Home on a tailwind."
+    }
+  },
+  "truda": {
+    "pick": {
+      "de": "Aus Moder wächst Macht.",
+      "en": "From rot grows power."
+    },
+    "move1": {
+      "de": "Der Boden ist feucht genug.",
+      "en": "The ground is damp enough."
+    },
+    "move2": {
+      "de": "Hier wächst bald was.",
+      "en": "Something will grow here soon."
+    },
+    "attack": {
+      "de": "Verfaule!",
+      "en": "Rot!"
+    },
+    "ability": {
+      "de": "Sporen, wachset.",
+      "en": "Spores, grow."
+    },
+    "kill": {
+      "de": "Gut gedüngt.",
+      "en": "Well fertilised."
+    },
+    "death": {
+      "de": "Ich verrotte ... und wachse wieder.",
+      "en": "I rot ... and grow again."
+    },
+    "recall": {
+      "de": "Zurück ins Moos.",
+      "en": "Back to the moss."
+    }
+  },
+  "knarr": {
+    "pick": {
+      "de": "Knack.",
+      "en": "Snap."
+    },
+    "move1": {
+      "de": "Seitwärts, immer seitwärts.",
+      "en": "Sideways, always sideways."
+    },
+    "move2": {
+      "de": "Die Flut kommt.",
+      "en": "The tide is coming."
+    },
+    "attack": {
+      "de": "Klapp!",
+      "en": "Clack!"
+    },
+    "ability": {
+      "de": "Festhalten.",
+      "en": "Hold still."
+    },
+    "kill": {
+      "de": "Zerknackt.",
+      "en": "Cracked."
+    },
+    "death": {
+      "de": "Die Schale ist gesprungen.",
+      "en": "The shell has cracked."
+    },
+    "recall": {
+      "de": "Zurück in die Brandung.",
+      "en": "Back to the surf."
+    }
   }
 }

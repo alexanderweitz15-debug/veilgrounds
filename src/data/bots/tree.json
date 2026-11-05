@@ -3,16 +3,16 @@
   "params": {
     "orbwalk": { "marginMs": 70, "windowMs": 300 },
     "objectiveThresholds": {
-      "iron": { "dragon": 0.3, "baron": 0.95, "prepS": 0 },
-      "bronze": { "dragon": 0.32, "baron": 0.95, "prepS": 0 },
-      "silver": { "dragon": 0.35, "baron": 0.92, "prepS": 0 },
-      "gold": { "dragon": 0.4, "baron": 0.9, "prepS": 15 },
-      "platinum": { "dragon": 0.5, "baron": 0.8, "prepS": 25 },
-      "emerald": { "dragon": 0.55, "baron": 0.75, "prepS": 35 },
-      "diamond": { "dragon": 0.6, "baron": 0.7, "prepS": 45 },
-      "master": { "dragon": 0.62, "baron": 0.68, "prepS": 50 },
-      "grandmaster": { "dragon": 0.64, "baron": 0.66, "prepS": 55 },
-      "challenger": { "dragon": 0.65, "baron": 0.65, "prepS": 60 }
+      "iron": { "dragon": 0.3, "baron": 0.72, "prepS": 0 },
+      "bronze": { "dragon": 0.32, "baron": 0.72, "prepS": 0 },
+      "silver": { "dragon": 0.35, "baron": 0.7, "prepS": 0 },
+      "gold": { "dragon": 0.4, "baron": 0.68, "prepS": 15 },
+      "platinum": { "dragon": 0.5, "baron": 0.66, "prepS": 25 },
+      "emerald": { "dragon": 0.55, "baron": 0.65, "prepS": 35 },
+      "diamond": { "dragon": 0.6, "baron": 0.64, "prepS": 45 },
+      "master": { "dragon": 0.62, "baron": 0.63, "prepS": 50 },
+      "grandmaster": { "dragon": 0.64, "baron": 0.62, "prepS": 55 },
+      "challenger": { "dragon": 0.65, "baron": 0.6, "prepS": 60 }
     },
     "recall": { "threshold": 0.6, "evalS": 5 },
     "wardEveryS": { "support": 25, "jungle": 35, "laner": 70 }

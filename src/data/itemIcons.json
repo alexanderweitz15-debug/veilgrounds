@@ -86,6 +86,12 @@
     "schnellfuss": { "glyph": "wing", "hue": 48 },
     "gnadenstoss": { "glyph": "axe", "hue": 355 },
     "blutdurst": { "glyph": "drop", "hue": 355 },
-    "wachsamkeit": { "glyph": "eye", "hue": 180 }
+    "wachsamkeit": { "glyph": "eye", "hue": 180 },
+    "eroberer": { "glyph": "sword", "hue": 355 },
+    "komet": { "glyph": "flame", "hue": 215 },
+    "durchdringung": { "glyph": "arrow", "hue": 215 },
+    "letalitaet": { "glyph": "skull", "hue": 355 },
+    "heilkraft": { "glyph": "leaf", "hue": 180 },
+    "standhaft": { "glyph": "root", "hue": 120 }
   }
 }

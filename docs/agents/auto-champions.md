@@ -17,7 +17,7 @@ Gaps (ordered, picked top-down):
 | 5 | Shapeshifter (two forms, jungle) | idea |
 | 6 | Summoner with killable pets (support/jungle) | idea |
 | 7 | Henrike turret killable (needs pet unit) | idea, not cheap |
-| 8 | Rune options: Eroberer / Flinkfuß / Komet from docs/IDEAS-FEEL-SHOP.md | idea |
+| 8 | Rune options from docs/IDEAS-FEEL-SHOP.md: Eroberer, Komet + 4 stat minors | shipped (Flinkfuß and the rest still open) |
 | 9 | Support quest item (Spenderlampe upgrade) | idea |
 
 ## Shipped
@@ -26,6 +26,8 @@ Gaps (ordered, picked top-down):
 - **Marga Kartaune** (`marga`, mid artillery): Fernschuss passive (ability damage +4 % per 100 beyond 500, max +24 %), Q Mörserwurf, W Splitterhagel zone, E Rückstoß (backward hop + shove), R Belagerungsschlag (3000 range). Painted kit (mortar tube on the back, ramrod, soot puffs), item **Langrohr** (+90 AP, +10 haste, +100 attack range). Test `tests/marga.test.ts`.
 - **Torben Wutmähne** (`torben`, top berserker): Rage 0-100 passive, Q cone, W War Cry, E Blood Leap, R Undying Roar (HP floor 1 for 5 s then heal). Painted kit (two hand axes, skull belt, rage haze), item **Raserbeil** (+50 AD +350 HP, below 50 % HP +30 % AS +10 % MS). Test `tests/torben.test.ts`.
 - **botManual**: `AbilityData.botManual`, checked in `ready()` of `src/ai/bot/combat.ts`; Knarr W uses it, so bots stay in Fortress.
+
+- **Runes**: keystones Eroberer (+2 adaptive per champion hit, 8 stacks, heal at full) and Komet (ability hit proc 30-100, CD 12 s) in `src/sim/items/runeHooks.ts`; minors Durchdringung (+6 magic pen), Letalität (+5), Heilkraft (+6 % heal/shield power), Standhaft (+8 % tenacity). Icons in itemIcons.json. Marga defaults to Komet, Torben to Eroberer. Test `tests/autoRunes.test.ts`; `tests/items.test.ts` rune counts are now `>=`.
 
 ## Open
 

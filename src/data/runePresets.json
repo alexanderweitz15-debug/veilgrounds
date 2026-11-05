@@ -2672,12 +2672,12 @@
           "de": "Empfohlene Prägungen für normale Matchups.",
           "en": "Recommended runes for normal matchups."
         },
-        "keystone": "dauerhafter_schaden",
+        "keystone": "komet",
         "minor": [
           "manafluss",
           "adaptiv",
-          "hast"
-        ]
+          "durchdringung"
+      ]
       },
       {
         "id": "aggressiv",
@@ -2742,12 +2742,12 @@
           "de": "Empfohlene Prägungen für normale Matchups.",
           "en": "Recommended runes for normal matchups."
         },
-        "keystone": "zaehigkeit",
+        "keystone": "eroberer",
         "minor": [
-          "zweiter_wind",
           "adaptiv",
-          "ruestung"
-        ]
+          "zweiter_wind",
+          "standhaft"
+      ]
       },
       {
         "id": "aggressiv",

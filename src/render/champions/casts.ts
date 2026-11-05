@@ -37,6 +37,7 @@ export const CAST_FAMILIES: Record<string, CastFamilies> = {
   oda: F('forward', 'lob', 'abba'), // Q/R water pushed, W pool lobbed, E jug to an ally
   oleth: F('point', 'slam', 'abab'), // Q verdict, W aegis slam, E charge, R walls
   ottilie: F('draw', 'raise', 'abab'), // Q arrow drawn, W Hark called, E dash, R howl raised
+  rovena: F('point', 'raise', 'abab'), // Q cut + E shackle pointed, W pool + R tide raised
   renn: F('point', 'spin', 'abab'), // Q cut, W/R blade whirl, E blink
   seraphyne: F('forward', 'raise', 'abab'), // Q bolt, W storm called, E blink, R strike called
   sev: F('forward', 'raise', 'abab'), // Q fireball pushed, W blink, E gaze, R eye raised

@@ -1540,6 +1540,99 @@
           "en": "Shields and heals you give another champion grant her +12% move speed for 1.5 s (once per ally every 6 s)."
         }
       }
+    },
+    {
+      "id": "aderglas",
+      "name": {
+        "de": "Aderglas",
+        "en": "Veinglass"
+      },
+      "tier": "component",
+      "cost": 1000,
+      "from": [
+        "verstaerkerbuch",
+        "rubinsplitter"
+      ],
+      "stats": {
+        "ap": 30,
+        "hp": 175
+      },
+      "tags": [
+        "ap",
+        "tank"
+      ]
+    },
+    {
+      "id": "blutkelch",
+      "name": {
+        "de": "Blutkelch",
+        "en": "Bloodchalice"
+      },
+      "tier": "legendary",
+      "cost": 2900,
+      "from": [
+        "aderglas",
+        "lehrlingsstab"
+      ],
+      "stats": {
+        "ap": 80,
+        "hp": 300
+      },
+      "tags": [
+        "ap",
+        "tank"
+      ],
+      "passive": {
+        "name": {
+          "de": "Letzter Schluck",
+          "en": "Last Sip"
+        },
+        "desc": {
+          "de": "Fähigkeitstreffer auf Champions heilen 4 % deines fehlenden Lebens (+15). Unter 40 % Leben: +10 % AP.",
+          "en": "Ability hits on champions heal 4% of your missing health (+15). Below 40% health: +10% AP."
+        },
+        "rules": [
+          {
+            "on": "onAbilityHit",
+            "if": {
+              "target": {
+                "kind": [
+                  "champion"
+                ],
+                "team": "enemy"
+              }
+            },
+            "cooldown": 0.5,
+            "do": [
+              {
+                "type": "heal",
+                "to": "self",
+                "value": {
+                  "base": 15,
+                  "scale": {
+                    "missingHp": 0.04
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "on": "onComputeStats",
+            "if": {
+              "self": {
+                "hpBelowPct": 40
+              }
+            },
+            "do": [
+              {
+                "type": "statMult",
+                "stat": "ap",
+                "mult": 1.1
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

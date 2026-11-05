@@ -23,6 +23,7 @@ import oda from './oda.json';
 import oleth from './oleth.json';
 import ottilie from './ottilie.json';
 import renn from './renn.json';
+import rovena from './rovena.json';
 import seraphyne from './seraphyne.json';
 import sev from './sev.json';
 import thessaly from './thessaly.json';
@@ -54,6 +55,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   oleth,
   ottilie,
   renn,
+  rovena,
   seraphyne,
   sev,
   thessaly,

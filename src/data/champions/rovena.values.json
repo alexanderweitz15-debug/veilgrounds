@@ -1,0 +1,9 @@
+{
+  "_doc": "Tunables of the rovena hooks (src/sim/champions/rovena.ts) that the generic ability schema cannot hold. Ability numbers live in rovena.json.",
+  "healChamp": 0.25,
+  "healOther": 0.1,
+  "drainMult": 2,
+  "cost": { "maxHpFrac": 0.03 },
+  "rush": { "hpFrac": 0.35, "dmgMult": 1.2, "healMult": 1.5 },
+  "detonate": { "dmgMult": 1.4, "rootSec": 0.75 }
+}

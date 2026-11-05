@@ -984,5 +984,39 @@
       "de": "Meiler prüfen.",
       "en": "Checking the kiln."
     }
+  },
+  "rovena": {
+    "pick": {
+      "de": "Ein kleiner Schnitt. Du spürst ihn kaum.",
+      "en": "A small cut. You'll hardly feel it."
+    },
+    "move1": {
+      "de": "Es tropft schon.",
+      "en": "Already dripping."
+    },
+    "move2": {
+      "de": "Rot steht mir.",
+      "en": "Red suits me."
+    },
+    "attack": {
+      "de": "Ein Tropfen genügt.",
+      "en": "One drop will do."
+    },
+    "ability": {
+      "de": "Zur Ader gelassen.",
+      "en": "Bled dry."
+    },
+    "kill": {
+      "de": "Danke fürs Auffüllen.",
+      "en": "Thanks for the refill."
+    },
+    "death": {
+      "de": "Zu viel gezahlt.",
+      "en": "Paid too much."
+    },
+    "recall": {
+      "de": "Ich blute zurück zur Quelle.",
+      "en": "Bleeding back to the source."
+    }
   }
 }

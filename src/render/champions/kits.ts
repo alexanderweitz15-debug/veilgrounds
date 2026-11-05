@@ -43,6 +43,7 @@ import {
 import { crimsonHem, crowRing, featherMarks, genjutsuEyes, highCollar, longHair, palmCrow, ringNecklace, SEV_CRIMSON } from './sev';
 import { VARGRIM_KIT } from './cavalry';
 import { antennae, flameLamp, lightThread, mothWings } from './fenna';
+import { bloodDrips, bloodOrbs, thornCrown } from './rovena';
 import type { Kit } from './types';
 
 const SKIN = { fair: '#e9c6a4', light: '#ddb08a', tan: '#c08a62', brown: '#946244', dark: '#6a4430', pale: '#e8cfba', old: '#d6b094', ash: '#c8b8a8' };
@@ -907,6 +908,33 @@ kit({
   cast: 'raise',
   gait: 'light',
   props: [mothWings, antennae, flameLamp, lightThread],
+});
+
+kit({
+  id: 'rovena',
+  name: 'Rovena Aderlass',
+  world: 198,
+  look: 'slender pale woman in a dark wine-red robe with a tattered crimson cape, black hair; a ring of six curved bone thorns stands up from her brow like a crown, three blood orbs circle her chest and blood drips from her right hand',
+  feature: 'spiky bone-thorn crown + circling red orbs on a slim robed figure',
+  body: { ...FEMALE, H: 186, shW: 16, hipW: 13, girth: 0.88, legs: 0.5, headR: 12.6, bust: 0.3 },
+  outfit: {
+    skin: '#ecd9d4',
+    face: { eyes: '#d8283a', brows: 1 },
+    top: cloth('#3a1620'),
+    sleeves: cloth('#2a1018'),
+    forearms: cloth('#d8c8b0'),
+    legs: cloth('#241018'),
+    boots: leather('#1c1014'),
+    coat: { mat: cloth('#4a1626'), len: 1.55, flare: 0.5, open: cloth('#8a1a2a'), split: true, tatter: true },
+    cape: { mat: cloth('#7a1424'), len: 1.5, tatter: true },
+    belt: { mat: leather('#2a1a16'), y: 0.2 },
+    hair: { style: 'long', mat: hair('#140a10') },
+  },
+  hold: 'relaxed',
+  attack: 'flick',
+  cast: 'point',
+  gait: 'normal',
+  props: [thornCrown, bloodOrbs, bloodDrips],
 });
 
 // Vargrim: icon-colour stub; the sprite is painted by the SpriteDrawer in cavalry.ts (atlas.ts DRAWERS)

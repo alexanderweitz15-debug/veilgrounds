@@ -40,7 +40,7 @@ for (const seed of seeds) {
   for (const x of ent) { const k = `${x.node}|${x.chosen}|${String(x.reason).replace(/[0-9.]+/g, '#').slice(0, 70)}`; by[k] = (by[k] ?? 0) + 1; }
   console.log('  objective log:', JSON.stringify(by, null, 1).slice(0, 4000));
   const lev = log.filter((l) => /leviathan|uralt/i.test(l)).length, kes = log.filter((l) => /kessel/i.test(l)).length, sch = log.filter((l) => /schleier/i.test(l)).length;
-  tot.lev += lev; tot.kes += kes; tot.sch += sch; tot.tow += towers; tot.kills += kills; tot.games++;
+  tot.lev += js.leviathan[0] + js.leviathan[1]; tot.kes += js.kesselbrut[0] + js.kesselbrut[1]; tot.sch += sch; // event-name counter above misses; use the jungle state tallies tot.tow += towers; tot.kills += kills; tot.games++;
   console.log(`seed ${seed}: ${(sim.tick / 1800).toFixed(1)} min, kills ${kills}, towers ${towers}, leviathan ${lev}, kesselbrut ${kes}, schleier ${sch}${sim.state.winner !== undefined ? ' WIN t' + sim.state.winner : ''}`);
   for (const l of log) console.log('   ', l);
 }

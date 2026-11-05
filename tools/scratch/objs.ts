@@ -13,6 +13,7 @@ const seeds = (process.argv[4] ?? '1').split(',').map(Number);
 const rank = process.argv[5] ?? 'gold';
 const tot = { lev: 0, kes: 0, sch: 0, tow: 0, kills: 0, games: 0 };
 for (const seed of seeds) {
+  globalThis.lt = 0; globalThis.kt = 0;
   const cfg = { ...botGameConfig(seed, rank), ...(brain === 'new' ? { botUtility: true, botReflex: true } : {}) };
   const sim = createSim(cfg);
   const bots = new BotRunner(cfg, undefined, { reflex: brain === 'new' });
@@ -20,6 +21,7 @@ for (const seed of seeds) {
   let kills = 0, towers = 0;
   while (sim.tick < min * 1800 && sim.state.winner === undefined) {
     step(sim, bots.tick(sim));
+    if (sim.tick % 30 === 0) { const j = jungleState(sim); const tot = j.leviathan[0] + j.leviathan[1]; if (tot !== (globalThis.lt ?? 0)) { log.push(`${(sim.tick / 1800).toFixed(1)}m LEVIATHAN #${tot}`); globalThis.lt = tot; } const kt = j.kesselbrut[0] + j.kesselbrut[1]; if (kt !== (globalThis.kt ?? 0)) { log.push(`${(sim.tick / 1800).toFixed(1)}m kessel #${kt}`); globalThis.kt = kt; } }
     for (const ev of sim.events) {
       if (ev.e !== 'death') continue;
       if (ev.kind === Kind.Champion) kills++;

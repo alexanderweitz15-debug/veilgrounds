@@ -51,6 +51,9 @@ export interface EscapeState {
   pingedDanger: boolean;
   /** Own scoreboard deaths at episode start (the tree does not tick while dead). */
   deaths: number;
+  /** Last fight-or-flight call and when it ended: a new episode within 3 s keeps it unless the odds moved clearly. */
+  lastMode?: 'escape' | 'fight';
+  lastEnd?: number;
 }
 
 const newState = (): EscapeState => ({ active: false, since: 0, mode: 'escape', route: null, routeAt: -1e9, goal: null, nextJuke: 0, jukeSide: 1, ccHit: false, lateFlashRolled: false, threats: 0, pingedDanger: false, deaths: 0 });
@@ -102,6 +105,8 @@ export function escape(n: NodeCtx): NodeResult {
   if (!foes.length && !heard) {
     if (!st.active) return 'failure';
     st.active = false;
+    st.lastMode = st.mode;
+    st.lastEnd = tick;
     pv.mem.tactics.recallReeval = true;
     log(n, pv, 'escape', 'end', 'no chasers perceived: survived, re-evaluate recall', { hp: +hpFrac(self).toFixed(2) });
     return 'success';
@@ -120,7 +125,7 @@ export function escape(n: NodeCtx): NodeResult {
   // ---- 1 + 2: assess, fight or flight (once per episode and when the number of chasers changes)
   const first = !st.active;
   if (first) {
-    Object.assign(st, newState(), { active: true, since: tick, deaths });
+    Object.assign(st, newState(), { active: true, since: tick, deaths, lastMode: st.lastMode, lastEnd: st.lastEnd });
     if (ping(n, pv, 'danger', self)) st.pingedDanger = true;
   }
   if (foes.length && (first || foes.length !== st.threats)) {
@@ -129,7 +134,11 @@ export function escape(n: NodeCtx): NodeResult {
     const ex = estimateExchange(n.v, n.ctx, target, 3, n.rng, { extraAllyDps: jgEtaS <= 8 ? dpsOf(n.ctx.champ, me.level) : 0 });
     // rank shift (values.json fight.escapeShift): Bronze fights even fights it should flee, Challenger flees a bit earlier
     const thr = n.p.knobs.escapeFightThreshold + rankCurve(VALUES.fight.escapeShift, n.ctx.params.skill);
-    let fight = ex.winProb > thr;
+    // hysteresis: the estimate is noisy per call, so fight/flee flipped several times a second (seen in logs: 0.51 /
+    // 0.49 / 0.43 around 0.45) - the current or a just-ended call needs a 0.05 swing to change (0.1 kept laners fighting: CS -10 %)
+    const prevCall = !first ? st.mode : st.lastEnd !== undefined && tick - st.lastEnd < 90 ? st.lastMode : undefined;
+    const hyst = prevCall === 'fight' ? -0.05 : prevCall === 'escape' ? 0.05 : 0;
+    let fight = ex.winProb > thr + hyst;
     let reason = `winProb ${ex.winProb.toFixed(2)} vs ${thr.toFixed(2)}`;
     if (coinFlipFights(n.p)) {
       fight = n.rng.chance(rankCurve(VALUES.fight.lowRankFightChance, n.ctx.params.skill));

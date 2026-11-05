@@ -46,7 +46,8 @@ const HERALD_UNTIL_S = 19 * 60 + 45;
 // "feasible" around level 8-9 - the first Leviathan sat for minutes. LoL teams take it at 5:00 in ~25-35 s.
 const KILL_WITHIN_S: Record<ObjectiveId, number> = { leviathan: 40, kesselbrut: 45, schleierwaechter: 45 };
 /** No new start on the same objective for this long after a start (a failed take is not retried at once). */
-const OBJECTIVE_RETRY_S = 180;
+// was 180: one failed gather blocked the first Leviathan until ~12 min (it spawns at 5:00)
+const OBJECTIVE_RETRY_S = 60;
 /** The group / siege decision is re-rolled at most this often (a desire lasts 90 s, then laners go back). */
 const GROUP_ROLL_S = 180;
 

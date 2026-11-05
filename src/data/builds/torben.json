@@ -1,0 +1,44 @@
+{
+  "template": "bruiser",
+  "starter": [
+    "dornenklinge",
+    "trank"
+  ],
+  "standard": {
+    "boots": "stiefel_schnelligkeit",
+    "core": [
+      "raserbeil",
+      "schwarze_kette",
+      "blutkrone",
+      "sturmgewand"
+    ]
+  },
+  "vsAD": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "raserbeil",
+      "schwarze_kette",
+      "wallherz",
+      "blutkrone"
+    ]
+  },
+  "vsAP": {
+    "boots": "stiefel_mr",
+    "core": [
+      "raserbeil",
+      "schwarze_kette",
+      "sturmgewand",
+      "blutkrone"
+    ]
+  },
+  "champion": "torben",
+  "note": "Component order follows items.json \"from\"; Diamond+ bots reorder components situationally (spec §5).",
+  "runes": {
+    "keystone": "eroberer",
+    "minor": [
+      "adaptiv",
+      "zweiter_wind",
+      "standhaft"
+    ]
+  }
+}

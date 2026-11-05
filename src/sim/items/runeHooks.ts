@@ -32,6 +32,10 @@ export const INSPIRATION = { at: sec(12 * 60), boots: 'stiefel_hast', discount: 
 export const MANA_FLOW = { per: 25, max: 10, icd: sec(6) };
 export const SECOND_WIND = { pct: 0.06, ticks: sec(10) };
 export const COUP = { below: 0.4, mult: 1.08 };
+/** Conqueror: +2 adaptive (3.3 AP) per stack, 8 stacks, 6 s; at 8 stacks hits heal 2 % max HP (1 s apart). */
+export const CONQUEROR = { per: 2, apPerAd: 5 / 3, max: 8, ticks: sec(6), healPct: 0.02, icd: sec(1) };
+/** Comet: ability hit on a champion, 30-100 by level (+20 % bonus AD, +10 % AP), CD 12 s, adaptive damage type. */
+export const COMET = { min: 30, max: 100, bonusAd: 0.2, ap: 0.1, cd: sec(12) };
 export const VIGILANCE_WARD_MULT = 1.1;
 
 /** Archetypes whose adaptive tie-break (no items yet) goes to AP. */
@@ -48,6 +52,8 @@ interface RuneEnt {
   manaFlow: number;
   manaFlowNext: number;
   bootsDone: boolean;
+  conqNext: number;
+  cometReady: number;
 }
 
 interface RuneState {
@@ -65,7 +71,7 @@ function runeState(sim: Sim): RuneState {
 function ent(sim: Sim, eid: number): RuneEnt {
   const s = runeState(sim);
   let e = s.ent.get(eid);
-  if (!e) s.ent.set(eid, (e = { harmReady: 0, harm: new Map(), gritSince: -1, manaFlow: 0, manaFlowNext: 0, bootsDone: false }));
+  if (!e) s.ent.set(eid, (e = { harmReady: 0, harm: new Map(), gritSince: -1, manaFlow: 0, manaFlowNext: 0, bootsDone: false, conqNext: 0, cometReady: 0 }));
   return e;
 }
 
@@ -141,7 +147,41 @@ function lastingHarm(sim: Sim, eid: number, t: number): void {
   dealDamage(sim, eid, t, amount, adaptiveIsAp(sim, eid) ? 'magic' : 'phys');
 }
 
+/** Conqueror stack on a champion hit: refreshes the buff with one more stack; full stacks heal. */
+function conqueror(sim: Sim, eid: number, t: number): void {
+  if (!isEnemyChamp(sim, eid, t)) return;
+  const ap = adaptiveIsAp(sim, eid);
+  const stat = ap ? 'ap' : 'ad';
+  const per = CONQUEROR.per * (ap ? CONQUEROR.apPerAd : 1);
+  const b = buffs(sim, eid).find((x) => x.id === 'eroberer' && x.kind === 'stat' && x.until > sim.tick);
+  const n = Math.min(CONQUEROR.max, (b ? Math.round(b.flat / per) : 0) + 1);
+  addBuff(sim, eid, { kind: 'stat', stat, id: 'eroberer', src: eid, flat: per * n, ticks: CONQUEROR.ticks });
+  const e = ent(sim, eid);
+  if (n >= CONQUEROR.max && sim.tick >= e.conqNext) {
+    e.conqNext = sim.tick + CONQUEROR.icd;
+    heal(sim, eid, sim.c.Hp.max[eid]! * CONQUEROR.healPct);
+  }
+}
+
+function comet(sim: Sim, eid: number, t: number): void {
+  if (!isEnemyChamp(sim, eid, t)) return;
+  const e = ent(sim, eid);
+  if (sim.tick < e.cometReady) return;
+  e.cometReady = sim.tick + COMET.cd;
+  const { Stats, Champ } = sim.c;
+  const lvl = Math.max(1, Champ.level[eid]!);
+  const amount = COMET.min + ((COMET.max - COMET.min) * (lvl - 1)) / 17 + COMET.bonusAd * Stats.bonusAd[eid]! + COMET.ap * Stats.ap[eid]!;
+  dealDamage(sim, eid, t, amount, adaptiveIsAp(sim, eid) ? 'magic' : 'phys');
+}
+
 export const RUNE_HOOKS: Record<string, ItemHook> = {
+  rune_conqueror: {
+    onAutoHit: (sim, eid, t) => conqueror(sim, eid, t),
+    onAbilityHit: (sim, eid, t) => conqueror(sim, eid, t),
+  },
+  rune_comet: {
+    onAbilityHit: (sim, eid, t) => comet(sim, eid, t),
+  },
   rune_lasting_harm: {
     onAutoHit: (sim, eid, t) => lastingHarm(sim, eid, t),
     onAbilityHit: (sim, eid, t) => lastingHarm(sim, eid, t),

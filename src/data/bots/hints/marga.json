@@ -1,0 +1,154 @@
+{
+  "id": "marga",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "carry",
+    "engage": 1,
+    "peel": 2,
+    "poke": 5,
+    "burst": 3
+  },
+  "keyRanges": {
+    "auto": 575,
+    "trade": 900,
+    "engage": 575,
+    "poke": 1300,
+    "threat": 1300,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "marga_data1",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "Q",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "marga_data2",
+      "kind": "trade",
+      "sequence": [
+        "Q",
+        "E",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "marga_data3",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "W",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "marga_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "circle",
+      "roles": [
+        "zone",
+        "poke"
+      ],
+      "range": 1300,
+      "useRange": [
+        0,
+        1196
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 190,
+      "castTime": 0.35,
+      "delay": 0.9,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "circle",
+      "roles": [
+        "zone",
+        "poke"
+      ],
+      "range": 900,
+      "useRange": [
+        0,
+        828
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 300,
+      "castTime": 0.3,
+      "delay": 0.4,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "dash",
+      "roles": [
+        "escape"
+      ],
+      "range": 380,
+      "useRange": [
+        287.5,
+        955
+      ],
+      "speed": 1500,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.1,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "R",
+      "aim": "circle",
+      "roles": [
+        "zone",
+        "burst",
+        "ult"
+      ],
+      "range": 3000,
+      "useRange": [
+        0,
+        1656
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 350,
+      "castTime": 0.5,
+      "delay": 1.8,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

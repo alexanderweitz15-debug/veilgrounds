@@ -1,0 +1,153 @@
+{
+  "id": "marga",
+  "name": "Marga Kartaune",
+  "title": { "de": "die Büchsenmeisterin", "en": "the Siege Gunner" },
+  "roles": ["mid"],
+  "archetype": "artillery_mage",
+  "botBias": { "kiting": -2, "tradeLength": -2 },
+  "trainingPurpose": {
+    "de": "Poke-Artillerie lesen: Mörserkreise früh am Boden sehen und verlassen, nach dem Rückstoß-Sprung nicht blind nachsetzen, den Belagerungsschlag aus der Ferne erwarten.",
+    "en": "Reading poke artillery: spot the mortar circles on the ground early and leave them, do not chase blindly after the recoil hop, expect the Siege Shell from across the map."
+  },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 590,
+    "hpGrowth": 100,
+    "hpRegen": 5.5,
+    "hpRegenGrowth": 0.55,
+    "mana": 430,
+    "manaGrowth": 30,
+    "manaRegen": 8,
+    "manaRegenGrowth": 0.8,
+    "ad": 54,
+    "adGrowth": 3,
+    "armor": 24,
+    "armorGrowth": 4,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.62,
+    "asGrowth": 1.6,
+    "range": 575,
+    "ms": 330,
+    "windup": 0.22,
+    "projectileSpeed": 1500,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Fernschuss", "en": "Long Shot" },
+    "desc": {
+      "de": "Fähigkeitsschaden steigt mit der Entfernung zum Ziel: +4 % pro 100 Reichweite über 500, höchstens +24 % ab 1.100.",
+      "en": "Ability damage rises with the distance to the target: +4% per 100 range beyond 500, at most +24% from 1,100."
+    },
+    "hooks": ["marga_range"]
+  },
+  "abilities": [
+    {
+      "id": "marga_q",
+      "name": { "de": "Mörserwurf", "en": "Mortar Lob" },
+      "desc": {
+        "de": "Kreis 190 auf 1.300, schlägt nach 0,9 s ein: 70/115/160/205/250 (+65 % AP) magischer Schaden, 25 % Slow für 1 s.",
+        "en": "Circle 190 at 1300, lands after 0.9 s: 70/115/160/205/250 (+65% AP) magic damage, 25% slow for 1 s."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.35,
+      "movesWhileCasting": false,
+      "range": 1300,
+      "cooldown": [7, 6.5, 6, 5.5, 5],
+      "cost": [60, 65, 70, 75, 80],
+      "costType": "mana",
+      "radius": 190,
+      "delay": 0.9,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [70, 115, 160, 205, 250], "ap": 0.65 } },
+        { "kind": "slow", "pct": 25, "duration": 1 }
+      ]
+    },
+    {
+      "id": "marga_w",
+      "name": { "de": "Splitterhagel", "en": "Shrapnel Hail" },
+      "desc": {
+        "de": "Zone 300 auf 900, 3 s: pro Sekunde 25/40/55/70/85 (+25 % AP) magischer Schaden und 20 % Slow.",
+        "en": "Zone 300 at 900, 3 s: each second 25/40/55/70/85 (+25% AP) magic damage and a 20% slow."
+      },
+      "type": "zone",
+      "castTime": 0.3,
+      "movesWhileCasting": false,
+      "range": 900,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": [70, 75, 80, 85, 90],
+      "costType": "mana",
+      "radius": 300,
+      "delay": 0.4,
+      "duration": 3,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [25, 40, 55, 70, 85], "ap": 0.25 } },
+        { "kind": "slow", "pct": 20, "duration": 0.6 }
+      ]
+    },
+    {
+      "id": "marga_e",
+      "name": { "de": "Rückstoß", "en": "Recoil" },
+      "desc": {
+        "de": "Sprung 380 vom Cursor weg; Gegner in 300 um deine alte Position werden 220 zurückgestoßen und 20 % verlangsamt.",
+        "en": "Hop 380 away from the cursor; enemies within 300 of your old position are shoved back 220 and slowed 20%."
+      },
+      "type": "dash",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 380,
+      "cooldown": [16, 15, 14, 13, 12],
+      "cost": 50,
+      "costType": "mana",
+      "speed": 1500,
+      "distance": 380,
+      "effects": [{ "kind": "hook", "id": "marga_e_recoil" }]
+    },
+    {
+      "id": "marga_r",
+      "name": { "de": "Belagerungsschlag", "en": "Siege Shell" },
+      "desc": {
+        "de": "Kreis 350 auf bis zu 3.000, schlägt nach 1,8 s ein: 200/325/450 (+80 % AP) magischer Schaden, 50 % Slow für 2 s.",
+        "en": "Circle 350 at up to 3000, lands after 1.8 s: 200/325/450 (+80% AP) magic damage, 50% slow for 2 s."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.5,
+      "movesWhileCasting": false,
+      "range": 3000,
+      "cooldown": [110, 95, 80],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 350,
+      "delay": 1.8,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [200, 325, 450], "ap": 0.8 } },
+        { "kind": "slow", "pct": 50, "duration": 2 }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3 (Splitterhagel hält die Lane) und Level 6 (Belagerungsschlag auf Turm-Dives und Objektive).",
+    "en": "Level 3 (Shrapnel Hail holds the lane) and level 6 (Siege Shell on dives and objectives)."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Hagel und Mörser", "en": "Hail and mortar" }, "sequence": ["W", "Q", "AA"] },
+    { "name": { "de": "Rückstoß-Poke", "en": "Recoil poke" }, "sequence": ["Q", "E", "AA"] },
+    { "name": { "de": "Belagerung", "en": "Siege" }, "sequence": ["R", "W", "Q"] }
+  ],
+  "scores": { "engage": 1, "peel": 2, "range": 5, "scaling": 3, "waveclear": 4, "mobility": 1 },
+  "voiceLines": {
+    "pick": { "de": "Ladung steht. Zielt jemand?", "en": "Charge is set. Anyone in range?" },
+    "firstBlood": { "de": "Treffer. Auf Anhieb.", "en": "Hit. First try." },
+    "kill": { "de": "Volltreffer.", "en": "Direct hit." },
+    "death": { "de": "Zu nah ... ich bin zu nah.", "en": "Too close ... I got too close." },
+    "recall": { "de": "Pulver nachfüllen.", "en": "Time to restock powder." },
+    "taunt": { "de": "Du hörst es erst, wenn es zu spät ist.", "en": "You only hear it once it is too late." }
+  },
+  "silhouette": "short stout gunner with brass goggles and a flat cap, a huge brass mortar tube strapped to her back pointing up and forward over the shoulder, a bandolier of shells across the chest and a powder-soot haze"
+}

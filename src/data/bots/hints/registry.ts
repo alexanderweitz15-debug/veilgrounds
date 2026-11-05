@@ -21,7 +21,9 @@ import kerrin from './kerrin.json';
 import kiran from './kiran.json';
 import knarr from './knarr.json';
 import lio from './lio.json';
+import lumi from './lumi.json';
 import lysa from './lysa.json';
+import marga from './marga.json';
 import mira from './mira.json';
 import nyx from './nyx.json';
 import oda from './oda.json';
@@ -35,6 +37,7 @@ import svea from './svea.json';
 import thessaly from './thessaly.json';
 import tilda from './tilda.json';
 import tobin from './tobin.json';
+import torben from './torben.json';
 import truda from './truda.json';
 import vargrim from './vargrim.json';
 import vessa from './vessa.json';
@@ -61,7 +64,9 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   kiran,
   knarr,
   lio,
+  lumi,
   lysa,
+  marga,
   mira,
   nyx,
   oda,
@@ -75,6 +80,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   thessaly,
   tilda,
   tobin,
+  torben,
   truda,
   vargrim,
   vessa,

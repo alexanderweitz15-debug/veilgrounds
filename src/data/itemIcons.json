@@ -60,7 +60,15 @@
     "stiefel_hast": { "glyph": "bootGear", "hue": 44, "sat": 60, "accent": "gear", "accentHue": 42 },
     "windschwinge": { "glyph": "arrowBundle", "hue": 42, "sat": 70, "accent": "wing", "accentHue": 190 },
     "faeulnisstab": { "glyph": "knotStaff", "hue": 110, "sat": 45, "accent": "leaf", "accentHue": 100 },
-    "seeigelpanzer": { "glyph": "wallHeart", "hue": 205, "sat": 45, "accent": "fang", "accentHue": 40 }
+    "seeigelpanzer": { "glyph": "wallHeart", "hue": 205, "sat": 45, "accent": "fang", "accentHue": 40 },
+    "sensenschwert": { "glyph": "brokenBlade", "hue": 110, "sat": 40, "accent": "drop", "accentHue": 100 },
+    "bannmantel": { "glyph": "runeCloak", "hue": 285, "sat": 45, "accent": "shield", "accentHue": 280 },
+    "notanker": { "glyph": "belt", "hue": 135, "sat": 35, "accent": "heart", "accentHue": 355 },
+    "stiefel_magie": { "glyph": "bootGear", "hue": 272, "sat": 45, "accent": "moon", "accentHue": 270 },
+    "stiefel_zaeh": { "glyph": "bootPlate", "hue": 120, "sat": 35, "accent": "root", "accentHue": 110 },
+    "langrohr": { "glyph": "staff", "hue": 285, "sat": 45, "accent": "bomb", "accentHue": 30 },
+    "raserbeil": { "glyph": "doubleAxe", "hue": 350, "sat": 60, "accent": "flame", "accentHue": 22 },
+    "sterndiadem": { "glyph": "crown", "hue": 190, "sat": 50, "accent": "sun", "accentHue": 48 }
   },
   "runes": {
     "_doc": "path hues: Präzision 48, Dominanz 355, Zauberei 215, Entschlossenheit 120, Inspiration 180",
@@ -79,6 +87,12 @@
     "schnellfuss": { "glyph": "wing", "hue": 48 },
     "gnadenstoss": { "glyph": "axe", "hue": 355 },
     "blutdurst": { "glyph": "drop", "hue": 355 },
-    "wachsamkeit": { "glyph": "eye", "hue": 180 }
+    "wachsamkeit": { "glyph": "eye", "hue": 180 },
+    "eroberer": { "glyph": "sword", "hue": 355 },
+    "komet": { "glyph": "flame", "hue": 215 },
+    "durchdringung": { "glyph": "arrow", "hue": 215 },
+    "letalitaet": { "glyph": "skull", "hue": 355 },
+    "heilkraft": { "glyph": "leaf", "hue": 180 },
+    "standhaft": { "glyph": "root", "hue": 120 }
   }
 }

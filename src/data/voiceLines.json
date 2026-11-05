@@ -1290,5 +1290,107 @@
       "de": "Zurück in die Brandung.",
       "en": "Back to the surf."
     }
+  },
+  "marga": {
+    "pick": {
+      "de": "Ladung steht. Zielt jemand?",
+      "en": "Charge is set. Anyone in range?"
+    },
+    "move1": {
+      "de": "Ich schleppe das Ding schon.",
+      "en": "I am carrying the thing already."
+    },
+    "move2": {
+      "de": "Abstand ist ein Freund.",
+      "en": "Distance is a friend."
+    },
+    "attack": {
+      "de": "Feuer frei!",
+      "en": "Fire at will!"
+    },
+    "ability": {
+      "de": "Pulver trocken, Lunte brennt.",
+      "en": "Powder dry, fuse burning."
+    },
+    "kill": {
+      "de": "Volltreffer.",
+      "en": "Direct hit."
+    },
+    "death": {
+      "de": "Zu nah ... ich bin zu nah.",
+      "en": "Too close ... I got too close."
+    },
+    "recall": {
+      "de": "Pulver nachfüllen.",
+      "en": "Time to restock powder."
+    }
+  },
+  "torben": {
+    "pick": {
+      "de": "Lasst mich von der Kette!",
+      "en": "Let me off the chain!"
+    },
+    "move1": {
+      "de": "Blut will fließen.",
+      "en": "Blood wants to flow."
+    },
+    "move2": {
+      "de": "Ich rieche Angst.",
+      "en": "I smell fear."
+    },
+    "attack": {
+      "de": "Zerreißen!",
+      "en": "Tear them apart!"
+    },
+    "ability": {
+      "de": "Aaargh!",
+      "en": "Aaargh!"
+    },
+    "kill": {
+      "de": "Noch einer!",
+      "en": "One more!"
+    },
+    "death": {
+      "de": "Ich ... bin noch nicht ... fertig ...",
+      "en": "I ... am not ... done yet ..."
+    },
+    "recall": {
+      "de": "Kurz Blut lecken.",
+      "en": "A moment to lick the wounds."
+    }
+  },
+  "lumi": {
+    "pick": {
+      "de": "Ein Wunsch ist frei. Wer braucht ihn?",
+      "en": "One wish is free. Who needs it?"
+    },
+    "move1": {
+      "de": "Den Sternen nach.",
+      "en": "Following the stars."
+    },
+    "move2": {
+      "de": "Ich halte Wache.",
+      "en": "I keep watch."
+    },
+    "attack": {
+      "de": "Funkenflug!",
+      "en": "Sparks fly!"
+    },
+    "ability": {
+      "de": "Es sei dir gewährt.",
+      "en": "Be it granted."
+    },
+    "kill": {
+      "de": "Wunsch abgelehnt.",
+      "en": "Wish denied."
+    },
+    "death": {
+      "de": "Der Himmel ... verlischt.",
+      "en": "The sky ... goes out."
+    },
+    "recall": {
+      "de": "Zurück unter die Sterne.",
+      "en": "Back beneath the stars."
+    }
   }
 }

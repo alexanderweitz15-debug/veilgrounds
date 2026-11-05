@@ -27,7 +27,7 @@ export function ready(v: View, ctx: BotStatic, slot: number): boolean {
   const h = v.me.abilities[slot];
   if (!h || h.rank <= 0 || h.cdLeft > 0) return false;
   const ab = ctx.champ.abilities[slot];
-  if (!ab) return false;
+  if (!ab || ab.botManual) return false;
   if (ab.costType === 'mana' || ab.costType === 'energy') return v.self.mana >= h.cost;
   // HP costs (Rovena): keep a margin so bots do not bleed themselves out; R costs none. ponytail: no 'unless it kills' exception
   if (ab.costType === 'hp') return v.self.hp > h.cost * 2 && hpPct(v.self) >= HP_COST_FLOOR;

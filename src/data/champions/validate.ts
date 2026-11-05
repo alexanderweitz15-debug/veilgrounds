@@ -49,7 +49,7 @@ const BASE_KEYS = [
   'armor', 'armorGrowth', 'mr', 'mrGrowth', 'as', 'asGrowth', 'range', 'ms', 'windup', 'radius',
 ];
 const ABILITY_REQUIRED = ['id', 'name', 'desc', 'type', 'castTime', 'movesWhileCasting', 'range', 'cooldown', 'cost', 'costType', 'effects'];
-const ABILITY_OPTIONAL = ['width', 'speed', 'radius', 'angle', 'delay', 'duration', 'distance', 'flags', 'line'];
+const ABILITY_OPTIONAL = ['width', 'speed', 'radius', 'angle', 'delay', 'duration', 'distance', 'flags', 'line', 'botManual'];
 const SCALING_KEYS = ['base', 'ad', 'bonusAd', 'ap', 'maxHp', 'bonusHp', 'targetMaxHp', 'targetMissingHp', 'byLevel'];
 
 /** Allowed keys per effect kind: [required, optional]. */

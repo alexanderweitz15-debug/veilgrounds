@@ -348,3 +348,29 @@ The turret is hook state (not a pet unit: pets with HP draw as Hark), drawn from
 
 ---
 Total: 110 hook ids across 26 champions.
+
+## Marga Kartaune (`marga`) (auto/champions)
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `marga_range` | Passive | `modifyDamage` (abilities and DoTs, not autos): x(1 + 4 % per 100 distance beyond 500), capped at +24 % at 1100. |
+| `marga_e_recoil` | E | Phase `dashStart`: reverses the dash direction (hop away from the cursor), shoves every enemy within 300 of the start 220 back over 0.25 s and slows 20 % for 1.2 s. |
+
+## Torben Wutmähne (`torben`) (auto/champions)
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `torben_rage` | Passive | Rage 0-100: `onAutoHit` +4, `onAbilityHit` +6 (once per tick), `onDamageTaken` +1 per 1 % max HP; module `onTick` fades it 10/s after 4 s out of combat. `onComputeStats`: +0.3 AD per point, x1.2 move speed at 100. While Undying Roar runs `onDamageTaken` lifts HP back to 1. |
+| `torben_w_cry` | W | +15 Rage. |
+| `torben_r_undying` | R | Starts the 5 s window (Rage locked at 100); `onTick` heals 15/25/35 % max HP when it ends. |
+
+## Generic bot field `botManual` (auto/champions)
+
+`AbilityData.botManual: true` (champion JSON): bots never cast that ability on their own (`ready()` in `src/ai/bot/combat.ts`). Used by Knarr W (stance toggle: bots stay in Fortress instead of flipping every cooldown).
+
+## Lumi Sternenwiege (`lumi`) (auto/champions)
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `lumi_wishdust` | Passive | `modifyHeal`: x1.3 on targets below 40 % HP (heals and shields). Snapshot badge glows while an ally within 1000 is that low. |
+| `lumi_r_wish` | R | After the data effects (untargetable + projImmune + shield on the ally): removes slow/root/stun/silence/blind/fear/airborne/suppress/taunt from the targeted ally. |

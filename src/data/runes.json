@@ -305,6 +305,140 @@
         "haste": 5
       },
       "hook": "rune_vigilance"
+    },
+    {
+      "id": "eroberer",
+      "name": {
+        "de": "Eroberer",
+        "en": "Conqueror"
+      },
+      "desc": {
+        "de": "Auto- und Fähigkeitstreffer auf Champions stapeln +2 Adaptiv (max. 8 Stacks, 6 s). Bei 8 Stacks heilt jeder Treffer 2 % deiner Max-HP (1 s Pause).",
+        "en": "Basic attack and ability hits on champions stack +2 adaptive (max 8 stacks, 6 s). At 8 stacks every hit heals 2% of your max HP (1 s apart)."
+      },
+      "kind": "keystone",
+      "fits": [
+        "tank_bruiser",
+        "jungle_bruiser",
+        "duelist",
+        "battlemage",
+        "berserker",
+        "cavalry_juggernaut",
+        "burrowing_juggernaut"
+      ],
+      "hook": "rune_conqueror"
+    },
+    {
+      "id": "komet",
+      "name": {
+        "de": "Komet",
+        "en": "Comet"
+      },
+      "desc": {
+        "de": "Fähigkeitstreffer auf einen Champion: Komet mit 30–100 (+20 % Bonus-AD, +10 % AP) Schaden. CD 12 s.",
+        "en": "Ability hit on a champion: a comet for 30-100 (+20% bonus AD, +10% AP) damage. CD 12 s."
+      },
+      "kind": "keystone",
+      "fits": [
+        "skillshot_mage",
+        "control_mage",
+        "artillery_mage",
+        "spore_control_mage",
+        "mage_support"
+      ],
+      "hook": "rune_comet"
+    },
+    {
+      "id": "durchdringung",
+      "name": {
+        "de": "Durchdringung",
+        "en": "Penetration"
+      },
+      "desc": {
+        "de": "+6 Magiedurchdringung.",
+        "en": "+6 magic penetration."
+      },
+      "kind": "minor",
+      "fits": [
+        "burst_mage",
+        "skillshot_mage",
+        "control_mage",
+        "artillery_mage",
+        "pointclick_burst_mage",
+        "battlemage"
+      ],
+      "stats": {
+        "magicPen": 6
+      }
+    },
+    {
+      "id": "letalitaet",
+      "name": {
+        "de": "Letalität",
+        "en": "Lethality"
+      },
+      "desc": {
+        "de": "+5 Letalität.",
+        "en": "+5 lethality."
+      },
+      "kind": "minor",
+      "fits": [
+        "assassin",
+        "jungle_assassin",
+        "dash_assassin",
+        "reset_assassin",
+        "stealth_assassin",
+        "chain_assassin"
+      ],
+      "stats": {
+        "lethality": 5
+      }
+    },
+    {
+      "id": "heilkraft",
+      "name": {
+        "de": "Heilkraft",
+        "en": "Mending"
+      },
+      "desc": {
+        "de": "+6 % Heil- und Schildstärke.",
+        "en": "+6% heal and shield power."
+      },
+      "kind": "minor",
+      "fits": [
+        "enchanter",
+        "healer",
+        "healer_enchanter",
+        "bard_enchanter",
+        "tether_warden",
+        "mage_support"
+      ],
+      "stats": {
+        "healShieldPowerPct": 6
+      }
+    },
+    {
+      "id": "standhaft",
+      "name": {
+        "de": "Standhaft",
+        "en": "Steadfast"
+      },
+      "desc": {
+        "de": "+8 % Zähigkeit.",
+        "en": "+8% tenacity."
+      },
+      "kind": "minor",
+      "fits": [
+        "juggernaut",
+        "tank_engage",
+        "tank_bruiser",
+        "engage_tank",
+        "stance_tank",
+        "wall_tank"
+      ],
+      "stats": {
+        "tenacity": 8
+      }
     }
   ]
 }

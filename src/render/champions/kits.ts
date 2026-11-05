@@ -49,6 +49,9 @@ import { chainMantle, hookBlade, wristManacles } from './chains';
 import { hipGears, mainspringPack, springCrossbow } from './clockwork';
 import { gustBow, gustSwirl, featherCrest, windStreamers } from './svea';
 import { backShrooms, mushroomCap, sporeMotes, sporeStaff } from './truda';
+import { mortarPack, ramrod, sootPuffs } from './marga';
+import { rageHaze, skullBelt, warAxes } from './torben';
+import { moonCrescent, twinkleStars, wishStaff } from './lumi';
 import { DORRAK_KIT } from './worm';
 import { bloodDrips, bloodOrbs, thornCrown } from './rovena';
 import { floatNotes, hatPlume, luteBack } from './tilda';
@@ -1112,6 +1115,93 @@ kit({
   cast: 'forward',
   gait: 'light',
   props: [mainspringPack, springCrossbow, hipGears],
+});
+// Marga Kartaune: short stout gunner with a huge brass mortar tube on her back
+kit({
+  id: 'marga',
+  name: 'Marga Kartaune',
+  world: 178,
+  look: 'short stout woman gunner in a charcoal-grey work coat over a rust-orange vest, round brass-rimmed goggles on a flat leather cap, copper-red braid, soot-smudged cheeks; a huge brass mortar tube strapped to her back and reaching up over her shoulder with a flared muzzle, a bandolier of shells across her chest, a long ramrod with a pale swab in her hand and soot puffs above the muzzle',
+  feature: 'huge brass mortar tube behind the head',
+  body: { ...FEMALE, H: 156, shW: 18, hipW: 16, girth: 1.12, belly: 0.25, bust: 0.35, headR: 13, legs: 0.46 },
+  outfit: {
+    skin: SKIN.tan,
+    face: { eyes: '#4a6a3a', brows: 1.2 },
+    top: cloth('#c4622a'),
+    sleeves: cloth('#3c3c40'),
+    forearms: leather('#5a4030'),
+    hands: leather('#3a2c22'),
+    legs: cloth('#3a3836'),
+    boots: leather('#2c2018'),
+    coat: { mat: cloth('#3c3c40'), len: 0.9, flare: 0.5, open: cloth('#c4622a'), split: true },
+    strap: { mat: leather('#4a3626'), items: 'shells', itemMat: BRASS },
+    belt: { mat: leather('#4a3626'), buckle: BRASS, y: 0.2 },
+    hat: { kind: 'goggles', mat: leather('#4a3626') },
+    hair: { style: 'braid', mat: hair('#a8482a') },
+    pouches: { mat: leather('#4a3626'), n: 2 },
+  },
+  hold: 'pole',
+  attack: 'sling',
+  cast: 'lob',
+  gait: 'heavy',
+  props: [mortarPack, ramrod, sootPuffs],
+});
+// Torben Wutmähne: bare-chested berserker, a hand axe in each fist, red haze off the shoulders
+kit({
+  id: 'torben',
+  name: 'Torben Wutmähne',
+  world: 200,
+  look: 'huge bare-chested brute with a wild rust-red mane and a full beard, red war paint across the eyes, a grey wolf-fur mantle over his shoulders, leather harness and kilt, a bearded hand axe in each fist, a belt of three bone skulls and a red rage haze rising off his shoulders',
+  feature: 'two hand axes + red rage haze + fur mantle',
+  body: { ...MALE, H: 192, shW: 25, hipW: 15.5, girth: 1.12, headR: 13.2, hunch: 0.1 },
+  outfit: {
+    skin: SKIN.tan,
+    skinKind: 'skin',
+    face: { brows: 1.5, paint: '#b0262a', scar: true, eyes: '#e8c060' },
+    top: leather('#5a3a28'),
+    sleeves: leather('#5a3a28'),
+    forearms: leather('#3a2a20'),
+    hands: leather('#3a2a20'),
+    legs: cloth('#4a3a32'),
+    boots: leather('#2c2018'),
+    coat: { mat: leather('#6a4a32'), len: 0.7, flare: 0.5, tatter: true, split: true },
+    belt: { mat: leather('#3a2a20'), buckle: BRASS },
+    pauldrons: { mat: m('#8a8a90', 'fur'), size: 1.35 },
+    hair: { style: 'wild', mat: hair('#a8482a') },
+    beard: { style: 'full', mat: hair('#a8482a') },
+  },
+  hold: 'blade',
+  attack: 'chop',
+  cast: 'sweep',
+  gait: 'heavy',
+  props: [warAxes, skullBelt, rageHaze],
+});
+// Lumi Sternenwiege: guardian enchanter under a floating crescent moon, star staff
+kit({
+  id: 'lumi',
+  name: 'Lumi Sternenwiege',
+  world: 198,
+  look: 'tall slender woman in a deep indigo star-spangled robe with a long midnight cloak, silver-blue hair to the waist, pale lilac skin; a big silver crescent moon floats behind her head like a cradle, her wishing staff is topped with a golden five-point star and tiny stars twinkle round her',
+  feature: 'floating crescent moon behind the head + star staff',
+  body: { ...FEMALE, H: 186, shW: 16.5, hipW: 13.5, girth: 0.88, legs: 0.5, headR: 12.6, bust: 0.3 },
+  outfit: {
+    skin: '#e0d4ea',
+    face: { eyes: '#b8c8ff', brows: 0.8 },
+    top: cloth('#2c2a5a'),
+    sleeves: cloth('#3a3878'),
+    forearms: cloth('#d8d4ea'),
+    legs: cloth('#22204a'),
+    boots: leather('#3a3050'),
+    coat: { mat: cloth('#2c2a5a'), len: 1.5, flare: 0.65, open: cloth('#d8d4ea'), split: true },
+    cape: { mat: cloth('#1c1a42'), len: 1.45 },
+    belt: { mat: cloth('#c8b070'), y: 0.2 },
+    hair: { style: 'long', mat: hair('#b8c4e8') },
+  },
+  hold: 'pole',
+  attack: 'palm',
+  cast: 'raise',
+  gait: 'light',
+  props: [moonCrescent, wishStaff, twinkleStars],
 });
 // Knarr: giant crab, painted by the SpriteDrawer in crab.ts (atlas.ts DRAWERS); the Kit stub carries the icon colours
 kit(KNARR_KIT);

@@ -79,6 +79,7 @@
       "cooldown": [8, 7, 6, 5, 4],
       "cost": 0,
       "costType": "none",
+      "botManual": true,
       "effects": [{ "kind": "hook", "id": "knarr_w_stance" }]
     },
     {

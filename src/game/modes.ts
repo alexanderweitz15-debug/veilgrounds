@@ -6,6 +6,9 @@ import { CHAMPION_DATA } from '../sim/champions';
 import { BUILDS } from '../ai/bot/builds';
 import type { Rank } from '../ai/profiles/schema';
 import { scenarioConfig } from './scenarioConfig';
+import { classicConfig } from '../ai/runner';
+import { Rng } from '../sim/rng';
+import { variantRules, type VariantId } from '../sim/rules';
 
 /** Champion id of Mira Quell (src/data/champions/mira.json). */
 export const MIRA_ID = 'mira';
@@ -151,4 +154,30 @@ export function trainerConfig(t: TrainerSetup, pick: TrainerPick, seed = (Math.r
       return { seed, mode: 'arena', players, minionsEnabled: false, trainer: { ...trainer, items } };
     }
   }
+}
+
+// ---------------------------------------------------------------- variants (ARAM, URF; src/data/gameModes.json)
+
+/**
+ * 5v5 vs bots with mode rules. ARAM: everybody on mid lane, nobody in the jungle (no Bannen). Champions are random for all
+ * 10 slots (distinct, seeded); the human plays the first one (`humanPick` keeps a chosen champion, e.g. a reroll).
+ */
+export function variantConfig(id: VariantId, rank: Rank = 'gold', seed = (Math.random() * 2 ** 31) | 0, humanPick?: string): SimConfig {
+  const rules = variantRules(id);
+  const ids = Object.keys(CHAMPION_DATA).sort();
+  const rng = new Rng(seed ^ 0xa4a4);
+  const pool = ids.slice();
+  const picks: string[] = [];
+  if (humanPick) pool.splice(pool.indexOf(humanPick), 1);
+  while (picks.length < 10 && pool.length) picks.push(pool.splice(rng.int(pool.length), 1)[0]!);
+  const human = humanPick ?? picks.shift()!;
+  const cfg = classicConfig(human, 'mid', rank, { seed });
+  const rest = [...picks];
+  for (const p of cfg.players) {
+    if (!p.isHuman) p.champion = rest.shift() ?? p.champion;
+    if (rules.midOnly) p.role = 'mid';
+    delete p.runes; // classicConfig rolled them for the old champion; default preset of the new one
+    if (rules.noJungle) p.summoners = p.summoners.map((x) => (x === 'bannen' ? 'heilen' : x)) as [string, string];
+  }
+  return { ...cfg, rules };
 }

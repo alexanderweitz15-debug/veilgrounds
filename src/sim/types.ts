@@ -265,6 +265,8 @@ export interface SimConfig {
   minionsEnabled?: boolean;
   /** Tower HP / shot-damage factors vs champions and structures (tutorial: a human kills the tower in about a minute). */
   towerMult?: { hp: number; dmg: number };
+  /** Mode rules (ARAM, URF, custom games), src/sim/rules.ts. Absent = classic. */
+  rules?: import('./rules').GameRules;
   /** Spawn practice dummies at these positions at start. */
   dummies?: { x: number; y: number; team: TeamId; armor?: number; mr?: number }[];
 }

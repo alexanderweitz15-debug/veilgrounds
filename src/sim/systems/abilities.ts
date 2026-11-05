@@ -430,7 +430,7 @@ export function castAbility(sim: Sim, eid: number, slot: number, x: number, y: n
   if (!canCast(sim, eid) || (movesCaster(ab) && !rootOk(ab) && !canMove(sim, eid))) return 'cc';
   const mods: CastMods = { cost: rv(ab.cost, rank), timeMult: 1 };
   for (const h of passiveHooksOf(sim, eid)) h.modifyCast?.(sim, eid, slot, mods);
-  const cost = Math.max(0, mods.cost);
+  const cost = Math.max(0, mods.cost) * (ab.costType === 'mana' ? (sim.config.rules?.manaCostMult ?? 1) : 1);
   if (ab.costType === 'mana' || ab.costType === 'energy') {
     if (Mana.cur[eid]! < cost) return 'mana';
   } else if (ab.costType === 'hp' && cost > 0 && Hp.cur[eid]! <= cost) return 'mana';

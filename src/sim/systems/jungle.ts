@@ -174,6 +174,7 @@ export function jungleState(sim: Sim): JungleState {
     add('kesselbrut', 2, sim.map.objectives.kesselbrut.x, sim.map.objectives.kesselbrut.y);
     add('schleierwaechter', 2, sim.map.objectives.schleierwaechter.x, sim.map.objectives.schleierwaechter.y);
     s = { camps, leviathan: [0, 0], drake: newDrakeState(), kesselbrut: [0, 0], wards: [] };
+    if (sim.config.rules?.noJungle) camps.length = 0;
     sim.state.jungle = s;
   }
   return s;

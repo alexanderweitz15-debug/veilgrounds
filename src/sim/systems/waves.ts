@@ -9,6 +9,7 @@ import type { System } from './index';
 import { Kind, Lane, enemyOf, sec, type LaneId } from '../types';
 import { laneDir, laneGeo, lanePoint, setLanePath, spawnMinion } from './minions';
 import { inhibitorDown } from './towers';
+import { rulesOf } from '../rules';
 import waveData from '../../data/minionWave.json';
 
 export const FIRST_WAVE_TICK = 1950;
@@ -97,7 +98,7 @@ export const wavesSystem: System = {
     if (siege) s.sinceSiege = 0;
     // The schedule advances even with minions off, so toggling them back on stays in sync.
     if (sim.flags.minions) {
-      const lanes = sim.config.minionLanes ?? [Lane.Top, Lane.Mid, Lane.Bot];
+      const lanes = sim.config.minionLanes ?? (rulesOf(sim).midOnly ? [Lane.Mid] : [Lane.Top, Lane.Mid, Lane.Bot]);
       const teams: readonly number[] = sim.config.minionTeams ?? [0, 1];
       for (const team of [0, 1]) {
         if (!teams.includes(team)) continue; // tower last-hit trainer: enemy waves only
@@ -109,6 +110,6 @@ export const wavesSystem: System = {
       }
     }
     s.index++;
-    s.next = tick + waveInterval(tick);
+    s.next = tick + Math.round(waveInterval(tick) * (rulesOf(sim).waveMult ?? 1));
   },
 };

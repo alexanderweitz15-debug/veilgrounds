@@ -9,6 +9,7 @@ import type { Sim } from '../sim';
 import type { ItemData, ItemStat } from './schema';
 import { validateItems, validateItemsDocument } from './validate';
 import { hasBuff } from '../buffs';
+import { rulesOf } from '../rules';
 import { dist2 } from '../vec';
 import { drakeState } from '../systems/jungle';
 import { drakeBonus } from '../drakes';
@@ -242,6 +243,9 @@ export function bonusStats(sim: Sim, eid: number): Partial<Record<BonusStat, num
     out.haste = (out.haste ?? 0) + DORNENBOCK_HASTE;
     out.manaRegenPct = (out.manaRegenPct ?? 0) + DORNENBOCK_MANA_REGEN_PCT;
   }
+  const r = rulesOf(sim);
+  if (r.haste) out.haste = (out.haste ?? 0) + r.haste;
+  if (r.manaRegenPct) out.manaRegenPct = (out.manaRegenPct ?? 0) + r.manaRegenPct;
   // elemental Leviathan kills + soul of the team (src/data/drakes.json)
   for (const [k, v] of Object.entries(drakeBonus(drakeState(sim), sim.c.Unit.team[eid]!)) as [BonusStat, number][]) out[k] = (out[k] ?? 0) + v;
   return out;

@@ -14,6 +14,7 @@
 //   7 pings: "danger" at first contact, "help" when fighting (rank ping chance)
 // After the gank: survived -> tactics.recallReeval; died -> tactics.tilt +1 and (Gold+) missing ping on the jungler.
 
+import { VALUES, rankCurve } from '../utility/values';
 import type { NodeCtx, NodeResult } from '../bt/types';
 import type { Pt } from '../../sim/map';
 import { lineWalkable, walkable } from '../../sim/map';
@@ -126,11 +127,13 @@ export function escape(n: NodeCtx): NodeResult {
     st.threats = foes.length;
     const target = foes.slice().sort((a, b) => dst(a.e, self) - dst(b.e, self))[0]!.e;
     const ex = estimateExchange(n.v, n.ctx, target, 3, n.rng, { extraAllyDps: jgEtaS <= 8 ? dpsOf(n.ctx.champ, me.level) : 0 });
-    let fight = ex.winProb > n.p.knobs.escapeFightThreshold;
-    let reason = `winProb ${ex.winProb.toFixed(2)} vs ${n.p.knobs.escapeFightThreshold.toFixed(2)}`;
+    // rank shift (values.json fight.escapeShift): Bronze fights even fights it should flee, Challenger flees a bit earlier
+    const thr = n.p.knobs.escapeFightThreshold + rankCurve(VALUES.fight.escapeShift, n.ctx.params.skill);
+    let fight = ex.winProb > thr;
+    let reason = `winProb ${ex.winProb.toFixed(2)} vs ${thr.toFixed(2)}`;
     if (coinFlipFights(n.p)) {
-      fight = n.rng.chance(0.5);
-      reason = 'coin flip (Iron-Silver)';
+      fight = n.rng.chance(rankCurve(VALUES.fight.lowRankFightChance, n.ctx.params.skill));
+      reason = 'gut call (Iron-Silver)';
     }
     st.mode = fight ? 'fight' : 'escape';
     log(n, pv, 'escape', st.mode, reason, inputs, { winProb: ex.winProb, killProb: ex.killProb, deathProb: ex.deathProb });

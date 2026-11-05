@@ -232,5 +232,13 @@
     "idleDelayTicks": { "iron": 18, "gold": 6, "challenger": 3 },
     "strafePauseTicks": { "iron": 8, "gold": 3, "challenger": 1 },
     "strafeRadius": 110
+  },
+  "fight": {
+    "note": "Rank-dependent fight-or-flight (user 2026-11-05: Challenger a bit safer, Bronze fights even at 10 % HP). Used by brain.ts retreat line, ganks/escape.ts, bot/trade.ts window.",
+    "retreatHp": { "iron": 0.04, "bronze": 0.06, "silver": 0.11, "gold": 0.17, "platinum": 0.2, "diamond": 0.24, "challenger": 0.3 },
+    "escapeShift": { "iron": -0.22, "bronze": -0.2, "silver": -0.12, "gold": 0, "platinum": 0.03, "diamond": 0.06, "challenger": 0.08 },
+    "lowRankFightChance": { "iron": 0.7, "bronze": 0.65, "silver": 0.55 },
+    "tradeThrMult": { "iron": 0.75, "bronze": 0.78, "silver": 0.85, "gold": 0.93, "diamond": 1.0, "challenger": 1.05 },
+    "tradeWalkS": { "iron": 1.6, "bronze": 1.5, "silver": 1.3, "gold": 1.1, "diamond": 1.0, "challenger": 0.9 }
   }
 }

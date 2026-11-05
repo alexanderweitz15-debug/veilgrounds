@@ -123,7 +123,8 @@ function evalWindow(n: NodeCtx): Window | null {
   const failed: string[] = [];
   const combo = n.ctx.champ.combos[0]?.sequence ?? ['AA'];
   const reach = comboReach(n, combo);
-  if (dst(n.v.self, t) > reach + n.v.me.stats.ms * 0.5) failed.push('range');
+  // walk-up distance by rank (values.json fight.tradeWalkS): bots used to wait until the enemy stood in reach
+  if (dst(n.v.self, t) > reach + n.v.me.stats.ms * rankCurve(VALUES.fight.tradeWalkS, n.ctx.params.skill)) failed.push('range');
   const safety = laningSafety(n.mem);
   if (laneRisk(n) >= 0.5 || safety?.allowTrade === 'none') failed.push('gankRisk');
   const enemyWave = n.v.enemyMinions.filter((m) => dst(m, n.v.self) < 500).length;
@@ -161,7 +162,7 @@ function evalWindow(n: NodeCtx): Window | null {
     const i = failed.indexOf(c);
     if (loosen > 0 && i >= 0) failed.splice(i, 1), loosen--;
   }
-  const thr = k.tradeWinThreshold * k.tradeWindowMult;
+  const thr = k.tradeWinThreshold * k.tradeWindowMult * rankCurve(VALUES.fight.tradeThrMult, n.ctx.params.skill);
   if (ex.winProb <= thr) failed.push('winProb');
   if (safety?.allowTrade === 'killOnly' && exK.killProb <= 0.9) failed.push('gankRisk');
   // passive bots still take near-certain kills (all-in horizon; the enemy tower is in the estimate when it covers us)

@@ -5,6 +5,7 @@
 // player interaction) lives in trade.ts, kite.ts, teamfight.ts, macro.ts, teamai.ts, social.ts.
 // Rank parameters come only from ctx.profile (src/data/bots/profiles/*.json), style only from ctx.params.
 
+import { VALUES, rankCurve } from '../utility/values';
 import type { LaneName, Pt } from '../../sim/map';
 import { sampleReactionMs } from '../profiles';
 import type { BotAction, BotMemory, BotStatic, Brain, PlayerHud, SnapEntity } from './types';
@@ -217,9 +218,9 @@ export function retreat(n: NodeCtx): NodeResult {
   const foes = near(v.enemies, v.self, 1200);
   const friends = near(v.allies, v.self, 1200);
   const towerOnMe = v.enemyTowers.some((t) => t.atkTarget === v.me.eid);
-  // retreat line by skill (Iron 18 % .. Gold 23 % .. Challenger 30 %: low ranks stay too long and die), aggressive
-  // bots stay longer (was 25 % for every rank)
-  const lowHp = 0.17 + 0.13 * Math.min(1, Math.max(0, n.ctx.params.skill / 100)) - n.p.playstyle.aggression * 0.016;
+  // retreat line by rank (values.json fight.retreatHp: Iron 4 %, Bronze 6 % .. Gold 17 % .. Challenger 30 %: low ranks
+  // fight to the last hit point and die, high ranks leave early), aggressive bots stay longer
+  const lowHp = rankCurve(VALUES.fight.retreatHp, n.ctx.params.skill) - n.p.playstyle.aggression * 0.016;
   const low = v.hpPct < lowHp && foes.length > 0;
   const outnumbered = v.hpPct < 0.55 && foes.length >= friends.length + 2;
   // after a retreat: keep away from enemies below 45 % HP, walk home (recall) below 40 % (was 60 % / 60 %: every

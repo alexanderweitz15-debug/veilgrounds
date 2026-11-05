@@ -295,5 +295,17 @@ displaced unit stops at non-walkable cells (walls or terrain); stopping short = 
 | `gneis_e_shove` | E | Dash stops at the first enemy (half width 65); the hit enemy is shoved 300 on along the dash. Slam: stun 0.8..1.2 s + 30 % bonus damage. |
 | `gneis_r_rim` | R | Crater rim (radius 330, thickness 100, 4 s) around the impact with an opening toward Gneis (cos 0.7); enemies hit are thrown 260 outward, slam into the rim: stun 1.0..1.5 s. |
 
+## Kerrin Fesselschatten (`kerrin`)
+
+Tunables in `src/data/champions/kerrin.values.json`. Marks live in `sim.state.kerrinMarks` (per caster, per target + serial). The snapshot
+mark `kerrin_mal` carries `exec` (fraction of max HP, set once R is learned): the health bar draws a line there (`UnitMark.exec`, `SnapMark.exec`).
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `kerrin_mal` | Passive | `onAbilityHit`: ability hits on champions/dummies (not R) add a Chain Mark (max 3, 6 s, refresh). `modifyDamage`: +4 % damage per mark. `onCast` slot 0: ray-marches the fresh hook projectile along its line; at the first non-walkable cell it shortens `Proj.maxDist` there and stores the anchor. |
+| `kerrin_q_hook` | Q | Phase `cast` (unit hit): she leaps next to it (`leapTo`, hitbox gap). Phase `expire` (hook stopped at a wall): she leaps to the first walkable point up to 450 beyond the wall; no walkable point = no pull. Visual chain object `kerrin_q_chain` while she moves. |
+| `kerrin_e_next_auto` | E | Engine hook: ms buff on cast, damage + root (0.6..1.0 s) on the empowered auto. |
+| `kerrin_r_execute` | R | Leaps beside the target after the R damage; at three marks and HP + shield <= 18/24/30 % max HP after the hit the target takes lethal true damage. Marks are consumed either way. |
+
 ---
 Total: 110 hook ids across 26 champions.

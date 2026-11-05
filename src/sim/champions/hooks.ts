@@ -197,6 +197,8 @@ export interface UnitMark {
   max?: number;
   /** Ticks left. */
   left?: number;
+  /** Execute threshold as a fraction of max HP (0..1): the health bar draws a line there (Kerrin R). */
+  exec?: number;
 }
 
 /** Passive state for the HUD badge next to the portrait. */

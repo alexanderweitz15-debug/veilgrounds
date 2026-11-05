@@ -1570,6 +1570,27 @@
           }
         ]
       }
+    },
+    {
+      "id": "fesselklinge",
+      "name": { "de": "Fesselklinge", "en": "Fetterblade" },
+      "tier": "legendary",
+      "cost": 2900,
+      "from": ["klingenbrecher", "kaltstahl"],
+      "stats": { "ad": 50, "lethality": 15, "haste": 15 },
+      "tags": ["ad", "lethality"],
+      "passive": {
+        "name": { "de": "Fesselbiss", "en": "Fetter Bite" },
+        "desc": {
+          "de": "+8 % Schaden an Champions pro Fessel: verlangsamt, gewurzelt oder betäubt (bis +24 %).",
+          "en": "+8% damage to champions per fetter: slowed, rooted or stunned (up to +24%)."
+        },
+        "rules": [
+          { "on": "modifyDamage", "if": { "target": { "kind": ["champion"], "hasBuff": "slow" } }, "do": [{ "type": "damageMult", "mult": 1.08 }] },
+          { "on": "modifyDamage", "if": { "target": { "kind": ["champion"], "hasBuff": "root" } }, "do": [{ "type": "damageMult", "mult": 1.08 }] },
+          { "on": "modifyDamage", "if": { "target": { "kind": ["champion"], "hasBuff": "stun" } }, "do": [{ "type": "damageMult", "mult": 1.08 }] }
+        ]
+      }
     }
   ]
 }

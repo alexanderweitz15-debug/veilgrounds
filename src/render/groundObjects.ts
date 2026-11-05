@@ -253,7 +253,7 @@ export class GroundObjects {
       const end = { x: fol ? state.x(fol) : o.x2 ?? o.x, y: fol ? state.y(fol) : o.y2 ?? o.y };
       if (drawFennaObject(o, now, { part: p, disc: GEO.disc, ring: GEO.ring, thin: GEO.thin, plane: GEO.plane, strip, end })) return void v.hideFrom(n);
     }
-    if (/^(gneis)_/.test(o.tag)) {
+    if (/^(gneis|kerrin)_/.test(o.tag)) {
       const fol = o.follow !== undefined ? state.byId.get(o.follow) : undefined;
       const end = { x: fol ? state.x(fol) : o.x2 ?? o.x, y: fol ? state.y(fol) : o.y2 ?? o.y };
       if (drawChampsAObject(o, now, { part: p, disc: GEO.disc, ring: GEO.ring, thin: GEO.thin, plane: GEO.plane, strip, end })) return void v.hideFrom(n);

@@ -1018,5 +1018,39 @@
       "de": "Ich rolle heim.",
       "en": "Rolling home."
     }
+  },
+  "kerrin": {
+    "pick": {
+      "de": "Ketten halten länger als Versprechen.",
+      "en": "Chains outlast promises."
+    },
+    "move1": {
+      "de": "Leise wie Rost.",
+      "en": "Quiet as rust."
+    },
+    "move2": {
+      "de": "Ein Glied nach dem anderen.",
+      "en": "One link at a time."
+    },
+    "attack": {
+      "de": "Eingehakt.",
+      "en": "Hooked."
+    },
+    "ability": {
+      "de": "Fessel!",
+      "en": "Shackle!"
+    },
+    "kill": {
+      "de": "Abgehakt.",
+      "en": "Struck off."
+    },
+    "death": {
+      "de": "Die Kette reißt. Nie die Hand.",
+      "en": "The chain snaps. Never the hand."
+    },
+    "recall": {
+      "de": "Zurück in den Schatten.",
+      "en": "Back into the shadows."
+    }
   }
 }

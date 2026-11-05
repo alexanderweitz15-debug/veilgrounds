@@ -151,6 +151,12 @@ export class Overlay {
     let mx = x + bw + 6;
     const cy = y + bh / 2;
     for (const m of e.marks ?? []) {
+      if (m.exec !== undefined) {
+        // execute line (Kerrin R): vertical tick on the bar at the threshold, bright once the marks are full
+        const lx = x + (bw * m.exec * e.maxHp) / Math.max(e.maxHp, e.hp + e.shield);
+        ctx.fillStyle = m.n !== undefined && m.n === m.max ? '#ff3b2e' : 'rgba(255,255,255,0.45)';
+        ctx.fillRect(lx - 1, y - 3, 2, bh + 6);
+      }
       if (m.max && m.max <= 6) {
         for (let i = 0; i < m.max; i++) {
           ctx.fillStyle = 'rgba(12,10,8,0.9)';

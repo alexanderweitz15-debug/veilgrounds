@@ -15,6 +15,7 @@ import harrow from './harrow.json';
 import ilvane from './ilvane.json';
 import isolde from './isolde.json';
 import kaelen from './kaelen.json';
+import kerrin from './kerrin.json';
 import kiran from './kiran.json';
 import lio from './lio.json';
 import lysa from './lysa.json';
@@ -47,6 +48,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   ilvane,
   isolde,
   kaelen,
+  kerrin,
   kiran,
   lio,
   lysa,

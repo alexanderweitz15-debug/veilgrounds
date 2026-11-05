@@ -44,6 +44,7 @@ import { crimsonHem, crowRing, featherMarks, genjutsuEyes, highCollar, longHair,
 import { VARGRIM_KIT } from './cavalry';
 import { antennae, flameLamp, lightThread, mothWings } from './fenna';
 import { boulderFists, mossTufts, rockHump, runeCracks } from './golem';
+import { chainMantle, hookBlade, wristManacles } from './chains';
 import type { Kit } from './types';
 
 const SKIN = { fair: '#e9c6a4', light: '#ddb08a', tan: '#c08a62', brown: '#946244', dark: '#6a4430', pale: '#e8cfba', old: '#d6b094', ash: '#c8b8a8' };
@@ -940,4 +941,30 @@ kit({
   cast: 'slam',
   gait: 'heavy',
   props: [rockHump, boulderFists, runeCracks, mossTufts],
+});
+kit({
+  id: 'kerrin',
+  name: 'Kerrin Fesselschatten',
+  world: 190,
+  look: 'lean hooded chain-shadow assassin: pale ashen skin, dark violet-grey hood and wrap, bright chain loops crossed over her chest and iron manacles with dangling links on both wrists, a hook-blade in the right hand on a chain to the left',
+  feature: 'criss-cross chain over a slim dark figure + hook on a line',
+  body: { ...FEMALE, H: 178, shW: 16, hipW: 13, girth: 0.88, legs: 0.5, headR: 12.4, bust: 0.3 },
+  outfit: {
+    skin: '#d6ccd2',
+    face: { eyes: '#b79cff', brows: 1.1 },
+    top: cloth('#34303f'),
+    sleeves: cloth('#2a2733'),
+    forearms: m('#4a4f58', 'metal'),
+    legs: cloth('#2a2733'),
+    boots: leather('#2c2830'),
+    belt: { mat: leather('#3a3036'), buckle: IRON },
+    hood: { mat: cloth('#2e2a3a') },
+    scarf: { mat: cloth('#6a4f8a'), tail: 1.1 },
+    cape: { mat: cloth('#25222d'), len: 0.9, tatter: true, short: true },
+  },
+  hold: 'relaxed',
+  attack: 'chain',
+  cast: 'draw',
+  gait: 'light',
+  props: [chainMantle, wristManacles, hookBlade],
 });

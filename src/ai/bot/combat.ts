@@ -78,7 +78,10 @@ export function offensiveCast(v: View, ctx: BotStatic, rng: Rng, t: SnapEntity):
   // champs-a: a wall W (zone line) goes first, then the Q skillshot slams the target into it (Gneis: wall, boulder)
   const order = ctx.champ.abilities[1]?.line === 'perpendicular' ? ([1, 0, 2, 3] as const) : ([0, 1, 2, 3] as const);
   for (const slot of order) {
-    if (slot === 3 && hpPct(t) > 0.65 && near(v.enemies, t, 800).length < 2) continue;
+    // champs-a: an execute ultimate (mark with an execute line on the target) waits for full marks and a low target
+    const ex = t.marks?.find((m) => m.exec !== undefined);
+    if (slot === 3 && ex && ((ex.n ?? 0) < (ex.max ?? 1) || hpPct(t) > ex.exec! + 0.12)) continue;
+    if (slot === 3 && !ex && hpPct(t) > 0.65 && near(v.enemies, t, 800).length < 2) continue;
     const a = castSlot(v, ctx, rng, t, slot);
     if (a) return a;
   }

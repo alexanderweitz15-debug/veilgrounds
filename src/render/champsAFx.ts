@@ -55,6 +55,19 @@ export function drawChampsAObject(o: SnapObject, now: number, g: SevFxApi): bool
       circle(g.ring, o.r + 20, '#a8987c', 0.7 * fade, 5);
       return true;
     }
+    case 'kerrin_q_chain': {
+      // chain from Kerrin to the hook anchor while she is pulled: dark rope with bright links, shrinking with the pull
+      const a = 0.4 + 0.6 * life;
+      line(o.x, o.y, g.end.x, g.end.y, 9, 36, '#3a3f48', 0.9 * a);
+      const dx = g.end.x - o.x;
+      const dy = g.end.y - o.y;
+      for (let i = 0; i < 9; i++) {
+        const u = (i + 0.5) / 9;
+        circle(g.disc, 9 + (i % 2) * 3, '#c9d2da', 0.95 * a, 40, o.x + dx * u, o.y + dy * u);
+      }
+      circle(g.ring, 40, '#b79cff', 0.8 * life, 6, g.end.x, g.end.y);
+      return true;
+    }
     default:
       return false;
   }

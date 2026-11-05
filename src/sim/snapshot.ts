@@ -125,6 +125,8 @@ export interface SnapMark {
   max?: number;
   /** Seconds left. */
   left?: number;
+  /** Execute line on the health bar, fraction of max HP (bright when the mark count is full). */
+  exec?: number;
 }
 
 export interface SnapProjectile {
@@ -613,7 +615,7 @@ function addVisuals(sim: Sim, team: number, me: number, entities: SnapEntity[]):
     for (const m of v.marks ?? []) {
       const s = byId.get(m.target);
       if (!s || !s.alive) continue;
-      (s.marks ??= []).push({ id: m.id, ...(m.n !== undefined ? { n: m.n, max: m.max } : {}), ...(m.left !== undefined ? { left: m.left / 30 } : {}) });
+      (s.marks ??= []).push({ id: m.id, ...(m.n !== undefined ? { n: m.n, max: m.max } : {}), ...(m.left !== undefined ? { left: m.left / 30 } : {}), ...(m.exec !== undefined ? { exec: m.exec } : {}) });
     }
     const s = byId.get(e);
     if (s?.alive && v.empowered !== undefined) s.emp = true;

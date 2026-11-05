@@ -203,9 +203,17 @@ Design-Prinzipien:
     - R Bergsturz: Kreis 900/300, 0,9 s Verzögerung, 120/200/280 (+10 % Max-HP), Slow, Kraterwall (4 s, Öffnung zu Gneis) fängt weggeschleuderte Gegner (Betäubung). CD 110/100/90.
     - Spike 6. Combos: W→Q, E→Auto→Q, R→W→Q. Item: Schollenpanzer.
 
+31. **Kerrin Fesselschatten, die Kettenschattin** – Jungle, Ketten-Assassine, Melee 150. Training: Haken nicht vor Wänden stehen lassen, drei Kettenmale auf dem Lebensbalken erkennen (Henkerslinie). Kit: `src/data/champions/kerrin.json`.
+    - Passiv Kettenmal: Fähigkeitstreffer auf Champions setzen ein Mal (max. 3, 6 s), +4 % Schaden pro Mal.
+    - Q Hakenwurf: Linie 900, 60–220 (+70 % Bonus-AD); zieht sie zur getroffenen Einheit oder über eine getroffene Wand (bis 450 dahinter). CD 12–8.
+    - W Kettenwirbel: um sie (350), 50–170 (+60 % Bonus-AD), 30 % Slow 1,5 s. CD 9–7.
+    - E Schattenfessel: +25 % Tempo 2 s; nächster Auto 30–130 (+50 % Bonus-AD) und Wurzel 0,6–1,0 s. CD 14–10.
+    - R Henkersketten: Ziel 650, springt hin, 120/200/280 (+90 % Bonus-AD); drei Male und danach unter 18/24/30 % Max-HP = Hinrichtung (Linie auf dem Lebensbalken). CD 90/75/60.
+    - Spike 6. Combos: Q→W→Auto, E→Auto→Q→W, Q→W→E→Auto→R. Item: Fesselklinge.
+
 ## Rollen (Primär; Sekundär in Klammern)
 - Top: Brom, Sister Oleth (Jungle), Old Harrow, Seraphyne (Mid), Isolde, Dagny, Gneis
-- Jungle: Vessa, Nyx, Grimald, Lio, Ottilie, Kaelen (Mid), Sev (Mid)
+- Jungle: Vessa, Nyx, Grimald, Lio, Ottilie, Kaelen (Mid), Sev (Mid), Kerrin
 - Mid: Ilvane, Thessaly, Kaelen, Renn, Aurel, Seraphyne, Sev
 - ADC: Mira, Corvin, Lysa, Tobin, Wren
 - Support: Ferris, Gorvam, Mutter Hagen, Kiran, Oda

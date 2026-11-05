@@ -1,0 +1,6 @@
+{
+  "_doc": "Tunables of the kerrin hooks (src/sim/champions/kerrin.ts) that the generic ability schema cannot hold. Ability numbers live in kerrin.json.",
+  "mark": { "max": 3, "sec": 6, "dmgPerMark": 0.04 },
+  "hook": { "leapTicks": 9, "wallLeapMax": 450, "stopGap": 12 },
+  "execute": { "pct": [18, 24, 30], "leapTicks": 5 }
+}

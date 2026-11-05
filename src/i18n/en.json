@@ -1168,5 +1168,7 @@
   "dm.title": "Dummy damage",
   "dm.total": "Total damage",
   "dm.true": "True",
-  "sandbox.dummyResist": "Dummy armor/MR {n}"
+  "sandbox.dummyResist": "Dummy armor/MR {n}",
+  "sandbox.save": "Save state (F2)",
+  "sandbox.load": "Load state (F4)"
 }

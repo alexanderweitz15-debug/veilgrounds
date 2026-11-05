@@ -9,6 +9,7 @@ import type { TickInput } from './types';
 import { BotRunner, isBotSlot } from '../ai/runner';
 import { matchOver } from './systems/towers';
 import { GHOST_MODES, GhostRunner } from '../ai/ghost';
+import { freezeSim, thawSim, type FrozenSim } from '../replay/cloneSim';
 
 let sim: Sim | null = null;
 let rec: Recorder | null = null;
@@ -19,6 +20,9 @@ let slot = 0;
 let ghost: GhostRunner | null = null;
 let ghostPosted = -1;
 let queued: TickInput[] = [];
+/** Sandbox checkpoint (cheat saveState / loadState). A loaded game no longer matches its recording: the replay is cut to 0 ticks. */
+let saved: FrozenSim | null = null;
+let rewound = false;
 let paused = false;
 let speed = 1;
 let acc = 0;
@@ -42,6 +46,12 @@ onmessage = (ev: MessageEvent<ToWorker>) => {
       last = performance.now();
       break;
     case 'cmd':
+      if (m.cmd.t === 'cheat' && (m.cmd.op === 'saveState' || m.cmd.op === 'loadState')) {
+        if (sim?.config.mode !== 'sandbox') break;
+        if (m.cmd.op === 'saveState') saved = freezeSim(sim);
+        else if (saved) (sim = thawSim(saved)), (queued = []), (rewound = true);
+        break;
+      }
       queued.push({ slot, cmd: m.cmd });
       break;
     case 'pause':
@@ -51,7 +61,7 @@ onmessage = (ev: MessageEvent<ToWorker>) => {
       speed = m.speed;
       break;
     case 'getReplay':
-      if (sim && rec) post({ type: 'replay', replay: rec.finish(sim, bots?.log.toNDJSON()) });
+      if (sim && rec) post({ type: 'replay', replay: { ...rec.finish(sim, bots?.log.toNDJSON()), ...(rewound ? { ticks: 0 } : {}) } });
       break;
     case 'getBotDebug':
       post({ type: 'botDebug', tick: sim?.tick ?? 0, rows: bots?.debugRows() ?? [] });

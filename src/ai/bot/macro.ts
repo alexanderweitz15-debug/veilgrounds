@@ -271,14 +271,15 @@ function takeObjective(n: NodeCtx, d: Desire, logOnce: (c: string, r: string) =>
   const p = { x: d.x, y: d.y };
   // epic pit monsters (the pits hold nothing else; Kesselbrut's three are smaller than the others)
   // Kesselbrut larvae are small (radius 70): with the utility flag they count as the objective's monsters (§7.4)
-  const small = d.obj === 'kesselbrut' && utilityOn(n.ctx);
+  // the larvae are small (radius 70): without this the default brain never saw them and gave up at the pit
+  const small = d.obj === 'kesselbrut';
   const mon = v.monsters.filter((m) => dst(m, p) < 700 && (small || m.radius >= 100)).sort((a, b) => a.hp - b.hp)[0];
-  // group up first: start only with >= 3 of the assigned bots at the pit (or after 20 s); a lone bot tanks the
-  // monster, retreats and the monster resets
+  // group up first: start with >= 2 of the assigned bots at the pit (baron: 3), or after 12 s; a lone bot tanks the
+  // monster, retreats and the monster resets (3 + 20 s left most takes waiting for a laner who never came)
   const here = [v.self, ...v.allies].filter((a) => d.slots.includes(a.slot) && dst(a, p) < 1300).length;
   // the baron needs the team: four of the assigned bots (spec §8 baron decisions with team grouping)
-  const need = Math.min(d.obj === 'schleierwaechter' ? 4 : 3, d.slots.length);
-  if (d.kind === 'take_objective' && here < need && v.tick - d.from < 20 * 30 && !(mon && mon.hp < mon.maxHp * 0.9)) {
+  const need = Math.min(d.obj === 'schleierwaechter' ? 3 : 2, d.slots.length);
+  if (d.kind === 'take_objective' && here < need && v.tick - d.from < 12 * 30 && !(mon && mon.hp < mon.maxHp * 0.9)) {
     logOnce('gather', `waiting for ${need - here} more at ${d.obj}`);
     const fountain = n.ctx.map.sides[n.ctx.team].fountain;
     const k = 750 / Math.max(1, dst(p, fountain));

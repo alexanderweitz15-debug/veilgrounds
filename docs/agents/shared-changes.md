@@ -673,3 +673,10 @@ Additive edits to shared files (all small):
 - `src/render/groundObjects.ts`: one import + one `SWARM_C` prefix block calling `drawSwarmCObject` (new `src/render/swarmCFx.ts`).
 - `src/data/items.json`, `src/data/itemIcons.json`: +3 items (`windschwinge`, `faeulnisstab`, `seeigelpanzer`).
 - docs: `docs/spec-champions.md` roster 28-30, `docs/champion-hooks.md` table.
+
+## champs-b (swarm/champs-b)
+
+- `src/sim/buffs.ts`: new `BuffKind` `disarm` (cannot attack, not a CC); `src/sim/systems/attack.ts`: `able` also requires `!hasBuff(disarm)`.
+- `src/ai/bot/combat.ts`: `ready()` stops HP-cost casts below 25 % HP; `castSlot` never casts `dorrak_w`. `src/ai/bot/brain.ts` `utilitySpells`: + `burrowStep` (burrow.ts), `noteStep` (notes.ts).
+- Registries (additive): champions index (data/sim), builds.ts, bot hints (generated), runePresets, voiceLines, abilityMotifs, kits/motion/casts/atlas, trainer MID + JG pools, items.json + itemIcons.json (6 new items).
+- `tests/items.test.ts`: component count `>= 14`.

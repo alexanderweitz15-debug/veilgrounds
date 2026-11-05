@@ -41,6 +41,9 @@ import { hooks as vargrimHooks } from './vargrim';
 import { hooks as sveaHooks } from './svea';
 import { hooks as trudaHooks } from './truda';
 import { hooks as knarrHooks } from './knarr';
+import { hooks as rovenaHooks } from './rovena';
+import { hooks as dorrakHooks } from './dorrak';
+import { hooks as tildaHooks } from './tilda';
 import { extraHooksOf } from '../items/itemHooks';
 
 export const CHAMPION_DATA: Record<string, ChampionData> = {
@@ -82,6 +85,9 @@ export const CHAMPION_HOOKS: Record<string, ChampionHooks> = {
   svea: sveaHooks,
   truda: trudaHooks,
   knarr: knarrHooks,
+  rovena: rovenaHooks,
+  dorrak: dorrakHooks,
+  tilda: tildaHooks,
 };
 
 export const FALLBACK_CHAMPION = 'mira';

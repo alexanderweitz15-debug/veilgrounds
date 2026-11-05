@@ -5,6 +5,7 @@ import aurel from './aurel.json';
 import brom from './brom.json';
 import corvin from './corvin.json';
 import dagny from './dagny.json';
+import dorrak from './dorrak.json';
 import fenna from './fenna.json';
 import ferris from './ferris.json';
 import gorvam from './gorvam.json';
@@ -24,10 +25,12 @@ import oda from './oda.json';
 import oleth from './oleth.json';
 import ottilie from './ottilie.json';
 import renn from './renn.json';
+import rovena from './rovena.json';
 import seraphyne from './seraphyne.json';
 import sev from './sev.json';
 import svea from './svea.json';
 import thessaly from './thessaly.json';
+import tilda from './tilda.json';
 import tobin from './tobin.json';
 import truda from './truda.json';
 import vargrim from './vargrim.json';
@@ -39,6 +42,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   brom,
   corvin,
   dagny,
+  dorrak,
   fenna,
   ferris,
   gorvam,
@@ -58,10 +62,12 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   oleth,
   ottilie,
   renn,
+  rovena,
   seraphyne,
   sev,
   svea,
   thessaly,
+  tilda,
   tobin,
   truda,
   vargrim,

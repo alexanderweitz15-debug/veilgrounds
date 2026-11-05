@@ -1,0 +1,152 @@
+{
+  "id": "dorrak",
+  "name": "Dorrak Sandschlund",
+  "title": { "de": "der Dünenwühler", "en": "the Dune Burrower" },
+  "roles": ["jungle"],
+  "archetype": "burrowing_juggernaut",
+  "botBias": { "aggression": 2, "roam": 2 },
+  "trainingPurpose": {
+    "de": "Einen Wühler lesen: sein Staubpfad verrät, wo er unter der Erde läuft. Wenn der Pfad endet, bricht er aus - rechtzeitig aus dem Kreis laufen.",
+    "en": "Reading a burrower: his dust trail shows where he travels underground. When the trail stops he erupts - step out of the circle in time."
+  },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 670,
+    "hpGrowth": 112,
+    "hpRegen": 8,
+    "hpRegenGrowth": 0.7,
+    "mana": 300,
+    "manaGrowth": 40,
+    "manaRegen": 8,
+    "manaRegenGrowth": 0.6,
+    "ad": 62,
+    "adGrowth": 3.2,
+    "armor": 36,
+    "armorGrowth": 4.8,
+    "mr": 32,
+    "mrGrowth": 2,
+    "as": 0.62,
+    "asGrowth": 2.2,
+    "range": 175,
+    "ms": 340,
+    "windup": 0.25,
+    "radius": 75
+  },
+  "passive": {
+    "name": { "de": "Sandmagen", "en": "Sandgut" },
+    "desc": {
+      "de": "Unter der Erde (Untertauchen) regeneriert Dorrak 3 % Max-Leben pro Sekunde. Dabei kann er nicht angreifen und nicht anvisiert werden, hinterlässt aber einen Staubpfad.",
+      "en": "While burrowed (Burrow) Dorrak regenerates 3% max health per second. He cannot attack and cannot be targeted, but leaves a dust trail."
+    },
+    "hooks": ["dorrak_sandgut"]
+  },
+  "abilities": [
+    {
+      "id": "dorrak_q",
+      "name": { "de": "Schlundbiss", "en": "Maw Bite" },
+      "desc": {
+        "de": "Kegel 350: Schaden 60/95/130/165/200 (+70 % AD) und -15 % Rüstung 3 s. Taucht Dorrak vorher auf.",
+        "en": "Cone 350: damage 60/95/130/165/200 (+70% AD) and -15% armor for 3 s. Surfaces Dorrak first."
+      },
+      "type": "cone",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 350,
+      "cooldown": [8, 7.5, 7, 6.5, 6],
+      "cost": [40, 45, 50, 55, 60],
+      "costType": "mana",
+      "angle": 70,
+      "effects": [
+        { "kind": "hook", "id": "dorrak_q_surface" },
+        { "kind": "damage", "type": "phys", "amount": { "base": [60, 95, 130, 165, 200], "ad": 0.7 } },
+        { "kind": "hook", "id": "dorrak_q_shred" }
+      ]
+    },
+    {
+      "id": "dorrak_w",
+      "name": { "de": "Untertauchen", "en": "Burrow" },
+      "desc": {
+        "de": "Bis 4/4,5/5/5,5/6 s unter der Erde: +35 % Bewegung, nicht anvisierbar, kein Angriff, Staubpfad sichtbar. Erneut zaubern taucht auf. Q, E und R tauchen ebenfalls auf.",
+        "en": "Up to 4/4.5/5/5.5/6 s underground: +35% move speed, untargetable, cannot attack, dust trail visible. Recast surfaces. Q, E and R surface too."
+      },
+      "type": "self",
+      "castTime": 0.25,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [18, 17, 16, 15, 14],
+      "cost": 40,
+      "costType": "mana",
+      "duration": [4, 4.5, 5, 5.5, 6],
+      "flags": ["recast"],
+      "effects": [{ "kind": "hook", "id": "dorrak_w_burrow" }]
+    },
+    {
+      "id": "dorrak_e",
+      "name": { "de": "Sandausbruch", "en": "Sand Eruption" },
+      "desc": {
+        "de": "Nach 0,45 s: Kreis 330 um Dorrak, Schaden 70/105/140/175/210 (+60 % Bonus-AD) und 0,75 s Luftstoß. Aus der Erde heraus +30 % Schaden und 0,25 s längerer Luftstoß; Dorrak taucht auf.",
+        "en": "After 0.45 s: circle 330 around Dorrak, damage 70/105/140/175/210 (+60% bonus AD) and a 0.75 s knock-up. From underground: +30% damage and a 0.25 s longer knock-up; Dorrak surfaces."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "movesWhileCasting": false,
+      "range": 0,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": 60,
+      "costType": "mana",
+      "radius": 330,
+      "delay": 0.45,
+      "effects": [
+        { "kind": "hook", "id": "dorrak_e_prep" },
+        { "kind": "damage", "type": "phys", "amount": { "base": [70, 105, 140, 175, 210], "bonusAd": 0.6 } },
+        { "kind": "airborne", "duration": 0.75 },
+        { "kind": "hook", "id": "dorrak_e_finish" }
+      ]
+    },
+    {
+      "id": "dorrak_r",
+      "name": { "de": "Dünenschlund", "en": "Dune Maw" },
+      "desc": {
+        "de": "Kreis 380 auf 750, nach 0,7 s: Schaden 150/250/350 (+90 % AD) und 1,25 s Luftstoß. Taucht Dorrak vorher auf.",
+        "en": "Circle 380 at 750, after 0.7 s: damage 150/250/350 (+90% AD) and a 1.25 s knock-up. Surfaces Dorrak first."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.35,
+      "movesWhileCasting": false,
+      "range": 750,
+      "cooldown": [110, 95, 80],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 380,
+      "delay": 0.7,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "hook", "id": "dorrak_r_surface" },
+        { "kind": "damage", "type": "phys", "amount": { "base": [150, 250, 350], "ad": 0.9 } },
+        { "kind": "airborne", "duration": 1.25 }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3 (Untertauchen plus Ausbruch: Gank aus der Erde) und Level 6 (Dünenschlund).",
+    "en": "Level 3 (Burrow plus Eruption: gank from underground) and level 6 (Dune Maw)."
+  },
+  "maxOrder": ["E", "Q", "W"],
+  "combos": [
+    { "name": { "de": "Untertauchen, Ausbruch", "en": "Burrow, eruption" }, "sequence": ["W", "E", "AA"] },
+    { "name": { "de": "Biss und Ausbruch", "en": "Bite and eruption" }, "sequence": ["Q", "E"] },
+    { "name": { "de": "Ausbruch, Schlund", "en": "Eruption, maw" }, "sequence": ["E", "R", "Q"] }
+  ],
+  "scores": { "engage": 4, "peel": 1, "range": 1, "scaling": 2, "waveclear": 3, "mobility": 3 },
+  "voiceLines": {
+    "pick": { "de": "Unter dem Sand wartet alles.", "en": "Everything waits beneath the sand." },
+    "firstBlood": { "de": "Der erste Bissen.", "en": "The first bite." },
+    "kill": { "de": "Verschluckt.", "en": "Swallowed." },
+    "death": { "de": "Die Dünen schlucken mich ...", "en": "The dunes swallow me ..." },
+    "recall": { "de": "Zurück in die Tiefe.", "en": "Back into the deep." },
+    "taunt": { "de": "Hörst du das Rieseln?", "en": "Do you hear the trickle?" }
+  },
+  "silhouette": "huge segmented sand worm rearing up on a curve with a round maw of concentric tooth rings, dark bony back plates and a sand mound at its base"
+}

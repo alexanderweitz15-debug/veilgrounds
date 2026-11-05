@@ -25,7 +25,7 @@ import sev from '../../data/builds/sev.json';
 import fenna from '../../data/builds/fenna.json'; // champ-support (#29)
 import gneis from '../../data/builds/gneis.json'; // swarm champs-a
 import kerrin from '../../data/builds/kerrin.json';
-import tilda from '../../data/builds/tilda.json';
+import henrike from '../../data/builds/henrike.json';
 import thessaly from '../../data/builds/thessaly.json';
 import tobin from '../../data/builds/tobin.json';
 import vargrim from '../../data/builds/vargrim.json';
@@ -35,4 +35,4 @@ import wren from '../../data/builds/wren.json';
 export interface BuildVariant { boots: string; core: string[] }
 export interface BuildData { champion: string; starter: string[]; standard: BuildVariant; vsAD?: BuildVariant; vsAP?: BuildVariant }
 
-export const BUILDS: Record<string, BuildData> = { aurel, brom, corvin, dagny, ferris, gorvam, grimald, hagen, harrow, ilvane, isolde, kaelen, kiran, lio, lysa, mira, nyx, oda, oleth, ottilie, renn, seraphyne, sev, fenna, gneis, kerrin, tilda, thessaly, tobin, vargrim, vessa, wren };
+export const BUILDS: Record<string, BuildData> = { aurel, brom, corvin, dagny, ferris, gorvam, grimald, hagen, harrow, ilvane, isolde, kaelen, kiran, lio, lysa, mira, nyx, oda, oleth, ottilie, renn, seraphyne, sev, fenna, gneis, kerrin, henrike, thessaly, tobin, vargrim, vessa, wren };

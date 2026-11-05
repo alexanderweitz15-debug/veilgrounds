@@ -33,16 +33,16 @@ Branch `swarm/champs-a` (from main 5f8eb20, merged 2f72f4f). One commit per cham
   champions per slow / root / stun (item engine `modifyDamage` rules, `hasBuff`). Icon `chainBall`@350.
 - Tests: `tests/kerrin.test.ts` (15). Practice dummies never die (reset to full), execute tests check that.
 
-## 3. Tilda Federwerk, die Uhrenschmiedin (`tilda`, ADC, clockwork marksman)
+## 3. Henrike Federwerk, die Uhrenschmiedin (`henrike`, ADC, clockwork marksman)
 - Kit: passive Mainspring (autos wind the spring: +3 % AS each, max 5, decays after 4 s; full tension overwinds the next ability: +40 % ability
   damage for 2 s and 30 % cooldown back), Q Spring Bolt (line + slow), W Clockwork Turret (deployable, hook state not a pet: pets with HP render as
   Hark; shoots her target every 0.75 s for 6 s, overwound deploy +40 %), E Spring Hop (dash 300 + ms), R Hour Strike (delayed circle + slow).
-  Data `tilda.json` + `tilda.values.json`, hooks `src/sim/champions/tilda.ts` (module `onTick` runs the turret).
+  Data `henrike.json` + `henrike.values.json`, hooks `src/sim/champions/henrike.ts` (module `onTick` runs the turret).
 - Sprite kit: paper-doll kit + props `src/render/champions/clockwork.ts` (brass spring drum with a T-shaped winding key, coil crossbow, hip gears).
   Motion spec, cast family draw/lob `abbb`, motifs (arrow, gear, boot, bell), voice lines, rune presets (copied from Mira), ADC trainer pool, hints
-  (generated), build `tilda.json` (Mira's build with Hemmwerk).
-- Ability visuals: `tilda_w_turret` (brass base, spinning teeth ring, orange halo while overwound) and `tilda_w_shot` in `src/render/champsAFx.ts`.
+  (generated), build `henrike.json` (Mira's build with Hemmwerk).
+- Ability visuals: `henrike_w_turret` (brass base, spinning teeth ring, orange halo while overwound) and `henrike_w_shot` in `src/render/champsAFx.ts`.
 - Bot mechanic: generic summon casting puts the turret at the target; her autos wind the spring (no champion id in bot code).
 - Item **Hemmwerk / Escapement** (legendary 2900 G, eiferschwert + kaltstahl; ad 40, as 30 %, haste 10): Even Tempo, every 3rd auto hit within 4 s
   deals 35 (+20 % AD) magic damage (item engine addStack + stacksAtLeast + clearStack). Icon `wingBlade`@48 + gear.
-- Tests: `tests/tilda.test.ts` (14).
+- Tests: `tests/henrike.test.ts` (14).

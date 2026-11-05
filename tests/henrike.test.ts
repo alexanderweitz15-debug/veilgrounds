@@ -1,4 +1,4 @@
-// Tilda Federwerk kit: passive Mainspring (autos wind, full tension overwinds the next ability), Q bolt, W clockwork turret,
+// Henrike Federwerk kit: passive Mainspring (autos wind, full tension overwinds the next ability), Q bolt, W clockwork turret,
 // E spring hop, R hour strike, the item Hemmwerk and the sprite kit.
 import { CX, CY, collect, makeSim, place, steps } from './combat-helpers';
 import { describe, expect, it, vi } from 'vitest';
@@ -11,7 +11,7 @@ import { hasBuff } from '../src/sim/buffs';
 import { spawnDummy } from '../src/sim/systems/champions';
 import { cooldownLeft, levelAbility } from '../src/sim/systems/abilities';
 import { championData, missingHooks } from '../src/sim/champions';
-import { tildaFull, tildaTension, tildaTurret } from '../src/sim/champions/tilda';
+import { henrikeFull, henrikeTension, henrikeTurret } from '../src/sim/champions/henrike';
 import { buildSnapshot } from '../src/sim/snapshot';
 import { sec, type Command, type PlayerSetup } from '../src/sim/types';
 import { championKit, framesOf } from '../src/render/champions';
@@ -19,7 +19,7 @@ import { itemById } from '../src/sim/items/inventory';
 import { goldEfficiency } from '../src/ui/goldEfficiency';
 import { autos, duel } from './itemHelpers';
 
-const player: PlayerSetup = { slot: 0, team: 0, champion: 'tilda', role: 'adc', summoners: ['sprung', 'heilen'], isHuman: true };
+const player: PlayerSetup = { slot: 0, team: 0, champion: 'henrike', role: 'adc', summoners: ['sprung', 'heilen'], isHuman: true };
 const cast = (slot: 0 | 1 | 2 | 3, x: number, y: number): Command => ({ t: 'cast', slot, x, y });
 
 function setup(): { sim: Sim; m: number } {
@@ -35,20 +35,20 @@ function setup(): { sim: Sim; m: number } {
 /** Auto-attack `d` until the spring is full (max 600 ticks). */
 function windUp(sim: Sim, m: number, d: number): void {
   step(sim, [{ slot: 0, cmd: { t: 'attack', target: d } }]);
-  for (let i = 0; i < 900 && !tildaFull(sim, m); i++) step(sim);
+  for (let i = 0; i < 900 && !henrikeFull(sim, m); i++) step(sim);
 }
 /** Cancels the standing attack order so only casts act. */
 const stop = (sim: Sim): void => step(sim, [{ slot: 0, cmd: { t: 'stop' } as Command }]);
 
-describe('Tilda data', () => {
+describe('Henrike data', () => {
   it('hooks exist, ADC with a ranged auto', () => {
-    expect(missingHooks('tilda')).toEqual([]);
-    const d = championData('tilda');
+    expect(missingHooks('henrike')).toEqual([]);
+    const d = championData('henrike');
     expect(d.roles).toEqual(['adc']);
     expect(d.attackType).toBe('ranged');
   });
   it('is tuned like the other marksmen (HP / AD / range within 10 % of Mira)', () => {
-    const t = championData('tilda').base;
+    const t = championData('henrike').base;
     const o = championData('mira').base;
     expect(t.hp / o.hp).toBeGreaterThan(0.9);
     expect(t.hp / o.hp).toBeLessThan(1.1);
@@ -65,13 +65,13 @@ describe('Passive Mainspring', () => {
     step(sim);
     const as0 = sim.c.Stats.as[m]!;
     windUp(sim, m, d);
-    expect(tildaTension(sim, m)).toBe(5);
+    expect(henrikeTension(sim, m)).toBe(5);
     step(sim);
     expect(sim.c.Stats.as[m]! / as0).toBeCloseTo(1.15, 2);
     expect(buildSnapshot(sim, 0, 0).me?.passive).toMatchObject({ stacks: 5, max: 5, ready: true });
     stop(sim);
     steps(sim, sec(4.5));
-    expect(tildaTension(sim, m)).toBe(0);
+    expect(henrikeTension(sim, m)).toBe(0);
   });
 
   it('full tension overwinds the next ability: +40 % damage, 30 % of the cooldown back, spring unwinds', () => {
@@ -89,7 +89,7 @@ describe('Passive Mainspring', () => {
     const hits = collect(sim, 40, m, cast(0, CX + 400, CY)).filter((h) => h.dst === d);
     const over = hits[hits.length - 1]!;
     expect(over.amount / base.amount).toBeCloseTo(1.4, 1);
-    expect(tildaTension(sim, m)).toBe(0);
+    expect(henrikeTension(sim, m)).toBe(0);
     expect(cooldownLeft(sim, m, 0)).toBeLessThan(cdPlain * 0.85); // 30 % refunded, same ticks elapsed
   });
 });
@@ -111,18 +111,18 @@ describe('W Clockwork Turret', () => {
     const d = spawnDummy(sim, CX + 700, CY + 100, 1);
     step(sim);
     const hits = collect(sim, sec(3), m, cast(1, CX + 700, CY));
-    expect(tildaTurret(sim, m)).not.toBeNull();
+    expect(henrikeTurret(sim, m)).not.toBeNull();
     expect(hits.filter((h) => h.dst === d).length).toBeGreaterThanOrEqual(3);
     steps(sim, sec(4));
-    expect(tildaTurret(sim, m)).toBeNull();
+    expect(henrikeTurret(sim, m)).toBeNull();
   });
 
   it('shows the turret as a snapshot object while it stands', () => {
     const { sim, m } = setup();
     step(sim, [{ slot: 0, cmd: cast(1, CX + 600, CY) }]);
     steps(sim, 10);
-    expect(tildaTurret(sim, m)).not.toBeNull();
-    const obj = buildSnapshot(sim, 0, 0).objects.find((o) => o.tag === 'tilda_w_turret');
+    expect(henrikeTurret(sim, m)).not.toBeNull();
+    const obj = buildSnapshot(sim, 0, 0).objects.find((o) => o.tag === 'henrike_w_turret');
     expect(obj).toBeDefined();
   });
 
@@ -130,11 +130,11 @@ describe('W Clockwork Turret', () => {
     const { sim, m } = setup();
     step(sim, [{ slot: 0, cmd: cast(1, CX + 300, CY) }]);
     steps(sim, 10);
-    const first = tildaTurret(sim, m)!.x;
+    const first = henrikeTurret(sim, m)!.x;
     steps(sim, sec(19));
     step(sim, [{ slot: 0, cmd: cast(1, CX - 300, CY) }]);
     steps(sim, 10);
-    expect(tildaTurret(sim, m)!.x).toBeLessThan(first);
+    expect(henrikeTurret(sim, m)!.x).toBeLessThan(first);
   });
 
   it('an overwound deploy shoots 40 % harder', () => {
@@ -196,13 +196,13 @@ describe('Hemmwerk', () => {
   });
 });
 
-describe('Tilda sprite kit', () => {
+describe('Henrike sprite kit', () => {
   it('has its own clockwork kit with three props and every animation', () => {
-    const k = championKit('tilda')!;
-    expect(k.name).toBe('Tilda Federwerk');
+    const k = championKit('henrike')!;
+    expect(k.name).toBe('Henrike Federwerk');
     expect(k.props.length).toBe(3);
     expect(k.look).toContain('winding key');
-    for (const a of ['idle', 'run', 'attack', 'cast', 'death'] as const) expect(framesOf('tilda', a)).toBeGreaterThan(0);
+    for (const a of ['idle', 'run', 'attack', 'cast', 'death'] as const) expect(framesOf('henrike', a)).toBeGreaterThan(0);
     expect(championKit('aurel')!.look).not.toBe(k.look);
   });
 });

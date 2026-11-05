@@ -1,4 +1,4 @@
-// Ground effects of the swarm champs-a champions (Gneis earth walls / crater rim, Kerrin chains, Tilda turret / spring).
+// Ground effects of the swarm champs-a champions (Gneis earth walls / crater rim, Kerrin chains, Henrike turret / spring).
 // Same pooled flat meshes as fennaFx.ts; unknown tags return false (the generic shape is drawn).
 import type * as THREE from 'three';
 import type { SnapObject } from '../sim/snapshot';
@@ -68,7 +68,7 @@ export function drawChampsAObject(o: SnapObject, now: number, g: SevFxApi): bool
       circle(g.ring, 40, '#b79cff', 0.8 * life, 6, g.end.x, g.end.y);
       return true;
     }
-    case 'tilda_w_turret': {
+    case 'henrike_w_turret': {
       // clockwork turret: brass base disc, spinning ring of gear teeth, a raised barrel cap; orange halo while overwound
       const out = o.left !== undefined && o.left < 20 ? 0.5 + 0.5 * flick(now, 4, 70) : 1;
       circle(g.disc, 44, '#5a4a2a', 0.85 * out, 3);
@@ -82,7 +82,7 @@ export function drawChampsAObject(o: SnapObject, now: number, g: SevFxApi): bool
       if (o.n) circle(g.ring, 62, '#ff9a3a', 0.6 + 0.3 * flick(now, 5, 90), 5);
       return true;
     }
-    case 'tilda_w_shot':
+    case 'henrike_w_shot':
       line(o.x, o.y, g.end.x, g.end.y, 14, 60, '#ffd98a', 0.9 * life);
       line(o.x, o.y, g.end.x, g.end.y, 5, 62, '#ffffff', 0.95 * life);
       return true;

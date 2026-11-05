@@ -1,4 +1,4 @@
-// Tilda Federwerk props (ADC, "the Springwright"): a brass mainspring drum on the back with a tall winding key standing
+// Henrike Federwerk props (ADC, "the Springwright"): a brass mainspring drum on the back with a tall winding key standing
 // above her shoulder (turns while she runs and winds on every shot), a spring-loaded crossbow with a visible coil, and two
 // small gears at the hip. 64 px read: slim girl with a T-shaped key rising behind her head and a drum on her back
 // (Aurel's clock-face pack is round and flat; this one is a deep drum with a key).

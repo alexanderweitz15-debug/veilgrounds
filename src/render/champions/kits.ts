@@ -970,8 +970,8 @@ kit({
   props: [chainMantle, wristManacles, hookBlade],
 });
 kit({
-  id: 'tilda',
-  name: 'Tilda Federwerk',
+  id: 'henrike',
+  name: 'Henrike Federwerk',
   world: 188,
   look: 'young clockmaker marksman: goggles pushed up on her forehead, short copper ponytail, olive work jacket with rolled sleeves, a deep brass mainspring drum on her back with a tall T-shaped winding key above her shoulder, a spring-loaded crossbow with a visible coil, small brass gears at her hip',
   feature: 'T-shaped winding key behind the head + brass spring drum + coil crossbow',

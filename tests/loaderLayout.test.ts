@@ -38,7 +38,7 @@ describe('atlas layout vs canvas area limit', () => {
   });
 
   it('whole roster in one atlas still respects the cap', () => {
-    const all = ['ilvane', 'thessaly', 'kaelen', 'renn', 'aurel', 'seraphyne', 'brom', 'oleth', 'harrow', 'isolde', 'dagny', 'vessa', 'nyx', 'grimald', 'lio', 'ottilie', 'mira', 'corvin', 'lysa', 'tobin', 'wren', 'ferris', 'gorvam', 'hagen', 'kiran', 'oda', 'sev', 'vargrim', 'gneis', 'kerrin', 'tilda'];
+    const all = ['ilvane', 'thessaly', 'kaelen', 'renn', 'aurel', 'seraphyne', 'brom', 'oleth', 'harrow', 'isolde', 'dagny', 'vessa', 'nyx', 'grimald', 'lio', 'ottilie', 'mira', 'corvin', 'lysa', 'tobin', 'wren', 'ferris', 'gorvam', 'hagen', 'kiran', 'oda', 'sev', 'vargrim', 'gneis', 'kerrin', 'henrike'];
     const p = planAtlas(all, { frame: 152, maxSize: 8192, maxArea: MAX_CANVAS_AREA });
     expect(area(p)).toBeLessThanOrEqual(MAX_CANVAS_AREA);
   });

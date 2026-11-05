@@ -8,7 +8,7 @@ const entries = Object.entries(files).filter(([path]) => !path.endsWith('.values
 
 const ROSTER = [
   'ilvane', 'thessaly', 'kaelen', 'brom', 'oleth', 'mira', 'ferris', 'gorvam', 'vessa', 'nyx', 'harrow', 'seraphyne', 'renn',
-  'isolde', 'dagny', 'grimald', 'lio', 'ottilie', 'aurel', 'corvin', 'lysa', 'tobin', 'wren', 'hagen', 'kiran', 'oda', 'sev', 'vargrim', 'gneis', 'kerrin', 'tilda',
+  'isolde', 'dagny', 'grimald', 'lio', 'ottilie', 'aurel', 'corvin', 'lysa', 'tobin', 'wren', 'hagen', 'kiran', 'oda', 'sev', 'vargrim', 'gneis', 'kerrin', 'henrike',
 ];
 const hasMira = entries.some((e) => e.file === 'mira.json');
 

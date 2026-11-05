@@ -45,7 +45,7 @@ export const CAST_FAMILIES: Record<string, CastFamilies> = {
   vargrim: F('stomp', 'raise', 'abab'), // Q/R lance stomp, W mist raised, E gallop
   gneis: F('lob', 'slam', 'abba'), // Q boulder lobbed, W wall + E shoulder slam, R landslide lobbed
   kerrin: F('draw', 'spin', 'abba'), // Q hook drawn, W/E whirl + shackle spin, R leap drawn
-  tilda: F('draw', 'lob', 'abbb'), // Q bolt drawn, W turret lobbed, E hop, R clock tower lobbed
+  henrike: F('draw', 'lob', 'abbb'), // Q bolt drawn, W turret lobbed, E hop, R clock tower lobbed
   vessa: F('point', 'stomp', 'abba'), // Q pounce, W/E howl stomp, R dash
   wren: F('forward', 'raise', 'babb'), // Q embers raised, W ash pushed, E wing dash, R firestorm called down
 };

@@ -1,6 +1,6 @@
 {
-  "id": "tilda",
-  "name": "Tilda Federwerk",
+  "id": "henrike",
+  "name": "Henrike Federwerk",
   "title": { "de": "die Uhrenschmiedin", "en": "the Springwright" },
   "roles": ["adc"],
   "archetype": "clockwork_marksman",
@@ -40,11 +40,11 @@
       "de": "Jeder Auto-Angriff spannt die Feder (max. 5, verfällt nach 4 s ohne Angriff): +3 % Angriffstempo pro Spannung. Bei voller Spannung ist ihr nächster Zauber überdreht: +40 % Schaden (2 s), 30 % der Abklingzeit zurück.",
       "en": "Each basic attack winds the spring (max 5, decays after 4 s without attacking): +3% attack speed per wind. At full tension her next ability is overwound: +40% damage (2 s) and 30% of its cooldown back."
     },
-    "hooks": ["tilda_mainspring"]
+    "hooks": ["henrike_mainspring"]
   },
   "abilities": [
     {
-      "id": "tilda_q",
+      "id": "henrike_q",
       "name": { "de": "Federbolzen", "en": "Spring Bolt" },
       "desc": {
         "de": "Schießt einen Bolzen (950): 50/85/120/155/190 (+90 % AD) physisch, 25 % Slow 1 s.",
@@ -66,7 +66,7 @@
       ]
     },
     {
-      "id": "tilda_w",
+      "id": "henrike_w",
       "name": { "de": "Uhrwerkturm", "en": "Clockwork Turret" },
       "desc": {
         "de": "Stellt 700 vor sich einen Turm auf (6 s, höchstens einer): er schießt alle 0,75 s auf ihr Ziel (sonst den nächsten Champion in 600), je 12/18/24/30/36 (+30 % AD) physisch. Ein überdrehter Turm schießt 40 % härter.",
@@ -81,11 +81,11 @@
       "costType": "mana",
       "radius": 40,
       "effects": [
-        { "kind": "hook", "id": "tilda_w_turret" }
+        { "kind": "hook", "id": "henrike_w_turret" }
       ]
     },
     {
-      "id": "tilda_e",
+      "id": "henrike_e",
       "name": { "de": "Federsprung", "en": "Spring Hop" },
       "desc": {
         "de": "Springt 300 zum Zeiger und gibt 1,5 s +20 % Lauftempo.",
@@ -103,7 +103,7 @@
       "effects": [{ "kind": "buff", "stat": "ms", "pct": 20, "duration": 1.5, "target": "self" }]
     },
     {
-      "id": "tilda_r",
+      "id": "henrike_r",
       "name": { "de": "Stundenschlag", "en": "Hour Strike" },
       "desc": {
         "de": "Nach 0,9 s schlägt eine Turmuhr auf 1000 Entfernung (Radius 280): 140/230/320 (+90 % AD) physisch, 50 % Slow 1,5 s.",

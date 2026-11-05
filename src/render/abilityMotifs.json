@@ -61,6 +61,6 @@
     "vargrim": [["sword", 170], ["cloak", 165], ["boot", 150], ["horn", 175]],
     "gneis": [["bomb",28],["shield",38],["boot",25],["gem",30]],
     "kerrin": [["hook",215],["chain",205],["ring",270],["axe",355]],
-    "tilda": [["arrow",38],["gear",30],["boot",48],["bell",42]]
+    "henrike": [["arrow",38],["gear",30],["boot",48],["bell",42]]
   }
 }

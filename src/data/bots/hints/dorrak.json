@@ -1,0 +1,145 @@
+{
+  "id": "dorrak",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "frontline",
+    "engage": 4,
+    "peel": 1,
+    "poke": 0,
+    "burst": 3
+  },
+  "keyRanges": {
+    "auto": 175,
+    "trade": 325,
+    "engage": 750,
+    "poke": 175,
+    "threat": 350,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "dorrak_data1",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "E",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "dorrak_data2",
+      "kind": "trade",
+      "sequence": [
+        "Q",
+        "E"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "dorrak_data3",
+      "kind": "allin",
+      "sequence": [
+        "E",
+        "R",
+        "Q"
+      ],
+      "source": "data"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "cone",
+      "roles": [
+        "burst"
+      ],
+      "range": 350,
+      "useRange": [
+        0,
+        322
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "self",
+      "roles": [
+        "utility"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        325
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "self",
+      "roles": [
+        "cc",
+        "burst"
+      ],
+      "range": 330,
+      "useRange": [
+        0,
+        330
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 330,
+      "castTime": 0.2,
+      "delay": 0.45,
+      "cc": 4,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "R",
+      "aim": "circle",
+      "roles": [
+        "cc",
+        "engage",
+        "burst",
+        "ult"
+      ],
+      "range": 750,
+      "useRange": [
+        0,
+        690
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 380,
+      "castTime": 0.35,
+      "delay": 0.7,
+      "cc": 4,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

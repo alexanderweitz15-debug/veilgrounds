@@ -1,0 +1,160 @@
+{
+  "id": "tilda",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "support",
+    "engage": 3,
+    "peel": 3,
+    "poke": 2,
+    "burst": 1
+  },
+  "keyRanges": {
+    "auto": 550,
+    "trade": 750,
+    "engage": 550,
+    "poke": 750,
+    "threat": 750,
+    "peel": 750
+  },
+  "combos": [
+    {
+      "id": "tilda_data1",
+      "kind": "trade",
+      "sequence": [
+        "E",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "tilda_data2",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "tilda_data3",
+      "kind": "allin",
+      "sequence": [
+        "E",
+        "R"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "tilda_poke",
+      "kind": "poke",
+      "sequence": [
+        "E"
+      ],
+      "source": "generated"
+    },
+    {
+      "id": "tilda_peel",
+      "kind": "peel",
+      "sequence": [
+        "R"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "self",
+      "roles": [
+        "peel",
+        "sustain"
+      ],
+      "range": 650,
+      "useRange": [
+        0,
+        650
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 650,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "peel"
+    },
+    {
+      "slot": "W",
+      "aim": "self",
+      "roles": [
+        "peel"
+      ],
+      "range": 650,
+      "useRange": [
+        0,
+        650
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 650,
+      "castTime": 0.2,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "peel"
+    },
+    {
+      "slot": "E",
+      "aim": "circle",
+      "roles": [
+        "zone",
+        "poke"
+      ],
+      "range": 750,
+      "useRange": [
+        0,
+        690
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 270,
+      "castTime": 0.25,
+      "delay": 0.5,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "R",
+      "aim": "self",
+      "roles": [
+        "cc",
+        "peel",
+        "sustain",
+        "ult"
+      ],
+      "range": 750,
+      "useRange": [
+        0,
+        750
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 750,
+      "castTime": 0.4,
+      "delay": 0.5,
+      "cc": 4,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

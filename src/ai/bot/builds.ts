@@ -26,10 +26,13 @@ import fenna from '../../data/builds/fenna.json'; // champ-support (#29)
 import thessaly from '../../data/builds/thessaly.json';
 import tobin from '../../data/builds/tobin.json';
 import vargrim from '../../data/builds/vargrim.json';
+import rovena from '../../data/builds/rovena.json';
+import dorrak from '../../data/builds/dorrak.json';
+import tilda from '../../data/builds/tilda.json';
 import vessa from '../../data/builds/vessa.json';
 import wren from '../../data/builds/wren.json';
 
 export interface BuildVariant { boots: string; core: string[] }
 export interface BuildData { champion: string; starter: string[]; standard: BuildVariant; vsAD?: BuildVariant; vsAP?: BuildVariant }
 
-export const BUILDS: Record<string, BuildData> = { aurel, brom, corvin, dagny, ferris, gorvam, grimald, hagen, harrow, ilvane, isolde, kaelen, kiran, lio, lysa, mira, nyx, oda, oleth, ottilie, renn, seraphyne, sev, fenna, thessaly, tobin, vargrim, vessa, wren };
+export const BUILDS: Record<string, BuildData> = { aurel, brom, corvin, dagny, ferris, gorvam, grimald, hagen, harrow, ilvane, isolde, kaelen, kiran, lio, lysa, mira, nyx, oda, oleth, ottilie, renn, seraphyne, sev, fenna, rovena, dorrak, tilda, thessaly, tobin, vargrim, vessa, wren };

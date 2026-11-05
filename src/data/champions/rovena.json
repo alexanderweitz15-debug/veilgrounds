@@ -1,0 +1,153 @@
+{
+  "id": "rovena",
+  "name": "Rovena Aderlass",
+  "title": { "de": "die Aderlasserin", "en": "the Bloodletter" },
+  "roles": ["mid"],
+  "archetype": "blood_mage",
+  "botBias": { "aggression": 1, "tradeLength": 1 },
+  "trainingPurpose": {
+    "de": "Blutmagierin lesen: ihre Fähigkeiten kosten Leben, sie heilt sich an deinem Schaden. Unter 35 % Leben ist sie am gefährlichsten, nicht am schwächsten.",
+    "en": "Reading a blood mage: her spells cost health and she heals from the damage she deals. Below 35% health she is most dangerous, not weakest."
+  },
+  "attackType": "ranged",
+  "resource": "none",
+  "base": {
+    "hp": 650,
+    "hpGrowth": 108,
+    "hpRegen": 7,
+    "hpRegenGrowth": 0.65,
+    "mana": 0,
+    "manaGrowth": 0,
+    "manaRegen": 0,
+    "manaRegenGrowth": 0,
+    "ad": 52,
+    "adGrowth": 2.6,
+    "armor": 24,
+    "armorGrowth": 4,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.625,
+    "asGrowth": 1.6,
+    "range": 525,
+    "ms": 335,
+    "windup": 0.22,
+    "projectileSpeed": 1600,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Blutzoll", "en": "Bloodtithe" },
+    "desc": {
+      "de": "Fähigkeiten kosten Leben statt Mana (zuzüglich 3 % Max-Leben für Q, W, E). Fähigkeitsschaden heilt Rovena um 25 % (Champions) bzw. 10 % (andere) des verursachten Schadens. Blutrausch: unter 35 % Max-Leben +20 % Fähigkeitsschaden und 50 % mehr Heilung. Kann nur zaubern, solange das Leben die Kosten übersteigt.",
+      "en": "Abilities cost health instead of mana (plus 3% max health for Q, W, E). Ability damage heals Rovena for 25% (champions) or 10% (others) of the damage dealt. Bloodrush: below 35% max health +20% ability damage and 50% more healing. She can only cast while her health exceeds the cost."
+    },
+    "hooks": ["rovena_bloodtithe"]
+  },
+  "abilities": [
+    {
+      "id": "rovena_q",
+      "name": { "de": "Aderschnitt", "en": "Vein Cut" },
+      "desc": {
+        "de": "Linie 925. Schaden 75/115/155/195/235 (+60 % AP); der Getroffene ist 4 s mit Blut gezeichnet. Kostet 35-55 Leben.",
+        "en": "Line 925. Damage 75/115/155/195/235 (+60% AP); the target is marked with blood for 4 s. Costs 35-55 health."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 925,
+      "cooldown": [7, 6.5, 6, 5.5, 5],
+      "cost": [35, 40, 45, 50, 55],
+      "costType": "hp",
+      "width": 70,
+      "speed": 1800,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [75, 115, 155, 195, 235], "ap": 0.6 } },
+        { "kind": "mark", "id": "rovena_blood", "duration": 4 }
+      ]
+    },
+    {
+      "id": "rovena_w",
+      "name": { "de": "Blutlache", "en": "Bloodpool" },
+      "desc": {
+        "de": "Kreis 300 auf 700, 3 s: Gegner darin erleiden jede Sekunde 18/28/38/48/58 (+15 % AP) Schaden und 30 % Slow. Kostet 50-90 Leben.",
+        "en": "Circle 300 at 700, 3 s: enemies inside take 18/28/38/48/58 (+15% AP) damage per second and 30% slow. Costs 50-90 health."
+      },
+      "type": "zone",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 700,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": [50, 60, 70, 80, 90],
+      "costType": "hp",
+      "radius": 300,
+      "duration": 3,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [18, 28, 38, 48, 58], "ap": 0.15 } },
+        { "kind": "slow", "pct": 30, "duration": 1.1 }
+      ]
+    },
+    {
+      "id": "rovena_e",
+      "name": { "de": "Blutfessel", "en": "Blood Shackle" },
+      "desc": {
+        "de": "Zielgerichtet 650: Schaden 60/95/130/165/200 (+45 % AP) und 40 % Slow 1,5 s. Gegen ein mit Aderschnitt gezeichnetes Ziel +40 % Schaden und 0,75 s Wurzel (die Zeichnung verbraucht sich). Kostet 60-100 Leben.",
+        "en": "Targeted 650: damage 60/95/130/165/200 (+45% AP) and 40% slow for 1.5 s. Against a target marked by Vein Cut: +40% damage and a 0.75 s root (the mark is consumed). Costs 60-100 health."
+      },
+      "type": "targeted",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 650,
+      "cooldown": [16, 15, 14, 13, 12],
+      "cost": [60, 70, 80, 90, 100],
+      "costType": "hp",
+      "effects": [
+        { "kind": "hook", "id": "rovena_e_detonate" },
+        { "kind": "damage", "type": "magic", "amount": { "base": [60, 95, 130, 165, 200], "ap": 0.45 } },
+        { "kind": "slow", "pct": 40, "duration": 1.5 }
+      ]
+    },
+    {
+      "id": "rovena_r",
+      "name": { "de": "Blutflut", "en": "Bloodtide" },
+      "desc": {
+        "de": "Nach 0,35 s: alle Gegner im Radius 650 erleiden 150/225/300 (+55 % AP) Schaden und 30 % Slow 1,5 s. Rovena saugt ihr Blut: die Heilung ist doppelt. Kostet kein Leben.",
+        "en": "After 0.35 s: all enemies within 650 take 150/225/300 (+55% AP) damage and 30% slow for 1.5 s. Rovena drains their blood: the healing is doubled. Costs no health."
+      },
+      "type": "self",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 0,
+      "cooldown": [110, 95, 80],
+      "cost": 0,
+      "costType": "none",
+      "radius": 650,
+      "delay": 0.35,
+      "effects": [
+        { "kind": "hook", "id": "rovena_r_drain" },
+        { "kind": "damage", "type": "magic", "amount": { "base": [150, 225, 300], "ap": 0.55 } },
+        { "kind": "slow", "pct": 30, "duration": 1.5 }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3 (Q und E stehen, Zeichnung plus Fessel) und Level 6 (Blutflut heilt mit).",
+    "en": "Level 3 (Q and E up, mark plus shackle) and level 6 (Bloodtide heals her)."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Zeichnen und fesseln", "en": "Mark and shackle" }, "sequence": ["Q", "E"] },
+    { "name": { "de": "Lache, Fessel, Auto", "en": "Pool, shackle, auto" }, "sequence": ["W", "E", "AA"] },
+    { "name": { "de": "Zeichnen, fesseln, Flut", "en": "Mark, shackle, tide" }, "sequence": ["Q", "E", "R"] }
+  ],
+  "scores": { "engage": 2, "peel": 1, "range": 3, "scaling": 3, "waveclear": 3, "mobility": 1 },
+  "voiceLines": {
+    "pick": { "de": "Ein kleiner Schnitt. Du spürst ihn kaum.", "en": "A small cut. You'll hardly feel it." },
+    "firstBlood": { "de": "Das erste Glas ist immer das beste.", "en": "The first glass is always the best." },
+    "kill": { "de": "Danke fürs Auffüllen.", "en": "Thanks for the refill." },
+    "death": { "de": "Zu viel gezahlt.", "en": "Paid too much." },
+    "recall": { "de": "Ich blute zurück zur Quelle.", "en": "Bleeding back to the source." },
+    "taunt": { "de": "Zeig mir deine Adern.", "en": "Show me your veins." }
+  },
+  "silhouette": "slender robed woman crowned with a ring of curved bone thorns, three blood orbs circling her and a tattered crimson cape"
+}

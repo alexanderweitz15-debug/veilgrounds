@@ -10,7 +10,7 @@ import { isRef } from '../sim';
 import { MAX_ENT } from '../ecs';
 import { Kind, TICK_HZ, Team, isStructure, type DamageType } from '../types';
 import { dealDamage } from '../damage';
-import { canAttack, hasStat, healMult, healUnit, isBlind, removeBuffs } from '../buffs';
+import { canAttack, hasBuff, hasStat, healMult, healUnit, isBlind, removeBuffs } from '../buffs';
 import { sees } from '../vision';
 import { findPath } from '../map';
 import { championData, passiveHooksOf } from '../champions';
@@ -195,7 +195,7 @@ function updateUnit(sim: Sim, eid: number): void {
   }
   let t = Atk.target[eid]!;
   let valid = isRef(sim, t, Atk.targetSerial[eid]!);
-  const able = canAttack(sim, eid) && !isBusy(sim, eid);
+  const able = canAttack(sim, eid) && !isBusy(sim, eid) && !hasBuff(sim, eid, 'disarm');
 
   if (Atk.phase[eid] === 1) {
     // a new target (minion re-aggro, new attack order) cancels the wind-up instead of landing it on the new target

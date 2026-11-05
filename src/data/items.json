@@ -1540,6 +1540,258 @@
           "en": "Shields and heals you give another champion grant her +12% move speed for 1.5 s (once per ally every 6 s)."
         }
       }
+    },
+    {
+      "id": "aderglas",
+      "name": {
+        "de": "Aderglas",
+        "en": "Veinglass"
+      },
+      "tier": "component",
+      "cost": 1000,
+      "from": [
+        "verstaerkerbuch",
+        "rubinsplitter"
+      ],
+      "stats": {
+        "ap": 30,
+        "hp": 175
+      },
+      "tags": [
+        "ap",
+        "tank"
+      ]
+    },
+    {
+      "id": "blutkelch",
+      "name": {
+        "de": "Blutkelch",
+        "en": "Bloodchalice"
+      },
+      "tier": "legendary",
+      "cost": 2900,
+      "from": [
+        "aderglas",
+        "lehrlingsstab"
+      ],
+      "stats": {
+        "ap": 80,
+        "hp": 300
+      },
+      "tags": [
+        "ap",
+        "tank"
+      ],
+      "passive": {
+        "name": {
+          "de": "Letzter Schluck",
+          "en": "Last Sip"
+        },
+        "desc": {
+          "de": "Fähigkeitstreffer auf Champions heilen 4 % deines fehlenden Lebens (+15). Unter 40 % Leben: +10 % AP.",
+          "en": "Ability hits on champions heal 4% of your missing health (+15). Below 40% health: +10% AP."
+        },
+        "rules": [
+          {
+            "on": "onAbilityHit",
+            "if": {
+              "target": {
+                "kind": [
+                  "champion"
+                ],
+                "team": "enemy"
+              }
+            },
+            "cooldown": 0.5,
+            "do": [
+              {
+                "type": "heal",
+                "to": "self",
+                "value": {
+                  "base": 15,
+                  "scale": {
+                    "missingHp": 0.04
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "on": "onComputeStats",
+            "if": {
+              "self": {
+                "hpBelowPct": 40
+              }
+            },
+            "do": [
+              {
+                "type": "statMult",
+                "stat": "ap",
+                "mult": 1.1
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "wuehlerzahn",
+      "name": {
+        "de": "Wühlerzahn",
+        "en": "Burrower's Tooth"
+      },
+      "tier": "component",
+      "cost": 1100,
+      "from": [
+        "langschwert",
+        "rubinsplitter"
+      ],
+      "stats": {
+        "ad": 20,
+        "hp": 150
+      },
+      "tags": [
+        "ad",
+        "tank"
+      ]
+    },
+    {
+      "id": "sandpanzer",
+      "name": {
+        "de": "Sandpanzer",
+        "en": "Sand Carapace"
+      },
+      "tier": "legendary",
+      "cost": 3000,
+      "from": [
+        "wuehlerzahn",
+        "riesenguertel"
+      ],
+      "stats": {
+        "ad": 40,
+        "hp": 500
+      },
+      "tags": [
+        "ad",
+        "tank"
+      ],
+      "passive": {
+        "name": {
+          "de": "Staubhaut",
+          "en": "Duststeel"
+        },
+        "desc": {
+          "de": "Fähigkeitstreffer auf Champions geben dir 2,5 s +25 Rüstung und Magieresistenz (8 s Abklingzeit).",
+          "en": "Ability hits on champions grant you +25 armor and magic resist for 2.5 s (8 s cooldown)."
+        },
+        "rules": [
+          {
+            "on": "onAbilityHit",
+            "if": {
+              "target": {
+                "kind": [
+                  "champion"
+                ],
+                "team": "enemy"
+              }
+            },
+            "cooldown": 8,
+            "do": [
+              {
+                "type": "applyBuff",
+                "to": "self",
+                "kind": "stat",
+                "stat": "armor",
+                "id": "sandpanzer_armor",
+                "flat": 25,
+                "seconds": 2.5
+              },
+              {
+                "type": "applyBuff",
+                "to": "self",
+                "kind": "stat",
+                "stat": "mr",
+                "id": "sandpanzer_mr",
+                "flat": 25,
+                "seconds": 2.5
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "taktstock",
+      "name": {
+        "de": "Taktstock",
+        "en": "Conductor's Baton"
+      },
+      "tier": "component",
+      "cost": 1100,
+      "from": [
+        "verstaerkerbuch",
+        "wetzdolch"
+      ],
+      "stats": {
+        "ap": 30,
+        "haste": 10
+      },
+      "tags": [
+        "ap",
+        "support"
+      ]
+    },
+    {
+      "id": "liederbuch",
+      "name": {
+        "de": "Liederbuch",
+        "en": "Songbook"
+      },
+      "tier": "legendary",
+      "cost": 2800,
+      "from": [
+        "taktstock",
+        "hueterlampe"
+      ],
+      "stats": {
+        "ap": 55,
+        "haste": 20,
+        "healShieldPowerPct": 8
+      },
+      "tags": [
+        "support",
+        "ap"
+      ],
+      "passive": {
+        "name": {
+          "de": "Kehrreim",
+          "en": "Refrain"
+        },
+        "desc": {
+          "de": "Jede Fähigkeit heilt Verbündete in 600 (auch dich) um 12 (+2 je Level, +6 % AP). 4 s Abklingzeit.",
+          "en": "Each ability heals allies within 600 (you too) for 12 (+2 per level, +6% AP). 4 s cooldown."
+        },
+        "rules": [
+          {
+            "on": "onCast",
+            "cooldown": 4,
+            "do": [
+              {
+                "type": "heal",
+                "to": "alliesInRadius",
+                "radius": 600,
+                "value": {
+                  "base": 12,
+                  "perLevel": 2,
+                  "scale": {
+                    "ap": 0.06
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

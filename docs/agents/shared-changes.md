@@ -667,3 +667,10 @@ Additive edits to shared files (all small):
 - `src/game/game.ts`: +1 line before `this.hud.update(...)`: `this.hud.resultFreeze = this.extras.over;` (hud.ts has the new public field).
 - `src/i18n/{de,en}.json`: additive `shop.noMatch`; reworded `plan.streak.days`, `profile.streakDays`, `tutorial.step.cast.text`, three `tutorial.step.lastHit/tower` lines (de: Diener -> Vasallen). `src/modes/planStrings.json`: `plan.streak.days`.
 - `src/data/runePresets.json`: re-encoded (mojibake fixed), content unchanged.
+
+## champs-b (swarm/champs-b)
+
+- `src/sim/buffs.ts`: new `BuffKind` `disarm` (cannot attack, not a CC); `src/sim/systems/attack.ts`: `able` also requires `!hasBuff(disarm)`.
+- `src/ai/bot/combat.ts`: `ready()` stops HP-cost casts below 25 % HP; `castSlot` never casts `dorrak_w`. `src/ai/bot/brain.ts` `utilitySpells`: + `burrowStep` (burrow.ts), `noteStep` (notes.ts).
+- Registries (additive): champions index (data/sim), builds.ts, bot hints (generated), runePresets, voiceLines, abilityMotifs, kits/motion/casts/atlas, trainer MID + JG pools, items.json + itemIcons.json (6 new items).
+- `tests/items.test.ts`: component count `>= 14`.

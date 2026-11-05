@@ -26,6 +26,7 @@ import { renderShowcase } from './showcase';
 import { renderPickLine } from './voiceBubbles';
 import { roleIcon, runeIcon, setIcon, summonerIcon } from './icons';
 import { preloadMatch } from '../render/loader';
+import { cachedMasteryLevel } from '../stats/progression';
 import { createLoadingBar } from '../render/loader/progressBar';
 
 type Role = PlayerSetup['role'];
@@ -185,6 +186,8 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
       setPortrait(el('div', 'champ-portrait', c, champName(id).charAt(0)), id);
       el('div', 'champ-name', c, champName(id));
       el('div', 'champ-title', c, d.title[settings.lang]);
+      const mastery = cachedMasteryLevel(id);
+      if (mastery > 0) el('span', 'champ-mastery', c, `M${mastery}`).title = t('prog.mastery');
       c.title = `${champName(id)}, ${d.title[settings.lang]}`;
       c.addEventListener('click', () => {
         pick.champ = id;

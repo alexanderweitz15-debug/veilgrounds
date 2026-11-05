@@ -9,6 +9,7 @@ import { champName, summonerName } from './names';
 import { t } from '../i18n';
 import { setPortrait } from '../render/portraits';
 import { setTip } from './tooltip';
+import { cachedMasteryLevel } from '../stats/progression';
 import { renderShowcase } from './showcase';
 import { renderPickLine } from './voiceBubbles';
 import { runeIcon, setIcon, summonerIcon } from './icons';
@@ -61,6 +62,8 @@ export function renderPracticeLobby(root: HTMLElement, title: string, onBack: ()
       setPortrait(el('div', 'champ-portrait', c), id);
       el('div', 'champ-name', c, champName(id));
       el('div', 'champ-title', c, d.title[settings.lang]);
+      const mastery = cachedMasteryLevel(id);
+      if (mastery > 0) el('span', 'champ-mastery', c, `M${mastery}`).title = t('prog.mastery');
       c.title = `${champName(id)}, ${d.title[settings.lang]}`;
       c.addEventListener('click', () => {
         pick.champ = id;

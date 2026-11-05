@@ -310,13 +310,20 @@ export async function loadProgress(now = Date.now()): Promise<Progress> {
   const raw = await kvGet<Partial<Progress>>(PROGRESS_KEY);
   const base = freshProgress(now);
   if (!raw || typeof raw.ladder !== 'number') return base;
-  return rollMissions({ ...base, ...raw, mastery: raw.mastery ?? {}, daily: raw.daily ?? [], weekly: raw.weekly ?? [] }, now);
+  const p = rollMissions({ ...base, ...raw, mastery: raw.mastery ?? {}, daily: raw.daily ?? [], weekly: raw.weekly ?? [] }, now);
+  masteryCache = p.mastery;
+  return p;
 }
+
+/** Mastery of the last loaded progress (lobby badges read it synchronously; empty until a load). */
+let masteryCache: Record<string, MasteryEntry> = {};
+export const cachedMasteryLevel = (champion: string): number => masteryLevel(masteryCache[champion]?.score ?? 0);
 
 /** Counts one finished game: load, apply, save. Null when the game does not count. */
 export async function recordMatch(s: MatchSummary, opp: number | null, now = Date.now()): Promise<ProgressDelta | null> {
   if (!counts(s)) return null;
   const { next, delta } = applyMatch(await loadProgress(now), s, recordFromSummary(s, now), opp, now);
+  masteryCache = next.mastery;
   await kvSet(PROGRESS_KEY, next);
   return delta;
 }

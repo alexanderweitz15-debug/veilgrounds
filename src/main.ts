@@ -15,10 +15,12 @@ import { installPreloadErrorReload } from './render/loader/preloadError';
 // load on demand, so the main menu starts without them.
 const loadGame = () => import('./game/game');
 const loadTrainerMenu = () => import('./ui/trainerMenu');
-const loadClassicLobby = () => import('./ui/classicLobby');
+/** Mastery badges in the lobbies read the progression cache: load it first (failures only cost the badges). */
+const warmProgress = (): Promise<unknown> => import('./stats/progression').then((p) => p.loadProgress()).catch(() => null);
+const loadClassicLobby = async () => (await warmProgress(), import('./ui/classicLobby'));
 /** Practice lobby + mode configs (sim data, champion sprites for portraits). */
 const loadPlay = async () => {
-  const [modes, lobbyMod, runes] = await Promise.all([import('./game/modes'), import('./ui/practiceLobby'), import('./sim/items/runes')]);
+  const [modes, lobbyMod, runes] = await Promise.all([import('./game/modes'), import('./ui/practiceLobby'), import('./sim/items/runes'), warmProgress()]);
   return { ...modes, ...lobbyMod, ...runes };
 };
 
@@ -79,6 +81,18 @@ function mainMenu(): void {
     notes: [t('menu.note1'), t('menu.note2'), t('menu.note3')],
     footer: t('menu.footVersion'),
   });
+  // rank / level chip in the top bar (progression; opens the profile)
+  void Promise.all([import('./stats/progression'), import('./ui/progressView')]).then(async ([p, v]) => {
+    const pr = await p.loadProgress();
+    const bar = s.querySelector('.client-bar');
+    if (!bar || !s.isConnected) return;
+    const chip = document.createElement('button');
+    chip.className = 'rank-chip';
+    const r = p.rankInfo(pr.ladder);
+    chip.textContent = `${v.rankLabel(pr.ladder)}${pr.games >= 3 ? ` · ${r.lp} LP` : ''} · ${t('prog.level', { n: p.levelInfo(pr.xp).level })}`;
+    chip.addEventListener('click', () => profileScreen());
+    bar.insertBefore(chip, bar.querySelector('.lang-toggle'));
+  }).catch(() => undefined);
 }
 
 /** Classic 5v5 vs bots (Agent H): lobby -> loading screen -> game. */

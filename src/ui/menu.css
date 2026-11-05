@@ -162,3 +162,7 @@ body { font-family: var(--font-body); }
 .screen.menu .lang-toggle .btn { background: none; border: 1px solid #3c3c41; border-radius: 0; color: var(--text-dim); font-family: var(--font-label); letter-spacing: 0.1em; }
 .screen.menu .lang-toggle .btn.on { border-color: var(--gold); color: var(--gold-hi); }
 .ingame-menu .ingame-panel { max-height: calc(100vh - 48px); overflow-y: auto; }
+
+.rank-chip { align-self: center; margin: 0 10px; padding: 3px 10px; background: rgba(200, 170, 110, 0.1); border: 1px solid var(--line, rgba(201, 162, 78, 0.35)); color: var(--gold-hi, #f0e6d2); font: 600 12px var(--font-label, sans-serif); letter-spacing: 0.06em; cursor: pointer; white-space: nowrap; }
+.rank-chip:hover { background: rgba(200, 170, 110, 0.25); }
+@media (max-width: 760px) { .rank-chip { display: none; } }

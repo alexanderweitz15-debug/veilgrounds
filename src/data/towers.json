@@ -4,6 +4,7 @@
   "attackSpeed": 0.83,
   "radius": 88,
   "vision": 1350,
+  "trueSightR": 750,
   "defendRange": 1400,
   "rampSec": 1200,
   "tiers": [

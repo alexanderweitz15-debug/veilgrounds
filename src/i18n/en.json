@@ -609,6 +609,7 @@
   "gfx.benchmark": "Graphics test running ...",
   "set.graphicsNote": "Shadows and resolution apply immediately, antialiasing and shadow filter from the next match.",
   "set.a11yTitle": "Accessibility",
+  "set.textScale": "Text size (menus, panels, names)",
   "set.colorMode": "Colour mode (team colours)",
   "set.cb.normal": "Default",
   "set.cb.deuteranopia": "Deuteranopia (green-weak)",
@@ -1121,5 +1122,15 @@
   "ann.elderOwn": "Your team has slain the Ancient Leviathan",
   "ann.elderEnemy": "The enemy team has slain the Ancient Leviathan",
   "ann.elderSub": "Execute below {pct} % health for {s} s",
-  "score.obj.elder": "Ancient Leviathan blessing: {s} left"
+  "score.obj.elder": "Ancient Leviathan blessing: {s} left",
+  "lt.title": "Training",
+  "lt.csMin": "CS/min",
+  "lt.missed": "CS missed",
+  "lt.goldMin": "Gold/min",
+  "lt.cs10": "CS@10",
+  "lt.rankTip": "Change target rank (click). Targets are the bot rank values.",
+  "set.trainingHud": "Training readout in the match (CS/min, missed CS, last-hit bar)",
+  "set.trainingHud.auto": "Auto (on in training, off in classic)",
+  "set.trainingHud.on": "On",
+  "set.trainingHud.off": "Off"
 }

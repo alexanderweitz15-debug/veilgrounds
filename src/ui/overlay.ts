@@ -11,6 +11,7 @@ import { champName, variantName } from './names';
 import { VisualCues } from './cues';
 import { VoiceBubbles } from './voiceBubbles';
 import { barLayout, barLift } from './hpBarGeom';
+import { attackedMinion, drawLastHitMark, lastHitMarks } from './liveTraining';
 import { stackBars, type BarRect } from '../render/barLayout';
 import { drawCcGlyph } from '../render/ccGlyphs';
 import { pickBody, type PickView } from '../input/picking';
@@ -314,6 +315,7 @@ export class Overlay {
         if (l) rects.push({ id: e.id, x: l.x, y: l.y, w: l.bw, h: l.bh, fixed: l.champ || l.structure || l.dummy });
       }
       barLift.clear();
+      const attacked = lastHitMarks.size ? attackedMinion(state) : -1;
       for (const [id, dy] of stackBars(rects)) if (dy) barLift.set(id, dy);
       for (const e of snap.entities) {
         if (!e.alive || e.maxHp <= 0) continue;
@@ -356,6 +358,8 @@ export class Overlay {
           ctx.lineWidth = 1.5;
           ctx.strokeRect(x - 1, y - 1, bw + 2, bh + 2);
         }
+        const lh = lastHitMarks.get(e.id);
+        if (lh && (e.id === hoverId || e.id === attacked)) drawLastHitMark(ctx, lh, x, y, bw, bh); // training widget: last-hit timing
         if (e.id === hoverId) {
           // hovered (= what a click hits): bright frame around the whole bar
           ctx.strokeStyle = hoverColor(state, e);

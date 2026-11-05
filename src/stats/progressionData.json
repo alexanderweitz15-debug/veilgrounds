@@ -1,0 +1,47 @@
+{
+  "ladder": {
+    "startLadder": 400,
+    "lpPerDivision": 100,
+    "divisions": 4,
+    "divisionTiers": 7,
+    "apexWidth": 300,
+    "winBase": 22,
+    "lossBase": -18,
+    "perfPerIndex": 3,
+    "perfCap": 8,
+    "oppPerTier": 3,
+    "oppCap": 6,
+    "minWin": 8,
+    "maxWin": 40,
+    "minLoss": -4,
+    "maxLoss": -35,
+    "placementGames": 3,
+    "placementMult": 2,
+    "minDurationS": 300
+  },
+  "xp": { "perGame": 40, "win": 20, "levelBase": 120, "levelStep": 40 },
+  "mastery": {
+    "base": 20,
+    "win": 20,
+    "kill": 2,
+    "assist": 1,
+    "death": -1,
+    "csPerMin": 2,
+    "min": 5,
+    "thresholds": [100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200, 4000]
+  },
+  "missionCount": { "daily": 3, "weekly": 3 },
+  "missions": [
+    { "id": "cs10", "kind": "daily", "metric": "cs10", "agg": "max", "target": 70, "xp": 60, "focus": "farming" },
+    { "id": "wards5", "kind": "daily", "metric": "wardsPlaced", "agg": "max", "target": 5, "xp": 50, "focus": "vision" },
+    { "id": "noDeath15", "kind": "daily", "metric": "noDeathBy", "at": 900, "agg": "max", "target": 1, "xp": 70, "focus": "survival" },
+    { "id": "win1", "kind": "daily", "metric": "win", "agg": "sum", "target": 1, "xp": 40, "focus": "macro" },
+    { "id": "kills5", "kind": "daily", "metric": "kills", "agg": "sum", "target": 5, "xp": 40, "focus": "fighting" },
+    { "id": "cs200", "kind": "daily", "metric": "cs", "agg": "sum", "target": 200, "xp": 50, "focus": "farming" },
+    { "id": "win3", "kind": "weekly", "metric": "win", "agg": "sum", "target": 3, "xp": 150, "focus": "macro" },
+    { "id": "games5", "kind": "weekly", "metric": "games", "agg": "sum", "target": 5, "xp": 120, "focus": "macro" },
+    { "id": "cs800", "kind": "weekly", "metric": "cs", "agg": "sum", "target": 800, "xp": 140, "focus": "farming" },
+    { "id": "kills20", "kind": "weekly", "metric": "kills", "agg": "sum", "target": 20, "xp": 130, "focus": "fighting" },
+    { "id": "noDeath20", "kind": "weekly", "metric": "noDeathBy", "at": 1200, "agg": "max", "target": 1, "xp": 160, "focus": "survival" }
+  ]
+}

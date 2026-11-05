@@ -25,7 +25,7 @@ import { spawnProjectile } from './projectiles';
 import { baseMaxHp } from './stats';
 import { cancelRecall, champions } from './economy';
 import { cancelTeleport, castSummonerSpell, summonerCooldown, summonerDef, summonerWalkTarget, teleporting } from '../summoners';
-import { sees } from '../vision';
+import { bushAttackExpose, sees } from '../vision';
 import { updateSummons } from '../summons';
 import { tickItemsAndRunes } from '../items/itemHooks';
 
@@ -454,6 +454,7 @@ export function castAbility(sim: Sim, eid: number, slot: number, x: number, y: n
   a.cdUntil[slot] = sim.tick + a.cdTotal[slot]!;
   cancelRecall(sim, eid);
   removeBuffs(sim, eid, (b) => b.kind === 'stat' && b.stat === 'invisible'); // casting breaks invisibility
+  bushAttackExpose(sim, eid); // casting from a bush exposes the caster briefly (vision.ts)
   // blinks, cones and line skillshots with a delay (Seraphyne E, Isolde W, Lysa R): the delay is part of the wind-up
   const delayed = ab.type === 'blink' || ab.type === 'cone' || ab.type === 'skillshot_line';
   const castTime = (ab.castTime + (delayed ? (ab.delay ?? 0) : 0)) * mods.timeMult;

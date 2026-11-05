@@ -2,6 +2,7 @@
 import { kvGet, kvSet } from './store/kv';
 import type { CastKey, CastMode } from './input/castMode';
 import type { LevelUpMod, SelfCastMod } from './input/keybinds';
+import type { Rank } from './ai/profiles/schema';
 
 export type ColorMode = 'normal' | 'deuteranopia' | 'protanopia' | 'tritanopia';
 export type GraphicsPreset = 'veryLow' | 'low' | 'medium' | 'high' | 'veryHigh';
@@ -17,6 +18,8 @@ export interface Settings {
   uiScale: number;
   /** HUD scale follows the window height (innerHeight / 720); moving the slider turns it off. */
   uiScaleAuto: boolean;
+  /** Text size in percent (90..150): menus, HUD panels and the overlay labels (name, floating numbers). */
+  textScale: number;
   /** Colour-blind palette for team/relation colours (bars, rings, minimap, pings, telegraphs). */
   colorMode: ColorMode;
   /** Fewer flashes, pulses and animations (hit flash, cast/death pulses, HUD animations). */
@@ -92,6 +95,10 @@ export interface Settings {
   scoreBotInfo: boolean;
   /** S3 "LoL telegraphs": enemy skillshots show only the projectile plus a thin outline, no ground strip / fill (own unchanged). */
   lolTelegraphs: boolean;
+  /** Live training widget (src/ui/liveTraining.ts): auto = on in trainer / lane modes, off in classic. */
+  trainingHud: 'auto' | 'on' | 'off';
+  /** Rank whose Table A targets the training widget compares against. */
+  trainingRank: Rank;
 }
 
 const DEFAULTS: Settings = {
@@ -99,6 +106,7 @@ const DEFAULTS: Settings = {
   cameraSpeed: 1,
   uiScale: 100,
   uiScaleAuto: true,
+  textScale: 100,
   colorMode: 'normal',
   reduceMotion: false,
   highContrast: false,
@@ -140,6 +148,8 @@ const DEFAULTS: Settings = {
   attackMoveNearCursor: true,
   voiceLines: true,
   scoreBotInfo: false,
+  trainingHud: 'auto',
+  trainingRank: 'gold',
 };
 
 /** Default values (settings import validates keys and types against them). */
@@ -166,6 +176,11 @@ export function uiScaleFactor(): number {
   const h = typeof window === 'undefined' ? 720 : window.innerHeight;
   return Math.min(2, Math.max(0.8, h / 720));
 }
+
+/** Text size factor (1 = 100 %) for DOM panels (CSS --txt) and canvas labels (`txtPx`). */
+export const textScaleFactor = (): number => Math.min(1.5, Math.max(0.9, settings.textScale / 100 || 1));
+/** Canvas font size `px` scaled by the text size setting. */
+export const txtPx = (px: number): number => Math.round(px * textScaleFactor() * 10) / 10;
 
 export function updateSettings(patch: Partial<Settings>): void {
   Object.assign(settings, patch);

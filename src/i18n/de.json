@@ -609,6 +609,7 @@
   "gfx.benchmark": "Grafiktest läuft ...",
   "set.graphicsNote": "Schatten und Auflösung wirken sofort, Kantenglättung und Schattenfilter ab dem nächsten Spiel.",
   "set.a11yTitle": "Barrierefreiheit",
+  "set.textScale": "Textgröße (Menüs, Panels, Namen)",
   "set.colorMode": "Farbmodus (Teamfarben)",
   "set.cb.normal": "Standard",
   "set.cb.deuteranopia": "Deuteranopie (Grünschwäche)",
@@ -1121,5 +1122,15 @@
   "ann.elderOwn": "Euer Team hat den Uralt-Leviathan erlegt",
   "ann.elderEnemy": "Das gegnerische Team hat den Uralt-Leviathan erlegt",
   "ann.elderSub": "Hinrichten unter {pct} % Leben für {s} s",
-  "score.obj.elder": "Uralt-Leviathan-Segen: noch {s}"
+  "score.obj.elder": "Uralt-Leviathan-Segen: noch {s}",
+  "lt.title": "Training",
+  "lt.csMin": "CS/min",
+  "lt.missed": "CS verpasst",
+  "lt.goldMin": "Gold/min",
+  "lt.cs10": "CS@10",
+  "lt.rankTip": "Ziel-Rang wechseln (Klick). Vergleichswerte: Rang-Ziele der Bots.",
+  "set.trainingHud": "Trainings-Anzeige im Match (CS/min, verpasste CS, Last-Hit-Balken)",
+  "set.trainingHud.auto": "Auto (an im Training, aus im Klassik-Match)",
+  "set.trainingHud.on": "An",
+  "set.trainingHud.off": "Aus"
 }

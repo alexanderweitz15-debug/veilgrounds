@@ -57,6 +57,8 @@ function mainMenu(): void {
   // One line per mode; the classic 5v5 entry is added by the classic-lobby work.
   const modes: MenuEntry[] = [
     { name: t('menu.classic'), desc: t('menu.classicDesc'), meta: t('menu.classicMeta'), onSelect: () => classicLobby() },
+    { name: t('menu.aram'), desc: t('menu.aramDesc'), meta: t('menu.aramMeta'), onSelect: () => variantGame('aram') },
+    { name: t('menu.urf'), desc: t('menu.urfDesc'), meta: t('menu.urfMeta'), onSelect: () => variantGame('urf') },
     { name: t('menu.lane'), desc: t('menu.laneDesc'), meta: t('menu.laneMeta'), onSelect: () => lobby('lane') },
     { name: t('menu.sandbox'), desc: t('menu.sandboxDesc'), meta: t('menu.sandboxMeta'), onSelect: () => lobby('sandbox') },
     { name: t('menu.tutorial'), desc: t('menu.tutorialDesc'), meta: t('menu.tutorialMeta'), onSelect: () => void startTutorial() },
@@ -86,6 +88,17 @@ function classicLobby(): void {
   const s = screen();
   void loadClassicLobby().then(({ renderClassicLobby, renderLoading }) => {
     if (s.isConnected) renderClassicLobby(s, mainMenu, (cfg) => renderLoading(screen(), cfg, () => start(cfg)));
+  });
+}
+
+/** ARAM / URF (src/data/gameModes.json): random champions, straight to the loading screen. */
+function variantGame(id: 'aram' | 'urf'): void {
+  const s = screen();
+  void Promise.all([loadClassicLobby(), import('./game/modes')]).then(([{ renderLoading }, { variantConfig }]) => {
+    if (!s.isConnected) return;
+    const cfg = variantConfig(id);
+    cfg.botToxicity = settings.botToxicity;
+    renderLoading(screen(), cfg, () => start(cfg));
   });
 }
 

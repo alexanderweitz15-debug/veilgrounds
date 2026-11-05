@@ -23,6 +23,7 @@ import { onStructureDeath } from './towers';
 import { onMonsterDeath } from './jungle';
 import { onPlantDeath } from './plants';
 import { minionGoldMult } from '../items/itemHooks';
+import { rulesOf } from '../rules';
 
 export const START_GOLD = 500;
 export const PASSIVE_START_TICK = 1950;
@@ -125,7 +126,7 @@ export function xpToNext(sim: Sim, eid: number): number {
 
 export function startRecall(sim: Sim, eid: number): void {
   const { Unit, Champ, Move, Atk } = sim.c;
-  if (!Unit.alive[eid] || Champ.recallAt[eid]! > sim.tick) return;
+  if (!Unit.alive[eid] || Champ.recallAt[eid]! > sim.tick || rulesOf(sim).noRecall) return;
   onMoveCommand(sim, eid);
   Atk.target[eid] = -1;
   Atk.attackMove[eid] = 0;
@@ -240,7 +241,7 @@ function championDeath(sim: Sim, victim: number, killer: number): void {
   s.deathStreak.set(victim, (s.deathStreak.get(victim) ?? 0) + 1);
   s.dmg.delete(victim);
   Champ.recallAt[victim] = 0;
-  Champ.respawnAt[victim] = sim.tick + deathTimerTicks(Champ.level[victim]!, sim.tick);
+  Champ.respawnAt[victim] = sim.tick + Math.round(deathTimerTicks(Champ.level[victim]!, sim.tick) * (rulesOf(sim).respawnMult ?? 1));
 }
 
 /** Called by damage.kill before the victim is removed. Rewards, respawn timers, structure state. */
@@ -282,11 +283,13 @@ export const economySystem: System = {
   name: 'economy',
   init(sim) {
     const { Champ } = sim.c;
+    const rules = rulesOf(sim);
     for (const c of champions(sim)) {
-      Champ.gold[c] = Champ.totalGold[c] = START_GOLD;
-      if (Champ.level[c] === 0) {
-        Champ.level[c] = 1;
-        Champ.skillPoints[c] = 1;
+      Champ.gold[c] = Champ.totalGold[c] = rules.startGold ?? START_GOLD;
+      const lv = rules.startLevel ?? 1;
+      if (Champ.level[c] === 0 || (lv > 1 && Champ.level[c] === 1)) {
+        Champ.level[c] = lv;
+        Champ.skillPoints[c] = lv;
       }
       Champ.xp[c] = CUM_XP[Champ.level[c]!]!;
       Champ.respawnAt[c] = 0;
@@ -302,7 +305,7 @@ export const economySystem: System = {
     const passive = sim.tick > PASSIVE_START_TICK && (sim.tick - PASSIVE_START_TICK) % PASSIVE_EVERY === 0;
 
     for (const c of champions(sim)) {
-      if (passive) grantGold(sim, c, 1);
+      if (passive) grantGold(sim, c, rulesOf(sim).passiveGoldMult ?? 1);
       if (!Unit.alive[c]) {
         if (Champ.respawnAt[c]! > 0 && sim.tick >= Champ.respawnAt[c]!) respawn(sim, c);
         continue;

@@ -1,0 +1,4 @@
+{
+  "aram": { "startGold": 1400, "startLevel": 3, "noRecall": true, "noJungle": true, "waveMult": 0.7, "midOnly": true, "respawnMult": 0.6, "passiveGoldMult": 2 },
+  "urf": { "startGold": 1000, "startLevel": 5, "haste": 100, "manaCostMult": 0.3, "manaRegenPct": 300, "respawnMult": 0.5, "passiveGoldMult": 2 }
+}

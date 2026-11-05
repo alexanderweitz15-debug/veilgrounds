@@ -67,6 +67,7 @@
     "tilda": [["heart", 120], ["boot", 195], ["bell", 345], ["horn", 48]],
     "svea": [["arrow",190],["spiral",175],["wing",185],["bow",205]],
     "truda": [["leaf",110],["root",95],["spiral",125],["bomb",80]],
+    "marga": [["bomb",30],["flame",18],["boot",35],["sun",25]],
     "knarr": [["claw",15],["shield",205],["boot",190],["axe",5]]
   }
 }

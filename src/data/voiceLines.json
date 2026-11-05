@@ -1290,5 +1290,39 @@
       "de": "Zurück in die Brandung.",
       "en": "Back to the surf."
     }
+  },
+  "marga": {
+    "pick": {
+      "de": "Ladung steht. Zielt jemand?",
+      "en": "Charge is set. Anyone in range?"
+    },
+    "move1": {
+      "de": "Ich schleppe das Ding schon.",
+      "en": "I am carrying the thing already."
+    },
+    "move2": {
+      "de": "Abstand ist ein Freund.",
+      "en": "Distance is a friend."
+    },
+    "attack": {
+      "de": "Feuer frei!",
+      "en": "Fire at will!"
+    },
+    "ability": {
+      "de": "Pulver trocken, Lunte brennt.",
+      "en": "Powder dry, fuse burning."
+    },
+    "kill": {
+      "de": "Volltreffer.",
+      "en": "Direct hit."
+    },
+    "death": {
+      "de": "Zu nah ... ich bin zu nah.",
+      "en": "Too close ... I got too close."
+    },
+    "recall": {
+      "de": "Pulver nachfüllen.",
+      "en": "Time to restock powder."
+    }
   }
 }

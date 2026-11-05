@@ -53,6 +53,7 @@ export const CAST_FAMILIES: Record<string, CastFamilies> = {
   wren: F('forward', 'raise', 'babb'), // Q embers raised, W ash pushed, E wing dash, R firestorm called down
   knarr: F('point', 'stomp', 'abaa'), // Q claw pointed, W stance stomp, E/R pointed
   truda: F('lob', 'raise', 'abbb'), // Q spores lobbed, W/E/R raised
+  marga: F('lob', 'stomp', 'abba'), // Q/W/R shells lobbed, E recoil stomp
   svea: F('draw', 'raise', 'abba'), // Q arrow drawn, W/E wind raised, R hurricane arrow drawn
 };
 

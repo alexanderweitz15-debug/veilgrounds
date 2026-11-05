@@ -109,7 +109,7 @@ export function cadenceFor(ms: number, stride: number): number {
 export const MS: Record<string, number> = {
   aurel: 335, brom: 340, corvin: 340, dagny: 340, ferris: 335, gorvam: 335, grimald: 340, hagen: 335, harrow: 345,
   ilvane: 335, isolde: 345, kaelen: 345, kiran: 335, lio: 340, lysa: 335, mira: 340, nyx: 340, oda: 335, oleth: 340,
-  ottilie: 340, renn: 340, seraphyne: 340, sev: 335, thessaly: 335, tobin: 335, vessa: 345, wren: 335, fenna: 335, vargrim: 345, rovena: 335, dorrak: 340, tilda: 335, gneis: 330, kerrin: 345, henrike: 335, svea: 335, truda: 330, knarr: 340,
+  ottilie: 340, renn: 340, seraphyne: 340, sev: 335, thessaly: 335, tobin: 335, vessa: 345, wren: 335, fenna: 335, vargrim: 345, rovena: 335, dorrak: 340, tilda: 335, gneis: 330, kerrin: 345, henrike: 335, svea: 335, truda: 330, knarr: 340, marga: 330,
 };
 
 /** The 27 champions: gait + idle. Style names describe the read at game zoom; numbers are the pose amplitudes. */
@@ -150,6 +150,7 @@ const SPECS: Record<string, MotionSpec> = {
   fenna: { gait: G('hover', 0, 0, 1.4, 0.16, 0.6, 0.03, 0.08, 0.4, { headBob: 0.01, sway: 1.3, drag: 0.6, asym: 0, impact: 0.4 }), idle: I('hover', 0.7, 0.7, 0.025, { scan: 0.12, nod: 0.04, hands: 1.4, sway: 0.26, fps: 3 }) },
   vargrim: { gait: G('gallop', 30, 0, 0, 0, 0, 0, 0, 0, { cadence: 10.7, drag: 0.5, asym: 0, impact: 1 }), idle: I('heave', 1.4, 1.0, 0.02, { nod: 0.03, scan: 0.05, fps: 3 }) },
   knarr: { gait: G('stomp', 24, 6, 2.4, 0.06, 2.8, 0.05, 0.1, 0.4, { headBob: 0.0, sway: 0.3, drag: 0.1, asym: 0.12, impact: 2.1, crouch: 0.25 }), idle: I('rock', 1.4, 3.2, 0.05, { nod: 0.0, scan: 0.15, hands: 0.3, sway: 0.1, fps: 2.6 }) },
+  marga: { gait: G('waddle', 17, 7, 2.4, 0.1, 2.0, 0.05, 0.1, 0.7, { headBob: 0.03, sway: 0.7, drag: 0.3, asym: 0.06, impact: 1.3 }), idle: I('tick', 1.1, 1.3, 0.03, { nod: 0.04, scan: 0.07, hands: 0.9, sway: 0.2, fps: 3 }) },
   truda: { gait: G('shuffle', 18, 7, 1.6, 0.18, 1.6, 0.04, 0.08, 0.5, { headBob: 0.06, sway: 0.8, drag: 0.42, asym: -0.14, impact: 1.35, crouch: 0.1 }), idle: I('heave', 1.3, 1.4, 0.03, { nod: 0.05, scan: 0.1, hands: 1.0, sway: 0.22, fps: 2.7 }) },
   svea: { gait: G('skip', 17, 12, 3.0, 0.3, 1.1, 0.03, 0.2, 1.2, { hop: 0.5, headBob: 0.04, sway: 1.5, drag: 0.7, asym: -0.04, impact: 0.62 }), idle: I('sway', 0.9, 1.8, 0.03, { hands: 1.6, sway: 0.3, scan: 0.14, nod: 0.05, fps: 3.4 }) },
   rovena: { gait: G('stalk', 20, 8, 1.6, 0.16, 1.8, 0.03, 0.2, 0.6, { headBob: 0.02, sway: 1.05, drag: 0.42, asym: 0.04, impact: 0.8 }), idle: I('sway', 1.0, 1.9, 0.05, { hands: 1.8, sway: 0.24, fps: 2.9 }) },

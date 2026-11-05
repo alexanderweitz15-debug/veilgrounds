@@ -37,6 +37,7 @@ import kerrin from './kerrin.json';
 import henrike from './henrike.json';
 import knarr from './knarr.json';
 import truda from './truda.json';
+import marga from './marga.json';
 import svea from './svea.json';
 import rovena from './rovena.json';
 import dorrak from './dorrak.json';
@@ -77,6 +78,7 @@ const raw = {
   henrike,
   svea,
   truda,
+  marga,
   knarr,
   rovena,
   dorrak,

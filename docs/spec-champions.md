@@ -259,3 +259,6 @@ Riesiger Sandwurm: W Untertauchen (nicht anvisierbar, +35 % Tempo, kein Angriff,
 
 ## Tilda Saitenwind, die Notensammlerin (`tilda`, Support)
 Musikerin: Noten (grün/blau/rot) erscheinen auf der Karte, nur für ihr Team sichtbar, Überlaufen sammelt sie. Grün stärkt Q (Heilung), blau W (Tempo), rot E (Betäubung); R verbraucht alle. Items: Taktstock, Liederbuch.
+
+33. **Marga Kartaune, die Büchsenmeisterin** – Mid, Artillerie-Magierin (AP), Ranged 575. Training: Mörserkreise früh sehen und verlassen, nach dem Rückstoß nicht blind nachsetzen, den Belagerungsschlag aus der Ferne erwarten.
+    - Passiv Fernschuss: Fähigkeitsschaden +4 % pro 100 Entfernung über 500 (höchstens +24 %). Q Mörserwurf (Kreis, 0,9 s Verzögerung, Reichweite 1.300), W Splitterhagel (Zone), E Rückstoß (Sprung vom Cursor weg, stößt Gegner an der alten Position zurück), R Belagerungsschlag (Reichweite 3.000, 1,8 s Verzögerung).

@@ -348,3 +348,10 @@ The turret is hook state (not a pet unit: pets with HP draw as Hark), drawn from
 
 ---
 Total: 110 hook ids across 26 champions.
+
+## Marga Kartaune (`marga`) (auto/champions)
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `marga_range` | Passive | `modifyDamage` (abilities and DoTs, not autos): x(1 + 4 % per 100 distance beyond 500), capped at +24 % at 1100. |
+| `marga_e_recoil` | E | Phase `dashStart`: reverses the dash direction (hop away from the cursor), shoves every enemy within 300 of the start 220 back over 0.25 s and slows 20 % for 1.2 s. |

@@ -49,6 +49,7 @@ import { chainMantle, hookBlade, wristManacles } from './chains';
 import { hipGears, mainspringPack, springCrossbow } from './clockwork';
 import { gustBow, gustSwirl, featherCrest, windStreamers } from './svea';
 import { backShrooms, mushroomCap, sporeMotes, sporeStaff } from './truda';
+import { mortarPack, ramrod, sootPuffs } from './marga';
 import { DORRAK_KIT } from './worm';
 import { bloodDrips, bloodOrbs, thornCrown } from './rovena';
 import { floatNotes, hatPlume, luteBack } from './tilda';
@@ -1112,6 +1113,36 @@ kit({
   cast: 'forward',
   gait: 'light',
   props: [mainspringPack, springCrossbow, hipGears],
+});
+// Marga Kartaune: short stout gunner with a huge brass mortar tube on her back
+kit({
+  id: 'marga',
+  name: 'Marga Kartaune',
+  world: 178,
+  look: 'short stout woman gunner in a charcoal-grey work coat over a rust-orange vest, round brass-rimmed goggles on a flat leather cap, copper-red braid, soot-smudged cheeks; a huge brass mortar tube strapped to her back and reaching up over her shoulder with a flared muzzle, a bandolier of shells across her chest, a long ramrod with a pale swab in her hand and soot puffs above the muzzle',
+  feature: 'huge brass mortar tube behind the head',
+  body: { ...FEMALE, H: 156, shW: 18, hipW: 16, girth: 1.12, belly: 0.25, bust: 0.35, headR: 13, legs: 0.46 },
+  outfit: {
+    skin: SKIN.tan,
+    face: { eyes: '#4a6a3a', brows: 1.2 },
+    top: cloth('#c4622a'),
+    sleeves: cloth('#3c3c40'),
+    forearms: leather('#5a4030'),
+    hands: leather('#3a2c22'),
+    legs: cloth('#3a3836'),
+    boots: leather('#2c2018'),
+    coat: { mat: cloth('#3c3c40'), len: 0.9, flare: 0.5, open: cloth('#c4622a'), split: true },
+    strap: { mat: leather('#4a3626'), items: 'shells', itemMat: BRASS },
+    belt: { mat: leather('#4a3626'), buckle: BRASS, y: 0.2 },
+    hat: { kind: 'goggles', mat: leather('#4a3626') },
+    hair: { style: 'braid', mat: hair('#a8482a') },
+    pouches: { mat: leather('#4a3626'), n: 2 },
+  },
+  hold: 'pole',
+  attack: 'sling',
+  cast: 'lob',
+  gait: 'heavy',
+  props: [mortarPack, ramrod, sootPuffs],
 });
 // Knarr: giant crab, painted by the SpriteDrawer in crab.ts (atlas.ts DRAWERS); the Kit stub carries the icon colours
 kit(KNARR_KIT);

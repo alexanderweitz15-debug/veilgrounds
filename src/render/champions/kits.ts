@@ -45,6 +45,7 @@ import { VARGRIM_KIT } from './cavalry';
 import { DORRAK_KIT } from './worm';
 import { antennae, flameLamp, lightThread, mothWings } from './fenna';
 import { bloodDrips, bloodOrbs, thornCrown } from './rovena';
+import { floatNotes, hatPlume, luteBack } from './tilda';
 import type { Kit } from './types';
 
 const SKIN = { fair: '#e9c6a4', light: '#ddb08a', tan: '#c08a62', brown: '#946244', dark: '#6a4430', pale: '#e8cfba', old: '#d6b094', ash: '#c8b8a8' };
@@ -936,6 +937,33 @@ kit({
   cast: 'point',
   gait: 'normal',
   props: [thornCrown, bloodOrbs, bloodDrips],
+});
+
+kit({
+  id: 'tilda',
+  name: 'Tilda Saitenwind',
+  world: 198,
+  look: 'slim young minstrel in a wide-brim hat with a long red plume, teal-green short coat over a cream blouse and mustard trousers, copper-brown braid; a big lute slung on her back and three glowing music notes (green, blue, red) circling her',
+  feature: 'plumed wide hat + lute neck behind + three circling notes',
+  body: { ...FEMALE, H: 178, shW: 16, hipW: 13.5, girth: 0.9, legs: 0.52, headR: 12.6, bust: 0.35 },
+  outfit: {
+    skin: '#e8c9a8',
+    face: { eyes: '#3a7a6a', brows: 0.9 },
+    top: cloth('#e8dcc0'),
+    sleeves: cloth('#2f7a70'),
+    forearms: cloth('#e8dcc0'),
+    legs: cloth('#c8962f'),
+    boots: leather('#5a3a26'),
+    coat: { mat: cloth('#2f7a70'), len: 0.8, flare: 0.6, open: cloth('#e8dcc0'), split: true },
+    belt: { mat: leather('#6a4428'), y: 0.2 },
+    hair: { style: 'braid', mat: hair('#8a4a26') },
+    hat: { kind: 'wide', mat: cloth('#2f7a70'), band: cloth('#d24a3a') },
+  },
+  hold: 'relaxed',
+  attack: 'throw',
+  cast: 'ring',
+  gait: 'light',
+  props: [hatPlume, luteBack, floatNotes],
 });
 
 // Vargrim: icon-colour stub; the sprite is painted by the SpriteDrawer in cavalry.ts (atlas.ts DRAWERS)

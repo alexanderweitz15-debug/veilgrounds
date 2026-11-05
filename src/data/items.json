@@ -1719,6 +1719,79 @@
           }
         ]
       }
+    },
+    {
+      "id": "taktstock",
+      "name": {
+        "de": "Taktstock",
+        "en": "Conductor's Baton"
+      },
+      "tier": "component",
+      "cost": 1100,
+      "from": [
+        "verstaerkerbuch",
+        "wetzdolch"
+      ],
+      "stats": {
+        "ap": 30,
+        "haste": 10
+      },
+      "tags": [
+        "ap",
+        "support"
+      ]
+    },
+    {
+      "id": "liederbuch",
+      "name": {
+        "de": "Liederbuch",
+        "en": "Songbook"
+      },
+      "tier": "legendary",
+      "cost": 2800,
+      "from": [
+        "taktstock",
+        "hueterlampe"
+      ],
+      "stats": {
+        "ap": 55,
+        "haste": 20,
+        "healShieldPowerPct": 8
+      },
+      "tags": [
+        "support",
+        "ap"
+      ],
+      "passive": {
+        "name": {
+          "de": "Kehrreim",
+          "en": "Refrain"
+        },
+        "desc": {
+          "de": "Jede Fähigkeit heilt Verbündete in 600 (auch dich) um 12 (+2 je Level, +6 % AP). 4 s Abklingzeit.",
+          "en": "Each ability heals allies within 600 (you too) for 12 (+2 per level, +6% AP). 4 s cooldown."
+        },
+        "rules": [
+          {
+            "on": "onCast",
+            "cooldown": 4,
+            "do": [
+              {
+                "type": "heal",
+                "to": "alliesInRadius",
+                "radius": 600,
+                "value": {
+                  "base": 12,
+                  "perLevel": 2,
+                  "scale": {
+                    "ap": 0.06
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

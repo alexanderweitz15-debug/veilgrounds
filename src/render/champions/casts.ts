@@ -39,6 +39,7 @@ export const CAST_FAMILIES: Record<string, CastFamilies> = {
   ottilie: F('draw', 'raise', 'abab'), // Q arrow drawn, W Hark called, E dash, R howl raised
   rovena: F('point', 'raise', 'abab'), // Q cut + E shackle pointed, W pool + R tide raised
   dorrak: F('stomp', 'slam', 'abab'), // Q bite + R maw stomp, W burrow + E eruption slam
+  tilda: F('lob', 'ring', 'bbab'), // Q/W/R songs sung with a ring of the lute, E chord thrown
   renn: F('point', 'spin', 'abab'), // Q cut, W/R blade whirl, E blink
   seraphyne: F('forward', 'raise', 'abab'), // Q bolt, W storm called, E blink, R strike called
   sev: F('forward', 'raise', 'abab'), // Q fireball pushed, W blink, E gaze, R eye raised

@@ -37,3 +37,20 @@ Branch `swarm/champs-b` from main 2f72f4f. One commit per champion.
 - Motion hover/heave, casts stomp + slam, motifs fang/claw/spiral/wave, trainer JG pool.
 - Tests: tests/dorrak.test.ts (9: burrow flags, regen, trail visible to enemy, no attack, recast, Q shred, E + underground bonus,
   R, item, bot rule), tests/dorrakKit.test.ts. Not done: jungle clear-time comparison against vessa/grimald.
+
+## 3. Tilda Saitenwind, "die Notensammlerin" (id `tilda`, support)
+- Data `tilda.json` + `tilda.values.json`, hooks `src/sim/champions/tilda.ts`, props `src/render/champions/tilda.ts` (red hat plume, lute on the
+  back, three circling notes in the song colours), kit in kits.ts (teal coat, wide hat, braid).
+- Passive Note Gleaning: every 6 s a note (green heal / blue speed / red stun) spawns 450-1000 from her (sim rng, 16-direction table because
+  sin/cos are banned in sim code, walkable snap), max 4 on the map, 25 s, snapshot objects `tilda_note` flagged `hidden` (only her team sees
+  them). Walking within 110 collects (3 per colour). Q Heillied (self heal 650) green +25 %/note; W Eilmarsch (allies ms) blue +8 %/note;
+  E Schrillakkord (circle, damage + slow) red: stun 0.4 s + 0.2 s/note; R Schlussakkord (heal + ms + stun, uses all notes).
+- Bot: `src/ai/bot/notes.ts` (from `utilitySpells`): walk to the nearest note within 750 when no enemy champion/tower is near and the bot does
+  not fight; `mem.holdUntil` keeps the lane leaf from overriding the walk.
+- Items: `taktstock` Conductor's Baton (component 1100: +30 AP +10 haste), `liederbuch` Songbook (legendary 2800, + Warden Lamp: +55 AP,
+  +20 haste, +8 % heal/shield power; Refrain: each cast heals allies in 600 for 12 + 2/level + 6 % AP, 4 s icd; item-engine data).
+- Tests: tests/tilda.test.ts (11: notes spawn/fog/pickup/determinism, Q/W/E/R empowerment, item, bot rule, kit).
+
+## Not done / decisions
+- No clear-time comparison for Dorrak against vessa/grimald (numbers set from the same-role table: 670 HP, 62 AD, 36 armor).
+- Sandbox screenshots: see the final lines of this file.

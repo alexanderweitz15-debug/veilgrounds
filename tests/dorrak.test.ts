@@ -19,7 +19,7 @@ import { abilityHit, duel } from './itemHelpers';
 const player: PlayerSetup = { slot: 0, team: 0, champion: 'dorrak', role: 'jungle', summoners: ['sprung', 'heilen'], isHuman: true };
 
 function setup(ranks: [number, number, number, number] = [1, 1, 1, 0]): { sim: Sim; m: number } {
-  const sim = makeSim({ players: [player, { slot: 5, team: 1, champion: 'mira', role: 'mid', summoners: ['sprung', 'heilen'] }] });
+  const sim = makeSim({ players: [player, { slot: 5, team: 1, champion: 'mira', role: 'mid', summoners: ['sprung', 'heilen'], isHuman: false }] });
   const m = sim.slots[0]!;
   place(sim, m, CX, CY);
   sim.c.Champ.level[m] = Math.max(ranks[3] > 0 ? 6 : 1, ...ranks.slice(0, 3).map((r) => 2 * r - 1));

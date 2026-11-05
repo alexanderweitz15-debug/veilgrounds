@@ -1052,5 +1052,39 @@
       "de": "Zurück in die Tiefe.",
       "en": "Back into the deep."
     }
+  },
+  "tilda": {
+    "pick": {
+      "de": "Hört ihr das? Das sind wir.",
+      "en": "Hear that? That's us."
+    },
+    "move1": {
+      "de": "Im Takt bleiben.",
+      "en": "Keep to the beat."
+    },
+    "move2": {
+      "de": "Eine Note für unterwegs.",
+      "en": "A note for the road."
+    },
+    "attack": {
+      "de": "Ein falscher Ton!",
+      "en": "A sour note!"
+    },
+    "ability": {
+      "de": "Und eins, und zwei ...",
+      "en": "And one, and two ..."
+    },
+    "kill": {
+      "de": "Applaus, bitte.",
+      "en": "Applause, please."
+    },
+    "death": {
+      "de": "Das Lied ... bricht ab.",
+      "en": "The song ... cuts off."
+    },
+    "recall": {
+      "de": "Pause. Zurück zur Bühne.",
+      "en": "Intermission. Back to the stage."
+    }
   }
 }

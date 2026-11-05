@@ -282,5 +282,21 @@ Amaterasu jump, Tsukuyomi end, Susanoo slow immunity + recast close), `targetOk`
 | `sev_r2_susanoo` | R2 | Self: generic shield; 6 s slow immunity and sword sweeps; recast window opens: instant sword thrust 1000 × 120 (1st damage effect) on every enemy in the line, once. |
 | `sev_r3_tsukuyomi` | R3 | Suppress the target 1.5 s (+ mark `sev_r3_moon` = red-black tint on its HUD), root Sev as long; at the end damage incl. 25 % of the target's missing health. |
 
+### Rovena, Dorrak, Tilda (swarm/champs-b)
+
+| Hook id | Slot | Behaviour |
+|---|---|---|
+| `rovena_bloodtithe` | Passive | `modifyCast`: Q/W/E cost +3 % max HP; `modifyDamage` (non-auto, enemy non-structure): heals 25 % (champion) / 10 % of the estimated dealt damage, Bloodrush below 35 % HP (x1.2 damage, x1.5 heal). |
+| `rovena_e_detonate` | E | Before the damage: a `rovena_blood` mark (Q) is consumed: x1.4 damage, root 0.75 s. |
+| `rovena_r_drain` | R | Before the damage: this tick's heal-back is doubled. |
+| `dorrak_sandgut` | Passive | Module `onTick`: while burrowed re-applies untargetable, ms +35 %, `disarm`, heals 3 % max HP/s, records the dust trail (snapshot objects `dorrak_trail`, not hidden). |
+| `dorrak_w_burrow` | W | Starts the burrow (recast window opens); phase `recast` surfaces. |
+| `dorrak_q_surface`, `dorrak_r_surface` | Q, R | Surface before the damage. |
+| `dorrak_q_shred` | Q | -15 % armor 3 s on every hit. |
+| `dorrak_e_prep` / `dorrak_e_finish` | E | Prep: from underground x1.3 damage. Finish: +0.25 s knock-up from underground, then surface. |
+| `tilda_notes` | Passive | Module `onTick`: spawns a note every 6 s (max 4, 25 s, own team only), collects on walk-over (3 per colour). |
+| `tilda_q_notes` / `tilda_w_notes` / `tilda_e_notes` | Q W E | Green: +25 % heal per note; blue: +8 % ms per note; red: stun 0.4 s + 0.2 s per note. The colour is used up. |
+| `tilda_r_notes` | R | All colours: heal / speed / stun (+0.15 s per red note); all notes used up. |
+
 ---
 Total: 110 hook ids across 26 champions.

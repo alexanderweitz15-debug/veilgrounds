@@ -28,7 +28,7 @@
     "diveTolerancePctShift": { "base": 0, "from": [{ "axis": "aggression", "perStep": 3 }], "clamp": [-15, 15], "note": "§2: dive tolerance +-15 points" },
     "towerDive": { "bool": { "axis": "aggression", "gte": 2 }, "note": "§2: tower dive permission" },
     "chaseChanceShift": { "base": 0, "from": [{ "axis": "aggression", "perStep": 5 }], "clamp": [-25, 25], "note": "§2: chase probability +-25 points" },
-    "escapeFightThreshold": { "base": 0.6, "from": [{ "axis": "aggression", "perStep": [-0.05, -0.04] }], "clamp": [0.4, 0.85], "note": "§4.2: fight instead of escape above 0.6; -5: 0.85, +5: 0.4" },
+    "escapeFightThreshold": { "base": 0.5, "from": [{ "axis": "aggression", "perStep": [-0.05, -0.04] }], "clamp": [0.35, 0.75], "note": "§4.2: fight instead of escape above 0.5 (was 0.6: bots fled even fights; user 2026-11-05 \"nicht nur weglaufen\"); -5: 0.75, +5: 0.35" },
     "gankRiskShift": { "base": 0, "from": [{ "axis": "aggression", "perStep": 0.03 }], "clamp": [-0.15, 0.15], "note": "§4.1: aggression +5 raises every gank-risk threshold by 0.15, cautious lowers" },
 
     "roamDesireBase": { "base": 0.4, "from": [{ "axis": "roam", "perStep": 0.06 }], "clamp": [0.1, 0.7], "note": "§2: roam desire 0.1 .. 0.7" },

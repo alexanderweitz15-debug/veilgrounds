@@ -118,6 +118,14 @@ export const focusSerial = (n: NodeCtx): number => n.mem.ext.pings.find((p) => p
 export function pingRetreat(n: NodeCtx): NodeResult {
   const p = n.mem.ext.pings.find((x) => x.until > n.v.tick && (x.kind === 'back' || (x.kind === 'danger' && dst(x, n.v.self) < 1800)));
   if (!p) return 'failure';
+  // bots ping danger a lot: a bot's ping only makes a healthy bot leave a fight it is not losing in numbers
+  // (user 2026-11-05: "die sollen nicht nur dumm weglaufen ohne zu kämpfen"); a human's ping is always obeyed
+  const fromHuman = n.ctx.players.some((q) => q.slot === p.slot && q.isHuman);
+  if (!fromHuman && n.v.self.hp > n.v.self.maxHp * 0.5) {
+    const foes = n.v.enemies.filter((e) => dst(e, n.v.self) < 1500).length;
+    const friends = n.v.allies.filter((a) => dst(a, n.v.self) < 1500).length + 1;
+    if (foes <= friends) return 'failure';
+  }
   // back: away from the fight = towards home; danger: away from the ping
   const [ux, uy] = p.kind === 'back' ? unit(n.v.self, n.ctx.map.sides[n.ctx.team].fountain) : unit(p, n.v.self);
   const to = { x: n.v.self.x + ux * 600, y: n.v.self.y + uy * 600 };

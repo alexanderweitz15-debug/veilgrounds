@@ -1540,6 +1540,62 @@
           "en": "Shields and heals you give another champion grant her +12% move speed for 1.5 s (once per ally every 6 s)."
         }
       }
+    },
+    {
+      "id": "windschwinge",
+      "name": {
+        "de": "Windschwinge",
+        "en": "Windwing"
+      },
+      "tier": "legendary",
+      "cost": 2850,
+      "from": [
+        "eiferschwert",
+        "kaltstahl"
+      ],
+      "stats": {
+        "ad": 55,
+        "asPct": 25,
+        "msPct": 7
+      },
+      "tags": [
+        "ad",
+        "onhit"
+      ],
+      "passive": {
+        "name": {
+          "de": "Federtanz",
+          "en": "Featherstep"
+        },
+        "desc": {
+          "de": "Auto-Treffer auf gegnerische Champions geben dir 1,5 s +20 % Bewegung.",
+          "en": "Basic attack hits on enemy champions give you +20% move speed for 1.5 s."
+        },
+        "rules": [
+          {
+            "on": "onHit",
+            "if": {
+              "target": {
+                "kind": [
+                  "champion"
+                ],
+                "team": "enemy"
+              }
+            },
+            "do": [
+              {
+                "type": "applyBuff",
+                "to": "self",
+                "kind": "stat",
+                "stat": "ms",
+                "id": "windwing",
+                "pct": 20,
+                "seconds": 1.5
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

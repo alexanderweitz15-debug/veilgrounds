@@ -110,6 +110,7 @@ export const MS: Record<string, number> = {
   aurel: 335, brom: 340, corvin: 340, dagny: 340, ferris: 335, gorvam: 335, grimald: 340, hagen: 335, harrow: 345,
   ilvane: 335, isolde: 345, kaelen: 345, kiran: 335, lio: 340, lysa: 335, mira: 340, nyx: 340, oda: 335, oleth: 340,
   ottilie: 340, renn: 340, seraphyne: 340, sev: 335, thessaly: 335, tobin: 335, vessa: 345, wren: 335, fenna: 335, vargrim: 345,
+  svea: 335,
 };
 
 /** The 27 champions: gait + idle. Style names describe the read at game zoom; numbers are the pose amplitudes. */
@@ -149,6 +150,7 @@ const SPECS: Record<string, MotionSpec> = {
   // cycle covers ~90 world units of body travel per stance, see cavalry.ts)
   fenna: { gait: G('hover', 0, 0, 1.4, 0.16, 0.6, 0.03, 0.08, 0.4, { headBob: 0.01, sway: 1.3, drag: 0.6, asym: 0, impact: 0.4 }), idle: I('hover', 0.7, 0.7, 0.025, { scan: 0.12, nod: 0.04, hands: 1.4, sway: 0.26, fps: 3 }) },
   vargrim: { gait: G('gallop', 30, 0, 0, 0, 0, 0, 0, 0, { cadence: 10.7, drag: 0.5, asym: 0, impact: 1 }), idle: I('heave', 1.4, 1.0, 0.02, { nod: 0.03, scan: 0.05, fps: 3 }) },
+  svea: { gait: G('skip', 17, 12, 3.0, 0.3, 1.1, 0.03, 0.2, 1.2, { hop: 0.5, headBob: 0.04, sway: 1.5, drag: 0.7, asym: -0.04, impact: 0.62 }), idle: I('sway', 0.9, 1.8, 0.03, { hands: 1.6, sway: 0.3, scan: 0.14, nod: 0.05, fps: 3.4 }) },
   sev: { gait: G('glide', 18, 9, 1.0, 0.08, 0.8, 0.02, 0.08, 0.3, { headBob: 0.0, sway: 1.2, drag: 0.55, asym: -0.02, impact: 0.6 }), idle: I('still', 0.6, 0.5, 0.01, { nod: 0.01, scan: 0.06, hands: 1.0, sway: 0.18, fps: 2.6 }) },
 };
 for (const [id, s] of Object.entries(SPECS)) if (!s.gait.cadence) s.gait.cadence = cadenceFor(MS[id] ?? 340, s.gait.stride);

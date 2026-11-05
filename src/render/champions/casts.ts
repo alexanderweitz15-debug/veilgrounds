@@ -45,6 +45,7 @@ export const CAST_FAMILIES: Record<string, CastFamilies> = {
   vargrim: F('stomp', 'raise', 'abab'), // Q/R lance stomp, W mist raised, E gallop
   vessa: F('point', 'stomp', 'abba'), // Q pounce, W/E howl stomp, R dash
   wren: F('forward', 'raise', 'babb'), // Q embers raised, W ash pushed, E wing dash, R firestorm called down
+  svea: F('draw', 'raise', 'abba'), // Q arrow drawn, W/E wind raised, R hurricane arrow drawn
 };
 
 /** Cast family (0 = A, 1 = B) of a slot for an id; unknown ids / extra slots (Sev's R choices) use A / the R slot. */

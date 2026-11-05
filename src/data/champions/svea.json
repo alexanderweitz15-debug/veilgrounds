@@ -1,0 +1,151 @@
+{
+  "id": "svea",
+  "name": "Svea Böenhall",
+  "title": { "de": "die Sturmschützin", "en": "the Gale Archer" },
+  "roles": ["adc"],
+  "archetype": "wind_marksman",
+  "botBias": { "kiting": -2, "aggression": -1 },
+  "trainingPurpose": {
+    "de": "Kiting-Schützin lesen: Böen-Auto nach dem Laufen erwarten, Windwand nicht mit Skillshots durchschießen, Orkanpfeil-Linie meiden.",
+    "en": "Reading a kiting marksman: expect the gust auto after she moves, do not shoot skillshots through her wind wall, sidestep the Hurricane Arrow line."
+  },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 605,
+    "hpGrowth": 96,
+    "hpRegen": 3.7,
+    "hpRegenGrowth": 0.55,
+    "mana": 325,
+    "manaGrowth": 38,
+    "manaRegen": 7.2,
+    "manaRegenGrowth": 0.65,
+    "ad": 60,
+    "adGrowth": 3.1,
+    "armor": 25,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.65,
+    "asGrowth": 3,
+    "range": 550,
+    "ms": 335,
+    "windup": 0.19,
+    "projectileSpeed": 2000,
+    "radius": 60
+  },
+  "passive": {
+    "name": { "de": "Böenlauf", "en": "Gust Run" },
+    "desc": {
+      "de": "Jede Bewegung lädt eine Böe (500 Laufweg). Der nächste Auto danach ist eine Böe: 25-70 (nach Level) magischer Zusatzschaden und 20 % Slow für 1 s.",
+      "en": "Moving builds a gust (500 distance walked). The next auto after that is a gust: 25-70 (by level) bonus magic damage and a 20% slow for 1 s."
+    },
+    "hooks": ["svea_gust"]
+  },
+  "abilities": [
+    {
+      "id": "svea_q",
+      "name": { "de": "Windpfeil", "en": "Wind Arrow" },
+      "desc": {
+        "de": "Linie 1.100: 40/70/100/130/160 (+90 % AD) physischer Schaden, 30 % Slow für 1,25 s.",
+        "en": "Line 1100: 40/70/100/130/160 (+90% AD) physical damage and a 30% slow for 1.25 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 1100,
+      "cooldown": [9, 8.5, 8, 7.5, 7],
+      "cost": [45, 50, 55, 60, 65],
+      "costType": "mana",
+      "width": 70,
+      "speed": 2000,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [40, 70, 100, 130, 160], "ad": 0.9 } },
+        { "kind": "slow", "pct": 30, "duration": 1.25 }
+      ]
+    },
+    {
+      "id": "svea_w",
+      "name": { "de": "Windwand", "en": "Wind Wall" },
+      "desc": {
+        "de": "Kreis 280 auf 800, 3,5/4/4,5/5/5,5 s: feindliche Skillshots, die hindurchfliegen, werden zur Seite gedrückt und halb so schnell.",
+        "en": "Circle 280 at 800, 3.5/4/4.5/5/5.5 s: enemy skillshots flying through are pushed aside and fly at half speed."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 800,
+      "cooldown": [20, 19, 18, 17, 16],
+      "cost": [60, 65, 70, 75, 80],
+      "costType": "mana",
+      "radius": 280,
+      "duration": [3.5, 4, 4.5, 5, 5.5],
+      "flags": ["ground_target"],
+      "effects": [{ "kind": "hook", "id": "svea_w_zone" }]
+    },
+    {
+      "id": "svea_e",
+      "name": { "de": "Aufwind", "en": "Updraft" },
+      "desc": {
+        "de": "Sprung 350 zum Cursor, 1,5 s +20 % Bewegung; die nächste Böe ist sofort geladen.",
+        "en": "Dash 350 toward the cursor, +20% move speed for 1.5 s; the next gust is charged at once."
+      },
+      "type": "dash",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 350,
+      "cooldown": [16, 15, 14, 13, 12],
+      "cost": 50,
+      "costType": "mana",
+      "speed": 1500,
+      "distance": 350,
+      "effects": [
+        { "kind": "buff", "stat": "ms", "pct": 20, "duration": 1.5, "target": "self" },
+        { "kind": "hook", "id": "svea_e_gust" }
+      ]
+    },
+    {
+      "id": "svea_r",
+      "name": { "de": "Orkanpfeil", "en": "Hurricane Arrow" },
+      "desc": {
+        "de": "Pfeil 2.500: 150/250/350 (+80 % AD) magischer Schaden, wirbelt den ersten getroffenen Champion 1 s in die Luft.",
+        "en": "Arrow 2500: 150/250/350 (+80% AD) magic damage, throws the first champion hit into the air for 1 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.4,
+      "movesWhileCasting": false,
+      "range": 2500,
+      "cooldown": [100, 85, 70],
+      "cost": 100,
+      "costType": "mana",
+      "width": 150,
+      "speed": 2000,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [150, 250, 350], "ad": 0.8 } },
+        { "kind": "airborne", "duration": 1 }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3 (Windwand schluckt Skillshots) und Level 6 (Orkanpfeil über die ganze Lane).",
+    "en": "Level 3 (Wind Wall eats skillshots) and level 6 (Hurricane Arrow across the whole lane)."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Böe nach dem Sprung", "en": "Gust after the dash" }, "sequence": ["E", "AA", "Q"] },
+    { "name": { "de": "Pfeil und Böe", "en": "Arrow and gust" }, "sequence": ["Q", "AA", "AA"] },
+    { "name": { "de": "Orkan und Nachsetzen", "en": "Hurricane and follow-up" }, "sequence": ["R", "Q", "AA"] }
+  ],
+  "scores": { "engage": 1, "peel": 3, "range": 4, "scaling": 4, "waveclear": 2, "mobility": 3 },
+  "voiceLines": {
+    "pick": { "de": "Der Wind kennt mein Ziel.", "en": "The wind knows my target." },
+    "firstBlood": { "de": "Erster Pfeil, erste Böe.", "en": "First arrow, first gust." },
+    "kill": { "de": "Fortgeweht.", "en": "Blown away." },
+    "death": { "de": "Der Wind hat sich gedreht.", "en": "The wind has turned." },
+    "recall": { "de": "Mit Rückenwind nach Hause.", "en": "Home on a tailwind." },
+    "taunt": { "de": "Schieß ruhig. Der Wind nimmt es mir ab.", "en": "Go on, shoot. The wind will take it for me." }
+  },
+  "silhouette": "slim archer with long wind-streaming ribbons, a tall feather crest and a feathered bow, a gust swirling at her feet"
+}

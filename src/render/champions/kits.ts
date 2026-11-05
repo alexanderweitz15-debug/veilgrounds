@@ -43,6 +43,7 @@ import {
 import { crimsonHem, crowRing, featherMarks, genjutsuEyes, highCollar, longHair, palmCrow, ringNecklace, SEV_CRIMSON } from './sev';
 import { VARGRIM_KIT } from './cavalry';
 import { antennae, flameLamp, lightThread, mothWings } from './fenna';
+import { gustBow, gustSwirl, featherCrest, windStreamers } from './svea';
 import type { Kit } from './types';
 
 const SKIN = { fair: '#e9c6a4', light: '#ddb08a', tan: '#c08a62', brown: '#946244', dark: '#6a4430', pale: '#e8cfba', old: '#d6b094', ash: '#c8b8a8' };
@@ -907,6 +908,34 @@ kit({
   cast: 'raise',
   gait: 'light',
   props: [mothWings, antennae, flameLamp, lightThread],
+});
+
+// Svea Böenhall: wind archer, slim and fast; long ribbons, feather crest, no cape
+kit({
+  id: 'svea',
+  name: 'Svea Böenhall',
+  world: 196,
+  look: 'slim wind archer in a short sea-teal tunic with white-cream sleeves and leather bracers, tall boots, white-blonde high tail; two long teal ribbons stream from her shoulders, a three-feather crest on a brow band, a pale feathered bow tied with ribbons and a small gust swirling at her boots',
+  feature: 'two long streamers + feather crest',
+  body: { ...FEMALE, H: 178, shW: 17, hipW: 14, girth: 0.9, legs: 0.53 },
+  outfit: {
+    skin: SKIN.light,
+    face: { eyes: '#62b8c8', brows: 0.8 },
+    top: cloth('#3f8f94'),
+    sleeves: cloth('#efe8d2'),
+    forearms: leather('#8a6a46'),
+    legs: cloth('#d9d2bc'),
+    boots: leather('#7a5a3a'),
+    bootH: 0.66,
+    coat: { mat: cloth('#3f8f94'), len: 0.5, flare: 0.7, split: true },
+    belt: { mat: leather('#8a6a46'), buckle: BRASS },
+    hair: { style: 'tied', mat: hair('#f1ead2') },
+  },
+  hold: 'bow',
+  attack: 'snap',
+  cast: 'draw',
+  props: [windStreamers, featherCrest, gustBow, gustSwirl],
+  gait: 'light',
 });
 
 // Vargrim: icon-colour stub; the sprite is painted by the SpriteDrawer in cavalry.ts (atlas.ts DRAWERS)

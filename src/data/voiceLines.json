@@ -984,5 +984,39 @@
       "de": "Meiler prüfen.",
       "en": "Checking the kiln."
     }
+  },
+  "svea": {
+    "pick": {
+      "de": "Der Wind kennt mein Ziel.",
+      "en": "The wind knows my target."
+    },
+    "move1": {
+      "de": "Mit dem Wind.",
+      "en": "With the wind."
+    },
+    "move2": {
+      "de": "Leicht wie eine Feder.",
+      "en": "Light as a feather."
+    },
+    "attack": {
+      "de": "Böe voraus!",
+      "en": "Gust ahead!"
+    },
+    "ability": {
+      "de": "Der Wind dreht.",
+      "en": "The wind turns."
+    },
+    "kill": {
+      "de": "Fortgeweht.",
+      "en": "Blown away."
+    },
+    "death": {
+      "de": "Der Wind hat sich gedreht.",
+      "en": "The wind has turned."
+    },
+    "recall": {
+      "de": "Mit Rückenwind nach Hause.",
+      "en": "Home on a tailwind."
+    }
   }
 }

@@ -25,6 +25,7 @@ import ottilie from './ottilie.json';
 import renn from './renn.json';
 import seraphyne from './seraphyne.json';
 import sev from './sev.json';
+import svea from './svea.json';
 import thessaly from './thessaly.json';
 import tobin from './tobin.json';
 import vargrim from './vargrim.json';
@@ -56,6 +57,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   renn,
   seraphyne,
   sev,
+  svea,
   thessaly,
   tobin,
   vargrim,

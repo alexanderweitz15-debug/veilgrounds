@@ -10,6 +10,7 @@ import { abilityHue, markEmitters, tagParticles } from './abilityTheme';
 import type { Particles } from './particles';
 import { drawSevObject } from './sevFx';
 import { drawFennaObject } from './fennaFx';
+import { drawSwarmCObject } from './swarmCFx';
 import { drawAbilityObject } from './abilityFx';
 
 type Shape = NonNullable<SnapObject['shape']>;
@@ -90,6 +91,8 @@ function hueOf(o: SnapObject): number | null {
   const slot = key ? SLOT[key[0]!] : undefined;
   return champ && slot !== undefined ? abilityHue(champ, slot) : null;
 }
+
+const SWARM_C = /^(svea|myko|krab)_/;
 
 export class GroundObjects {
   readonly group = new THREE.Group();
@@ -251,6 +254,11 @@ export class GroundObjects {
       const fol = o.follow !== undefined ? state.byId.get(o.follow) : undefined;
       const end = { x: fol ? state.x(fol) : o.x2 ?? o.x, y: fol ? state.y(fol) : o.y2 ?? o.y };
       if (drawFennaObject(o, now, { part: p, disc: GEO.disc, ring: GEO.ring, thin: GEO.thin, plane: GEO.plane, strip, end })) return void v.hideFrom(n);
+    }
+    if (SWARM_C.test(o.tag)) {
+      const fol = o.follow !== undefined ? state.byId.get(o.follow) : undefined;
+      const end = { x: fol ? state.x(fol) : o.x2 ?? o.x, y: fol ? state.y(fol) : o.y2 ?? o.y };
+      if (drawSwarmCObject(o, now, { part: p, disc: GEO.disc, ring: GEO.ring, thin: GEO.thin, plane: GEO.plane, strip, end })) return void v.hideFrom(n);
     }
     switch (shape) {
       case 'blade': {

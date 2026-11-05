@@ -1149,7 +1149,7 @@
   "prog.demoted": "Abstieg",
   "prog.levelUp": "Level {n}!",
   "prog.masteryUp": "Meisterschaft Stufe {n}!",
-  "mission.cs10": "{n} CS bis Minute 10",
+  "mission.cs10": "Erreiche {n} CS bis Minute 10",
   "mission.wards5": "Platziere {n} Wards in einer Partie",
   "mission.noDeath15": "Überlebe die ersten 15 Minuten ohne Tod",
   "mission.win1": "Gewinne {n} Partie",

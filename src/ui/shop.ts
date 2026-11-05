@@ -423,7 +423,7 @@ export class ShopPanel {
       iconEl(row, c, 'sp-icon small');
       el('span', 'sp-node-name', row, sub.name[settings.lang]);
       el('span', 'sp-node-cost', row, owned ? '✓' : String(sub.cost));
-      setTip(row, `item:${c}`);
+      setTip(row, `item:${c}:shop`);
       row.addEventListener('click', () => this.select(c));
       row.addEventListener('contextmenu', (e) => {
         e.preventDefault();
@@ -452,7 +452,7 @@ export class ShopPanel {
     iconEl(c, id);
     const price = el('div', 'sp-price', c, String(q.price));
     if (q.price !== it.cost) price.classList.add('reduced');
-    setTip(c, `item:${id}`);
+    setTip(c, `item:${id}:shop`);
     this.cards.push({ el: c, it, price });
     c.addEventListener('click', (e) => {
       // LoL: Alt+click pings the item to the team (owned / buying, gold still missing)

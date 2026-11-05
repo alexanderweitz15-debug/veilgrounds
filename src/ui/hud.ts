@@ -25,7 +25,7 @@ import { DeathRecap } from './deathRecap';
 import { abilityIcon, drakeIcon, itemIcon, kesselbrutIcon, objectiveIcon, passiveIcon, setIcon, summonerIcon } from './icons';
 import { chipElem, chipLine, drakeBuffTip, drakeBuffs } from './drakes';
 import { KESSELBRUT_MAX_STACKS, KESSELBRUT_STRUCT_PCT } from '../sim/systems/jungle';
-import { setTip } from './tooltip';
+import { setTip, setTipContext } from './tooltip';
 import { play } from '../audio/sfx';
 import { castFailText } from './castFailText';
 import { abilityPingText, cooldownPingText } from '../game/pingText';
@@ -472,6 +472,7 @@ export class Hud {
     this.target.update(state);
     this.training.update(state);
     const me = snap.me;
+    setTipContext(me ?? null);
     toggle(this.noChamp, 'open', !me);
     if (!me) {
       this.drawAbilities([]);

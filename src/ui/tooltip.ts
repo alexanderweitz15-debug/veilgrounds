@@ -1,70 +1,92 @@
 // LoL-style hover tooltips for everything with an icon: abilities (incl. passive), items, summoner spells, runes.
-// Elements opt in with `data-tip` ("ability:<champ>:<slot>[:<rank>]", "passive:<champ>", "item:<id>",
+// Elements opt in with `data-tip` ("ability:<champ>:<slot>[:<rank>]", "passive:<champ>", "item:<id>[:shop]",
 // "summoner:<id>", "rune:<id>", "text:<plain text>"); one delegated listener renders a single floating panel.
+// Live numbers: hud.ts feeds the player's stats via setTipContext(); ability damage shows "80 (+42)" resolved with the
+// current AD / AP / HP, cooldowns include ability haste, the learned rank is highlighted (maths: tooltipMath.ts).
 import './tooltip.css';
-import type { Effect, Ranked, Scaling } from '../sim/champions/schema';
+import type { Effect, Ranked } from '../sim/champions/schema';
 import { CHAMPION_DATA } from '../sim/champions';
 import { abilityForSlot } from '../data/champions';
-import { itemById, sellValue } from '../sim/items/inventory';
+import { ITEMS, itemById, recipePrice, sellValue } from '../sim/items/inventory';
 import { RUNES } from '../sim/items/runes';
 import { summonerDef } from '../sim/summoners';
+import type { PlayerHud } from '../sim/snapshot';
 import { settings } from '../settings';
 import { t } from '../i18n';
 import { abilityIcon, itemIcon, passiveIcon, runeIcon, summonerIcon } from './icons';
 import { statLines } from './shop';
+import { goldEfficiency } from './goldEfficiency';
 import { summonerName } from './names';
+import { S, buildTree, compareStats, compareTarget, fmtNum, hasteCooldown, hasteReductionPct, isPctStat, keywordSegs, rankedSegs, scalingSegs, type Lang, type Ratio, type Seg, type TipStats } from './tooltipMath';
 
 interface Tip {
   icon: string | null;
   title: string;
   sub?: string;
-  /** Right-aligned header facts (cooldown, cost, range). */
-  meta: string[];
+  /** Right-aligned header facts (cooldown, cost, range), one run list per line. */
+  meta: Seg[][];
   /** Coloured scaling chips ("Schaden 60/95/130 (+70 % AP)"). */
-  chips?: { text: string; cls: string }[];
-  body: string[];
-  foot?: string;
+  chips?: { segs: Seg[]; cls: string }[];
+  body: Seg[][];
+  foot?: Seg[][];
 }
 
+const lang = (): Lang => settings.lang;
 const de = (): boolean => settings.lang === 'de';
 const L = (d: string, e: string): string => (de() ? d : e);
 const KEYS = ['Q', 'W', 'E', 'R'];
+const P = (s: string): Seg[] => [S(s)];
 
-/** "60/95/130" with the current rank highlighted via brackets is not possible in text; rank shown in the sub line. */
-const ranked = (v: Ranked | undefined): string => (v === undefined ? '' : Array.isArray(v) ? (v.every((x) => x === v[0]) ? fmt(v[0]!) : v.map(fmt).join('/')) : fmt(v));
-const fmt = (n: number): string => (Number.isInteger(n) ? String(n) : n.toFixed(n < 10 ? 1 : 0)).replace('.', de() ? ',' : '.');
-const pct = (r: number): string => `${fmt(Math.round(r * 1000) / 10)} %`;
+// ------------------------------------------------------------------------------------------------ live context
+interface Ctx {
+  stats: TipStats;
+  items: (string | null)[];
+}
+let ctx: Ctx | null = null;
+let lastLive = 0;
 
-function scalingText(s: Scaling): { text: string; cls: string } {
-  const base = s.byLevel ? `${fmt(s.byLevel[0])}–${fmt(s.byLevel[1])} (${L('nach Stufe', 'by level')})` : ranked(s.base);
-  const parts: [number | undefined, string, string][] = [
-    [s.ad, L('AD', 'AD'), 'ad'],
-    [s.bonusAd, L('Bonus-AD', 'bonus AD'), 'ad'],
-    [s.ap, 'AP', 'ap'],
-    [s.maxHp, L('max. HP', 'max HP'), 'hp'],
-    [s.bonusHp, L('Bonus-HP', 'bonus HP'), 'hp'],
-    [s.targetMaxHp, L('max. HP des Ziels', "target's max HP"), 'hp'],
-    [s.targetMissingHp, L('fehlende HP des Ziels', "target's missing HP"), 'hp'],
-  ];
-  const ratios = parts.filter(([v]) => v).map(([v, n]) => `+${pct(v!)} ${n}`);
-  const cls = parts.find(([v]) => v)?.[2] ?? 'flat';
-  return { text: ratios.length ? `${base} (${ratios.join(', ')})` : base, cls };
+/** Called by the HUD every snapshot with the player's state (null outside a match). Re-renders a hovered tip ~2x per second. */
+export function setTipContext(me: PlayerHud | null): void {
+  if (!me) {
+    ctx = null;
+    return;
+  }
+  const s = me.stats;
+  ctx = { stats: { level: me.level, ad: s.ad, bonusAd: s.bonusAd ?? 0, ap: s.ap, maxHp: s.maxHp ?? 0, bonusHp: s.bonusHp ?? 0, haste: s.haste ?? 0 }, items: me.items };
+  const now = performance.now();
+  if (current && now - lastLive > 450) {
+    lastLive = now;
+    const tip = build(current.dataset.tip!);
+    if (tip) render(tip);
+  }
 }
 
-function effectChips(effects: Effect[]): { text: string; cls: string }[] {
-  const out: { text: string; cls: string }[] = [];
+const NAMES = (): Record<Ratio['key'], string> => ({
+  ad: 'AD',
+  bonusAd: L('Bonus-AD', 'bonus AD'),
+  ap: 'AP',
+  maxHp: L('max. HP', 'max HP'),
+  bonusHp: L('Bonus-HP', 'bonus HP'),
+  targetMaxHp: L('max. HP des Ziels', "target's max HP"),
+  targetMissingHp: L('fehlende HP des Ziels', "target's missing HP"),
+});
+
+// ------------------------------------------------------------------------------------------------ abilities
+function effectChips(effects: Effect[], rank: number): { segs: Seg[]; cls: string }[] {
+  const out: { segs: Seg[]; cls: string }[] = [];
+  const rs = (v: Ranked, dp?: number): Seg[] => rankedSegs(v, rank, lang(), undefined, dp);
+  const sc = (s: Parameters<typeof scalingSegs>[0]): Seg[] => scalingSegs(s, rank, ctx?.stats ?? null, lang(), NAMES(), L('nach Stufe', 'by level'));
   for (const e of effects) {
     if (e.kind === 'damage') {
-      const s = scalingText(e.amount);
       const type = { phys: L('körperlicher Schaden', 'physical damage'), magic: L('magischer Schaden', 'magic damage'), true: L('absoluter Schaden', 'true damage') }[e.type];
-      out.push({ text: `${s.text} ${type}`, cls: `dmg-${e.type}` });
-    } else if (e.kind === 'heal') out.push({ text: `${L('Heilung', 'Heal')} ${scalingText(e.amount).text}`, cls: 'heal' });
-    else if (e.kind === 'shield') out.push({ text: `${L('Schild', 'Shield')} ${scalingText(e.amount).text} (${fmt(e.duration)} s)`, cls: 'shield' });
-    else if (e.kind === 'slow') out.push({ text: `${L('Verlangsamung', 'Slow')} ${ranked(e.pct)} % / ${ranked(e.duration)} s`, cls: 'cc' });
+      out.push({ segs: [...sc(e.amount), S(` ${type}`)], cls: `dmg-${e.type}` });
+    } else if (e.kind === 'heal') out.push({ segs: [S(`${L('Heilung', 'Heal')} `), ...sc(e.amount)], cls: 'heal' });
+    else if (e.kind === 'shield') out.push({ segs: [S(`${L('Schild', 'Shield')} `), ...sc(e.amount), S(` (${fmtNum(e.duration, lang())} s)`)], cls: 'shield' });
+    else if (e.kind === 'slow') out.push({ segs: [S(`${L('Verlangsamung', 'Slow')} `), ...rs(e.pct), S(' % / '), ...rs(e.duration), S(' s')], cls: 'cc' });
     else if (['root', 'stun', 'airborne', 'blind', 'silence', 'stasis'].includes(e.kind)) {
       const n: Record<string, [string, string]> = { root: ['Festhalten', 'Root'], stun: ['Betäubung', 'Stun'], airborne: ['Hochschleudern', 'Knock-up'], blind: ['Blendung', 'Blind'], silence: ['Verstummen', 'Silence'], stasis: ['Stasis', 'Stasis'] };
-      out.push({ text: `${L(...n[e.kind]!)} ${ranked((e as { duration: Ranked }).duration)} s`, cls: 'cc' });
-    } else if (e.kind === 'knockback' || e.kind === 'pull') out.push({ text: `${e.kind === 'pull' ? L('Heranziehen', 'Pull') : L('Rückstoß', 'Knockback')} ${fmt(e.distance)}`, cls: 'cc' });
+      out.push({ segs: [S(`${L(...n[e.kind]!)} `), ...rs((e as { duration: Ranked }).duration), S(' s')], cls: 'cc' });
+    } else if (e.kind === 'knockback' || e.kind === 'pull') out.push({ segs: P(`${e.kind === 'pull' ? L('Heranziehen', 'Pull') : L('Rückstoß', 'Knockback')} ${fmtNum(e.distance, lang())}`), cls: 'cc' });
   }
   return out;
 }
@@ -73,43 +95,67 @@ function abilityTip(champ: string, slot: number, rank: number): Tip | null {
   const c = CHAMPION_DATA[champ];
   const a = abilityForSlot(champ, slot); // 4..6 = R choices (Sev)
   if (!c || !a) return null;
-  const cost = a.costType === 'none' || !a.cost ? '' : `${ranked(a.cost)} ${a.costType === 'mana' ? L('Mana', 'mana') : a.costType === 'energy' ? L('Energie', 'energy') : 'HP'}`;
+  const haste = ctx?.stats.haste ?? 0;
+  const live = ctx !== null && rank >= 0; // outside a match (lobby, encyclopedia) rank is -1: plain numbers
+  const r = live ? rank : 0;
+  const costName = a.costType === 'mana' ? L('Mana', 'mana') : a.costType === 'energy' ? L('Energie', 'energy') : 'HP';
   const range = typeof a.range === 'number' ? a.range : a.range[0];
   const max = slot >= 3 ? 3 : 5;
+  const meta: Seg[][] = [[S('⟳ '), ...rankedSegs(a.cooldown, r, lang(), live ? (v) => hasteCooldown(v, haste) : undefined, 1), S(' s')]];
+  if (a.costType !== 'none' && a.cost) meta.push([...rankedSegs(a.cost, r, lang()), S(` ${costName}`)]);
+  if (range) meta.push(P(`${L('Reichweite', 'Range')} ${fmtNum(range, lang())}`));
   return {
     icon: abilityIcon(champ, slot),
     title: a.name[settings.lang],
-    // rank < 0: outside a match (lobby, encyclopedia) - no rank line
     sub: rank < 0 ? `${KEYS[Math.min(3, slot)]} · ${slot >= 3 ? L('Ultimative Fähigkeit', 'Ultimate') : L('Fähigkeit', 'Ability')}` : `${KEYS[Math.min(3, slot)]} · ${rank > 0 ? L(`Rang ${rank}/${max}`, `Rank ${rank}/${max}`) : L('Nicht erlernt', 'Not learned')}`,
-    meta: [`⟳ ${ranked(a.cooldown)} s`, ...(cost ? [cost] : []), ...(range ? [`${L('Reichweite', 'Range')} ${fmt(range)}`] : [])],
-    chips: effectChips(a.effects),
-    body: [a.desc[settings.lang]],
+    meta,
+    chips: effectChips(a.effects, r),
+    body: [keywordSegs(a.desc[settings.lang], lang())],
+    ...(live && haste > 0 ? { foot: [P(L(`Fähigkeitstempo ${fmtNum(haste, lang())}: ${fmtNum(hasteReductionPct(haste), lang())} % weniger Abklingzeit`, `Ability haste ${fmtNum(haste, lang())}: ${fmtNum(hasteReductionPct(haste), lang())}% less cooldown`))] } : {}),
   };
 }
 
 function passiveTip(champ: string): Tip | null {
   const c = CHAMPION_DATA[champ];
   if (!c) return null;
-  return { icon: passiveIcon(champ), title: c.passive.name[settings.lang], sub: L('Passiv', 'Passive'), meta: [], body: [c.passive.desc[settings.lang]] };
+  return { icon: passiveIcon(champ), title: c.passive.name[settings.lang], sub: L('Passiv', 'Passive'), meta: [], body: [keywordSegs(c.passive.desc[settings.lang], lang())] };
 }
 
-function itemTip(id: string): Tip | null {
+// ------------------------------------------------------------------------------------------------ items
+function itemTip(id: string, shop: boolean): Tip | null {
   const it = itemById(id);
   if (!it) return null;
-  const body: string[] = [];
-  if (it.passive) body.push(`${L('Passiv', 'Passive')} – ${it.passive.name[settings.lang]}: ${it.passive.desc[settings.lang]}`);
-  if (it.active) body.push(`${L('Aktiv', 'Active')} – ${it.active.name[settings.lang]}: ${it.active.desc[settings.lang]}`);
-  const from = it.from.map((f) => itemById(f)?.name[settings.lang] ?? f);
-  return {
-    icon: itemIcon(id),
-    title: it.name[settings.lang],
-    sub: t(`shop.tier.${it.tier}`) !== `shop.tier.${it.tier}` ? t(`shop.tier.${it.tier}`) : undefined,
-    meta: [`◉ ${it.cost}`, t('shop.sellFor', { gold: sellValue(id) })],
-    chips: statLines(it).map((s) => ({ text: s, cls: 'stat' })),
-    body,
-    ...(from.length ? { foot: `${L('Aus', 'Built from')}: ${from.join(' + ')}` } : {}),
-  };
+  const body: Seg[][] = [];
+  if (it.passive) body.push([S(`${L('Passiv', 'Passive')} – ${it.passive.name[settings.lang]}: `, 'dim'), ...keywordSegs(it.passive.desc[settings.lang], lang())]);
+  if (it.active) body.push([S(`${L('Aktiv', 'Active')} – ${it.active.name[settings.lang]}: `, 'dim'), ...keywordSegs(it.active.desc[settings.lang], lang())]);
+  const tierName = t(`shop.tier.${it.tier}`) !== `shop.tier.${it.tier}` ? t(`shop.tier.${it.tier}`) : undefined;
+  const meta: Seg[][] = [];
+  const net = shop && ctx ? recipePrice(ctx.items, it).price : it.cost;
+  meta.push(net < it.cost ? [S('◉ '), S(String(it.cost), 'strike'), S(` ${net}`, 'cur')] : P(`◉ ${it.cost}`));
+  meta.push(P(t('shop.sellFor', { gold: sellValue(id) })));
+  const chips = statLines(it).map((s) => ({ segs: P(s), cls: 'stat' }));
+  const foot: Seg[][] = [];
+  // shop only: efficiency, build tree, "builds into", difference to the owned item of the same kind
+  if (shop) {
+    const ge = goldEfficiency(it);
+    if (ge) foot.push([S(t('shop.goldEff', { pct: ge.pct, value: ge.value }), ge.pct >= 100 ? 'good' : 'dim')]);
+    if (it.from.length) {
+      const tree = buildTree(it, ctx?.items ?? [], itemById);
+      foot.push([S(`${L('Aus', 'Built from')}: `, 'dim'), ...tree.flatMap((n, i) => [...(i ? [S(' + ', 'dim')] : []), S(`${'· '.repeat(n.depth)}${itemById(n.id)?.name[settings.lang] ?? n.id}${n.owned ? ' ✓' : ''}`, n.owned ? 'good' : undefined)])]);
+    }
+    const into = ITEMS.filter((i) => i.from.includes(id)).map((i) => i.id).slice(0, 6);
+    if (into.length) foot.push([S(`${L('Baut zu', 'Builds into')}: `, 'dim'), S(into.map((x) => itemById(x)?.name[settings.lang] ?? x).join(', '))]);
+    const other = ctx ? compareTarget(it, ctx.items, itemById) : null;
+    if (other) {
+      const diff = compareStats(it, other);
+      if (diff.length) foot.push([S(`${L('Gegenüber', 'Compared to')} ${other.name[settings.lang]}: `, 'dim'), ...diff.flatMap((d, i) => [...(i ? [S(', ')] : []), S(`${d.delta > 0 ? '+' : ''}${fmtNum(d.delta, lang())}${isPctStat(d.stat) ? ' %' : ''} ${t(`stat.${d.stat}`)}`, d.delta > 0 ? 'good' : 'bad')])]);
+    }
+  } else if (it.from.length) {
+    foot.push([S(`${L('Aus', 'Built from')}: `, 'dim'), S(it.from.map((f) => itemById(f)?.name[settings.lang] ?? f).join(' + '))]);
+  }
+  return { icon: itemIcon(id), title: it.name[settings.lang], ...(tierName ? { sub: tierName } : {}), meta, chips, body, ...(foot.length ? { foot } : {}) };
 }
+
 
 const SUMMONER_DESC: Record<string, [string, string]> = {
   sprung: ['Teleportiert dich bis zu 400 Einheiten in Richtung Cursor.', 'Teleports you up to 400 units towards the cursor.'],
@@ -127,14 +173,14 @@ function summonerTip(id: string): Tip | null {
   const d = summonerDef(id);
   if (!d) return null;
   const desc = SUMMONER_DESC[id];
-  return { icon: summonerIcon(id), title: summonerName(id), sub: L('Beschwörerzauber', 'Summoner spell'), meta: [`⟳ ${d.cooldown} s`], body: desc ? [L(...desc)] : [] };
+  return { icon: summonerIcon(id), title: summonerName(id), sub: L('Beschwörerzauber', 'Summoner spell'), meta: [P(`⟳ ${d.cooldown} s`)], body: desc ? [keywordSegs(L(...desc), lang())] : [] };
 }
 
 function runeTip(id: string): Tip | null {
   const r = RUNES.find((x) => x.id === id);
   if (!r) return null;
   const key = r.kind === 'keystone';
-  return { icon: runeIcon(id, key), title: r.name[settings.lang], sub: key ? L('Schlüsselprägung', 'Keystone') : L('Nebenprägung', 'Minor rune'), meta: [], body: [r.desc[settings.lang]] };
+  return { icon: runeIcon(id, key), title: r.name[settings.lang], sub: key ? L('Schlüsselprägung', 'Keystone') : L('Nebenprägung', 'Minor rune'), meta: [], body: [keywordSegs(r.desc[settings.lang], lang())] };
 }
 
 function build(spec: string): Tip | null {
@@ -145,19 +191,19 @@ function build(spec: string): Tip | null {
     case 'passive':
       return passiveTip(a);
     case 'item':
-      return itemTip(a);
+      return itemTip(a, b === 'shop');
     case 'summoner':
       return summonerTip(a);
     case 'rune':
       return runeTip(a);
     case 'text': {
       const [title = '', ...body] = spec.slice(5).split(/\r?\n/); // first line = title, the rest = body paragraphs
-      return { icon: null, title, meta: [], body };
+      return { icon: null, title, meta: [], body: body.map(P) };
     }
     case 'timed': {
       // `timed:<seconds>:<inner spec>`: the inner tooltip plus the remaining time (buff chips)
       const tip = build(spec.slice(spec.indexOf(':', 6) + 1));
-      if (tip) tip.foot = t('buff.left', { s: a });
+      if (tip) tip.foot = [...(tip.foot ?? []), P(t('buff.left', { s: a }))];
       return tip;
     }
     default:
@@ -175,6 +221,14 @@ function h(tag: string, cls: string, parent: HTMLElement, text?: string): HTMLEl
   if (text !== undefined) e.textContent = text;
   parent.appendChild(e);
   return e;
+}
+
+/** Runs of text as spans (cls = colour / emphasis class from tooltipMath). */
+function segs(parent: HTMLElement, list: Seg[]): void {
+  for (const s of list) {
+    if (!s.cls) parent.appendChild(document.createTextNode(s.text));
+    else h('span', `tt-${s.cls}`, parent, s.text);
+  }
 }
 
 function render(tip: Tip): void {
@@ -197,14 +251,17 @@ function render(tip: Tip): void {
   if (tip.sub) h('div', 'tip-sub', names, tip.sub);
   if (tip.meta.length) {
     const m = h('div', 'tip-meta', head);
-    for (const x of tip.meta) h('div', '', m, x);
+    for (const x of tip.meta) segs(h('div', '', m), x);
   }
   if (tip.chips?.length) {
     const cs = h('div', 'tip-chips', panel);
-    for (const c of tip.chips) h('div', `tip-chip ${c.cls}`, cs, c.text);
+    for (const c of tip.chips) segs(h('div', `tip-chip ${c.cls}`, cs), c.segs);
   }
-  for (const b of tip.body) h('p', 'tip-body', panel, b);
-  if (tip.foot) h('div', 'tip-foot', panel, tip.foot);
+  for (const b of tip.body) segs(h('p', 'tip-body', panel), b);
+  if (tip.foot?.length) {
+    const f = h('div', 'tip-foot', panel);
+    for (const x of tip.foot) segs(h('div', '', f), x);
+  }
   panel.classList.add('show');
 }
 

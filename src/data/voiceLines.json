@@ -1052,5 +1052,39 @@
       "de": "Zurück ins Moos.",
       "en": "Back to the moss."
     }
+  },
+  "knarr": {
+    "pick": {
+      "de": "Knack.",
+      "en": "Snap."
+    },
+    "move1": {
+      "de": "Seitwärts, immer seitwärts.",
+      "en": "Sideways, always sideways."
+    },
+    "move2": {
+      "de": "Die Flut kommt.",
+      "en": "The tide is coming."
+    },
+    "attack": {
+      "de": "Klapp!",
+      "en": "Clack!"
+    },
+    "ability": {
+      "de": "Festhalten.",
+      "en": "Hold still."
+    },
+    "kill": {
+      "de": "Zerknackt.",
+      "en": "Cracked."
+    },
+    "death": {
+      "de": "Die Schale ist gesprungen.",
+      "en": "The shell has cracked."
+    },
+    "recall": {
+      "de": "Zurück in die Brandung.",
+      "en": "Back to the surf."
+    }
   }
 }

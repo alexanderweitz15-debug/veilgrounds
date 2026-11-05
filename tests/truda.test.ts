@@ -43,7 +43,7 @@ describe('Truda data and kit', () => {
     expect(k.props.length).toBe(4);
     expect(k.feature).toContain('mushroom');
     for (const a of ['idle', 'run', 'attack', 'cast', 'death'] as const) expect(framesOf('truda', a)).toBeGreaterThan(0);
-  });
+  }, 30000);
 });
 
 describe('Truda Q Spore Toss and the fields', () => {

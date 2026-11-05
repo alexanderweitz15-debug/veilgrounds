@@ -32,6 +32,7 @@ import wren from './wren.json';
 import sev from './sev.json';
 import fenna from './fenna.json'; // champ-support (#29)
 import vargrim from './vargrim.json';
+import knarr from './knarr.json';
 import truda from './truda.json';
 import svea from './svea.json';
 
@@ -67,6 +68,7 @@ const raw = {
   vargrim,
   svea,
   truda,
+  knarr,
 } satisfies Record<string, Json<ChampionData>>;
 
 export const champions: Record<string, ChampionData> = Object.fromEntries(

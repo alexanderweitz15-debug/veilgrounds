@@ -42,6 +42,7 @@ import {
 } from './props2';
 import { crimsonHem, crowRing, featherMarks, genjutsuEyes, highCollar, longHair, palmCrow, ringNecklace, SEV_CRIMSON } from './sev';
 import { VARGRIM_KIT } from './cavalry';
+import { KNARR_KIT } from './crab';
 import { antennae, flameLamp, lightThread, mothWings } from './fenna';
 import { gustBow, gustSwirl, featherCrest, windStreamers } from './svea';
 import { backShrooms, mushroomCap, sporeMotes, sporeStaff } from './truda';
@@ -970,3 +971,5 @@ kit({
 
 // Vargrim: icon-colour stub; the sprite is painted by the SpriteDrawer in cavalry.ts (atlas.ts DRAWERS)
 kit(VARGRIM_KIT);
+// Knarr: giant crab, painted by the SpriteDrawer in crab.ts (atlas.ts DRAWERS); the Kit stub carries the icon colours
+kit(KNARR_KIT);

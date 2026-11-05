@@ -59,6 +59,19 @@ export function drawSwarmCObject(o: SnapObject, now: number, g: SevFxApi): boole
       circle(g.ring, o.r * (0.7 + 0.5 * k), '#ffffff', 0.9 * life, 7);
       return true;
     }
+    case 'knarr_taunt': {
+      // Fortress taunt: a rust-red shock ring shrinking toward Knarr with claw marks turning on the rim
+      const pulse = 0.85 + 0.15 * flick(now, 4, 90);
+      circle(g.disc, o.r, '#c4452e', 0.14 * pulse);
+      circle(g.ring, o.r * (0.55 + 0.45 * life), '#ff8a4a', 0.9 * pulse, 5);
+      circle(g.ring, o.r, '#ffd0a0', 0.55, 4);
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 + now / 700;
+        const a2 = a + 0.28;
+        line(o.x + Math.cos(a) * o.r, o.y + Math.sin(a) * o.r, o.x + Math.cos(a2) * o.r * 0.9, o.y + Math.sin(a2) * o.r * 0.9, 14, 8, '#ffb070', 0.85);
+      }
+      return true;
+    }
     default:
       return false;
   }

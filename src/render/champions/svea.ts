@@ -5,7 +5,7 @@ import { at, lerp3, m, madd, TAU, type V3 } from './core';
 import { aimLW, backFrame, bowProp, ribbon } from './props';
 import type { PropCtx } from './types';
 
-const STREAMER = m('#8fd2c8', 'cloth');
+const STREAMER = m('#a6e8dc', 'cloth');
 const STREAMER_DARK = m('#4f8f94', 'cloth');
 const FEATHER = '#eaf6f0';
 const FEATHER_TIP = '#5fb8b0';
@@ -20,10 +20,10 @@ export function windStreamers(c: PropCtx): void {
     for (let i = 0; i <= 9; i++) {
       const u = i / 9;
       const wave = Math.sin(u * 7 - pose.t * TAU * 2 + (s > 0 ? 0 : 1.7)) * (3 + u * 9);
-      pts.push(at(bk, [s * (5 + u * 14 + pose.glow * u * 22), -u * 12 * (1 - flat) + wave * 0.6 + u * 10 * flat, u * (34 + 30 * flat)]));
+      pts.push(at(bk, [s * (6 + u * 38 + pose.glow * u * 26), 4 + u * 16 * (1 - flat) + wave * 0.7 + u * 6 * flat, u * (30 + 34 * flat)]));
     }
     st.add(pts[4]!, -0.3, (p) => {
-      p.fill(ribbon(st, pts, 4.4, 1.2), s > 0 ? STREAMER : STREAMER_DARK, { lw: 1.2, folds: [st.pts2([pts[0]!, pts[3]!, pts[6]!])] });
+      p.fill(ribbon(st, pts, 6, 1.6), s > 0 ? STREAMER : STREAMER_DARK, { lw: 1.2, folds: [st.pts2([pts[0]!, pts[3]!, pts[6]!])] });
     });
   }
 }

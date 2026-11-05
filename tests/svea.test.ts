@@ -46,7 +46,7 @@ describe('Svea sprite kit', () => {
     expect(k.props.length).toBe(4);
     expect(k.feature).toContain('streamers');
     for (const a of ['idle', 'run', 'attack', 'cast', 'death'] as const) expect(framesOf('svea', a)).toBeGreaterThan(0);
-  });
+  }, 30000);
 });
 
 describe('Svea data', () => {

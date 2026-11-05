@@ -282,5 +282,20 @@ Amaterasu jump, Tsukuyomi end, Susanoo slow immunity + recast close), `targetOk`
 | `sev_r2_susanoo` | R2 | Self: generic shield; 6 s slow immunity and sword sweeps; recast window opens: instant sword thrust 1000 × 120 (1st damage effect) on every enemy in the line, once. |
 | `sev_r3_tsukuyomi` | R3 | Suppress the target 1.5 s (+ mark `sev_r3_moon` = red-black tint on its HUD), root Sev as long; at the end damage incl. 25 % of the target's missing health. |
 
+## Svea Böenhall (`svea`), Truda Sporenhauch (`truda`), Knarr Zangenfels (`knarr`) (swarm/champs-c)
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `svea_gust` | Passive | `onTick` sums walked distance (jumps over 120 per tick = recall/flash are ignored); 500 = gust ready. `onAutoFire` consumes it, `onAutoHit` adds 25-70 magic damage and a 20 % slow for 1 s. |
+| `svea_w_zone` | W | Zone state per caster; each tick enemy line projectiles (Proj.kind 1) inside are bent 22 degrees away from the zone centre once and run at half speed until they leave (original speed restored). |
+| `svea_e_gust` | E | Phase `cast` (dash end): gust charged at once. |
+| `truda_blight` | Passive | `modifyDamage`: autos on enemies with the `truda_poison` dot deal 8-36 more. |
+| `truda_q_field`, `truda_w_field` | Q, W | Add a spore field (radius 190 / 170, 5 s; over the cap of 6 the oldest is dropped). Fields poison (dot), slow and spread: an enemy standing in a field for 0.5 s makes a child field 1.5 radii toward it (generation 2 max, children 4 s). |
+| `truda_e_spread` | E | Every field spreads once in the first free hex direction. |
+| `truda_r_burst` | R | `ownsHits`: every enemy inside any field is hit once (data damage + stun via `applyEffects`), fields removed; no fields = cooldown and mana refunded. |
+| `knarr_shell` | Passive | `onComputeStats`: Fortress (default, from level 1) -20 % move speed and +resist; Sidestep +15 % move speed; +3 armor/MR per enemy champion within 600. `modifyDamage`: Sidestep autos +10-26 %. Numbers in `knarr.values.json`. |
+| `knarr_w_stance` | W | Toggle; entering Fortress taunts enemy champions within 450 for 1-1.4 s (`onTick` writes the attack order each tick). The snapshot aura `knarr_w` = Fortress (bots read it). |
+| `knarr_e_step` | E | Fortress: dash plan distance 150 (phase `dashStart`) and damage x0.6. |
+
 ---
 Total: 110 hook ids across 26 champions.

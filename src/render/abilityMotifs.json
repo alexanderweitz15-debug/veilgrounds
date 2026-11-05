@@ -60,6 +60,7 @@
     "fenna": [["wing", 40], ["lamp", 30], ["ring", 265], ["moon", 250]],
     "vargrim": [["sword", 170], ["cloak", 165], ["boot", 150], ["horn", 175]],
     "svea": [["arrow",190],["spiral",175],["wing",185],["bow",205]],
-    "truda": [["leaf",110],["root",95],["spiral",125],["bomb",80]]
+    "truda": [["leaf",110],["root",95],["spiral",125],["bomb",80]],
+    "knarr": [["claw",15],["shield",205],["boot",190],["axe",5]]
   }
 }

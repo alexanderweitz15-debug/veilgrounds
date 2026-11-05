@@ -1,0 +1,44 @@
+{
+  "champion": "knarr",
+  "template": "tank",
+  "starter": [
+    "dornenklinge",
+    "trank"
+  ],
+  "standard": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "seeigelpanzer",
+      "wallherz",
+      "lebenswurzel",
+      "kettenrelais"
+    ]
+  },
+  "vsAD": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "wallherz",
+      "seeigelpanzer",
+      "lebenswurzel",
+      "kettenrelais"
+    ]
+  },
+  "vsAP": {
+    "boots": "stiefel_mr",
+    "core": [
+      "sturmgewand",
+      "seeigelpanzer",
+      "lebenswurzel",
+      "kettenrelais"
+    ]
+  },
+  "runes": {
+    "keystone": "zaehigkeit",
+    "minor": [
+      "zweiter_wind",
+      "adaptiv",
+      "ruestung"
+    ]
+  },
+  "note": "Component order follows items.json \"from\"; Diamond+ bots reorder components situationally (spec §5)."
+}

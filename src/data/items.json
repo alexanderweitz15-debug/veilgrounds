@@ -1646,6 +1646,58 @@
           }
         ]
       }
+    },
+    {
+      "id": "seeigelpanzer",
+      "name": {
+        "de": "Seeigelpanzer",
+        "en": "Urchin Plate"
+      },
+      "tier": "legendary",
+      "cost": 2650,
+      "from": [
+        "zauberschutzmantel",
+        "kettenhemd"
+      ],
+      "stats": {
+        "armor": 55,
+        "mr": 45,
+        "hp": 250
+      },
+      "tags": [
+        "tank"
+      ],
+      "passive": {
+        "name": {
+          "de": "Stachelkleid",
+          "en": "Spine Coat"
+        },
+        "desc": {
+          "de": "Gegner, die dich mit einem Auto-Angriff treffen, erleiden 25 (+15 % deiner Rüstung) magischen Schaden.",
+          "en": "Enemies that hit you with a basic attack take 25 (+15% of your armor) magic damage."
+        },
+        "rules": [
+          {
+            "on": "onDamageTaken",
+            "if": {
+              "isAuto": true
+            },
+            "do": [
+              {
+                "type": "damage",
+                "to": "source",
+                "dmgType": "magic",
+                "value": {
+                  "base": 25,
+                  "scale": {
+                    "armor": 0.15
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

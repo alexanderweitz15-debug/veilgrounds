@@ -1,0 +1,155 @@
+{
+  "id": "henrike",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "carry",
+    "engage": 1,
+    "peel": 2,
+    "poke": 3,
+    "burst": 2
+  },
+  "keyRanges": {
+    "auto": 550,
+    "trade": 950,
+    "engage": 550,
+    "poke": 950,
+    "threat": 950,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "henrike_data1",
+      "kind": "trade",
+      "sequence": [
+        "AA",
+        "AA",
+        "AA",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "henrike_data2",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "AA",
+        "E",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "henrike_data3",
+      "kind": "allin",
+      "sequence": [
+        "W",
+        "Q",
+        "R",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "henrike_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "line",
+      "roles": [
+        "poke"
+      ],
+      "range": 950,
+      "useRange": [
+        0,
+        874
+      ],
+      "speed": 2200,
+      "width": 70,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "circle",
+      "roles": [
+        "summon"
+      ],
+      "range": 700,
+      "useRange": [
+        0,
+        644
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 40,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": true,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "dash",
+      "roles": [
+        "escape"
+      ],
+      "range": 300,
+      "useRange": [
+        275,
+        850
+      ],
+      "speed": 1600,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "R",
+      "aim": "circle",
+      "roles": [
+        "zone",
+        "burst",
+        "ult"
+      ],
+      "range": 1000,
+      "useRange": [
+        0,
+        920
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 280,
+      "castTime": 0.3,
+      "delay": 0.9,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

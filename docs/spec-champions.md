@@ -195,11 +195,35 @@ Design-Prinzipien:
     - R (Wahl ab Level 6, dauerhaft): Amaterasu (unlöschbare schwarze Flammen, schwere Wunden, springt beim Tod) / Susanoo (6 s Schild, Schwerthiebe, Schwertstoß-Re-Cast) / Tsukuyomi (1,5 s Unterdrückung, Schaden nach fehlendem Leben).
     - Spike 6. Combos: E→Q→Auto, Q→W→E, E→R→Q→Auto.
 
+30. **Gneis Mauerherz, der Wandelnde Fels** – Top, Wand-Tank (Steingolem), Melee 150. Training: nie mit dem Rücken zur Wand kämpfen (Slam = Betäubung). Kit: `src/data/champions/gneis.json`.
+    - Passiv Grundmauer: +12 Rüstung/MR pro eigener Erdwand in 450 (max. 2).
+    - Q Felsbrocken: Linie 850, 70–210 (+50 % Bonus-AD, +8 % Bonus-HP), schleudert 260 zurück; Wand/Geländekante = Betäubung 0,9–1,3 s + 40 % Bonusschaden. CD 11–9.
+    - W Erdwall: Wand (Länge 380) 650 vor ihm, 0,45 s Verzögerung, Schaden + Luftstoß, blockt 3–5 s. CD 16–12.
+    - E Steinschulter: Dash 475, stoppt am ersten Gegner, schiebt ihn 300 weiter (Wand: Betäubung), Schild. CD 14–10.
+    - R Bergsturz: Kreis 900/300, 0,9 s Verzögerung, 120/200/280 (+10 % Max-HP), Slow, Kraterwall (4 s, Öffnung zu Gneis) fängt weggeschleuderte Gegner (Betäubung). CD 110/100/90.
+    - Spike 6. Combos: W→Q, E→Auto→Q, R→W→Q. Item: Schollenpanzer.
+
+31. **Kerrin Fesselschatten, die Kettenschattin** – Jungle, Ketten-Assassine, Melee 150. Training: Haken nicht vor Wänden stehen lassen, drei Kettenmale auf dem Lebensbalken erkennen (Henkerslinie). Kit: `src/data/champions/kerrin.json`.
+    - Passiv Kettenmal: Fähigkeitstreffer auf Champions setzen ein Mal (max. 3, 6 s), +4 % Schaden pro Mal.
+    - Q Hakenwurf: Linie 900, 60–220 (+70 % Bonus-AD); zieht sie zur getroffenen Einheit oder über eine getroffene Wand (bis 450 dahinter). CD 12–8.
+    - W Kettenwirbel: um sie (350), 50–170 (+60 % Bonus-AD), 30 % Slow 1,5 s. CD 9–7.
+    - E Schattenfessel: +25 % Tempo 2 s; nächster Auto 30–130 (+50 % Bonus-AD) und Wurzel 0,6–1,0 s. CD 14–10.
+    - R Henkersketten: Ziel 650, springt hin, 120/200/280 (+90 % Bonus-AD); drei Male und danach unter 18/24/30 % Max-HP = Hinrichtung (Linie auf dem Lebensbalken). CD 90/75/60.
+    - Spike 6. Combos: Q→W→Auto, E→Auto→Q→W, Q→W→E→Auto→R. Item: Fesselklinge.
+
+32. **Henrike Federwerk, die Uhrenschmiedin** – ADC, Uhrwerk-Schützin, Ranged 550. Training: volle Zugfeder erkennen (nächster Zauber +40 %), Uhrwerkturm zerstören oder meiden. Kit: `src/data/champions/henrike.json`.
+    - Passiv Zugfeder: jeder Auto spannt (max. 5, verfällt nach 4 s), +3 % Angriffstempo pro Spannung; bei voller Spannung ist der nächste Zauber überdreht (+40 % Schaden 2 s, 30 % Abklingzeit zurück).
+    - Q Federbolzen: Linie 950, 50–190 (+90 % AD), 25 % Slow. CD 9–7.
+    - W Uhrwerkturm: Turm 700 vor ihr, 6 s, schießt alle 0,75 s auf ihr Ziel (sonst nächster Champion in 600), 12–36 (+30 % AD). CD 18–14.
+    - E Federsprung: Sprung 300 zum Zeiger, +20 % Tempo 1,5 s. CD 18–10.
+    - R Stundenschlag: Kreis 1000/280, 0,9 s Verzögerung, 140/230/320 (+90 % AD), 50 % Slow. CD 100/85/70.
+    - Spike 6. Combos: AA→AA→AA→Q, W→AA→E→AA, W→Q→R→AA. Item: Hemmwerk.
+
 ## Rollen (Primär; Sekundär in Klammern)
-- Top: Brom, Sister Oleth (Jungle), Old Harrow, Seraphyne (Mid), Isolde, Dagny
-- Jungle: Vessa, Nyx, Grimald, Lio, Ottilie, Kaelen (Mid), Sev (Mid)
+- Top: Brom, Sister Oleth (Jungle), Old Harrow, Seraphyne (Mid), Isolde, Dagny, Gneis
+- Jungle: Vessa, Nyx, Grimald, Lio, Ottilie, Kaelen (Mid), Sev (Mid), Kerrin
 - Mid: Ilvane, Thessaly, Kaelen, Renn, Aurel, Seraphyne, Sev
-- ADC: Mira, Corvin, Lysa, Tobin, Wren
+- ADC: Mira, Corvin, Lysa, Tobin, Wren, Henrike
 - Support: Ferris, Gorvam, Mutter Hagen, Kiran, Oda
 
 ## Welt und Ton (§11)

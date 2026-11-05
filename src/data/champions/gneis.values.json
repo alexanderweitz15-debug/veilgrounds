@@ -1,0 +1,8 @@
+{
+  "_doc": "Tunables of the gneis hooks (src/sim/champions/gneis.ts) that the generic ability schema cannot hold. Ability numbers live in gneis.json.",
+  "foundation": { "armorPerWall": 12, "mrPerWall": 12, "maxWalls": 2, "range": 450 },
+  "boulder": { "knock": 260, "slamBonus": 0.4, "stunSec": [0.9, 1.0, 1.1, 1.2, 1.3] },
+  "wall": { "sec": [3, 3.5, 4, 4.5, 5] },
+  "shove": { "dist": 300, "stunSec": [0.8, 0.9, 1.0, 1.1, 1.2], "slamBonus": 0.3 },
+  "rim": { "radius": 330, "thickness": 100, "sec": 4, "openingCos": 0.7, "knock": 260, "stunSec": [1.0, 1.25, 1.5] }
+}

@@ -1792,6 +1792,254 @@
           }
         ]
       }
+    },
+    {
+      "id": "schollenpanzer",
+      "name": {
+        "de": "Schollenpanzer",
+        "en": "Slabplate"
+      },
+      "tier": "legendary",
+      "cost": 2800,
+      "from": [
+        "kettenhemd",
+        "wetterhorn"
+      ],
+      "stats": {
+        "armor": 60,
+        "hp": 300,
+        "haste": 15
+      },
+      "tags": [
+        "tank"
+      ],
+      "passive": {
+        "name": {
+          "de": "Gesteinsschicht",
+          "en": "Strata"
+        },
+        "desc": {
+          "de": "Fähigkeiten, die Gegner-Champions treffen, geben einen Stapel (max. 4, 5 s): je +6 Rüstung und Magieresistenz.",
+          "en": "Abilities that hit enemy champions grant a stack (max 4, 5 s): +6 armor and magic resist each."
+        },
+        "rules": [
+          {
+            "on": "onAbilityHit",
+            "if": {
+              "target": {
+                "kind": [
+                  "champion"
+                ],
+                "team": "enemy"
+              }
+            },
+            "do": [
+              {
+                "type": "addStack",
+                "name": "strata",
+                "max": 4,
+                "seconds": 5
+              }
+            ]
+          },
+          {
+            "on": "onComputeStats",
+            "do": [
+              {
+                "type": "statAdd",
+                "stat": "armor",
+                "value": {
+                  "scale": {
+                    "stacks": {
+                      "strata": 6
+                    }
+                  }
+                }
+              },
+              {
+                "type": "statAdd",
+                "stat": "mr",
+                "value": {
+                  "scale": {
+                    "stacks": {
+                      "strata": 6
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "fesselklinge",
+      "name": {
+        "de": "Fesselklinge",
+        "en": "Fetterblade"
+      },
+      "tier": "legendary",
+      "cost": 2900,
+      "from": [
+        "klingenbrecher",
+        "kaltstahl"
+      ],
+      "stats": {
+        "ad": 50,
+        "lethality": 15,
+        "haste": 15
+      },
+      "tags": [
+        "ad",
+        "lethality"
+      ],
+      "passive": {
+        "name": {
+          "de": "Fesselbiss",
+          "en": "Fetter Bite"
+        },
+        "desc": {
+          "de": "+8 % Schaden an Champions pro Fessel: verlangsamt, gewurzelt oder betäubt (bis +24 %).",
+          "en": "+8% damage to champions per fetter: slowed, rooted or stunned (up to +24%)."
+        },
+        "rules": [
+          {
+            "on": "modifyDamage",
+            "if": {
+              "target": {
+                "kind": [
+                  "champion"
+                ],
+                "hasBuff": "slow"
+              }
+            },
+            "do": [
+              {
+                "type": "damageMult",
+                "mult": 1.08
+              }
+            ]
+          },
+          {
+            "on": "modifyDamage",
+            "if": {
+              "target": {
+                "kind": [
+                  "champion"
+                ],
+                "hasBuff": "root"
+              }
+            },
+            "do": [
+              {
+                "type": "damageMult",
+                "mult": 1.08
+              }
+            ]
+          },
+          {
+            "on": "modifyDamage",
+            "if": {
+              "target": {
+                "kind": [
+                  "champion"
+                ],
+                "hasBuff": "stun"
+              }
+            },
+            "do": [
+              {
+                "type": "damageMult",
+                "mult": 1.08
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "hemmwerk",
+      "name": {
+        "de": "Hemmwerk",
+        "en": "Escapement"
+      },
+      "tier": "legendary",
+      "cost": 2900,
+      "from": [
+        "eiferschwert",
+        "kaltstahl"
+      ],
+      "stats": {
+        "ad": 40,
+        "asPct": 30,
+        "haste": 10
+      },
+      "tags": [
+        "ad",
+        "onhit"
+      ],
+      "passive": {
+        "name": {
+          "de": "Gleichtakt",
+          "en": "Even Tempo"
+        },
+        "desc": {
+          "de": "Jeder 3. Treffer eines Auto-Angriffs innerhalb von 4 s verursacht 35 (+20 % AD) magischen Zusatzschaden.",
+          "en": "Every 3rd basic attack hit within 4 s deals 35 (+20% AD) bonus magic damage."
+        },
+        "rules": [
+          {
+            "on": "onHit",
+            "if": {
+              "target": {
+                "team": "enemy",
+                "notKind": [
+                  "structure"
+                ]
+              }
+            },
+            "do": [
+              {
+                "type": "addStack",
+                "name": "tempo",
+                "max": 3,
+                "seconds": 4
+              }
+            ]
+          },
+          {
+            "on": "onHit",
+            "if": {
+              "target": {
+                "team": "enemy",
+                "notKind": [
+                  "structure"
+                ]
+              },
+              "stacksAtLeast": {
+                "tempo": 3
+              }
+            },
+            "do": [
+              {
+                "type": "damage",
+                "to": "target",
+                "dmgType": "magic",
+                "value": {
+                  "base": 35,
+                  "scale": {
+                    "ad": 0.2
+                  }
+                }
+              },
+              {
+                "type": "clearStack",
+                "name": "tempo"
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

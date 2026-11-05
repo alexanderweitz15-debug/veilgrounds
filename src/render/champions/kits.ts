@@ -44,6 +44,9 @@ import { crimsonHem, crowRing, featherMarks, genjutsuEyes, highCollar, longHair,
 import { VARGRIM_KIT } from './cavalry';
 import { DORRAK_KIT } from './worm';
 import { antennae, flameLamp, lightThread, mothWings } from './fenna';
+import { boulderFists, mossTufts, rockHump, runeCracks } from './golem';
+import { chainMantle, hookBlade, wristManacles } from './chains';
+import { hipGears, mainspringPack, springCrossbow } from './clockwork';
 import { bloodDrips, bloodOrbs, thornCrown } from './rovena';
 import { floatNotes, hatPlume, luteBack } from './tilda';
 import type { Kit } from './types';
@@ -968,4 +971,86 @@ kit({
 
 // Vargrim: icon-colour stub; the sprite is painted by the SpriteDrawer in cavalry.ts (atlas.ts DRAWERS)
 kit(VARGRIM_KIT);
+
+// ---- swarm champs-a
+kit({
+  id: 'gneis',
+  name: 'Gneis Mauerherz',
+  world: 230,
+  look: 'stone golem: a wide boulder body with a pinhead, two giant rock fists, a stacked rock hump on the back, glowing amber rune cracks across the chest and moss tufts on shoulders and crown',
+  feature: 'very wide rock block + tiny head + giant fists + glowing rune cracks',
+  body: { ...MALE, H: 196, shW: 42, hipW: 24, chestD: 24, girth: 1.75, belly: 0.2, stance: 20, headR: 10.5, legs: 0.36, hunch: 0.12 },
+  outfit: {
+    skin: '#8a8478',
+    skinKind: 'stone',
+    top: m('#8a8478', 'stone'),
+    sleeves: m('#7c766b', 'stone'),
+    forearms: m('#8a8478', 'stone'),
+    hands: m('#8a8478', 'stone'),
+    legs: m('#6f6a60', 'stone'),
+    boots: m('#5c574e', 'stone'),
+    bootH: 0.4,
+    pauldrons: { mat: m('#7c766b', 'stone'), size: 1.75 },
+    hair: { style: 'none', mat: hair('#000000') },
+    face: { brows: 2.4, eyes: '#ffb347' },
+  },
+  hold: 'fists',
+  attack: 'bash',
+  cast: 'slam',
+  gait: 'heavy',
+  props: [rockHump, boulderFists, runeCracks, mossTufts],
+});
+kit({
+  id: 'kerrin',
+  name: 'Kerrin Fesselschatten',
+  world: 190,
+  look: 'lean hooded chain-shadow assassin: pale ashen skin, dark violet-grey hood and wrap, bright chain loops crossed over her chest and iron manacles with dangling links on both wrists, a hook-blade in the right hand on a chain to the left',
+  feature: 'criss-cross chain over a slim dark figure + hook on a line',
+  body: { ...FEMALE, H: 178, shW: 16, hipW: 13, girth: 0.88, legs: 0.5, headR: 12.4, bust: 0.3 },
+  outfit: {
+    skin: '#d6ccd2',
+    face: { eyes: '#b79cff', brows: 1.1 },
+    top: cloth('#5a5470'),
+    sleeves: cloth('#464158'),
+    forearms: m('#4a4f58', 'metal'),
+    legs: cloth('#3e3a52'),
+    boots: leather('#46404e'),
+    belt: { mat: leather('#3a3036'), buckle: IRON },
+    hood: { mat: cloth('#4c4766') },
+    scarf: { mat: cloth('#9a74d0'), tail: 1.1 },
+    cape: { mat: cloth('#3a3548'), len: 0.9, tatter: true, short: true },
+  },
+  hold: 'relaxed',
+  attack: 'chain',
+  cast: 'draw',
+  gait: 'light',
+  props: [chainMantle, wristManacles, hookBlade],
+});
+kit({
+  id: 'henrike',
+  name: 'Henrike Federwerk',
+  world: 188,
+  look: 'young clockmaker marksman: goggles pushed up on her forehead, short copper ponytail, olive work jacket with rolled sleeves, a deep brass mainspring drum on her back with a tall T-shaped winding key above her shoulder, a spring-loaded crossbow with a visible coil, small brass gears at her hip',
+  feature: 'T-shaped winding key behind the head + brass spring drum + coil crossbow',
+  body: { ...FEMALE, H: 170, shW: 17, hipW: 14, girth: 0.92, headR: 12.8, bust: 0.4 },
+  outfit: {
+    skin: SKIN.light,
+    face: { eyes: '#6aa0b8', brows: 1 },
+    top: cloth('#5a6a3e'),
+    sleeves: cloth('#e0d4b4'),
+    forearms: leather('#7a5636'),
+    hands: leather('#5a4030'),
+    legs: cloth('#3c3a44'),
+    boots: leather(P.leatherDark),
+    belt: { mat: leather(P.leatherDark), buckle: BRASS, y: 0.2 },
+    hat: { kind: 'goggles', mat: leather('#6a4a30') },
+    hair: { style: 'tied', mat: hair('#b4622e') },
+    pouches: { mat: leather(), n: 2 },
+  },
+  hold: 'rifle',
+  attack: 'rifle',
+  cast: 'forward',
+  gait: 'light',
+  props: [mainspringPack, springCrossbow, hipGears],
+});
 kit(DORRAK_KIT);

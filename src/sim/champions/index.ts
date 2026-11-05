@@ -38,6 +38,9 @@ import { hooks as odaHooks } from './oda';
 import { hooks as sevHooks } from './sev';
 import { hooks as fennaHooks } from './fenna'; // champ-support (#29)
 import { hooks as vargrimHooks } from './vargrim';
+import { hooks as gneisHooks } from './gneis'; // swarm champs-a
+import { hooks as kerrinHooks } from './kerrin';
+import { hooks as henrikeHooks } from './henrike';
 import { hooks as rovenaHooks } from './rovena';
 import { hooks as dorrakHooks } from './dorrak';
 import { hooks as tildaHooks } from './tilda';
@@ -79,6 +82,9 @@ export const CHAMPION_HOOKS: Record<string, ChampionHooks> = {
   sev: sevHooks,
   fenna: fennaHooks,
   vargrim: vargrimHooks,
+  gneis: gneisHooks,
+  kerrin: kerrinHooks,
+  henrike: henrikeHooks,
   rovena: rovenaHooks,
   dorrak: dorrakHooks,
   tilda: tildaHooks,

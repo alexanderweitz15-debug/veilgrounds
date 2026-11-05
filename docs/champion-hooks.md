@@ -282,6 +282,40 @@ Amaterasu jump, Tsukuyomi end, Susanoo slow immunity + recast close), `targetOk`
 | `sev_r2_susanoo` | R2 | Self: generic shield; 6 s slow immunity and sword sweeps; recast window opens: instant sword thrust 1000 × 120 (1st damage effect) on every enemy in the line, once. |
 | `sev_r3_tsukuyomi` | R3 | Suppress the target 1.5 s (+ mark `sev_r3_moon` = red-black tint on its HUD), root Sev as long; at the end damage incl. 25 % of the target's missing health. |
 
+## Gneis Mauerherz (`gneis`)
+
+Walls are `blockTerrain` (like Oleth R / Isolde dome); numbers in `src/data/champions/gneis.values.json`. Slam rule: a
+displaced unit stops at non-walkable cells (walls or terrain); stopping short = slam (stun + bonus damage).
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `gneis_foundation` | Passive | `onComputeStats`: +12 armor and MR per own wall / crater rim within 450 (max 2). HUD badge shows the count. |
+| `gneis_q_boulder` | Q | Hit units are knocked 260 along the throw. Slam into a wall or terrain edge: stun 0.9..1.3 s and +40 % of the Q damage as bonus damage. |
+| `gneis_w_wall` | W | Line wall (data geometry, perpendicular) blocks 3..5 s (`wall.sec`); stored for passive + visuals (`gneis_w_wall`). |
+| `gneis_e_shove` | E | Dash stops at the first enemy (half width 65); the hit enemy is shoved 300 on along the dash. Slam: stun 0.8..1.2 s + 30 % bonus damage. |
+| `gneis_r_rim` | R | Crater rim (radius 330, thickness 100, 4 s) around the impact with an opening toward Gneis (cos 0.7); enemies hit are thrown 260 outward, slam into the rim: stun 1.0..1.5 s. |
+
+## Kerrin Fesselschatten (`kerrin`)
+
+Tunables in `src/data/champions/kerrin.values.json`. Marks live in `sim.state.kerrinMarks` (per caster, per target + serial). The snapshot
+mark `kerrin_mal` carries `exec` (fraction of max HP, set once R is learned): the health bar draws a line there (`UnitMark.exec`, `SnapMark.exec`).
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `kerrin_mal` | Passive | `onAbilityHit`: ability hits on champions/dummies (not R) add a Chain Mark (max 3, 6 s, refresh). `modifyDamage`: +4 % damage per mark. `onCast` slot 0: ray-marches the fresh hook projectile along its line; at the first non-walkable cell it shortens `Proj.maxDist` there and stores the anchor. |
+| `kerrin_q_hook` | Q | Phase `cast` (unit hit): she leaps next to it (`leapTo`, hitbox gap). Phase `expire` (hook stopped at a wall): she leaps to the first walkable point up to 450 beyond the wall; no walkable point = no pull. Visual chain object `kerrin_q_chain` while she moves. |
+| `kerrin_e_next_auto` | E | Engine hook: ms buff on cast, damage + root (0.6..1.0 s) on the empowered auto. |
+| `kerrin_r_execute` | R | Leaps beside the target after the R damage; at three marks and HP + shield <= 18/24/30 % max HP after the hit the target takes lethal true damage. Marks are consumed either way. |
+
+## Henrike Federwerk (`henrike`)
+
+Tunables in `src/data/champions/henrike.values.json`. State: `sim.state.henrikeSpring` (tension, last wind, overwound window) and `henrikeTurret`.
+The turret is hook state (not a pet unit: pets with HP draw as Hark), drawn from snapshot objects `henrike_w_turret` / `henrike_w_shot`.
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `henrike_mainspring` | Passive | `onAutoHit`: +1 tension (max 5, decays to 0 after 4 s without an auto). `onComputeStats`: attack speed x (1 + 3 % per tension). `onCast`: at full tension the cast is overwound: tension resets, 2 s window of +40 % ability damage (`modifyDamage`, not autos), 30 % of the remaining cooldown of that slot refunded. Passive badge = tension, aura while full. |
+| `henrike_w_turret` | W | Deploys the turret at the target point (one at a time, 6 s). Overwound deploy (full tension at cast) fixes +40 % shot damage. `onTick` module hook: every 22 ticks it shoots her attack target if within 600 of the turret, else the nearest champion within 600; physical `12..36 + 30 % AD` (counted as an auto for modifiers). |
 ### Rovena, Dorrak, Tilda (swarm/champs-b)
 
 | Hook id | Slot | Behaviour |

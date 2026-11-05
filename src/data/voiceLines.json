@@ -1086,5 +1086,107 @@
       "de": "Pause. Zurück zur Bühne.",
       "en": "Intermission. Back to the stage."
     }
+  },
+  "gneis": {
+    "pick": {
+      "de": "Ich war vor euren Karten da.",
+      "en": "I was here before your maps."
+    },
+    "move1": {
+      "de": "Der Berg kommt.",
+      "en": "The mountain comes."
+    },
+    "move2": {
+      "de": "Langsam. Aber nicht aufzuhalten.",
+      "en": "Slow. But unstoppable."
+    },
+    "attack": {
+      "de": "Zermalmen.",
+      "en": "Crush."
+    },
+    "ability": {
+      "de": "Stein auf Stein!",
+      "en": "Stone on stone!"
+    },
+    "kill": {
+      "de": "Zerrieben.",
+      "en": "Ground down."
+    },
+    "death": {
+      "de": "Berge fallen langsam. Aber sie fallen.",
+      "en": "Mountains fall slowly. But they fall."
+    },
+    "recall": {
+      "de": "Ich rolle heim.",
+      "en": "Rolling home."
+    }
+  },
+  "kerrin": {
+    "pick": {
+      "de": "Ketten halten länger als Versprechen.",
+      "en": "Chains outlast promises."
+    },
+    "move1": {
+      "de": "Leise wie Rost.",
+      "en": "Quiet as rust."
+    },
+    "move2": {
+      "de": "Ein Glied nach dem anderen.",
+      "en": "One link at a time."
+    },
+    "attack": {
+      "de": "Eingehakt.",
+      "en": "Hooked."
+    },
+    "ability": {
+      "de": "Fessel!",
+      "en": "Shackle!"
+    },
+    "kill": {
+      "de": "Abgehakt.",
+      "en": "Struck off."
+    },
+    "death": {
+      "de": "Die Kette reißt. Nie die Hand.",
+      "en": "The chain snaps. Never the hand."
+    },
+    "recall": {
+      "de": "Zurück in den Schatten.",
+      "en": "Back into the shadows."
+    }
+  },
+  "henrike": {
+    "pick": {
+      "de": "Alles läuft nach Federspannung.",
+      "en": "Everything runs on spring tension."
+    },
+    "move1": {
+      "de": "Die Uhr tickt.",
+      "en": "The clock is ticking."
+    },
+    "move2": {
+      "de": "Aufziehen und los.",
+      "en": "Wind her up and go."
+    },
+    "attack": {
+      "de": "Klick-klack.",
+      "en": "Click-clack."
+    },
+    "ability": {
+      "de": "Federspannung!",
+      "en": "Spring tension!"
+    },
+    "kill": {
+      "de": "Aufgezogen und abgelaufen.",
+      "en": "Wound up and run down."
+    },
+    "death": {
+      "de": "Die Feder ist gesprungen.",
+      "en": "The spring has snapped."
+    },
+    "recall": {
+      "de": "Zurück in die Werkstatt.",
+      "en": "Back to the workshop."
+    }
   }
 }

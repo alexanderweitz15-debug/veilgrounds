@@ -1,0 +1,151 @@
+{
+  "id": "kerrin",
+  "name": "Kerrin Fesselschatten",
+  "title": { "de": "die Kettenschattin", "en": "the Chain Shade" },
+  "roles": ["jungle"],
+  "archetype": "chain_assassin",
+  "botBias": { "aggression": 2, "tempo": 1 },
+  "trainingPurpose": {
+    "de": "Haken nicht gerade vor Wänden stehen lassen, drei Kettenmale auf dem Lebensbalken erkennen: danach droht die Hinrichtung.",
+    "en": "Do not stand in line with a wall for her hook, read three chain marks on the health bar: the execution follows."
+  },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 625,
+    "hpGrowth": 104,
+    "hpRegen": 8,
+    "hpRegenGrowth": 0.8,
+    "mana": 300,
+    "manaGrowth": 36,
+    "manaRegen": 7,
+    "manaRegenGrowth": 0.65,
+    "ad": 63,
+    "adGrowth": 3.3,
+    "armor": 32,
+    "armorGrowth": 4.3,
+    "mr": 32,
+    "mrGrowth": 2.05,
+    "as": 0.67,
+    "asGrowth": 2.4,
+    "range": 150,
+    "ms": 345,
+    "windup": 0.2,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Kettenmal", "en": "Chain Mark" },
+    "desc": {
+      "de": "Fähigkeitstreffer auf Champions setzen ein Kettenmal (max. 3, 6 s). Pro Mal +4 % Schaden von Kerrin gegen das Ziel.",
+      "en": "Ability hits on champions apply a Chain Mark (max 3, 6 s). Each mark gives +4% damage from Kerrin against the target."
+    },
+    "hooks": ["kerrin_mal"]
+  },
+  "abilities": [
+    {
+      "id": "kerrin_q",
+      "name": { "de": "Hakenwurf", "en": "Hook Throw" },
+      "desc": {
+        "de": "Wirft einen Kettenhaken (900): 60/100/140/180/220 (+70 % Bonus-AD) physisch. Trifft er eine Einheit, zieht sich Kerrin zu ihr. Trifft er eine Wand, zieht sie sich über das Hindernis (bis 450 dahinter).",
+        "en": "Throws a chain hook (900): 60/100/140/180/220 (+70% bonus AD) physical. If it hits a unit, Kerrin pulls herself to it. If it hits a wall, she pulls herself over the obstacle (up to 450 beyond)."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 900,
+      "cooldown": [12, 11, 10, 9, 8],
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "width": 70,
+      "speed": 1900,
+      "flags": ["blocked_by_minions", "mobility"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [60, 100, 140, 180, 220], "bonusAd": 0.7 } },
+        { "kind": "hook", "id": "kerrin_q_hook" }
+      ]
+    },
+    {
+      "id": "kerrin_w",
+      "name": { "de": "Kettenwirbel", "en": "Chain Whirl" },
+      "desc": {
+        "de": "Wirbelt die Ketten um sich (350): 50/80/110/140/170 (+60 % Bonus-AD) physisch, 30 % Slow 1,5 s.",
+        "en": "Whirls her chains around her (350): 50/80/110/140/170 (+60% bonus AD) physical, 30% slow for 1.5 s."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "movesWhileCasting": false,
+      "range": 0,
+      "cooldown": [9, 8.5, 8, 7.5, 7],
+      "cost": [40, 45, 50, 55, 60],
+      "costType": "mana",
+      "radius": 350,
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [50, 80, 110, 140, 170], "bonusAd": 0.6 } },
+        { "kind": "slow", "pct": 30, "duration": 1.5 }
+      ]
+    },
+    {
+      "id": "kerrin_e",
+      "name": { "de": "Schattenfessel", "en": "Shadow Shackle" },
+      "desc": {
+        "de": "+25 % Lauftempo 2 s. Der nächste Auto innerhalb 4 s: 30/55/80/105/130 (+50 % Bonus-AD) physisch, wurzelt 0,6/0,7/0,8/0,9/1,0 s.",
+        "en": "+25% move speed for 2 s. Next basic attack within 4 s: 30/55/80/105/130 (+50% bonus AD) physical, roots for 0.6/0.7/0.8/0.9/1.0 s."
+      },
+      "type": "self",
+      "castTime": 0,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": 40,
+      "costType": "mana",
+      "duration": 4,
+      "effects": [
+        { "kind": "buff", "stat": "ms", "pct": 25, "duration": 2, "target": "self" },
+        { "kind": "damage", "type": "phys", "amount": { "base": [30, 55, 80, 105, 130], "bonusAd": 0.5 } },
+        { "kind": "root", "duration": [0.6, 0.7, 0.8, 0.9, 1.0] },
+        { "kind": "hook", "id": "kerrin_e_next_auto" }
+      ]
+    },
+    {
+      "id": "kerrin_r",
+      "name": { "de": "Henkersketten", "en": "Headsman Chains" },
+      "desc": {
+        "de": "Springt zum Ziel (650): 120/200/280 (+90 % Bonus-AD) physisch. Trägt das Ziel drei Kettenmale und fällt danach unter 18/24/30 % Max-HP, wird es hingerichtet. Die Marke auf dem Lebensbalken zeigt die Schwelle. Die Male verfallen.",
+        "en": "Leaps to the target (650): 120/200/280 (+90% bonus AD) physical. If the target carries three Chain Marks and falls below 18/24/30% max HP afterwards, it is executed. The health bar shows the threshold. The marks are consumed."
+      },
+      "type": "targeted",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 650,
+      "cooldown": [90, 75, 60],
+      "cost": 100,
+      "costType": "mana",
+      "flags": ["mobility"],
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [120, 200, 280], "bonusAd": 0.9 } },
+        { "kind": "hook", "id": "kerrin_r_execute" }
+      ]
+    }
+  ],
+  "spikeLevels": [6],
+  "spikeNote": {
+    "de": "Level 6: Henkersketten richten Ziele mit drei Malen hin - jede Verfolgung endet am Lebensbalken.",
+    "en": "Level 6: Headsman Chains executes targets with three marks - every chase ends at the health bar."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Haken und Wirbel", "en": "Hook and whirl" }, "sequence": ["Q", "W", "AA"] },
+    { "name": { "de": "Fessel und Schlag", "en": "Shackle and strike" }, "sequence": ["E", "AA", "Q", "W"] },
+    { "name": { "de": "Hinrichtung", "en": "Execution" }, "sequence": ["Q", "W", "E", "AA", "R"] }
+  ],
+  "scores": { "engage": 4, "peel": 1, "range": 1, "scaling": 3, "waveclear": 2, "mobility": 4 },
+  "voiceLines": {
+    "pick": { "de": "Ketten halten länger als Versprechen.", "en": "Chains outlast promises." },
+    "firstBlood": { "de": "Das erste Glied.", "en": "The first link." },
+    "kill": { "de": "Abgehakt.", "en": "Struck off." },
+    "death": { "de": "Die Kette reißt. Nie die Hand.", "en": "The chain snaps. Never the hand." },
+    "recall": { "de": "Zurück in den Schatten.", "en": "Back into the shadows." },
+    "taunt": { "de": "Drei Glieder. Dann bist du dran.", "en": "Three links. Then you're next." }
+  },
+  "silhouette": "lean hooded assassin wrapped in loops of chain, a hook blade on a chain in the hand, manacles on the wrists"
+}

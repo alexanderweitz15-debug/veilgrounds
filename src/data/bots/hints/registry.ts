@@ -8,13 +8,16 @@ import dagny from './dagny.json';
 import dorrak from './dorrak.json';
 import fenna from './fenna.json';
 import ferris from './ferris.json';
+import gneis from './gneis.json';
 import gorvam from './gorvam.json';
 import grimald from './grimald.json';
 import hagen from './hagen.json';
 import harrow from './harrow.json';
+import henrike from './henrike.json';
 import ilvane from './ilvane.json';
 import isolde from './isolde.json';
 import kaelen from './kaelen.json';
+import kerrin from './kerrin.json';
 import kiran from './kiran.json';
 import lio from './lio.json';
 import lysa from './lysa.json';
@@ -42,13 +45,16 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   dorrak,
   fenna,
   ferris,
+  gneis,
   gorvam,
   grimald,
   hagen,
   harrow,
+  henrike,
   ilvane,
   isolde,
   kaelen,
+  kerrin,
   kiran,
   lio,
   lysa,

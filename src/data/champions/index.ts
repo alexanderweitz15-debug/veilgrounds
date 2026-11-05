@@ -32,6 +32,9 @@ import wren from './wren.json';
 import sev from './sev.json';
 import fenna from './fenna.json'; // champ-support (#29)
 import vargrim from './vargrim.json';
+import gneis from './gneis.json'; // swarm champs-a
+import kerrin from './kerrin.json';
+import henrike from './henrike.json';
 import rovena from './rovena.json';
 import dorrak from './dorrak.json';
 import tilda from './tilda.json';
@@ -66,6 +69,9 @@ const raw = {
   sev,
   fenna,
   vargrim,
+  gneis,
+  kerrin,
+  henrike,
   rovena,
   dorrak,
   tilda,

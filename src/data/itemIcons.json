@@ -60,7 +60,12 @@
     "stiefel_hast": { "glyph": "bootGear", "hue": 44, "sat": 60, "accent": "gear", "accentHue": 42 },
     "windschwinge": { "glyph": "arrowBundle", "hue": 42, "sat": 70, "accent": "wing", "accentHue": 190 },
     "faeulnisstab": { "glyph": "knotStaff", "hue": 110, "sat": 45, "accent": "leaf", "accentHue": 100 },
-    "seeigelpanzer": { "glyph": "wallHeart", "hue": 205, "sat": 45, "accent": "fang", "accentHue": 40 }
+    "seeigelpanzer": { "glyph": "wallHeart", "hue": 205, "sat": 45, "accent": "fang", "accentHue": 40 },
+    "sensenschwert": { "glyph": "brokenBlade", "hue": 110, "sat": 40, "accent": "drop", "accentHue": 100 },
+    "bannmantel": { "glyph": "runeCloak", "hue": 285, "sat": 45, "accent": "shield", "accentHue": 280 },
+    "notanker": { "glyph": "belt", "hue": 135, "sat": 35, "accent": "heart", "accentHue": 355 },
+    "stiefel_magie": { "glyph": "bootGear", "hue": 272, "sat": 45, "accent": "moon", "accentHue": 270 },
+    "stiefel_zaeh": { "glyph": "bootPlate", "hue": 120, "sat": 35, "accent": "root", "accentHue": 110 }
   },
   "runes": {
     "_doc": "path hues: Präzision 48, Dominanz 355, Zauberei 215, Entschlossenheit 120, Inspiration 180",

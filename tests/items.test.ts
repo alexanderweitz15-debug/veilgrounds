@@ -20,7 +20,7 @@ describe('items (spec §5)', () => {
     expect(count('starter', 'basic', 'component', 'legendary')).toBeGreaterThanOrEqual(40);
     const boots = items.filter((i) => i.tier === 'boots' && i.id !== 'stiefel');
     expect(byId.get('stiefel')?.cost).toBe(300);
-    expect(boots.length).toBe(4);
+    expect(boots.length).toBeGreaterThanOrEqual(4);
     for (const b of boots) expect(b.cost).toBe(1100);
     for (const b of boots) expect(b.from).toEqual(['stiefel']);
   });

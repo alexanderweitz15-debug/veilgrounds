@@ -6,12 +6,12 @@
     "trank"
   ],
   "standard": {
-    "boots": "stiefel_hast",
+    "boots": "stiefel_magie",
     "core": [
       "brandglas",
       "schleierstab",
       "funkenkelch",
-      "frostkern"
+      "bannmantel"
     ]
   },
   "vsAD": {

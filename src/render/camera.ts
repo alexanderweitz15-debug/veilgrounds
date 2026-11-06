@@ -4,7 +4,7 @@ import { MAP_SIZE } from './coords';
 
 export const PITCH = THREE.MathUtils.degToRad(56);
 const FOV = 38;
-const MIN_DIST = 2000;
+const MIN_DIST = 1400; // A11: LoL lets you zoom in much closer
 // LoL: the default zoom is the maximum (no zooming out past it). 2500 puts a champion (~170 tall) at ~10 % of the
 // screen height like LoL (docs/DECISIONS.md "Maßstab"; was 2750 = 9 %)
 const MAX_DIST = 2500;

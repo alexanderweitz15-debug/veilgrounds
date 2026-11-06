@@ -17,6 +17,8 @@ import { champions } from '../data/champions';
 import { growScale, sproutEntity } from './plantFx';
 import { minionId, MONSTER_SPRITE, type ChampionAtlas, type MinionKind } from './champions';
 
+/** Snapshot step (units) above which a non-walking minion / monster counts as shoved (A8). */
+const PUSH_SHUFFLE_U = 3;
 const CAPACITY: Record<SpriteKey, number> = { mira: 10, champ: 10, melee: 96, caster: 96, siege: 32, super: 32, dummy: 8, monster: 32 };
 const FLASH_MS = 140;
 const LUNGE_MS = 220;
@@ -296,6 +298,9 @@ export class Units {
         let sy = 1;
         if (e.moving) {
           bob = Math.abs(Math.sin(tSec * 9 + e.id)) * size * 0.04;
+        } else if (e.kind !== Kind.Champion && Math.abs(e.x - e.px) + Math.abs(e.y - e.py) > PUSH_SHUFFLE_U) {
+          // A8: shoved aside by a collision (not walking): a short shuffle at half the walk rate instead of gliding
+          bob = Math.abs(Math.sin(tSec * 4.5 + e.id)) * size * 0.03;
         } else {
           sy = 1 + Math.sin(tSec * 2.2 + e.id) * 0.012;
         }

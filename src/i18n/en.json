@@ -1185,5 +1185,10 @@
   "classic.rankMine": "My rank: {rank}",
   "profile.deathsPer30": "Deaths per 30 min",
   "profile.dmgPerMin": "Damage/min",
-  "profile.killsPer30": "Kills per 30 min"
+  "profile.killsPer30": "Kills per 30 min",
+  "set.cameraSemiLock": "Semi-locked camera (follows near the edge)",
+  "sandbox.champion": "Switch champion …",
+  "classic.spectate": "Spectate (bots vs bots)",
+  "spec.pause": "Pause",
+  "spec.speed": "Speed"
 }

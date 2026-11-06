@@ -101,7 +101,7 @@ function mainMenu(): void {
 function classicLobby(): void {
   const s = screen();
   void loadClassicLobby().then(({ renderClassicLobby, renderLoading }) => {
-    if (s.isConnected) renderClassicLobby(s, mainMenu, (cfg) => renderLoading(screen(), cfg, () => start(cfg)));
+    if (s.isConnected) renderClassicLobby(s, mainMenu, (cfg) => renderLoading(screen(), cfg, () => start(cfg)), (cfg) => renderLoading(screen(), cfg, () => spectate(cfg)));
   });
 }
 
@@ -159,6 +159,19 @@ function watchReplay(replay: Replay, start: number, back: () => void): void {
   void Promise.all([loadGame(), import('./replay/replayLink'), import('./ui/replayBar')]).then(([{ Game }, { replayLink }, { replayMount }]) => {
     const link = replayLink(replay, replay.humanSlot ?? 0, start);
     new Game(app, replay.config, () => back(), { link, clock: link.clock, silent: () => link.speed > 2, mount: replayMount(link) });
+  });
+}
+
+/** Watch a bot-vs-bot classic game live (read-only worker link, view switch + speed bar). */
+function spectate(config: SimConfig): void {
+  disposeMenu?.();
+  disposeMenu = null;
+  app.textContent = '';
+  void Promise.all([loadGame(), import('./game/link'), import('./ui/spectateBar')]).then(([{ Game }, { workerLink }, { spectateMount }]) => {
+    const slot = config.players[0]?.slot ?? 0;
+    const link = workerLink(config, slot);
+    link.send = () => undefined; // nobody plays
+    new Game(app, config, () => mainMenu(), { link, mount: spectateMount(link, config) });
   });
 }
 
@@ -220,7 +233,12 @@ function afterGame(config: SimConfig | null, r?: SessionResult): void {
   if (!config || !r) return mainMenu();
   // finished game: keep the replay for the replay browser (IndexedDB, capped; no-op when unavailable)
   if (r.replay && r.replay.ticks >= 1800) void import('./replay/store').then((m) => m.saveReplay(r.replay!)).catch(() => undefined);
-  if (r.retry) return start({ ...structuredClone(config), seed: (Math.random() * 2 ** 31) | 0 });
+  if (r.retry) {
+    const next = { ...structuredClone(config), seed: (Math.random() * 2 ** 31) | 0 };
+    const me = next.players.find((p) => p.isHuman);
+    if (r.champion && me) (me.champion = r.champion), delete me.runes; // sandbox champion picker: default runes of the new champion
+    return start(next);
+  }
   // match history for the training plan (IndexedDB; no-op when unavailable)
   if (r.summary.duration >= 60 && config.trainer?.scenario !== 'tutorial') void import('./stats/history').then((h) => h.saveRecord(h.recordFromSummary(r.summary, Date.now()))).catch(() => undefined);
   const auto = (config.mode === 'classic' || config.mode === 'laneOnly') && r.summary.duration >= 60;

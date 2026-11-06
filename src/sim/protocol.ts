@@ -7,6 +7,8 @@ export type ToWorker =
   | { type: 'cmd'; cmd: Command }
   | { type: 'pause'; paused: boolean }
   | { type: 'speed'; speed: number }
+  /** Spectator: whose snapshot (fog, HUD) the client receives. */
+  | { type: 'view'; slot: number }
   | { type: 'getReplay' }
   /** F9 overlay: latest bot decision rows (answered with 'botDebug'). */
   | { type: 'getBotDebug' };

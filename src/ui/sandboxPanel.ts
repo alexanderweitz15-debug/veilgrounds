@@ -6,6 +6,8 @@ import './trainer.css';
 import type { CheatOp } from '../sim/types';
 import type { PlayerHud } from '../sim/snapshot';
 import { t } from '../i18n';
+import { CHAMPION_DATA } from '../sim/champions';
+import { champName } from './names';
 
 export type SendCheat = (op: CheatOp, value?: number) => void;
 
@@ -23,7 +25,7 @@ export class SandboxPanel {
   private readonly god: HTMLButtonElement;
   private readonly onKey: (e: KeyboardEvent) => void;
 
-  constructor(parent: HTMLElement, send: SendCheat, arm?: (a: 'teleport' | 'spawnDummy') => void) {
+  constructor(parent: HTMLElement, send: SendCheat, arm?: (a: 'teleport' | 'spawnDummy') => void, switchChampion?: (id: string) => void) {
     this.root = el('div', 'sbx-panel', parent);
     // clicks here must not reach the game canvas (move orders)
     this.root.addEventListener('mousedown', (e) => e.stopPropagation());
@@ -34,6 +36,14 @@ export class SandboxPanel {
       b.addEventListener('click', fn);
       return b;
     };
+    // champion picker: restarts the sandbox as the chosen champion (new champions can be tried right away)
+    if (switchChampion) {
+      const pickRow = el('div', 'sbx-row', this.root);
+      const sel = el('select', '', pickRow);
+      el('option', '', sel, t('sandbox.champion')).value = '';
+      for (const id of Object.keys(CHAMPION_DATA).sort((a, b) => champName(a).localeCompare(champName(b)))) el('option', '', sel, champName(id)).value = id;
+      sel.addEventListener('change', () => sel.value && switchChampion(sel.value));
+    }
     // level
     const lvlRow = el('div', 'sbx-row', this.root);
     const lvl = el('select', '', lvlRow);

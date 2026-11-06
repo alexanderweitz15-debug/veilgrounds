@@ -4,6 +4,7 @@
 import type { Sim } from '../sim';
 import { isStructure, sec } from '../types';
 import { dealDamage } from '../damage';
+import { petsOf, removePet, spawnPet } from '../summons';
 import { canTarget } from '../systems/attack';
 import { cooldownLeft, enemiesInRadius, reduceCooldown, rv } from '../systems/abilities';
 import type { ChampionHooks, ChampionVisuals, VisualObject } from './hooks';
@@ -23,6 +24,8 @@ interface Turret {
   until: number;
   next: number;
   rank: number;
+  /** The turret as a real unit (HP, can be attacked); it dies with its pet. */
+  pet: number;
   /** Damage multiplier fixed at deploy time (overwound deploy). */
   boost: number;
   /** Last shot (visual). */
@@ -31,6 +34,7 @@ interface Turret {
 
 const SPRING = 'henrikeSpring';
 const TURRET = 'henrikeTurret';
+const TAG = 'henrike_turret';
 
 const springOf = (sim: Sim, eid: number): Spring => {
   const m = hookState<Spring>(sim, SPRING);
@@ -54,7 +58,10 @@ export const henrikeOverwound = (sim: Sim, eid: number): boolean => (peekState<S
 /** Live turret of Henrike, or null. */
 export function henrikeTurret(sim: Sim, eid: number): Turret | null {
   const t = peekState<Turret>(sim, TURRET)?.get(eid);
-  return t && t.until > sim.tick ? t : null;
+  if (!t || t.until <= sim.tick || !petsOf(sim, eid, TAG).includes(t.pet)) return null;
+  t.x = sim.c.Pos.x[t.pet]!;
+  t.y = sim.c.Pos.y[t.pet]!;
+  return t;
 }
 
 /** Her attack target if the turret reaches it, else the nearest enemy champion in seek range. */
@@ -121,7 +128,10 @@ export const hooks: ChampionHooks = {
     henrike_w_turret(sim, ctx) {
       if (ctx.phase !== 'cast') return;
       const m = hookState<Turret>(sim, TURRET);
+      for (const old of petsOf(sim, ctx.caster, TAG)) removePet(sim, old);
+      const pet = spawnPet(sim, { owner: ctx.caster, tag: TAG, x: ctx.x, y: ctx.y, ticks: sec(V.turret.sec), hp: V.turret.hp[ctx.rank - 1], armor: V.turret.armor, mr: V.turret.armor, radius: 40, vision: 400 });
       m.set(ctx.caster, {
+        pet,
         x: ctx.x, y: ctx.y, start: sim.tick, until: sim.tick + sec(V.turret.sec), next: sim.tick + V.turret.everyTicks, rank: ctx.rank,
         boost: henrikeFull(sim, ctx.caster) ? V.spring.overDmg : 1, shot: null,
       });

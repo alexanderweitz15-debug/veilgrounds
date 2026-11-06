@@ -19,6 +19,10 @@ const anyUnit = (): boolean => true;
 const championLike = (e: SnapEntity): boolean => e.kind === Kind.Champion || !!e.look;
 
 const EDGE_PX = 20;
+/** A12: second, half-speed edge zone just inside the full-speed one. */
+const EDGE_SOFT_PX = 40;
+/** A5: semi-lock follows once the champion is further than this share of the half screen from the centre. */
+const SEMI_LOCK_ZONE = 0.35;
 const EDGE_SPEED = 4200; // units per second at cameraSpeed 1 (LoL-like brisk pan; 2600 felt sluggish)
 // held right button: re-path every 50 ms (smooth steering; 140 ms felt like 7 Hz steps)
 const HOLD_MOVE_MS = 50;
@@ -486,7 +490,14 @@ export class InputController {
     if (this.centerHeld) this.cameraPeekUntil = 0;
     // minimap click/hold peeks at a spot even with the camera locked (like LoL); the lock resumes afterwards
     if (me && (settings.cameraLocked || this.centerHeld) && now >= this.cameraPeekUntil) {
-      rig.focus(state.x(me), state.y(me));
+      const fx = state.x(me);
+      const fy = state.y(me);
+      if (settings.cameraSemiLock && !this.centerHeld) {
+        // A5: free inside the middle 35 % of the screen, outside it the focus eases towards the champion
+        const p = rig.project(fx, fy, 0, r.width, r.height);
+        const off = Math.max(Math.abs(p.sx / r.width - 0.5), Math.abs(p.sy / r.height - 0.5)) * 2;
+        if (off > SEMI_LOCK_ZONE) rig.focus(rig.tx + (fx - rig.tx) * 0.2, rig.ty + (fy - rig.ty) * 0.2);
+      } else rig.focus(fx, fy);
       return;
     }
     if (this.dragFrom) {
@@ -500,8 +511,12 @@ export class InputController {
       let dy = 0;
       if (mx <= EDGE_PX) dx = -1;
       else if (mx >= r.width - EDGE_PX) dx = 1;
+      else if (mx <= EDGE_SOFT_PX) dx = -0.5;
+      else if (mx >= r.width - EDGE_SOFT_PX) dx = 0.5;
       if (my <= EDGE_PX) dy = 1;
       else if (my >= r.height - EDGE_PX) dy = -1;
+      else if (my <= EDGE_SOFT_PX) dy = 0.5;
+      else if (my >= r.height - EDGE_SOFT_PX) dy = -0.5;
       if (dx || dy) rig.pan(dx * sp, dy * sp);
     }
   }

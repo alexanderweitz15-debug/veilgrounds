@@ -57,6 +57,8 @@ export interface Settings {
   /** LoL "quick cast with indicator": hold an ability key to aim (range + shape at the cursor), release to cast. */
   castIndicator: boolean;
   edgeScroll: boolean;
+  /** A5: with the camera lock on, only follow once the champion leaves the middle of the screen (smooth). */
+  cameraSemiLock: boolean;
   cameraLocked: boolean;
   /** Enter fullscreen + Keyboard Lock on game start so Ctrl+W/Q reach the game (Chromium). */
   fullscreenLock: boolean;
@@ -127,6 +129,7 @@ const DEFAULTS: Settings = {
   attackMoveOnCursor: false,
   castIndicator: true,
   edgeScroll: true,
+  cameraSemiLock: false,
   cameraLocked: false,
   fullscreenLock: true,
   volume: 0.6,

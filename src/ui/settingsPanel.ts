@@ -119,6 +119,7 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
     row(t('set.attackMoveTargetCursor'), check('attackMoveNearCursor'));
     row(t('set.castIndicator'), check('castIndicator'));
     row(t('set.edgeScroll'), check('edgeScroll'));
+    row(t('set.cameraSemiLock'), check('cameraSemiLock'));
     row(t('set.cameraLocked'), check('cameraLocked'));
     row(t('set.fullscreenLock'), check('fullscreenLock'));
     row(t('set.botToxicity'), check('botToxicity'));

@@ -101,7 +101,7 @@ function mainMenu(): void {
 function classicLobby(): void {
   const s = screen();
   void loadClassicLobby().then(({ renderClassicLobby, renderLoading }) => {
-    if (s.isConnected) renderClassicLobby(s, mainMenu, (cfg) => renderLoading(screen(), cfg, () => start(cfg)));
+    if (s.isConnected) renderClassicLobby(s, mainMenu, (cfg) => renderLoading(screen(), cfg, () => start(cfg)), (cfg) => renderLoading(screen(), cfg, () => spectate(cfg)));
   });
 }
 
@@ -151,6 +151,19 @@ function watchReplay(replay: Replay, start: number, back: () => void): void {
   void Promise.all([loadGame(), import('./replay/replayLink'), import('./ui/replayBar')]).then(([{ Game }, { replayLink }, { replayMount }]) => {
     const link = replayLink(replay, replay.humanSlot ?? 0, start);
     new Game(app, replay.config, () => back(), { link, clock: link.clock, silent: () => link.speed > 2, mount: replayMount(link) });
+  });
+}
+
+/** Watch a bot-vs-bot classic game live (read-only worker link, view switch + speed bar). */
+function spectate(config: SimConfig): void {
+  disposeMenu?.();
+  disposeMenu = null;
+  app.textContent = '';
+  void Promise.all([loadGame(), import('./game/link'), import('./ui/spectateBar')]).then(([{ Game }, { workerLink }, { spectateMount }]) => {
+    const slot = config.players[0]?.slot ?? 0;
+    const link = workerLink(config, slot);
+    link.send = () => undefined; // nobody plays
+    new Game(app, config, () => mainMenu(), { link, mount: spectateMount(link, config) });
   });
 }
 

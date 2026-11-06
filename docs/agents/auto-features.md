@@ -36,3 +36,4 @@ Branch `auto/features` (from origin/main). Area: game features, UI/UX, QoL, poli
 - [x] A11 zoom min 1400, A12 soft edge zone (20 px full, 40 px half), A5 semi-lock camera option (setting cameraSemiLock; follows with lerp 0.2 once the champion is >35 % off centre).
 - [x] Sandbox champion picker in the panel (restarts as the chosen champion, default runes; ExitOpts.champion).
 - [x] A8 shoved minions/monsters shuffle (half-rate bob when moved >3 u per tick without walking). Champions excluded (dashes would look wrong).
+- [x] Live bot-vs-bot spectator: classic lobby button 'Zuschauen'; all 10 slots bots, read-only worker link (send dropped), worker 'view' message, bar (pause, 1-8x, any player, follow/free cam) in src/ui/spectateBar.ts. Browser-verified incl. view switch.

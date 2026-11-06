@@ -60,6 +60,9 @@ onmessage = (ev: MessageEvent<ToWorker>) => {
     case 'speed':
       speed = m.speed;
       break;
+    case 'view':
+      slot = m.slot;
+      break;
     case 'getReplay':
       if (sim && rec) post({ type: 'replay', replay: { ...rec.finish(sim, bots?.log.toNDJSON()), ...(rewound ? { ticks: 0 } : {}) } });
       break;

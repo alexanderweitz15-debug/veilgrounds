@@ -1183,5 +1183,8 @@
   "profile.dmgPerMin": "Schaden/min",
   "profile.killsPer30": "Kills pro 30 min",
   "set.cameraSemiLock": "Kamera halb gesperrt (folgt erst am Rand)",
-  "sandbox.champion": "Champion wechseln …"
+  "sandbox.champion": "Champion wechseln …",
+  "classic.spectate": "Zuschauen (Bots gegen Bots)",
+  "spec.pause": "Pause",
+  "spec.speed": "Tempo"
 }

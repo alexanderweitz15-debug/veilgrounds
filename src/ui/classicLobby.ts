@@ -104,7 +104,15 @@ export function buildClassicConfig(): SimConfig {
   return cfg;
 }
 
-export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStart: (cfg: SimConfig) => void): void {
+/** Bot-vs-bot game for spectating: the lobby's human slot becomes a bot of the chosen rank (nobody can send commands). */
+export function buildSpectateConfig(): SimConfig {
+  const cfg = buildClassicConfig();
+  const donor = cfg.players.find((p) => !p.isHuman && p.bot);
+  cfg.players = cfg.players.map((p) => (p.isHuman ? { ...p, isHuman: false, bot: { ...(donor?.bot ?? { rank: RANKS[pick.rank]!, variance: pick.variance }), name: champName(p.champion) } } : p));
+  return cfg;
+}
+
+export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStart: (cfg: SimConfig) => void, onSpectate?: (cfg: SimConfig) => void): void {
   root.textContent = '';
   root.classList.add('menu-screen', 'classic-lobby');
   const panel = el('div', 'menu-panel classic-panel', root);
@@ -382,6 +390,7 @@ export function renderClassicLobby(root: HTMLElement, onBack: () => void, onStar
 
   const row = el('div', 'row-buttons', panel);
   el('button', 'menu-btn secondary', row, t('menu.back')).addEventListener('click', onBack);
+  if (onSpectate) el('button', 'menu-btn secondary', row, t('classic.spectate')).addEventListener('click', () => onSpectate(buildSpectateConfig()));
   el('button', 'menu-btn', row, t('lobby.start')).addEventListener('click', () => onStart(buildClassicConfig()));
 }
 

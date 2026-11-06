@@ -224,14 +224,14 @@
   },
   "fluid": {
     "note": "src/ai/fluid.ts: orbwalk shuffle after each auto + idle strafe (user 2026-11-04: bots stand too much). Low ranks shuffle less and later.",
-    "shufflePct": { "iron": 35, "silver": 55, "gold": 70, "diamond": 88, "challenger": 95 },
+    "shufflePct": { "iron": 25, "silver": 40, "gold": 55, "diamond": 75, "challenger": 85 },
     "shuffleStep": { "iron": 55, "gold": 80, "challenger": 105 },
     "minGapTicks": 9,
     "reattackLeadTicks": 2,
     "rangeMargin": 25,
     "idleDelayTicks": { "iron": 18, "gold": 6, "challenger": 3 },
-    "strafePauseTicks": { "iron": 8, "gold": 3, "challenger": 1 },
-    "strafeRadius": 110
+    "strafePauseTicks": { "iron": 18, "gold": 10, "challenger": 7 },
+    "strafeRadius": 80
   },
   "fight": {
     "note": "Rank-dependent fight-or-flight (user 2026-11-05: Challenger a bit safer, Bronze fights even at 10 % HP). Used by brain.ts retreat line, ganks/escape.ts, bot/trade.ts window.",

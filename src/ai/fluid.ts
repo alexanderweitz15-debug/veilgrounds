@@ -32,9 +32,13 @@ export interface FluidState {
   lastAtkStart: number;
   /** The last move came from the idle strafe (keep the anchor, short pause on arrival). */
   strafing: boolean;
+  /** Idle wander direction (unit vector) around the anchor: turned 45 deg per step, so the bot drifts in arcs instead
+   *  of ping-ponging (random points made every second step a reversal - looked like jitter). */
+  wx: number;
+  wy: number;
 }
 
-export const newFluid = (): FluidState => ({ reTarget: -1, reSerial: 0, reAt: 0, side: 1, ax: NaN, ay: NaN, stillSince: -1, nextStrafe: 0, lastAtkStart: -1, strafing: false });
+export const newFluid = (): FluidState => ({ reTarget: -1, reSerial: 0, reAt: 0, side: 1, ax: NaN, ay: NaN, stillSince: -1, nextStrafe: 0, lastAtkStart: -1, strafing: false, wx: 1, wy: 0 });
 
 /** `orbwalk` false: the reflex layer (new brain) schedules its own autos and orbwalk steps - only the idle strafe runs. */
 export function fluidPass(sim: Sim, eid: number, team: number, skill: number, st: FluidState, rng: Rng, ordered: boolean, orbwalk = true): Command | null {
@@ -76,7 +80,7 @@ export function fluidPass(sim: Sim, eid: number, team: number, skill: number, st
       dx /= d;
       dy /= d;
       const step = rankCurve(F.shuffleStep, skill) * (0.7 + 0.6 * rng.next());
-      st.side = -st.side;
+      if (rng.chance(0.25)) st.side = -st.side; // keep orbiting one way, flip now and then (alternating = ping-pong)
       // ranged vs champion: kite back while it stays in range; otherwise a sideways arc around the target
       const back = champ && Stats.range[eid]! > 300 && d + step * 0.7 < range - F.rangeMargin ? 0.7 : 0;
       const side = Math.sqrt(1 - back * back);
@@ -122,19 +126,24 @@ export function fluidPass(sim: Sim, eid: number, team: number, skill: number, st
   const bl = Math.hypot(bx, by) || 1;
   bx /= bl;
   by /= bl;
-  let ox = rng.next() * 2 - 1;
-  let oy = rng.next() * 2 - 1;
-  const ol = Math.hypot(ox, oy) || 1; // ponytail: no trig in bot code (determinism across engines)
-  ox /= ol;
-  oy /= ol;
+  // wander: rotate the direction by 45 deg (side as orbit sense), constants instead of trig (determinism)
+  const C45 = 0.7071067811865476;
+  if (rng.chance(0.2)) st.side = -st.side;
+  const wx = st.wx * C45 - st.wy * C45 * st.side;
+  const wy = st.wx * C45 * st.side + st.wy * C45;
+  let ox = wx;
+  let oy = wy;
   // never step toward the enemy side more than a little: reflect the forward component
   const fwd = -(ox * bx + oy * by);
   if (fwd > 0.3) {
     ox += bx * fwd * 2;
     oy += by * fwd * 2;
   }
-  const r = F.strafeRadius * (0.5 + 0.5 * rng.next());
-  return { t: 'move', x: st.ax + ox * r, y: st.ay + oy * r };
+  const ol = Math.hypot(ox, oy) || 1;
+  st.wx = ox / ol;
+  st.wy = oy / ol;
+  const r = F.strafeRadius * (0.6 + 0.4 * rng.next());
+  return { t: 'move', x: st.ax + st.wx * r, y: st.ay + st.wy * r };
 }
 
 function reset(st: FluidState): null {

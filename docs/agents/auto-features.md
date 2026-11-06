@@ -37,3 +37,10 @@ Branch `auto/features` (from origin/main). Area: game features, UI/UX, QoL, poli
 - [x] Sandbox champion picker in the panel (restarts as the chosen champion, default runes; ExitOpts.champion).
 - [x] A8 shoved minions/monsters shuffle (half-rate bob when moved >3 u per tick without walking). Champions excluded (dashes would look wrong).
 - [x] Live bot-vs-bot spectator: classic lobby button 'Zuschauen'; all 10 slots bots, read-only worker link (send dropped), worker 'view' message, bar (pause, 1-8x, any player, follow/free cam) in src/ui/spectateBar.ts. Browser-verified incl. view switch.
+
+## Round 3
+- [x] Spectator bar: own i18n keys spec.*, placed below the HP panel (.spec-bar).
+- [x] Emote strip: keybind action 'emote' (Z, rebindable), six phrases, shown as own speech bubble (always, even with voiceLines off). src/ui/emoteStrip.ts.
+- [x] Honor vote after classic games (src/ui/honorVote.ts, giveHonor in progression: +20 XP, honor level on profile card).
+- [x] Summoner tips show the value at the current level; minor rune tips show stat chips.
+- npm test (read from file): 158 files / 1974 tests pass.

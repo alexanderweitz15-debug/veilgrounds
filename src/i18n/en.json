@@ -1201,5 +1201,12 @@
   "emote.3": "Sorry!",
   "emote.4": "Well played",
   "emote.5": "Haha",
-  "emote.6": "Good game"
+  "emote.6": "Good game",
+  "honor.1": "Cool head",
+  "honor.2": "Great shotcalling",
+  "honor.3": "Teamwork",
+  "honor.hint": "Pick a teammate and a category (+20 XP). Once per game.",
+  "honor.level": "Honor level {n} ({given} given)",
+  "honor.thanks": "Honor given. Thanks!",
+  "honor.title": "Honor a teammate"
 }

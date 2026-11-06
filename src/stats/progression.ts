@@ -41,7 +41,13 @@ export interface MasteryEntry {
   wins: number;
   score: number;
 }
+export const HONOR = data.honor;
+/** Honor level from the number of honors given (1 + one per perLevel). */
+export const honorLevel = (given: number): number => 1 + Math.floor(Math.max(0, given) / HONOR.perLevel);
+
 export interface Progress {
+  /** Honors given to teammates after games (older saves: absent). */
+  honor?: number;
   /** Ladder points: 0 = Iron IV 0 LP; see rankInfo. */
   ladder: number;
   /** Ladder games played (placement bonus). */
@@ -331,4 +337,12 @@ export async function recordMatch(s: MatchSummary, opp: number | null, now = Dat
   ladderCache = next.ladder;
   await kvSet(PROGRESS_KEY, next);
   return delta;
+}
+
+/** One honor vote after a game: small XP reward, counts towards the honor level. Returns the new honor count. */
+export async function giveHonor(now = Date.now()): Promise<number> {
+  const p = await loadProgress(now);
+  const honor = (p.honor ?? 0) + 1;
+  await kvSet(PROGRESS_KEY, { ...p, honor, xp: p.xp + HONOR.xp });
+  return honor;
 }

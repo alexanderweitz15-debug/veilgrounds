@@ -1201,5 +1201,12 @@
   "emote.3": "Sorry!",
   "emote.4": "Gut gespielt",
   "emote.5": "Haha",
-  "emote.6": "Gutes Spiel"
+  "emote.6": "Gutes Spiel",
+  "honor.1": "Kühler Kopf",
+  "honor.2": "Gute Ansagen",
+  "honor.3": "Teamgeist",
+  "honor.hint": "Wähle einen Mitspieler und eine Kategorie (+20 XP). Nur einmal pro Partie.",
+  "honor.level": "Ehre-Level {n} ({given} vergeben)",
+  "honor.thanks": "Ehre vergeben. Danke!",
+  "honor.title": "Ehre vergeben"
 }

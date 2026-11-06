@@ -255,7 +255,7 @@ function showPostGame(config: SimConfig, r: SessionResult, progress?: import('./
     const replay = r.replay;
     // mistake list: bots from the bot log, the player from the replay; "replay moment" opens the viewer 5 s before it
     const errors = replay && (replay.botLog || replay.player) ? { list: buildErrorList(replay), onJump: (tick: number) => void import('./replay/timeline').then(({ momentTick }) => watchReplay(replay, momentTick(replay, tick), () => showPostGame(config, r, progress))) } : undefined;
-    renderPostGame(s, r.summary, mainMenu, isTrainerMode(config.mode) || config.mode === 'classic' ? () => afterGame(config, { ...r, retry: true, replay: undefined }) : undefined, errors, progress);
+    renderPostGame(s, r.summary, mainMenu, isTrainerMode(config.mode) || config.mode === 'classic' ? () => afterGame(config, { ...r, retry: true, replay: undefined }) : undefined, errors, progress, config.mode === 'classic' && r.summary.winner !== null ? (panel) => void import('./ui/honorVote').then((m) => m.renderHonor(panel, config.players)) : undefined);
   });
 }
 

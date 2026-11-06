@@ -1,7 +1,7 @@
 // Progression UI (src/stats/progression.ts): ladder / level / missions / mastery card for the profile screen and the
 // "this game" card of the post-game screen. Texts: i18n prog.*, mission.*, rank.*. Styles: profile.css (.pr-*).
 import { t } from '../i18n';
-import { MISSIONS, MASTERY_MAX, levelInfo, masteryLevel, masteryNext, rankInfo, type MissionState, type Progress, type ProgressDelta, type RankInfo } from '../stats/progression';
+import { MISSIONS, honorLevel, MASTERY_MAX, levelInfo, masteryLevel, masteryNext, rankInfo, type MissionState, type Progress, type ProgressDelta, type RankInfo } from '../stats/progression';
 import { champName } from './names';
 
 const ROMAN = ['', 'I', 'II', 'III', 'IV'];
@@ -58,6 +58,7 @@ export function renderProgressCard(root: HTMLElement, p: Progress): void {
     el('div', 'pr-sub', box, t(`prog.${kind}`));
     for (const m of list) missionRow(box, m);
   }
+  el('div', 'pr-sub', box, t('honor.level', { n: honorLevel(p.honor ?? 0), given: p.honor ?? 0 }));
   const mast = Object.entries(p.mastery).sort((a, b) => b[1].score - a[1].score).slice(0, 5);
   if (mast.length) {
     el('div', 'pr-sub', box, t('prog.mastery'));

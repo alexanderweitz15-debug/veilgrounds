@@ -3,7 +3,8 @@
 
 import { addComponent, addEntity, createWorld, removeEntity, query, type World } from 'bitecs';
 import { createComponents, type Components } from './ecs';
-import { loadMap, type MapData, type Pt } from './map';
+import type { MapData, Pt } from './map';
+import { mapFor } from './aramMap';
 import { Rng } from './rng';
 import { Kind, Team, type SimConfig, type SimEvent, type TickInput } from './types';
 import { systems } from './systems';
@@ -37,7 +38,7 @@ export function createSim(config: SimConfig): Sim {
   const sim: Sim = {
     world: createWorld(),
     c,
-    map: loadMap(),
+    map: mapFor(config),
     rng: new Rng(config.seed),
     config,
     tick: 0,

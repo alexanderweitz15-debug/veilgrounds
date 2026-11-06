@@ -10,6 +10,7 @@
 import type { Snapshot, SnapAudio } from '../sim/snapshot';
 import type { Command, PlayerSetup, SimConfig, SimEvent } from '../sim/types';
 import { Kind } from '../sim/types';
+import { mapFor } from '../sim/aramMap';
 import { loadMap, type MapData } from '../sim/map';
 import { Rng } from '../sim/rng';
 import { championData } from '../sim/champions';
@@ -334,7 +335,7 @@ export class GhostRunner {
     this.rng = new Rng((config.seed ^ 0x6057_c4a1) >>> 0);
     const params = buildBotParams(setup, this.rng, config.seed);
     const profile = profileAt(params.skill);
-    const map = (mapCache ??= loadMap());
+    const map = config.rules?.oneLane ? mapFor(config) : (mapCache ??= loadMap());
     const inner = new BotDecisionLog(4000, 2 * 1024 * 1024, 150);
     const log: DecisionLog = {
       push: (e) => {

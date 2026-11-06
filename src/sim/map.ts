@@ -31,6 +31,8 @@ export interface MapData {
   bushes: Circle[];
   objectives: Record<'leviathan' | 'kesselbrut' | 'schleierwaechter', Pt> & { nebelschleicher: Pt[] };
   nav: NavGrid;
+  /** Lanes with structures (absent = all three; one-lane map: mid). */
+  activeLanes?: LaneName[];
 }
 
 /**

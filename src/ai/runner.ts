@@ -7,7 +7,8 @@ import { fluidPass, newFluid, type FluidState } from './fluid';
 import { query } from 'bitecs';
 import { buildSnapshot, teamEvents, type Snapshot, type SnapAudio, type SnapEntity, type PlayerHud } from '../sim/snapshot';
 import type { Sim } from '../sim/sim';
-import { loadMap, type LaneName, type MapData } from '../sim/map';
+import type { LaneName, MapData } from '../sim/map';
+import { mapFor } from '../sim/aramMap';
 import { Rng } from '../sim/rng';
 import { Kind, isStructure, type PlayerSetup, type SimConfig, type SimEvent, type TeamId, type TickInput } from '../sim/types';
 import { sees } from '../sim/vision';
@@ -30,10 +31,6 @@ import { TeamAI } from './bot/teamai';
 import { utilityOn } from './utility/flag';
 import { attentionDebug, attentionProbe, ensureAttention, observeAttention } from './humanize/attention';
 import { detectErrors } from './errors';
-
-let mapCache: MapData | null = null;
-/** Static map (walls, lanes, camps); built once and shared by all bots. */
-const staticMap = (): MapData => (mapCache ??= loadMap());
 
 /** Decision-log throttle: an unchanged decision of a node is logged again at most every 5 s (heartbeat). */
 export const LOG_DEDUP_TICKS = 150;
@@ -98,6 +95,7 @@ export interface RunnerCost {
 }
 
 export class BotRunner {
+  private readonly map: MapData;
   readonly bots: BotSlot[] = [];
   /** Commands scheduled for a future tick (reaction delay, last-hit timing), in insertion order. */
   private queue: { tick: number; slot: number; action: BotAction }[] = [];
@@ -128,7 +126,8 @@ export class BotRunner {
     this.reflexOn = !!opts.reflex;
     this.fluidOn = !opts.noFluid;
     const rng = new Rng((config.seed ^ 0x5eed_b075) >>> 0);
-    this.teams = [new TeamAI(0, staticMap(), config.players, config.seed, this.log), new TeamAI(1, staticMap(), config.players, config.seed, this.log)];
+    this.map = mapFor(config);
+    this.teams = [new TeamAI(0, this.map, config.players, config.seed, this.log), new TeamAI(1, this.map, config.players, config.seed, this.log)];
     for (const p of [...config.players].sort((a, b) => a.slot - b.slot)) {
       if (!isBotSlot(p)) continue;
       // spec-bots §10: rank profile -> variance -> champion bias (rolled only) -> playstyle axes (src/ai/params.ts)
@@ -150,7 +149,7 @@ export class BotRunner {
         champ,
         build: BUILDS[p.champion] ?? null,
         profile,
-        map: staticMap(),
+        map: this.map,
         players: config.players,
         toxic: config.botToxicity ?? true,
         lang: config.botLang ?? 'de',

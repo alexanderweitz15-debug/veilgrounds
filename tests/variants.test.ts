@@ -7,6 +7,10 @@ import { variantConfig } from '../src/game/modes';
 import { variantRules, VARIANTS } from '../src/sim/rules';
 import { jungleState } from '../src/sim/systems/jungle';
 import { startRecall } from '../src/sim/systems/economy';
+import { aramMap } from '../src/sim/aramMap';
+import { findPath, walkable, loadMap } from '../src/sim/map';
+import { towerState } from '../src/sim/systems/towers';
+import { Kind } from '../src/sim/types';
 
 describe('variants', () => {
   it('ARAM: 10 distinct random champions, all mid, no Bannen; same seed same roster', () => {
@@ -45,4 +49,39 @@ describe('variants', () => {
     const dealt = sim.slots.some((e) => Champ.xp[e]! > 0 && Champ.level[e]! > (variantRules(id).startLevel ?? 1));
     expect(dealt).toBe(true);
   }, 120_000);
+});
+
+describe('ARAM map and relics', () => {
+  it('one lane: nexus to nexus is walkable, the side lanes are walled in, structures only mid', () => {
+    const m = aramMap();
+    const classic = loadMap();
+    const a = m.sides[0].nexus;
+    const b = m.sides[1].nexus;
+    const path = findPath(m.nav, a.x, a.y, b.x, b.y);
+    let len = 0;
+    let px = a.x;
+    let py = a.y;
+    for (const p of path) (len += Math.hypot(p.x - px, p.y - py), (px = p.x), (py = p.y));
+    expect(Math.hypot(px - b.x, py - b.y)).toBeLessThan(100);
+    expect(len).toBeLessThan(1.25 * Math.hypot(b.x - a.x, b.y - a.y));
+    for (const side of [0, 1]) for (const lane of ['top', 'bot'] as const) for (const p of classic.sides[side]!.towers[lane]) expect(walkable(m.nav, p.x, p.y)).toBe(false);
+    const sim = createSim(variantConfig('aram', 'gold', 5));
+    const towers = towerState(sim).list;
+    expect(towers.filter((r) => r.kind === Kind.Inhibitor).length).toBe(2);
+    expect(towers.every((r) => r.lane === 1 || r.lane === 255)).toBe(true);
+  });
+
+  it('a relic heals the champion on it, then respawns', () => {
+    const sim = createSim(variantConfig('aram', 'gold', 5));
+    const me = sim.slots[0]!;
+    const rel = (sim.state.relics as { x: number; y: number; respawnAt: number }[])[0]!;
+    sim.c.Hp.cur[me] = sim.c.Hp.max[me]! * 0.2;
+    sim.c.Pos.x[me] = rel.x;
+    sim.c.Pos.y[me] = rel.y;
+    step(sim);
+    expect(sim.c.Hp.cur[me]).toBeGreaterThan(sim.c.Hp.max[me]! * 0.45);
+    expect(rel.respawnAt).toBeGreaterThan(sim.tick);
+    while (sim.tick < rel.respawnAt + 2) step(sim);
+    expect(rel.respawnAt).toBe(-1);
+  });
 });

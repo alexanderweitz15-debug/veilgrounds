@@ -7,5 +7,6 @@
   { "id": "reinigen", "name": { "de": "Reinigen", "en": "Cleanse" }, "cooldown": 210, "range": 0, "castTime": 0, "movesWhileCasting": true },
   { "id": "teleport", "name": { "de": "Teleport", "en": "Teleport" }, "cooldown": 360, "cooldownLate": 240, "range": 0, "topUnlockGold": 1500, "castTime": 0, "movesWhileCasting": false },
   { "id": "barriere", "name": { "de": "Barriere", "en": "Barrier" }, "cooldown": 180, "range": 0, "castTime": 0, "movesWhileCasting": true },
+  { "id": "schneeball", "name": { "de": "Schneeball", "en": "Snowball" }, "cooldown": 80, "range": 900, "castTime": 0, "movesWhileCasting": true },
   { "id": "bannen", "name": { "de": "Bannen", "en": "Smite" }, "cooldown": 90, "range": 500, "castTime": 0, "movesWhileCasting": true }
 ]

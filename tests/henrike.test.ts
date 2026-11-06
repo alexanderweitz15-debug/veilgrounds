@@ -126,6 +126,19 @@ describe('W Clockwork Turret', () => {
     expect(obj).toBeDefined();
   });
 
+  it('the turret is a real unit: damage kills it and it stops shooting', async () => {
+    const { petsOf } = await import('../src/sim/summons');
+    const { dealDamage } = await import('../src/sim/damage');
+    const { sim, m } = setup();
+    step(sim, [{ slot: 0, cmd: cast(1, CX + 600, CY) }]);
+    steps(sim, 10);
+    const pet = petsOf(sim, m, 'henrike_turret')[0]!;
+    expect(sim.c.Hp.max[pet]!).toBeGreaterThan(100);
+    dealDamage(sim, m, pet, 9999, 'true');
+    step(sim);
+    expect(henrikeTurret(sim, m)).toBeNull();
+  });
+
   it('a second W replaces the first turret (one at a time)', () => {
     const { sim, m } = setup();
     step(sim, [{ slot: 0, cmd: cast(1, CX + 300, CY) }]);

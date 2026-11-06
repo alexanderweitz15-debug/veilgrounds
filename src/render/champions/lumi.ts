@@ -15,11 +15,11 @@ const STAFF = m('#4a3f66', 'wood');
 export function moonCrescent(c: PropCtx): void {
   const { st, rig, pose } = c;
   const r = rig.body.headR;
-  const o = at(rig.head, [0, r * 0.9 + Math.sin(pose.t * TAU) * 1.2, -r * 1.7]);
+  const o = at(rig.head, [0, r * 1.5 + Math.sin(pose.t * TAU) * 1.2, -r * 1.3]);
   st.add(o, -1.5, (p) => {
     const q = st.p(o);
     const k = st.view.k;
-    const R = (r * 1.9 + pose.glow * 2) * k;
+    const R = (r * 2.9 + pose.glow * 2) * k;
     const ctx = p.ctx;
     ctx.save();
     ctx.beginPath();
@@ -28,7 +28,7 @@ export function moonCrescent(c: PropCtx): void {
     ctx.closePath();
     ctx.fillStyle = MOON;
     ctx.strokeStyle = MOON_RIM;
-    ctx.lineWidth = 1.3 * k;
+    ctx.lineWidth = 1.8 * k;
     ctx.fill();
     ctx.stroke();
     ctx.restore();

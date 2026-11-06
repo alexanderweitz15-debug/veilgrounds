@@ -1,0 +1,147 @@
+{
+  "id": "ysmay",
+  "name": "Ysmay Degenfeld",
+  "title": { "de": "die Fechtmeisterin", "en": "the Fencing Master" },
+  "roles": ["top"],
+  "archetype": "parry_duelist",
+  "botBias": { "aggression": 1, "tradeLength": 1 },
+  "trainingPurpose": {
+    "de": "Eine Parade-Duellantin lesen: nicht in die 0,8-s-Parade hineinschlagen, Fähigkeiten erst nach der Parade werfen und ihren Konter vermeiden.",
+    "en": "Reading a parry duelist: do not hit into the 0.8 s parry, throw abilities only after it and dodge her riposte."
+  },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 640,
+    "hpGrowth": 106,
+    "hpRegen": 8,
+    "hpRegenGrowth": 0.8,
+    "mana": 300,
+    "manaGrowth": 40,
+    "manaRegen": 7,
+    "manaRegenGrowth": 0.7,
+    "ad": 64,
+    "adGrowth": 3.4,
+    "armor": 33,
+    "armorGrowth": 4.5,
+    "mr": 32,
+    "mrGrowth": 1.5,
+    "as": 0.7,
+    "asGrowth": 2.8,
+    "range": 175,
+    "ms": 345,
+    "windup": 0.25,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Riposte", "en": "Riposte" },
+    "desc": {
+      "de": "Eine gelungene Parade gibt 3 s lang +30 % Angriffstempo und senkt die Abklingzeit der Parade um die Hälfte.",
+      "en": "A successful parry gives +30% attack speed for 3 s and cuts the parry's remaining cooldown in half."
+    },
+    "hooks": ["ysmay_riposte"]
+  },
+  "abilities": [
+    {
+      "id": "ysmay_q",
+      "name": { "de": "Ausfallstoß", "en": "Lunge" },
+      "desc": {
+        "de": "Sprung 350 nach vorn, stoppt am ersten Gegner: 60/100/140/180/220 (+80 % Bonus-AD) physischer Schaden, 25 % Slow für 1 s.",
+        "en": "Dash 350 forward, stops at the first enemy: 60/100/140/180/220 (+80% bonus AD) physical damage, 25% slow for 1 s."
+      },
+      "type": "dash",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 350,
+      "cooldown": [9, 8.5, 8, 7.5, 7],
+      "cost": [30, 35, 40, 45, 50],
+      "costType": "mana",
+      "speed": 1700,
+      "distance": 350,
+      "width": 120,
+      "radius": 140,
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [60, 100, 140, 180, 220], "bonusAd": 0.8 } },
+        { "kind": "slow", "pct": 25, "duration": 1 },
+        { "kind": "hook", "id": "ysmay_q_lunge" }
+      ]
+    },
+    {
+      "id": "ysmay_w",
+      "name": { "de": "Parade", "en": "Parry" },
+      "desc": {
+        "de": "0,8 s Parade: jeder Schaden, den Ysmay erleidet, wird zurückgegeben. Trifft ein Champion in 500, wird er 1/1,25/1,5/1,75/2 s betäubt (Riposte).",
+        "en": "0.8 s parry: all damage Ysmay takes is negated. A champion hitting her within 500 is stunned for 1/1.25/1.5/1.75/2 s (riposte)."
+      },
+      "type": "self",
+      "castTime": 0,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [16, 14.5, 13, 11.5, 10],
+      "cost": 40,
+      "costType": "mana",
+      "duration": 0.8,
+      "effects": [{ "kind": "hook", "id": "ysmay_w_parry" }]
+    },
+    {
+      "id": "ysmay_e",
+      "name": { "de": "Klingenwirbel", "en": "Blade Whirl" },
+      "desc": {
+        "de": "Kreis 300 um Ysmay: 50/85/120/155/190 (+60 % Bonus-AD) physischer Schaden, 30 % Slow für 1,5 s.",
+        "en": "Circle 300 around Ysmay: 50/85/120/155/190 (+60% bonus AD) physical damage, 30% slow for 1.5 s."
+      },
+      "type": "self",
+      "castTime": 0.2,
+      "movesWhileCasting": false,
+      "range": 0,
+      "cooldown": [12, 11, 10, 9, 8],
+      "cost": [45, 50, 55, 60, 65],
+      "costType": "mana",
+      "radius": 300,
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [50, 85, 120, 155, 190], "bonusAd": 0.6 } },
+        { "kind": "slow", "pct": 30, "duration": 1.5 }
+      ]
+    },
+    {
+      "id": "ysmay_r",
+      "name": { "de": "Herausforderung", "en": "Challenge" },
+      "desc": {
+        "de": "Ziel-Champion in 700: 120/200/280 (+100 % Bonus-AD, +30 % fehlende HP des Ziels) physischer Schaden; Ysmay erleidet 4 s lang 25 % weniger Schaden.",
+        "en": "Enemy champion within 700: 120/200/280 (+100% bonus AD, +30% of the target's missing HP) physical damage; Ysmay takes 25% less damage for 4 s."
+      },
+      "type": "targeted",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 700,
+      "cooldown": [100, 80, 60],
+      "cost": 100,
+      "costType": "mana",
+      "effects": [
+        { "kind": "damage", "type": "phys", "amount": { "base": [120, 200, 280], "bonusAd": 1, "targetMissingHp": 0.3 } },
+        { "kind": "buff", "stat": "dmgReduction", "pct": 25, "duration": 4, "target": "self" }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3 (Parade + Ausfallstoß im Trade) und Level 6 (Herausforderung beendet Duelle).",
+    "en": "Level 3 (parry + lunge in trades) and level 6 (Challenge finishes duels)."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Parade, Stoß", "en": "Parry, thrust" }, "sequence": ["W", "Q", "AA"] },
+    { "name": { "de": "Stoß und Wirbel", "en": "Lunge and whirl" }, "sequence": ["Q", "E", "AA"] },
+    { "name": { "de": "Duell", "en": "Duel" }, "sequence": ["Q", "R", "AA", "E"] }
+  ],
+  "scores": { "engage": 3, "peel": 1, "range": 1, "scaling": 3, "waveclear": 2, "mobility": 3 },
+  "voiceLines": {
+    "pick": { "de": "En garde.", "en": "En garde." },
+    "firstBlood": { "de": "Touché.", "en": "Touché." },
+    "kill": { "de": "Zu langsam.", "en": "Too slow." },
+    "death": { "de": "Eine ... Lücke in meiner Deckung.", "en": "A ... gap in my guard." },
+    "recall": { "de": "Klinge reinigen.", "en": "Time to clean the blade." },
+    "taunt": { "de": "Schlag nur zu. Ich warte.", "en": "Go ahead, strike. I'll wait." }
+  },
+  "silhouette": "elegant fencer in a plumed tricorn with a long feather, a short crimson cape, a long thin rapier in the right hand and a parrying dagger in the left"
+}

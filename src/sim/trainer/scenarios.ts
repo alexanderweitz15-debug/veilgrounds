@@ -70,7 +70,7 @@ export const shoveScore = (lost: number): number => Math.max(60, 100 - 20 * lost
 
 const JG = ['grimald', 'nyx', 'lio', 'vessa', 'sev', 'vargrim', 'dorrak', 'kerrin'];
 const MID = ['thessaly', 'renn', 'aurel', 'ilvane', 'sev', 'rovena', 'truda', 'marga'];
-const TOP = ['isolde', 'brom', 'dagny', 'vargrim', 'gneis', 'knarr', 'torben'];
+const TOP = ['isolde', 'brom', 'dagny', 'vargrim', 'gneis', 'knarr', 'torben', 'ysmay'];
 const ADC = ['tobin', 'lysa', 'corvin', 'mira', 'henrike', 'svea'];
 /** Attackers: all-in, long trades, tower dives allowed (playstyle axes, src/data/bots/playstyleAxes.json). */
 const DIVE = { aggression: 5, tradeLength: 5, teamplay: 5 };

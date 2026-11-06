@@ -52,6 +52,7 @@ import { backShrooms, mushroomCap, sporeMotes, sporeStaff } from './truda';
 import { mortarPack, ramrod, sootPuffs } from './marga';
 import { rageHaze, skullBelt, warAxes } from './torben';
 import { moonCrescent, twinkleStars, wishStaff } from './lumi';
+import { parryDagger, plume, rapier } from './ysmay';
 import { DORRAK_KIT } from './worm';
 import { bloodDrips, bloodOrbs, thornCrown } from './rovena';
 import { floatNotes, hatPlume, luteBack } from './tilda';
@@ -1202,6 +1203,35 @@ kit({
   cast: 'raise',
   gait: 'light',
   props: [moonCrescent, wishStaff, twinkleStars],
+});
+// Ysmay Degenfeld: fencer with a plumed tricorn, rapier and parrying dagger
+kit({
+  id: 'ysmay',
+  name: 'Ysmay Degenfeld',
+  world: 194,
+  look: 'slim fencing master in a black plumed tricorn with a long crimson feather, white ruffled shirt, crimson waistcoat, short crimson cape, black breeches and tall boots, dark braid; a long thin rapier with a brass cup guard in her right hand and a short parrying dagger in her left',
+  feature: 'tall red plume + long thin rapier + parrying dagger',
+  body: { ...FEMALE, H: 184, shW: 16.5, hipW: 13.5, girth: 0.9, legs: 0.52, headR: 12.6, bust: 0.35 },
+  outfit: {
+    skin: SKIN.light,
+    face: { eyes: '#3a4a7a', brows: 0.9 },
+    top: cloth('#9a2634'),
+    sleeves: cloth('#efe8dc'),
+    forearms: leather('#2a2226'),
+    hands: leather('#2a2226'),
+    legs: cloth('#1e1c22'),
+    boots: leather('#2a2226'),
+    bootH: 0.75,
+    cape: { mat: cloth('#8a1e2c'), len: 0.9, short: true },
+    belt: { mat: leather('#2a2226'), buckle: BRASS, y: 0.15 },
+    hat: { kind: 'tricorn', mat: cloth('#1e1c22'), band: BRASS },
+    hair: { style: 'braid', mat: hair('#2a1e1c') },
+  },
+  hold: 'blade',
+  attack: 'thrust',
+  cast: 'lunge',
+  gait: 'light',
+  props: [plume, rapier, parryDagger],
 });
 // Knarr: giant crab, painted by the SpriteDrawer in crab.ts (atlas.ts DRAWERS); the Kit stub carries the icon colours
 kit(KNARR_KIT);

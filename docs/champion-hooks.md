@@ -374,3 +374,11 @@ Total: 110 hook ids across 26 champions.
 |---|---|---|
 | `lumi_wishdust` | Passive | `modifyHeal`: x1.3 on targets below 40 % HP (heals and shields). Snapshot badge glows while an ally within 1000 is that low. |
 | `lumi_r_wish` | R | After the data effects (untargetable + projImmune + shield on the ally): removes slow/root/stun/silence/blind/fear/airborne/suppress/taunt from the targeted ally. |
+
+## Ysmay Degenfeld (`ysmay`) (auto/champions)
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `ysmay_w_parry` | W | Opens the parry window (0.8 s). |
+| `ysmay_riposte` | Passive | `onDamageTaken` inside the window: gives the damage back (HP restored before the death check), closes the window, +30 % AS 3 s, halves the W cooldown left, stuns a champion attacker within 500 (1-2 s). |
+| `ysmay_q_lunge` | Q | `dashStart`: `stopAtEnemy` = width/2. |

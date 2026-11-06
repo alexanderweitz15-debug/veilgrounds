@@ -1,0 +1,44 @@
+{
+  "template": "duelist",
+  "starter": [
+    "dornenklinge",
+    "trank"
+  ],
+  "standard": {
+    "boots": "stiefel_schnelligkeit",
+    "core": [
+      "raserbeil",
+      "sensenschwert",
+      "scharfrichterbeil",
+      "wallherz"
+    ]
+  },
+  "vsAD": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "raserbeil",
+      "notanker",
+      "scharfrichterbeil",
+      "wallherz"
+    ]
+  },
+  "vsAP": {
+    "boots": "stiefel_mr",
+    "core": [
+      "raserbeil",
+      "sensenschwert",
+      "scharfrichterbeil",
+      "sturmgewand"
+    ]
+  },
+  "champion": "ysmay",
+  "note": "Component order follows items.json \"from\"; Diamond+ bots reorder components situationally (spec §5).",
+  "runes": {
+    "keystone": "eroberer",
+    "minor": [
+      "angriffstempo",
+      "zweiter_wind",
+      "lebenskraft"
+    ]
+  }
+}

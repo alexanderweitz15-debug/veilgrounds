@@ -18,13 +18,13 @@ export function mortarPack(c: PropCtx): void {
   const { st, rig, pose } = c;
   const bk = backFrame(rig, -4, 1);
   const ax = tubeAxis(c);
-  const f = frameYZ(at(bk, [6, 0, -3]), ax, rig.chest.z);
-  const len = 56 - pose.glow * 5;
-  st.add(f.o, -1.2, (p) => {
-    p.fill(st.hull([...ring(f, 0, 8, 8, 12), ...ring(f, len * 0.5, 7.2, 7.2, 12), ...ring(f, len, 6.6, 6.6, 12)]), TUBE, { lw: 1.6 });
-    p.fill(st.hull([...ring(f, len, 6.6, 6.6, 12), ...ring(f, len + 5, 10.5, 10.5, 12)]), TUBE_DARK, { lw: 1.4 });
-    p.fill(st.hull([...ring(f, len + 4.5, 9.2, 9.2, 12), ...ring(f, len + 5.2, 9, 9, 12)]), m('#1c1612', 'metal'), { lw: 0.6 });
-    for (const y of [len * 0.3, len * 0.72]) p.fill(st.hull([...ring(f, y - 2, 8, 8, 12), ...ring(f, y + 2, 8, 8, 12)]), IRON, { lw: 1 });
+  const f = frameYZ(at(bk, [11, 2, -4]), ax, rig.chest.z);
+  const len = 74 - pose.glow * 6;
+  st.add(f.o, 0.3, (p) => {
+    p.fill(st.hull([...ring(f, 0, 10.5, 10.5, 12), ...ring(f, len * 0.5, 9.4, 9.4, 12), ...ring(f, len, 8.6, 8.6, 12)]), TUBE, { lw: 1.6 });
+    p.fill(st.hull([...ring(f, len, 8.6, 8.6, 12), ...ring(f, len + 6, 13.5, 13.5, 12)]), TUBE_DARK, { lw: 1.4 });
+    p.fill(st.hull([...ring(f, len + 5.5, 11.8, 11.8, 12), ...ring(f, len + 6.3, 11.6, 11.6, 12)]), m('#1c1612', 'metal'), { lw: 0.6 });
+    for (const y of [len * 0.3, len * 0.72]) p.fill(st.hull([...ring(f, y - 2.5, 10.8, 10.8, 12), ...ring(f, y + 2.5, 10.8, 10.8, 12)]), IRON, { lw: 1 });
     p.fill(st.hull([...ring(f, -4, 6, 6, 10), ...ring(f, 0, 9, 9, 10)]), BRASS, { lw: 1.2 });
   });
   // strap round the body
@@ -51,11 +51,11 @@ export function sootPuffs(c: PropCtx): void {
   const { st, rig, pose } = c;
   const bk = backFrame(rig, -4, 1);
   const ax = tubeAxis(c);
-  const f = frameYZ(at(bk, [6, 0, -3]), ax, rig.chest.z);
+  const f = frameYZ(at(bk, [11, 2, -4]), ax, rig.chest.z);
   const n = 4 + Math.round(pose.glow * 3);
   for (let i = 0; i < n; i++) {
     const u = (pose.t * 0.9 + i / n) % 1;
-    const o = at(f, [Math.sin(u * 5 + i) * 5, 62 + u * 34, Math.cos(u * 4 + i * 2) * 5]);
+    const o = at(f, [Math.sin(u * 5 + i) * 5, 86 + u * 34, Math.cos(u * 4 + i * 2) * 5]);
     st.add(o, 3.4, (p) => {
       const q = st.p(o);
       p.ctx.save();

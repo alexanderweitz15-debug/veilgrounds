@@ -17,8 +17,23 @@ Scope change (lead, mid-task): after ARAM no more modes; work moves to bot brain
 - `variantConfig(id, rank, seed, humanPick?)` in src/game/modes.ts; main menu entries ARAM / URF (de/en).
 - Test: tests/variants.test.ts (roster, rules, 4-min headless bot game per variant).
 
+## Real ARAM (round 2)
+- One-lane map is derived, not authored (src/sim/aramMap.ts): classic map + two wall triangles + nav cells with
+  |x - y| > 1500 blocked (map.ts nav/pathfinding untouched). `MapData.activeLanes = ['mid']`: towers.ts skips top/bot
+  structures and the nexus-tower protection counts mid inhibitor only. Camps/plants/bushes outside removed.
+  `mapFor(config)` in sim, bot runner, ghost, Game; fresh copy per call (summons edit the nav grid).
+- Health relics (src/sim/systems/relics.ts): 4 honey-piece look-alikes on the lane (heal 30 % HP + mana, 45 s respawn,
+  spots in gameModes.json). Bots use them through the existing honey-piece leaf: 33 pickups in a 14-min bot game.
+- Snowball: summoner `schneeball` (targeted, 900 range, 60-160 true damage + 40 % slow 1.5 s, 80 s cd); the ARAM human
+  gets Flash + Snowball. Simplified: a hit, not a skillshot. Bots do not cast it.
+- Reroll: src/ui/aramSelect.ts (one reroll, re-rolls the whole roster). Dev shortcut `?play=aram` / `?play=urf`.
+- Bot game, gold, 14 min, seed 2: 79 kills (5.6/min), 1 tower, no winner yet (tools/scratch/aram.ts). Test file
+  tests/variants.test.ts (+ map walkability nexus to nexus, side lanes walled, structures mid-only, relic heal/respawn).
+- npm test: 157 files / 1956 tests green. Screenshot: browser check showed the corridor on the minimap, level 3 / 1476 gold HUD.
+- Not done: the ground art is still the classic painting under the new walls (dev paints at runtime; shipped bake is by size).
+
 ## Open
-- Reroll UI, relics, real ARAM map. Screenshot not taken yet.
+- Custom game options UI.
 - Full `npm test`: 145 files / 1822 tests green with the variants change.
 
 ## Brain (after scope change) - baseline, gold, default brain, post 5ed26b9

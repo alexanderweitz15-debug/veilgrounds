@@ -59,7 +59,7 @@ function mainMenu(): void {
   // One line per mode; the classic 5v5 entry is added by the classic-lobby work.
   const modes: MenuEntry[] = [
     { name: t('menu.classic'), desc: t('menu.classicDesc'), meta: t('menu.classicMeta'), onSelect: () => classicLobby() },
-    { name: t('menu.aram'), desc: t('menu.aramDesc'), meta: t('menu.aramMeta'), onSelect: () => variantGame('aram') },
+    { name: t('menu.aram'), desc: t('menu.aramDesc'), meta: t('menu.aramMeta'), onSelect: () => aramSelect() },
     { name: t('menu.urf'), desc: t('menu.urfDesc'), meta: t('menu.urfMeta'), onSelect: () => variantGame('urf') },
     { name: t('menu.lane'), desc: t('menu.laneDesc'), meta: t('menu.laneMeta'), onSelect: () => lobby('lane') },
     { name: t('menu.sandbox'), desc: t('menu.sandboxDesc'), meta: t('menu.sandboxMeta'), onSelect: () => lobby('sandbox') },
@@ -102,6 +102,14 @@ function classicLobby(): void {
   const s = screen();
   void loadClassicLobby().then(({ renderClassicLobby, renderLoading }) => {
     if (s.isConnected) renderClassicLobby(s, mainMenu, (cfg) => renderLoading(screen(), cfg, () => start(cfg)));
+  });
+}
+
+/** ARAM: random champion with one reroll, then the loading screen. */
+function aramSelect(): void {
+  const s = screen();
+  void Promise.all([loadClassicLobby(), import('./ui/aramSelect')]).then(([{ renderLoading }, { renderAramSelect }]) => {
+    if (s.isConnected) renderAramSelect(s, mainMenu, (cfg) => renderLoading(screen(), cfg, () => start(cfg)));
   });
 }
 
@@ -254,6 +262,7 @@ void (async () => {
   // dev shortcuts: ?mock, ?play=lane|sandbox|tutorial
   if (q.has('mock')) start(null);
   else if (q.get('play') === 'classic') start((await loadClassicLobby()).buildClassicConfig());
+  else if (q.get('play') === 'aram' || q.get('play') === 'urf') start((await import('./game/modes')).variantConfig(q.get('play') as 'aram' | 'urf'));
   else if (q.has('play')) {
     const { TRAINER_MODES, MIRA_ID, trainerConfig, configFor, runesFromPreset } = await loadPlay();
     const play = q.get('play');

@@ -160,7 +160,7 @@ function updateProtection(sim: Sim, s: TowerSt): void {
   const { Unit } = sim.c;
   for (const team of [0, 1]) {
     const dead = (kind: number, lane: number, tier = -1): boolean => !structureAt(sim, team, kind, lane, tier)?.alive;
-    const anyInhibDown = [0, 1, 2].some((l) => dead(Kind.Inhibitor, l));
+    const anyInhibDown = LANES.some((n, l) => (sim.map.activeLanes ?? LANES).includes(n) && dead(Kind.Inhibitor, l));
     for (const r of s.list) {
       if (r.team !== team || !r.alive) continue;
       let open: boolean;
@@ -318,6 +318,7 @@ export const towersSystem: System = {
     for (const team of [0, 1]) {
       const side = sim.map.sides[team]!;
       LANES.forEach((name, lane) => {
+        if (sim.map.activeLanes && !sim.map.activeLanes.includes(name)) return;
         side.towers[name].forEach((p, tier) => s.list.push(rec(team, Kind.Tower, lane, tier, p.x, p.y)));
         const ip = side.inhibitors[name];
         s.list.push(rec(team, Kind.Inhibitor, lane, -1, ip.x, ip.y));

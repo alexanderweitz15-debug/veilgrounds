@@ -124,6 +124,14 @@ export function castSummonerSpell(sim: Sim, eid: number, id: string, x: number, 
       addBuff(sim, t, { kind: 'slow', id: 'erschoepfen', src: eid, pct: EXHAUST_SLOW_PCT, ticks: EXHAUST_TICKS });
       return true;
     }
+    case 'schneeball': {
+      // ARAM snowball, simplified to a targeted hit: true damage + short slow
+      const t = enemyChampionTarget(sim, eid, x, y, 900, target);
+      if (t < 0) return false;
+      dealDamage(sim, eid, t, byLevel(sim, eid, 60, 160), 'true');
+      addBuff(sim, t, { kind: 'slow', id: 'schneeball', src: eid, pct: 40, ticks: sec(1.5) });
+      return true;
+    }
     case 'teleport':
       return startTeleport(sim, eid, x, y, target);
     case 'bannen': {
@@ -143,7 +151,7 @@ export function castSummonerSpell(sim: Sim, eid: number, id: string, x: number, 
  * first, like LoL), or -1 (no valid target, or not a targeted summoner).
  */
 export function summonerWalkTarget(sim: Sim, eid: number, id: string, x: number, y: number, target?: number): number {
-  if (id === 'entflammen' || id === 'erschoepfen') return enemyChampionTarget(sim, eid, x, y, Infinity, target);
+  if (id === 'entflammen' || id === 'erschoepfen' || id === 'schneeball') return enemyChampionTarget(sim, eid, x, y, Infinity, target);
   if (id === 'bannen') return smiteTarget(sim, eid, x, y, Infinity, target);
   return -1;
 }

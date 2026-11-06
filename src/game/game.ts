@@ -4,7 +4,8 @@ import { SurrenderPanel } from '../ui/surrenderPanel';
 import { soundForEvent, soundForFire } from '../audio/eventSounds';
 import { audioStop, audioUnlock, playFizzle, setListener, setVolume } from '../audio/sfx';
 import { blockBrowserShortcuts, enterGameFullscreen, exitGameFullscreen } from './fullscreen';
-import { loadMap } from '../sim/map';
+import type { MapData } from '../sim/map';
+import { mapFor } from '../sim/aramMap';
 import type { SimConfig } from '../sim/types';
 import { ClientState } from './state';
 import { mockLink } from './mock';
@@ -69,6 +70,7 @@ export class Game {
   private readonly hud: Hud;
   private readonly overlay = new Overlay();
   private readonly minimap: Minimap;
+  private readonly map: MapData;
   private readonly menu: HTMLElement;
   /** Every ping leaves through here (spam limit, context labels). */
   private readonly pings = new PingSender((c) => this.link.send(c), () => playFizzle());
@@ -117,7 +119,7 @@ export class Game {
   constructor(parent: HTMLElement, config: SimConfig | null, private readonly onExit: (r?: SessionResult) => void, opts: GameOpts = {}) {
     this.clock = opts.clock ?? ((n) => n);
     if (config && !opts.link) config = withClientSettings(config, settings); // e.g. bot toxicity for trainer/duel bots too
-    const map = loadMap();
+    const map = (this.map = mapFor(config));
     this.root = document.createElement('div');
     this.root.className = 'game';
     parent.appendChild(this.root);
@@ -423,7 +425,7 @@ export class Game {
   /** Dead: free camera onto the death spot (own corpse) or the own fountain. */
   private focusDeadCamera(where: 'death' | 'fountain'): void {
     const me = this.state.me();
-    const f = loadMap().sides[this.state.myTeam as 0 | 1].fountain;
+    const f = this.map.sides[this.state.myTeam as 0 | 1].fountain;
     if (where === 'fountain') this.world.rig.focus(f.x, f.y);
     else if (me) this.world.rig.focus(this.state.x(me), this.state.y(me));
   }

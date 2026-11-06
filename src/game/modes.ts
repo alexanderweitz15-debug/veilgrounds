@@ -177,6 +177,7 @@ export function variantConfig(id: VariantId, rank: Rank = 'gold', seed = (Math.r
     if (!p.isHuman) p.champion = rest.shift() ?? p.champion;
     if (rules.midOnly) p.role = 'mid';
     delete p.runes; // classicConfig rolled them for the old champion; default preset of the new one
+    if (id === 'aram' && p.isHuman) p.summoners = ['sprung', 'schneeball'];
     if (rules.noJungle) p.summoners = p.summoners.map((x) => (x === 'bannen' ? 'heilen' : x)) as [string, string];
   }
   return { ...cfg, rules };

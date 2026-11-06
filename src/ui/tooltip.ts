@@ -163,6 +163,7 @@ const SUMMONER_DESC: Record<string, [string, string]> = {
   geist: ['10 s lang +24–48 % Lauftempo (nach Stufe), du ignorierst Einheitenkollision.', '+24–48% move speed (by level) for 10 s, ignore unit collision.'],
   entflammen: ['Setzt einen gegnerischen Champion 5 s in Brand (60–410 absoluter Schaden) und verringert seine Heilung um 40 %.', 'Ignites an enemy champion for 5 s (60–410 true damage) and reduces its healing by 40%.'],
   erschoepfen: ['Verlangsamt einen gegnerischen Champion 2,5 s lang um 30 % und verringert seinen verursachten Schaden um 40 %.', 'Slows an enemy champion by 30% for 2.5 s and reduces the damage it deals by 40%.'],
+  schneeball: ['Trifft einen gegnerischen Champion (bis 900 Reichweite) für 60–160 absoluten Schaden und verlangsamt ihn 1,5 s um 40 %.', 'Hits an enemy champion (up to 900 range) for 60–160 true damage and slows it by 40% for 1.5 s.'],
   reinigen: ['Entfernt Verlangsamung, Betäubung, Festhalten, Verstummen und Blendung und gibt kurz Zähigkeit.', 'Removes slows, stuns, roots, silences and blinds and grants brief tenacity.'],
   barriere: ['Gibt dir 2 s lang einen Schild (115–455 nach Stufe).', 'Shields you for 2 s (115–455 by level).'],
   teleport: ['Kanalisiert und teleportiert dich zu einem verbündeten Turm, Vasallen oder Ward.', 'Channels, then teleports you to an allied tower, minion or ward.'],

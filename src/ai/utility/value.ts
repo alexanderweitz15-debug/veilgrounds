@@ -122,7 +122,7 @@ export function tradeValue(w: World): CandidateValue | null {
   const t = running ? v.enemies.find((e) => e.serial === running.serial) ?? null : (focus ? v.enemies.find((e) => e.id === focus.eid) : null) ?? closestEnemy(n, 1300);
   if (!t) return null;
   const combo = n.ctx.champ.combos[0]?.sequence ?? ['AA'];
-  if (!running && dst(v.self, t) > comboReach(n, combo) + v.me.stats.ms * 0.5) return null;
+  if (!running && dst(v.self, t) > comboReach(n, combo) + v.me.stats.ms * rankCurve(VALUES.fight.tradeWalkS, n.ctx.params.skill)) return null;
   const k = n.p.knobs;
   const ex = estimateExchange(v, n.ctx, t, H.trade, n.rng, { orbwalk: 0.7 + 0.3 * k.orbwalkChance });
   const exK = estimateExchange(v, n.ctx, t, H.allin, n.rng, { orbwalk: 0.7 + 0.3 * k.orbwalkChance });
@@ -144,7 +144,8 @@ export function tradeValue(w: World): CandidateValue | null {
   const punish = v.tick - (n.mem.ext.enemyCastAt.get(t.serial) ?? -1e9) < W.tradePunishS * 30;
   const opportunity = 1 + (csWindow ? (W.tradeCsWindowBonus * n.ctx.profile.behavior.harassCsWindowPct) / 100 : 0) + (punish ? W.tradePunishBonus * clamp01(n.ctx.params.skill / 100) : 0);
   const benefit = (kill + hpGold(lead, hpPct(t))) * opportunity;
-  const death = e.deathProb * w.deathCost;
+  // rank (values.json fight.deathFear): Bronze shrugs off the death risk and fights at 10 % HP, Challenger weighs it more
+  const death = e.deathProb * w.deathCost * rankCurve(VALUES.fight.deathFear, n.ctx.params.skill);
   const behind = hpGold(Math.max(0, -hpLead), v.hpPct);
   const missed = farmWithin(w, h) * W.tradeMissedFarm;
   const aggro = near(v.enemyMinions, v.self, 500).length * W.tradeAggroPerMinion * h;
@@ -171,7 +172,7 @@ export function fightValue(w: World): CandidateValue | null {
     if (!t) return null;
     const ex = estimateExchange(v, n.ctx, t, 6, n.rng);
     const benefit = ex.winProb * enemies.length * killGold() * W.fightWinGold + ex.killProb * killGold();
-    const cost = ex.deathProb * w.deathCost;
+    const cost = ex.deathProb * w.deathCost * rankCurve(VALUES.fight.deathFear, n.ctx.params.skill);
     return { benefit, cost, horizonS: h, terms: { win: ex.winProb, kill: ex.killProb, death: ex.deathProb, enemies: enemies.length, near: 1 } };
   }
   // an ally fighting within reach (joinFight) or the player's engage (followUp)

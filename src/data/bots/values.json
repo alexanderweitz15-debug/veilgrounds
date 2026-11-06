@@ -239,6 +239,7 @@
     "escapeShift": { "iron": -0.22, "bronze": -0.2, "silver": -0.12, "gold": 0, "platinum": 0.03, "diamond": 0.06, "challenger": 0.08 },
     "lowRankFightChance": { "iron": 0.7, "bronze": 0.65, "silver": 0.55 },
     "tradeThrMult": { "iron": 0.75, "bronze": 0.78, "silver": 0.85, "gold": 0.93, "diamond": 1.0, "challenger": 1.05 },
+    "deathFear": { "iron": 0.5, "bronze": 0.55, "silver": 0.7, "gold": 0.9, "diamond": 1.05, "challenger": 1.15 },
     "tradeWalkS": { "iron": 1.6, "bronze": 1.5, "silver": 1.3, "gold": 1.1, "diamond": 1.0, "challenger": 0.9 }
   }
 }

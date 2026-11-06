@@ -8,6 +8,7 @@ import dagny from './dagny.json';
 import dorrak from './dorrak.json';
 import fenna from './fenna.json';
 import ferris from './ferris.json';
+import gerwin from './gerwin.json';
 import gneis from './gneis.json';
 import gorvam from './gorvam.json';
 import grimald from './grimald.json';
@@ -52,6 +53,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   dorrak,
   fenna,
   ferris,
+  gerwin,
   gneis,
   gorvam,
   grimald,

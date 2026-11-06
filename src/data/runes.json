@@ -439,6 +439,70 @@
       "stats": {
         "tenacity": 8
       }
+    },
+    {
+      "id": "flinkfuss",
+      "name": {
+        "de": "Flinkfuß",
+        "en": "Fleetfoot"
+      },
+      "desc": {
+        "de": "Laufen und Autos laden Energie (100). Voll: der nächste Auto auf einen Champion heilt 15 (+10 % AD, +5 % AP) und gibt 1 s +20 % Bewegung.",
+        "en": "Walking and basic attacks build energy (100). Full: the next basic attack on a champion heals 15 (+10% AD, +5% AP) and gives +20% move speed for 1 s."
+      },
+      "kind": "keystone",
+      "fits": [
+        "marksman",
+        "hypercarry",
+        "harpoon_marksman",
+        "wind_marksman",
+        "zone_marksman",
+        "clockwork_marksman",
+        "short_range_marksman",
+        "parry_duelist"
+      ],
+      "hook": "rune_fleetfoot"
+    },
+    {
+      "id": "phasenlauf",
+      "name": {
+        "de": "Phasenlauf",
+        "en": "Phase Rush"
+      },
+      "desc": {
+        "de": "3 Treffer auf Champions in 3 s: 3 s +30 % Bewegung. CD 25 s.",
+        "en": "3 hits on champions within 3 s: +30% move speed for 3 s. CD 25 s."
+      },
+      "kind": "keystone",
+      "fits": [
+        "assassin",
+        "dash_assassin",
+        "reset_assassin",
+        "chain_assassin",
+        "battlemage",
+        "berserker"
+      ],
+      "hook": "rune_phase_rush"
+    },
+    {
+      "id": "erstschlag",
+      "name": {
+        "de": "Erstschlag",
+        "en": "First Strike"
+      },
+      "desc": {
+        "de": "Schaden an einem Champion, der dich 3 s nicht getroffen hat: 3 s lang +7 % Schaden auf ihn. CD 25 s.",
+        "en": "Damage to a champion who has not hit you for 3 s: +7% damage to them for 3 s. CD 25 s."
+      },
+      "kind": "keystone",
+      "fits": [
+        "skillshot_mage",
+        "artillery_mage",
+        "control_mage",
+        "guardian_enchanter",
+        "mage_support"
+      ],
+      "hook": "rune_first_strike"
     }
   ]
 }

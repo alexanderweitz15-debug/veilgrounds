@@ -1,0 +1,149 @@
+{
+  "id": "gerwin",
+  "name": "Gerwin Totenglocke",
+  "title": { "de": "der Gruftwärter", "en": "the Crypt Keeper" },
+  "roles": ["jungle"],
+  "archetype": "necro_summoner",
+  "botBias": { "teamplay": 1, "kiting": -1 },
+  "trainingPurpose": {
+    "de": "Einen Beschwörer lesen: Skelette sind echte Einheiten mit Leben - zuerst Gerwin jagen, die Knochensplitter-Explosion an einem Skelett erwarten und das Totenheer nicht in der Enge annehmen.",
+    "en": "Reading a summoner: skeletons are real units with HP - hunt Gerwin first, expect the Bone Burst blast at a skeleton and do not take the Dead Host in a choke."
+  },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 590,
+    "hpGrowth": 98,
+    "hpRegen": 7,
+    "hpRegenGrowth": 0.65,
+    "mana": 400,
+    "manaGrowth": 40,
+    "manaRegen": 8,
+    "manaRegenGrowth": 0.8,
+    "ad": 55,
+    "adGrowth": 3,
+    "armor": 28,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.65,
+    "asGrowth": 1.8,
+    "range": 525,
+    "ms": 340,
+    "windup": 0.22,
+    "projectileSpeed": 1500,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Gruftdiener", "en": "Crypt Servants" },
+    "desc": {
+      "de": "Skelette sind echte Einheiten (bis zu 4, 20 s). Jedes lebende Skelett gibt Gerwin +4 Rüstung und Magieresistenz.",
+      "en": "Skeletons are real units (up to 4, 20 s). Each living skeleton gives Gerwin +4 armor and magic resist."
+    },
+    "hooks": ["gerwin_crypt"]
+  },
+  "abilities": [
+    {
+      "id": "gerwin_q",
+      "name": { "de": "Totenruf", "en": "Grave Call" },
+      "desc": {
+        "de": "Kreis 150 auf 800: 40/65/90/115/140 (+30 % AP) magischer Schaden, 20 % Slow, und ein Skelett erhebt sich dort.",
+        "en": "Circle 150 at 800: 40/65/90/115/140 (+30% AP) magic damage, 20% slow, and a skeleton rises there."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 800,
+      "cooldown": [7, 6.5, 6, 5.5, 5],
+      "cost": [40, 45, 50, 55, 60],
+      "costType": "mana",
+      "radius": 150,
+      "delay": 0.3,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [40, 65, 90, 115, 140], "ap": 0.3 } },
+        { "kind": "slow", "pct": 20, "duration": 1 },
+        { "kind": "hook", "id": "gerwin_q_raise" }
+      ]
+    },
+    {
+      "id": "gerwin_w",
+      "name": { "de": "Knochensplitter", "en": "Bone Burst" },
+      "desc": {
+        "de": "Das Skelett nahe dem Cursor explodiert: 70/110/150/190/230 (+60 % AP) magischer Schaden in 260, 30 % Slow für 1,5 s. Ohne Skelett nichts, Abklingzeit zurück.",
+        "en": "The skeleton nearest the cursor explodes: 70/110/150/190/230 (+60% AP) magic damage in 260, 30% slow for 1.5 s. Without a skeleton nothing happens and the cooldown is refunded."
+      },
+      "type": "self",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [10, 9.5, 9, 8.5, 8],
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "radius": 260,
+      "effects": [{ "kind": "hook", "id": "gerwin_w_burst" }]
+    },
+    {
+      "id": "gerwin_e",
+      "name": { "de": "Befehl", "en": "Command" },
+      "desc": {
+        "de": "Alle Skelette greifen den Gegner nahe dem Cursor an und werden 2 s schneller (+25 % Bewegung); Gerwin +15 % Bewegung.",
+        "en": "All skeletons attack the enemy nearest the cursor and gain +25% move speed for 2 s; Gerwin gains +15% move speed."
+      },
+      "type": "self",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": 30,
+      "costType": "mana",
+      "effects": [
+        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 2, "target": "self" },
+        { "kind": "hook", "id": "gerwin_e_command" }
+      ]
+    },
+    {
+      "id": "gerwin_r",
+      "name": { "de": "Totenheer", "en": "Dead Host" },
+      "desc": {
+        "de": "Kreis 300 auf 700: 3 verstärkte Skelette (+50 % Leben) erheben sich, Gegner dort werden 1,5 s um 40 % verlangsamt.",
+        "en": "Circle 300 at 700: three reinforced skeletons (+50% HP) rise, enemies there are slowed 40% for 1.5 s."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.3,
+      "movesWhileCasting": false,
+      "range": 700,
+      "cooldown": [120, 100, 80],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 300,
+      "delay": 0.3,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "slow", "pct": 40, "duration": 1.5 },
+        { "kind": "hook", "id": "gerwin_r_host" }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3 (Skelette halten den Dschungel) und Level 6 (Totenheer entscheidet Teamfights).",
+    "en": "Level 3 (skeletons hold the jungle) and level 6 (Dead Host decides teamfights)."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Ruf und Splitter", "en": "Call and burst" }, "sequence": ["Q", "W", "AA"] },
+    { "name": { "de": "Ruf, Befehl", "en": "Call, command" }, "sequence": ["Q", "E", "AA"] },
+    { "name": { "de": "Heer und Splitter", "en": "Host and burst" }, "sequence": ["R", "E", "W"] }
+  ],
+  "scores": { "engage": 2, "peel": 2, "range": 3, "scaling": 4, "waveclear": 4, "mobility": 1 },
+  "voiceLines": {
+    "pick": { "de": "Meine Gäste warten schon.", "en": "My guests are already waiting." },
+    "firstBlood": { "de": "Das erste Grab ist offen.", "en": "The first grave is open." },
+    "kill": { "de": "Ruhe in Frieden. Oder auch nicht.", "en": "Rest in peace. Or do not." },
+    "death": { "de": "Jetzt ... läuten die Glocken für mich.", "en": "Now ... the bells toll for me." },
+    "recall": { "de": "Zurück in die Gruft.", "en": "Back to the crypt." },
+    "taunt": { "de": "Meine Diener werden nie müde.", "en": "My servants never tire." }
+  },
+  "silhouette": "stooped gaunt gravekeeper in a long black coat and a tall hood, a large tolling bell on a long pole in one hand, a ring of keys at the belt and pale green ghost-light under the hood"
+}

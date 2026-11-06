@@ -66,3 +66,40 @@ describe('presets', () => {
     expect(champions.marga && champions.torben).toBeTruthy();
   });
 });
+
+describe('Phasenlauf', () => {
+  it('3 hits on a champion in 3 s give +30 % move speed once', () => {
+    const d = duel({ champ: 'ilvane', runes: page('phasenlauf') });
+    for (let i = 0; i < 2; i++) {
+      abilityHit(d);
+      steps(d.sim, 2);
+    }
+    expect(buffs(d.sim, d.me).some((b) => b.id === 'phasenlauf')).toBe(false);
+    abilityHit(d);
+    steps(d.sim, 1);
+    expect(buffs(d.sim, d.me).some((b) => b.id === 'phasenlauf' && b.pct === 30)).toBe(true);
+  });
+});
+
+describe('Flinkfuß', () => {
+  it('walking charges energy', async () => {
+    const { cmd, CX, CY } = await import('./combat-helpers');
+    const { fleetCharge } = await import('../src/sim/items/runeHooks');
+    const d = duel({ champ: 'mira', runes: page('flinkfuss') });
+    expect(fleetCharge(d.sim, d.me)).toBe(0);
+    cmd(d.sim, { t: 'move', x: CX - 700, y: CY });
+    steps(d.sim, 90);
+    expect(fleetCharge(d.sim, d.me)).toBeGreaterThan(60);
+  });
+});
+
+describe('Erstschlag', () => {
+  it('+7 % damage on a champion that has not hit the owner', async () => {
+    const { dealDamage } = await import('../src/sim/damage');
+    const d = duel({ champ: 'ilvane', runes: page('erstschlag') });
+    const plain = duel({ champ: 'ilvane', runes: page('none') });
+    const a = dealDamage(d.sim, d.me, d.foe, 100, 'true');
+    const b = dealDamage(plain.sim, plain.me, plain.foe, 100, 'true');
+    expect(a).toBeGreaterThan(b);
+  });
+});

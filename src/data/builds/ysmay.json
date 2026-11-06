@@ -7,7 +7,7 @@
   "standard": {
     "boots": "stiefel_schnelligkeit",
     "core": [
-      "raserbeil",
+      "stichblatt",
       "sensenschwert",
       "scharfrichterbeil",
       "wallherz"
@@ -16,7 +16,7 @@
   "vsAD": {
     "boots": "stiefel_ruestung",
     "core": [
-      "raserbeil",
+      "stichblatt",
       "notanker",
       "scharfrichterbeil",
       "wallherz"
@@ -25,7 +25,7 @@
   "vsAP": {
     "boots": "stiefel_mr",
     "core": [
-      "raserbeil",
+      "stichblatt",
       "sensenschwert",
       "scharfrichterbeil",
       "sturmgewand"

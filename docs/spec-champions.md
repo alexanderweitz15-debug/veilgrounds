@@ -271,3 +271,6 @@ Musikerin: Noten (grün/blau/rot) erscheinen auf der Karte, nur für ihr Team si
 
 36. **Ysmay Degenfeld, die Fechtmeisterin** – Top, Parade-Duellantin (AD), Melee 175. Training: nicht in die Parade schlagen, danach werfen, Konter meiden.
     - Passiv Riposte: gelungene Parade = +30 % AS 3 s und halbe Parade-Abklingzeit zurück. Q Ausfallstoß (Sprung, stoppt am Gegner), W Parade (0,8 s, Schaden wird zurückgegeben, Angreifer betäubt), E Klingenwirbel, R Herausforderung (Einzelziel + 25 % weniger Schaden).
+
+37. **Gerwin Totenglocke, der Gruftwärter** – Jungle, Beschwörer (AP), Ranged 525. Training: Skelette sind echte Einheiten mit Leben, zuerst Gerwin jagen, Knochensplitter-Explosion erwarten.
+    - Passiv Gruftdiener: bis zu 4 Skelette (20 s), je +4 Rüstung/MR. Q Totenruf (Kreis + Skelett), W Knochensplitter (Skelett explodiert), E Befehl (Skelette greifen Cursor-Ziel an), R Totenheer (3 verstärkte Skelette).

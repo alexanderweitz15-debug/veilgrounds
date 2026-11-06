@@ -68,7 +68,9 @@
     "stiefel_zaeh": { "glyph": "bootPlate", "hue": 120, "sat": 35, "accent": "root", "accentHue": 110 },
     "langrohr": { "glyph": "staff", "hue": 285, "sat": 45, "accent": "bomb", "accentHue": 30 },
     "raserbeil": { "glyph": "doubleAxe", "hue": 350, "sat": 60, "accent": "flame", "accentHue": 22 },
-    "sterndiadem": { "glyph": "crown", "hue": 190, "sat": 50, "accent": "sun", "accentHue": 48 }
+    "sterndiadem": { "glyph": "crown", "hue": 190, "sat": 50, "accent": "sun", "accentHue": 48 },
+    "stichblatt": { "glyph": "shortSword", "hue": 350, "sat": 55, "accent": "wing", "accentHue": 48 },
+    "gruftkrone": { "glyph": "crown", "hue": 150, "sat": 40, "accent": "skull", "accentHue": 120 }
   },
   "runes": {
     "_doc": "path hues: Präzision 48, Dominanz 355, Zauberei 215, Entschlossenheit 120, Inspiration 180",
@@ -93,6 +95,9 @@
     "durchdringung": { "glyph": "arrow", "hue": 215 },
     "letalitaet": { "glyph": "skull", "hue": 355 },
     "heilkraft": { "glyph": "leaf", "hue": 180 },
-    "standhaft": { "glyph": "root", "hue": 120 }
+    "standhaft": { "glyph": "root", "hue": 120 },
+    "flinkfuss": { "glyph": "boot", "hue": 48 },
+    "phasenlauf": { "glyph": "wave", "hue": 355 },
+    "erstschlag": { "glyph": "bolt", "hue": 215 }
   }
 }

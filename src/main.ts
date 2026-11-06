@@ -212,7 +212,12 @@ function afterGame(config: SimConfig | null, r?: SessionResult): void {
   if (!config || !r) return mainMenu();
   // finished game: keep the replay for the replay browser (IndexedDB, capped; no-op when unavailable)
   if (r.replay && r.replay.ticks >= 1800) void import('./replay/store').then((m) => m.saveReplay(r.replay!)).catch(() => undefined);
-  if (r.retry) return start({ ...structuredClone(config), seed: (Math.random() * 2 ** 31) | 0 });
+  if (r.retry) {
+    const next = { ...structuredClone(config), seed: (Math.random() * 2 ** 31) | 0 };
+    const me = next.players.find((p) => p.isHuman);
+    if (r.champion && me) (me.champion = r.champion), delete me.runes; // sandbox champion picker: default runes of the new champion
+    return start(next);
+  }
   // match history for the training plan (IndexedDB; no-op when unavailable)
   if (r.summary.duration >= 60 && config.trainer?.scenario !== 'tutorial') void import('./stats/history').then((h) => h.saveRecord(h.recordFromSummary(r.summary, Date.now()))).catch(() => undefined);
   const auto = (config.mode === 'classic' || config.mode === 'laneOnly') && r.summary.duration >= 60;

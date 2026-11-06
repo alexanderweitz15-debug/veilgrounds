@@ -15,6 +15,8 @@ export interface SessionResult {
   summary: MatchSummary;
   /** Player asked for the same setup again (trainer result dialog). */
   retry?: boolean;
+  /** Sandbox: restart as this champion (picker in the sandbox panel). */
+  champion?: string;
   /** Player asked for the post-game analysis. */
   analysis?: boolean;
   /** Recorded replay of a finished game (S2: stored for the replay browser, source of the post-game error list). */
@@ -52,7 +54,7 @@ export class SessionExtras {
       }, config.mode === 'scenario' ? { title: t(`scenario.${config.trainer?.scenario}.name`), hint: t(`scenario.${config.trainer?.scenario}.goal`) } : undefined);
     }
     if (isTutorialConfig(config)) this.tutorial = new TutorialController(root, send, () => exit({}));
-    else if (config?.mode === 'sandbox') this.sandbox = new SandboxPanel(root, (op, value) => send({ t: 'cheat', op, ...(value !== undefined ? { value } : {}) }), arm);
+    else if (config?.mode === 'sandbox') this.sandbox = new SandboxPanel(root, (op, value) => send({ t: 'cheat', op, ...(value !== undefined ? { value } : {}) }), arm, (champion) => exit({ retry: true, champion }));
   }
 
   ingest(s: Snapshot): void {

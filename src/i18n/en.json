@@ -1182,5 +1182,6 @@
   "profile.deathsPer30": "Deaths per 30 min",
   "profile.dmgPerMin": "Damage/min",
   "profile.killsPer30": "Kills per 30 min",
-  "set.cameraSemiLock": "Semi-locked camera (follows near the edge)"
+  "set.cameraSemiLock": "Semi-locked camera (follows near the edge)",
+  "sandbox.champion": "Switch champion …"
 }

@@ -268,3 +268,6 @@ Musikerin: Noten (grün/blau/rot) erscheinen auf der Karte, nur für ihr Team si
 
 35. **Lumi Sternenwiege, die Wunschwahrerin** – Support, Schutz-Enchanter (AP), Ranged 550. Training: den Verbündeten unter Letztem Wunsch nicht mit Zielsuchern/Skillshots verheizen, Flächenschaden und CC abwarten.
     - Passiv Wunschstaub: Heilung und Schilde auf Verbündete unter 40 % HP +30 %. Q Sternschnuppe (Linie), W Wunschband (Schild auf Verbündeten und Lumi), E Sternenwirbel (Heilung + Tempo in 450), R Letzter Wunsch (Verbündeter 2-3 s unzielbar, projektilimmun, Schild, CC weg).
+
+36. **Ysmay Degenfeld, die Fechtmeisterin** – Top, Parade-Duellantin (AD), Melee 175. Training: nicht in die Parade schlagen, danach werfen, Konter meiden.
+    - Passiv Riposte: gelungene Parade = +30 % AS 3 s und halbe Parade-Abklingzeit zurück. Q Ausfallstoß (Sprung, stoppt am Gegner), W Parade (0,8 s, Schaden wird zurückgegeben, Angreifer betäubt), E Klingenwirbel, R Herausforderung (Einzelziel + 25 % weniger Schaden).

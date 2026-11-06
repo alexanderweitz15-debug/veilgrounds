@@ -70,6 +70,7 @@
     "marga": [["bomb",30],["flame",18],["boot",35],["sun",25]],
     "torben": [["axe",5],["horn",12],["boot",8],["heart",355]],
     "lumi": [["moon",250],["ring",48],["wing",200],["sun",52]],
+    "ysmay": [["sword",350],["shield",210],["wave",25],["arrow",8]],
     "knarr": [["claw",15],["shield",205],["boot",190],["axe",5]]
   }
 }

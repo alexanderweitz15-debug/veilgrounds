@@ -1392,5 +1392,39 @@
       "de": "Zurück unter die Sterne.",
       "en": "Back beneath the stars."
     }
+  },
+  "ysmay": {
+    "pick": {
+      "de": "En garde.",
+      "en": "En garde."
+    },
+    "move1": {
+      "de": "Haltung wahren.",
+      "en": "Keep your stance."
+    },
+    "move2": {
+      "de": "Ein eleganter Schritt.",
+      "en": "One elegant step."
+    },
+    "attack": {
+      "de": "Und hopp!",
+      "en": "And touch!"
+    },
+    "ability": {
+      "de": "Pariert!",
+      "en": "Parried!"
+    },
+    "kill": {
+      "de": "Zu langsam.",
+      "en": "Too slow."
+    },
+    "death": {
+      "de": "Eine ... Lücke in meiner Deckung.",
+      "en": "A ... gap in my guard."
+    },
+    "recall": {
+      "de": "Klinge reinigen.",
+      "en": "Time to clean the blade."
+    }
   }
 }

@@ -42,6 +42,7 @@ import truda from './truda.json';
 import vargrim from './vargrim.json';
 import vessa from './vessa.json';
 import wren from './wren.json';
+import ysmay from './ysmay.json';
 
 export const REGISTRY: Readonly<Record<string, unknown>> = {
   aurel,
@@ -85,4 +86,5 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   vargrim,
   vessa,
   wren,
+  ysmay,
 };

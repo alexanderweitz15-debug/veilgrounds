@@ -15,6 +15,8 @@ Gaps (ordered, picked top-down):
 | 3 | Berserker with undying ult (top): **Torben Wutmähne** | shipped |
 | 4 | Generic bot hint `botManual` (Knarr stance toggle) | shipped |
 | 5 | Guardian enchanter with an ally ultimate (support): **Lumi Sternenwiege** | shipped |
+| 5c | Parry duelist (top): **Ysmay Degenfeld** | shipped |
+| 5d | Henrike turret as a real pet unit with HP | shipped |
 | 5b | Shapeshifter (two forms, jungle) | idea |
 | 6 | Summoner with killable pets (support/jungle) | idea |
 | 7 | Henrike turret killable (needs pet unit) | idea, not cheap |
@@ -30,9 +32,10 @@ Gaps (ordered, picked top-down):
 
 - **Runes**: keystones Eroberer (+2 adaptive per champion hit, 8 stacks, heal at full) and Komet (ability hit proc 30-100, CD 12 s) in `src/sim/items/runeHooks.ts`; minors Durchdringung (+6 magic pen), Letalität (+5), Heilkraft (+6 % heal/shield power), Standhaft (+8 % tenacity). Icons in itemIcons.json. Marga defaults to Komet, Torben to Eroberer. Test `tests/autoRunes.test.ts`; `tests/items.test.ts` rune counts are now `>=`.
 - **Lumi Sternenwiege** (`lumi`, support guardian enchanter): Wish Dust passive, Q star shot, W shield bond, E heal + speed swirl, R Last Wish (ally untargetable + projectile immune + shield + cleanse). Painted kit (floating crescent moon, star staff, twinkles), item **Sterndiadem** (+50 AP, +12 % heal/shield power, +15 haste, Star Spark shield after a cast). Test `tests/lumi.test.ts`.
+- **Ysmay Degenfeld** (`ysmay`, top parry duelist): W Parry gives all damage back for 0.8 s and stuns the attacker, passive refunds half the parry cooldown, Q lunge stops at the first enemy, E whirl, R Challenge. Painted kit (plume, rapier, parrying dagger). Test `tests/ysmay.test.ts`. Uses existing items (no new item yet).
+- **Henrike turret**: now a `spawnPet` unit (tag `henrike_turret`, HP 140-300 by rank, armor/MR 20) that enemies can kill; shots stop when it dies. Test in `tests/henrike.test.ts`.
+- **Sprite check** (own vite on port 5199, closed): Torben and Lumi read well; Lumi crescent enlarged, Marga mortar tube enlarged (still mostly behind the body).
 
 ## Open
 
-- No visual contact sheet was taken (the browser pane refused localhost in this session); kits only pass the headless frame/prop tests. Check `tools/scratch/champLab.html?mode=sheet` for Marga and Torben.
-- Henrike's turret still cannot be attacked (it is a hook-kept record, not a unit).
 - Bots do not use Torben's R tactically (generic self-cast logic only).

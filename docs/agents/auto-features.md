@@ -31,3 +31,8 @@ Branch `auto/features` (from origin/main). Area: game features, UI/UX, QoL, poli
 
 ## Test status
 - npm test: 151 files / 1880 tests green at the end.
+
+## Round 2
+- [x] A11 zoom min 1400, A12 soft edge zone (20 px full, 40 px half), A5 semi-lock camera option (setting cameraSemiLock; follows with lerp 0.2 once the champion is >35 % off centre).
+- [x] Sandbox champion picker in the panel (restarts as the chosen champion, default runes; ExitOpts.champion).
+- [x] A8 shoved minions/monsters shuffle (half-rate bob when moved >3 u per tick without walking). Champions excluded (dashes would look wrong).

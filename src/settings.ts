@@ -64,6 +64,8 @@ export interface Settings {
   botToxicity: boolean;
   /** Beta: new bot brain (reflex layer + utility model). */
   newBrain: boolean;
+  /** Migration marker: the new brain became the default (2026-11-06); old saves had newBrain false from the beta. */
+  newBrainDefault: boolean;
   /** Master volume 0..1 (procedural sound). */
   volume: number;
   /** Channel volumes 0..1 on top of the master (src/audio/manager.ts buses): world sounds, UI feedback, ambience, music. */
@@ -135,7 +137,8 @@ const DEFAULTS: Settings = {
   volumeAmbient: 0.5,
   volumeMusic: 0.5,
   botToxicity: true,
-  newBrain: false,
+  newBrain: true, // measured better than the old brain (Gold: CS/min 2.72 vs 2.09, 2.6 vs 6.7 reversals/min)
+  newBrainDefault: true,
   runePresets: {},
   minimapScale: 100,
   minimapLeft: false,
@@ -163,6 +166,7 @@ export async function loadSettings(): Promise<void> {
   // first start: follow the OS "reduce motion" preference
   if (saved?.reduceMotion === undefined) settings.reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (saved) Object.assign(settings, saved);
+  if (saved && saved.newBrainDefault === undefined) (settings.newBrain = true), (settings.newBrainDefault = true);
   // saves from before the auto-detect: the player already has a graphics choice, no benchmark
   if (saved && saved.gfxAutoDetected === undefined) settings.gfxAutoDetected = true;
   delete (settings as unknown as Record<string, unknown>).levelMod; // removed setting (old saves still carry it)

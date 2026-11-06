@@ -15,7 +15,7 @@ export type Action =
   | 'recall' | 'centerCamera' | 'toggleCameraLock' | 'pause' | 'showRange'
   | 'item1' | 'item2' | 'item3' | 'item4' | 'item5' | 'item6' | 'trinket'
   | 'scoreboard' | 'debug' | 'shop'
-  | 'pingWheel' | 'pingMissing' | 'pingQuestion'
+  | 'pingWheel' | 'pingMissing' | 'pingQuestion' | 'emote'
   | 'targetChampionsOnly' | 'fpsOverlay';
 
 export const DEFAULT_BINDS: Record<Action, string> = {
@@ -48,6 +48,8 @@ export const DEFAULT_BINDS: Record<Action, string> = {
   pingMissing: 'KeyV',
   /** LoL '?' ping (no LoL default key; H is free here). */
   pingQuestion: 'KeyH',
+  /** Emote strip (quick phrases as a speech bubble over the own champion). */
+  emote: 'KeyZ',
   /** LoL "target champions only" (hold): hover, clicks and casts ignore everything but champions. */
   targetChampionsOnly: 'Backquote',
   /** FPS / frame-time overlay (setting showFps). */

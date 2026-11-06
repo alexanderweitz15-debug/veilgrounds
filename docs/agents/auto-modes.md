@@ -32,6 +32,18 @@ Scope change (lead, mid-task): after ARAM no more modes; work moves to bot brain
 - npm test: 157 files / 1956 tests green. Screenshot: browser check showed the corridor on the minimap, level 3 / 1476 gold HUD.
 - Not done: the ground art is still the classic painting under the new walls (dev paints at runtime; shipped bake is by size).
 
+## Brain measurements, round 2 (default brain, gold, after lead's 66e4127; no brain code changed)
+- Baron is no longer a gap: tools/scratch/objs.ts (now detects the baron buff), 32-min cap, seeds 2/3/4: Schleierwaechter
+  taken in 3/3 games (seed 1 not: one "gather" at the pit, game ended at 27 min). Per game: Leviathan 3-4, Kesselbrut 2,
+  towers 10-16, kills 32-56, games end 26.6-29.9 min.
+- CS/min, 10 min, seeds 1+2 (tools/scratch/cspm.ts): top 2.67, adc 2.43, mid 1.90, jungle 1.33, support 0.38, all 1.74.
+  Lane-alone Gold is 9.6 CS/min (brain-lasthit.md), so last-hit skill is fine; presence is the gap.
+- Who kills lane minions, 10 min seed 1 (tools/scratch/csshare.ts): 631 deaths, champions 21 %, minions 54 %, towers 25 %.
+- Laner time 10 min seed 1 (tools/scratch/farmtime.ts, mid/top/adc, from 1:40): dead 2 %, fountain 8 %, within 900 of an
+  enemy minion 39 %, elsewhere 51 %. Next step for whoever owns laning: split "elsewhere" into walking to lane / roam /
+  group / waiting behind own tower, then fix the biggest piece. Not started, so no blind tuning.
+- tools/scratch/lanePresence.ts prints nothing (stale); farmtime.ts replaces it.
+
 ## Open
 - Custom game options UI.
 - Full `npm test`: 145 files / 1822 tests green with the variants change.

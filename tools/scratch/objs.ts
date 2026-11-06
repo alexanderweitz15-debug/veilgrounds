@@ -5,6 +5,7 @@ import { createSim, step } from '../../src/sim/sim';
 import { BotRunner, botGameConfig } from '../../src/ai/runner';
 import { Kind } from '../../src/sim/types';
 import { jungleState } from '../../src/sim/systems/jungle';
+import { hasBuff } from '../../src/sim/buffs';
 
 globalThis.DBGOBJ = !!process.env.DBGOBJ;
 const min = Number(process.argv[2] ?? 25);
@@ -19,8 +20,10 @@ for (const seed of seeds) {
   const bots = new BotRunner(cfg, undefined, { reflex: brain === 'new' });
   const log = [];
   let kills = 0, towers = 0;
+  let baron = 0;
   while (sim.tick < min * 1800 && sim.state.winner === undefined) {
     step(sim, bots.tick(sim));
+    if (sim.tick % 30 === 0 && !baron && sim.slots.some((e) => hasBuff(sim, e, 'mark', 'schleierwaechter'))) baron = 1;
     if (sim.tick % 30 === 0) { const j = jungleState(sim); const tot = j.leviathan[0] + j.leviathan[1]; if (tot !== (globalThis.lt ?? 0)) { log.push(`${(sim.tick / 1800).toFixed(1)}m LEVIATHAN #${tot}`); globalThis.lt = tot; } const kt = j.kesselbrut[0] + j.kesselbrut[1]; if (kt !== (globalThis.kt ?? 0)) { log.push(`${(sim.tick / 1800).toFixed(1)}m kessel #${kt}`); globalThis.kt = kt; } }
     for (const ev of sim.events) {
       if (ev.e !== 'death') continue;
@@ -42,8 +45,8 @@ for (const seed of seeds) {
   for (const x of ent) { const k = `${x.node}|${x.chosen}|${String(x.reason).replace(/[0-9.]+/g, '#').slice(0, 70)}`; by[k] = (by[k] ?? 0) + 1; }
   console.log('  objective log:', JSON.stringify(by, null, 1).slice(0, 4000));
   const lev = log.filter((l) => /leviathan|uralt/i.test(l)).length, kes = log.filter((l) => /kessel/i.test(l)).length, sch = log.filter((l) => /schleier/i.test(l)).length;
-  tot.lev += js.leviathan[0] + js.leviathan[1]; tot.kes += js.kesselbrut[0] + js.kesselbrut[1]; tot.sch += sch; // event-name counter above misses; use the jungle state tallies tot.tow += towers; tot.kills += kills; tot.games++;
-  console.log(`seed ${seed}: ${(sim.tick / 1800).toFixed(1)} min, kills ${kills}, towers ${towers}, leviathan ${lev}, kesselbrut ${kes}, schleier ${sch}${sim.state.winner !== undefined ? ' WIN t' + sim.state.winner : ''}`);
+  tot.lev += js.leviathan[0] + js.leviathan[1]; tot.kes += js.kesselbrut[0] + js.kesselbrut[1]; tot.sch += baron; tot.tow += towers; tot.kills += kills; tot.games++;
+  console.log(`seed ${seed}: ${(sim.tick / 1800).toFixed(1)} min, kills ${kills}, towers ${towers}, leviathan ${lev}, kesselbrut ${kes}, schleier ${baron}${sim.state.winner !== undefined ? ' WIN t' + sim.state.winner : ''}`);
   for (const l of log) console.log('   ', l);
 }
 const g = tot.games;

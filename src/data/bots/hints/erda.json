@@ -1,0 +1,161 @@
+{
+  "id": "erda",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "support",
+    "engage": 3,
+    "peel": 4,
+    "poke": 3,
+    "burst": 3
+  },
+  "keyRanges": {
+    "auto": 525,
+    "trade": 700,
+    "engage": 525,
+    "poke": 900,
+    "threat": 900,
+    "peel": 700
+  },
+  "combos": [
+    {
+      "id": "erda_data1",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "Q",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "erda_data2",
+      "kind": "trade",
+      "sequence": [
+        "E",
+        "Q",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "erda_data3",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "W",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "erda_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    },
+    {
+      "id": "erda_peel",
+      "kind": "peel",
+      "sequence": [
+        "R"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "line",
+      "roles": [
+        "poke"
+      ],
+      "range": 900,
+      "useRange": [
+        0,
+        828
+      ],
+      "speed": 1700,
+      "width": 80,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "circle",
+      "roles": [
+        "burst"
+      ],
+      "range": 700,
+      "useRange": [
+        0,
+        644
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 300,
+      "castTime": 0.3,
+      "delay": 0.6,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "self",
+      "roles": [
+        "peel",
+        "sustain"
+      ],
+      "range": 700,
+      "useRange": [
+        0,
+        700
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 700,
+      "castTime": 0.15,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "peel"
+    },
+    {
+      "slot": "R",
+      "aim": "self",
+      "roles": [
+        "cc",
+        "burst",
+        "ult"
+      ],
+      "range": 600,
+      "useRange": [
+        0,
+        600
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 600,
+      "castTime": 0.4,
+      "delay": 0.3,
+      "cc": 4,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

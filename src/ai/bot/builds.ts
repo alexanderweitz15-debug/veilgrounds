@@ -47,8 +47,10 @@ import wren from '../../data/builds/wren.json';
 import brigga from '../../data/builds/brigga.json';
 import ignatz from '../../data/builds/ignatz.json';
 import rhea from '../../data/builds/rhea.json';
+import zephyra from '../../data/builds/zephyra.json';
+import erda from '../../data/builds/erda.json';
 
 export interface BuildVariant { boots: string; core: string[] }
 export interface BuildData { champion: string; starter: string[]; standard: BuildVariant; vsAD?: BuildVariant; vsAP?: BuildVariant }
 
-export const BUILDS: Record<string, BuildData> = { aurel, brom, corvin, dagny, ferris, gorvam, grimald, hagen, harrow, ilvane, isolde, kaelen, kiran, lio, lysa, mira, nyx, oda, oleth, ottilie, renn, seraphyne, sev, fenna, rovena, dorrak, tilda, gneis, kerrin, henrike, thessaly, tobin, vargrim, vessa, wren, svea, truda, knarr, marga, torben, lumi, ysmay, gerwin, hedda, zinna, brigga, ignatz, rhea };
+export const BUILDS: Record<string, BuildData> = { aurel, brom, corvin, dagny, ferris, gorvam, grimald, hagen, harrow, ilvane, isolde, kaelen, kiran, lio, lysa, mira, nyx, oda, oleth, ottilie, renn, seraphyne, sev, fenna, rovena, dorrak, tilda, gneis, kerrin, henrike, thessaly, tobin, vargrim, vessa, wren, svea, truda, knarr, marga, torben, lumi, ysmay, gerwin, hedda, zinna, brigga, ignatz, rhea, zephyra, erda };

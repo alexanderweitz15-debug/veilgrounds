@@ -1630,5 +1630,73 @@
       "de": "Bolzen auffüllen.",
       "en": "Restocking bolts."
     }
+  },
+  "zephyra": {
+    "pick": {
+      "de": "Die Sterne stehen günstig.",
+      "en": "The stars are favourable."
+    },
+    "move1": {
+      "de": "Der Himmel ist klar.",
+      "en": "The sky is clear."
+    },
+    "move2": {
+      "de": "Ich lese den Weg.",
+      "en": "I read the way."
+    },
+    "attack": {
+      "de": "Sternenstaub!",
+      "en": "Stardust!"
+    },
+    "ability": {
+      "de": "Es fällt ein Stern.",
+      "en": "A star falls."
+    },
+    "kill": {
+      "de": "Es stand in den Sternen.",
+      "en": "It was written in the stars."
+    },
+    "death": {
+      "de": "Eine Sternschnuppe ... verglüht.",
+      "en": "A shooting star ... burns out."
+    },
+    "recall": {
+      "de": "Zurück zur Sternwarte.",
+      "en": "Back to the observatory."
+    }
+  },
+  "erda": {
+    "pick": {
+      "de": "Der Boden gehorcht.",
+      "en": "The ground obeys."
+    },
+    "move1": {
+      "de": "Der Stein trägt mich.",
+      "en": "The stone carries me."
+    },
+    "move2": {
+      "de": "Ich spüre jeden Schritt.",
+      "en": "I feel every step."
+    },
+    "attack": {
+      "de": "Fels!",
+      "en": "Rock!"
+    },
+    "ability": {
+      "de": "Erhebe dich!",
+      "en": "Rise!"
+    },
+    "kill": {
+      "de": "Zu Staub.",
+      "en": "To dust."
+    },
+    "death": {
+      "de": "Ich werde ... wieder Stein.",
+      "en": "I become ... stone again."
+    },
+    "recall": {
+      "de": "Zurück in den Berg.",
+      "en": "Back into the mountain."
+    }
   }
 }

@@ -1,0 +1,44 @@
+{
+  "template": "enchanter",
+  "starter": [
+    "spenderlampe",
+    "trank"
+  ],
+  "standard": {
+    "boots": "stiefel_hast",
+    "core": [
+      "erdanker",
+      "hueterstab",
+      "kettenrelais",
+      "zeitglas"
+    ]
+  },
+  "vsAD": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "erdanker",
+      "hueterstab",
+      "kettenrelais",
+      "wallherz"
+    ]
+  },
+  "vsAP": {
+    "boots": "stiefel_mr",
+    "core": [
+      "erdanker",
+      "hueterstab",
+      "kettenrelais",
+      "sturmgewand"
+    ]
+  },
+  "champion": "erda",
+  "note": "Component order follows items.json \"from\"; Diamond+ bots reorder components situationally (spec §5).",
+  "runes": {
+    "keystone": "inspiration",
+    "minor": [
+      "heilkraft",
+      "hast",
+      "wachsamkeit"
+    ]
+  }
+}

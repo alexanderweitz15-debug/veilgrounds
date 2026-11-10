@@ -7,6 +7,7 @@ import brom from './brom.json';
 import corvin from './corvin.json';
 import dagny from './dagny.json';
 import dorrak from './dorrak.json';
+import erda from './erda.json';
 import fenna from './fenna.json';
 import ferris from './ferris.json';
 import gerwin from './gerwin.json';
@@ -48,6 +49,7 @@ import vargrim from './vargrim.json';
 import vessa from './vessa.json';
 import wren from './wren.json';
 import ysmay from './ysmay.json';
+import zephyra from './zephyra.json';
 import zinna from './zinna.json';
 
 export const REGISTRY: Readonly<Record<string, unknown>> = {
@@ -57,6 +59,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   corvin,
   dagny,
   dorrak,
+  erda,
   fenna,
   ferris,
   gerwin,
@@ -98,5 +101,6 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   vessa,
   wren,
   ysmay,
+  zephyra,
   zinna,
 };

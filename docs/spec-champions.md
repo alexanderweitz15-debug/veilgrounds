@@ -289,3 +289,15 @@ Musikerin: Noten (grün/blau/rot) erscheinen auf der Karte, nur für ihr Team si
 
 42. **Rhea Doppelbolzen, die Schnellschützin** – ADC, Repetier-Schützin (AD), Ranged 500. Training: nach jeder Fähigkeit kommt ein Doppelschuss, Fährtenschuss ausweichen, Bolzensturm-Kegel meiden.
     - Passiv Doppelbolzen: nach einer Fähigkeit feuert der nächste Auto einen zweiten Bolzen (60 %). Q Streuschuss (Kegel), W Fährtenschuss (Linie), E Rückzug (Sprung weg + Tempo), R Bolzensturm (Kegel 800).
+
+43. **Zephyra Weitblick, die Sternenkundlerin** – Mid, Fern-Magierin (AP), Ranged 550. Training: der Sternenfall (Reichweite 8.000, 2,2 s Vorlauf) trifft von überall - Kreis sehen und herauslaufen.
+    - Passiv Sternkarte: Takedown senkt die Abklingzeit des Sternenfalls um 15 s. Q Sternensplitter, W Mondschleier (Schild + Tempo), E Kometenbahn (Sprung + Schaden), R Sternenfall (global).
+
+44. **Erda Felsruf, die Erdweberin** – Support, Gelände-Magierin (AP), Ranged 525. Training: nicht in den Steinkreis laufen, Verbündete nicht darin lassen, das Beben kommt aus dem Stand.
+    - Passiv Gesteinsblut: +20 Rüstung/MR nahe eigenem Steinkreis. W Steinkreis (Schaden + 2,5 s Ring aus Fels, `blockTerrain`), Q Felsbrocken, E Felsschild (Schild auf alle Verbündeten in 700), R Beben (Luft + Schaden).
+
+43. **Zephyra Weitblick, die Sternenkundlerin** – Mid, Fern-Magierin (AP), Ranged 550. Training: der Sternenfall (Reichweite 8.000, 2,2 s Vorlauf) trifft von überall - Kreis sehen und herauslaufen.
+    - Passiv Sternkarte: Takedown senkt die Abklingzeit des Sternenfalls um 15 s. Q Sternensplitter, W Mondschleier (Schild + Tempo), E Kometenbahn (Sprung + Schaden), R Sternenfall (global).
+
+44. **Erda Felsruf, die Erdweberin** – Support, Gelände-Magierin (AP), Ranged 525. Training: nicht in den Steinkreis laufen, Verbündete nicht darin lassen, das Beben kommt aus dem Stand.
+    - Passiv Gesteinsblut: +20 Rüstung/MR nahe eigenem Steinkreis. W Steinkreis (Schaden + 2,5 s Ring aus Fels, `blockTerrain`), Q Felsbrocken, E Felsschild (Schild auf alle Verbündeten in 700), R Beben (Luft + Schaden).

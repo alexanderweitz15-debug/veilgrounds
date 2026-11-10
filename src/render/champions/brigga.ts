@@ -16,7 +16,7 @@ export function battleStandard(c: PropCtx): void {
   const { st, rig, pose } = c;
   const bk = backFrame(rig, -6, 1);
   const base = at(bk, [4, 0, 0]);
-  const top = at(bk, [4, 98, -3]);
+  const top = at(bk, [4, 76, -3]);
   st.add(base, -0.8, (p) => {
     p.fill(st.capsule(base, top, 1.9, 1.4), POLE, { lw: 1.1 });
     p.fill(st.hull([...ring(frameYZ(top, [0, 1, 0], rig.chest.z), 0, 2.2, 2.2, 8), ...ring(frameYZ(top, [0, 1, 0], rig.chest.z), 4, 1, 1, 6)]), BRASS, { lw: 1 });
@@ -24,10 +24,10 @@ export function battleStandard(c: PropCtx): void {
   const pts: V3[] = [];
   for (let i = 0; i <= 6; i++) {
     const u = i / 6;
-    pts.push(at(bk, [4 + u * 30 + pose.sway * u * 6, 90 - u * 4 + Math.sin(pose.t * TAU * 2 + u * 4) * 3 * u, -3 - u * 6]));
+    pts.push(at(bk, [4 + u * 46 + pose.sway * u * 8, 70 - u * 8 + Math.sin(pose.t * TAU * 2 + u * 4) * 4 * u, -3 + u * 4]));
   }
-  st.add(pts[3]!, 1.2, (p) => {
-    p.fill(ribbon(st, pts, 9, 5), CLOTH_RED, { lw: 1.2 });
+  st.add(pts[3]!, 2.6, (p) => {
+    p.fill(ribbon(st, pts, 12, 7), CLOTH_RED, { lw: 1.2 });
     p.fill(ribbon(st, pts.map((q) => [q[0], q[1] - 1, q[2]] as V3).slice(0, 5), 3, 1.5), CLOTH_GOLD, { lw: 0.6, rim: false });
   });
 }

@@ -62,6 +62,8 @@ import { floatNotes, hatPlume, luteBack } from './tilda';
 import { battleStandard, roundShield } from './brigga';
 import { forgeHammer, forgeSparks } from './ignatz';
 import { repeaterCrossbow, longScarf } from './rhea';
+import { telescope, orbitStars } from './zephyra';
+import { shoulderBoulder, orbitRocks } from './erda';
 import type { Kit } from './types';
 
 const SKIN = { fair: '#e9c6a4', light: '#ddb08a', tan: '#c08a62', brown: '#946244', dark: '#6a4430', pale: '#e8cfba', old: '#d6b094', ash: '#c8b8a8' };
@@ -1407,6 +1409,61 @@ kit({
   cast: 'point',
   gait: 'light',
   props: [repeaterCrossbow, longScarf],
+});
+// Zephyra Weitblick: robed stargazer with a telescope staff and orbiting stars
+kit({
+  id: 'zephyra',
+  name: 'Zephyra Weitblick',
+  world: 198,
+  look: 'slender woman in a deep blue robe with silver star embroidery and a wide-brimmed pointed hat with a silver band, long dark violet hair, pale skin, a long brass telescope used as a staff with a glowing lens and seven small four-point stars orbiting her shoulders',
+  feature: 'long brass telescope staff + orbiting stars + pointed hat',
+  body: { ...FEMALE, H: 188, shW: 16.5, hipW: 13.5, girth: 0.88, legs: 0.5, headR: 12.6, bust: 0.3 },
+  outfit: {
+    skin: '#e4d6dc',
+    face: { eyes: '#a8c8ff', brows: 0.9 },
+    top: cloth('#24347a'),
+    sleeves: cloth('#2c3c8a'),
+    forearms: cloth('#d8d4ea'),
+    legs: cloth('#1c2864'),
+    boots: leather('#2a2644'),
+    coat: { mat: cloth('#24347a'), len: 1.5, flare: 0.6, open: cloth('#9aa8d8'), split: true },
+    belt: { mat: cloth('#c8b070'), y: 0.2 },
+    hat: { kind: 'wide', mat: cloth('#1c2864'), band: m('#c8c8d8', 'metal') },
+    hair: { style: 'long', mat: hair('#3a2858') },
+  },
+  hold: 'pole',
+  attack: 'staff',
+  cast: 'draw',
+  gait: 'light',
+  props: [telescope, orbitStars],
+});
+// Erda Felsruf: grey stone-skinned earthweaver with a boulder shoulder and orbiting rocks
+kit({
+  id: 'erda',
+  name: 'Erda Felsruf',
+  world: 192,
+  look: 'grey stone-skinned woman with a crown of rock shards instead of hair, a moss-green and sand-brown wrap dress with a rope belt, bare stone forearms, a large lumpy boulder with a glowing orange crack on her shoulder and three small rocks orbiting her hands',
+  feature: 'boulder on the shoulder + orbiting rocks + rock-shard crown',
+  body: { ...FEMALE, H: 182, shW: 18, hipW: 15, girth: 1.0, bust: 0.3, headR: 13 },
+  outfit: {
+    skin: '#8c8c92',
+    skinKind: 'stone',
+    face: { eyes: '#ffb050', brows: 0.8 },
+    top: cloth('#6a7a4a'),
+    sleeves: m('#8c8c92', 'stone'),
+    forearms: m('#8c8c92', 'stone'),
+    hands: m('#8c8c92', 'stone'),
+    legs: cloth('#7a6a4a'),
+    boots: leather('#4a4036'),
+    coat: { mat: cloth('#7a6a4a'), len: 1.4, flare: 0.55, tatter: true, split: true },
+    belt: { mat: m('#a88a5a', 'cloth'), y: 0.2 },
+    hair: { style: 'wild', mat: m('#6a6a72', 'stone') },
+  },
+  hold: 'relaxed',
+  attack: 'palm',
+  cast: 'lob',
+  gait: 'heavy',
+  props: [shoulderBoulder, orbitRocks],
 });
 // Knarr: giant crab, painted by the SpriteDrawer in crab.ts (atlas.ts DRAWERS); the Kit stub carries the icon colours
 kit(KNARR_KIT);

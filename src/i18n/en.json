@@ -1216,5 +1216,9 @@
   "ann.spree5": "Unstoppable!",
   "ann.spree6": "Dominating!",
   "ann.spree7": "Godlike!",
-  "ann.spree8": "Legendary!"
+  "ann.spree8": "Legendary!",
+  "set.preset": "Preset",
+  "set.preset.beginner": "Beginner",
+  "set.preset.pro": "Competitive",
+  "set.preset.standard": "Standard"
 }

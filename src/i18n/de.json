@@ -1216,5 +1216,9 @@
   "ann.spree5": "Unaufhaltsam!",
   "ann.spree6": "Dominierend!",
   "ann.spree7": "Gottgleich!",
-  "ann.spree8": "Legendär!"
+  "ann.spree8": "Legendär!",
+  "set.preset": "Voreinstellung",
+  "set.preset.beginner": "Einsteiger",
+  "set.preset.pro": "Wettkampf",
+  "set.preset.standard": "Standard"
 }

@@ -72,6 +72,7 @@
     "lumi": [["moon",250],["ring",48],["wing",200],["sun",52]],
     "ysmay": [["sword",350],["shield",210],["wave",25],["arrow",8]],
     "gerwin": [["bell",150],["fang",120],["horn",140],["moon",165]],
+    "hedda": [["arrow",35],["claw",28],["leaf",95],["boot",42]],
     "knarr": [["claw",15],["shield",205],["boot",190],["axe",5]]
   }
 }

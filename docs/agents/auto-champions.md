@@ -17,7 +17,7 @@ Gaps (ordered, picked top-down):
 | 5 | Guardian enchanter with an ally ultimate (support): **Lumi Sternenwiege** | shipped |
 | 5c | Parry duelist (top): **Ysmay Degenfeld** | shipped |
 | 5d | Henrike turret as a real pet unit with HP | shipped |
-| 5b | Shapeshifter (two forms, jungle) | idea |
+| 5b | Shapeshifter (two forms, jungle): **Hedda Fellwechsel** | shipped |
 | 5e | Summoner with killable pets (jungle): **Gerwin Totenglocke** | shipped |
 | 5f | Runes Flinkfuß, Phasenlauf, Erstschlag | shipped |
 | 5g | Items Stichblatt (Ysmay), Gruftkrone (Gerwin) | shipped |
@@ -40,6 +40,8 @@ Gaps (ordered, picked top-down):
 - **Sprite check** (own vite on port 5199, closed): Torben and Lumi read well; Lumi crescent enlarged, Marga mortar tube enlarged (still mostly behind the body).
 - **Gerwin Totenglocke** (`gerwin`, jungle summoner): skeletons are `spawnPet` units (HP, killable, max 4); Q raise, W burst the nearest, E command, R three reinforced. Kit: bell on a pole, key ring, ghost lights. Item **Gruftkrone** (+55 AP +300 HP +10 haste, takedown heal + mana). Test `tests/gerwin.test.ts`.
 - **Runes**: Flinkfuß, Phasenlauf, Erstschlag keystones (tests in `tests/autoRunes.test.ts`). **Stichblatt** (+45 AD +20 % AS +5 % MS, +15 % damage dealt 2 s after being auto-hit) for Ysmay.
+- **Hedda Fellwechsel** (`hedda`, jungle shapeshifter): human (range 550, E heals) and panther (range 175, +12 % MS, +15 % AD, +50 % ability damage on hunted targets, E swipes); W toggles (botManual), R leaps and shifts. Kit: cat ears, ringed tail, hunting spear, claw necklace. Test `tests/hedda.test.ts`. Uses existing items.
+- **Sprites**: Marga mortar redrawn in front of the body in bright brass (clearly visible now); Gerwin bell checked on champLab (visible).
 
 ## Open
 

@@ -5,13 +5,13 @@ import { add, at, frameYZ, m, madd, norm, ring, scl, type V3 } from './core';
 import { aimW, backFrame, BRASS, IRON, LEATHER } from './props';
 import type { PropCtx } from './types';
 
-const TUBE = m('#c99a3c', 'metal');
-const TUBE_DARK = m('#8a6428', 'metal');
+const TUBE = m('#e6b64e', 'metal');
+const TUBE_DARK = m('#a67a30', 'metal');
 const RAM = m('#6a4a2a', 'wood');
 const SWAB = m('#d9d2bc', 'cloth');
 
 /** Axis of the mortar: up the spine, leaning toward the front over the shoulder. */
-const tubeAxis = (c: PropCtx): V3 => norm(add(c.rig.chest.y, scl(c.rig.chest.z, 0.38)));
+const tubeAxis = (c: PropCtx): V3 => norm(add(add(c.rig.chest.y, scl(c.rig.chest.z, 0.3)), scl(c.rig.chest.x, 0.4)));
 
 /** Brass mortar tube on the back: flared muzzle, two iron bands, a leather strap round the chest; kicks on cast. */
 export function mortarPack(c: PropCtx): void {
@@ -20,7 +20,7 @@ export function mortarPack(c: PropCtx): void {
   const ax = tubeAxis(c);
   const f = frameYZ(at(bk, [11, 2, -4]), ax, rig.chest.z);
   const len = 74 - pose.glow * 6;
-  st.add(f.o, 0.3, (p) => {
+  st.add(f.o, 2.2, (p) => {
     p.fill(st.hull([...ring(f, 0, 10.5, 10.5, 12), ...ring(f, len * 0.5, 9.4, 9.4, 12), ...ring(f, len, 8.6, 8.6, 12)]), TUBE, { lw: 1.6 });
     p.fill(st.hull([...ring(f, len, 8.6, 8.6, 12), ...ring(f, len + 6, 13.5, 13.5, 12)]), TUBE_DARK, { lw: 1.4 });
     p.fill(st.hull([...ring(f, len + 5.5, 11.8, 11.8, 12), ...ring(f, len + 6.3, 11.6, 11.6, 12)]), m('#1c1612', 'metal'), { lw: 0.6 });

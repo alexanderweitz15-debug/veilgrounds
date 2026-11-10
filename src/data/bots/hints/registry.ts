@@ -14,6 +14,7 @@ import gorvam from './gorvam.json';
 import grimald from './grimald.json';
 import hagen from './hagen.json';
 import harrow from './harrow.json';
+import hedda from './hedda.json';
 import henrike from './henrike.json';
 import ilvane from './ilvane.json';
 import isolde from './isolde.json';
@@ -59,6 +60,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   grimald,
   hagen,
   harrow,
+  hedda,
   henrike,
   ilvane,
   isolde,

@@ -48,7 +48,7 @@ function bakeSprites(): Plugin {
 }
 
 /** Test files that play full bot games (minutes each). `vitest run` = fast set, `--mode slow` / `--mode all`. */
-const SLOW_TESTS = ['bots', 'brainReflex', 'utilityRecall', 'utilityGame', 'replay', 'replaySeek', 'attention', 'botHumanize', 'botLastHit', 'botPerception', 'botStyle', 'ghost', 'rage', 'exchange', 'sim/wardStealth'].map((f) => `tests/${f}.test.ts`);
+const SLOW_TESTS = ['bots', 'brainReflex', 'utilityRecall', 'utilityGame', 'replay', 'replaySeek', 'attention', 'botHumanize', 'botLastHit', 'botPerception', 'botStyle', 'ghost', 'rage', 'exchange', 'sim/wardStealth', 'earlyPlan'].map((f) => `tests/${f}.test.ts`);
 export default defineConfig(({ mode }) => ({
   base: './',
   worker: { format: 'es' },

@@ -192,7 +192,8 @@ describe('reflex layer: window collisions (test 3)', () => {
     console.log(`window collisions lost: diamond ${d.coll} (CS ${d.cs}), gold ${gld.coll} (CS ${gld.cs})`);
     // the collision label counts a loss next to one of the bot's own last hits: a bot that takes more last hits gets
     // more such labels, so the count only has to stay in the same range; the CS gap is the real check
-    expect(d.coll).toBeLessThanOrEqual(gld.coll + 4);
+    // per CS (Diamond takes more last hits, so it collects more labels); +0.01 slack for small-sample noise
+    expect(d.coll / d.cs).toBeLessThanOrEqual(gld.coll / gld.cs + 0.01);
     expect(d.cs).toBeGreaterThan(gld.cs);
   }, 600_000);
 });

@@ -92,7 +92,7 @@ export class MatchStats {
     for (const ev of snap.events) if (ev.e === 'death' && ev.kind === Kind.Champion) this.champs.add(ev.eid);
     s.duration = snap.time;
     s.team = snap.team;
-    if (me) s.items = me.items.slice();
+    if (me?.items) s.items = me.items.slice();
     if (snap.trainer) s.trainer = snap.trainer;
     if (!me) return;
     let lead = 0;

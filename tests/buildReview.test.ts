@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BUILDS } from '../src/ai/bot/builds';
-import { missingCore } from '../src/ui/buildReview';
+import { missingCore } from '../src/ui/buildReviewCalc';
 
 describe('build review', () => {
   it('lists boots and core items that are not owned, in buy order', () => {

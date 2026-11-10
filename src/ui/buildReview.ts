@@ -1,17 +1,10 @@
 // Post-game build review: the items the player ended with, and the core items of the champion's standard build that were
 // still missing (hint for the next game). The build data is the bots' (src/ai/bot/builds.ts), read-only.
 import { t } from '../i18n';
-import { BUILDS } from '../ai/bot/builds';
+import { missingCore } from './buildReviewCalc';
 import { itemById } from '../sim/items/inventory';
 import { itemIcon } from './icons';
 import { setTip } from './tooltip';
-
-/** Standard core items (and boots) not in `owned`, in buy order. */
-export function missingCore(champion: string, owned: readonly (string | null)[]): string[] {
-  const b = BUILDS[champion]?.standard;
-  if (!b) return [];
-  return [b.boots, ...b.core].filter((id) => !owned.includes(id));
-}
 
 function strip(parent: HTMLElement, ids: readonly string[]): void {
   const row = document.createElement('div');

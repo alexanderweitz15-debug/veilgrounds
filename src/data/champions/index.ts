@@ -51,6 +51,8 @@ import tilda from './tilda.json';
 import brigga from './brigga.json';
 import ignatz from './ignatz.json';
 import rhea from './rhea.json';
+import zephyra from './zephyra.json';
+import erda from './erda.json';
 
 const raw = {
   ilvane,
@@ -101,6 +103,8 @@ const raw = {
   brigga,
   ignatz,
   rhea,
+  zephyra,
+  erda,
 } satisfies Record<string, Json<ChampionData>>;
 
 export const champions: Record<string, ChampionData> = Object.fromEntries(

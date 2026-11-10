@@ -13,6 +13,7 @@ import { dealDamage, heal, lastCombatTick, lastDamageTick } from '../damage';
 import { ITEM_SLOTS, inventory, itemById, itemStats } from './inventory';
 import { RUNES, defaultRunes, type RuneChoice } from './runes';
 import { startSecondWind } from './itemHooks';
+import { reward } from '../systems/economy';
 
 const RUNE_BY_ID = new Map(RUNES.map((r) => [r.id, r]));
 export const runeById = (id: string): RuneData | undefined => RUNE_BY_ID.get(id);
@@ -43,8 +44,8 @@ export const PHASE = { hits: 3, window: sec(3), ms: 30, ticks: sec(3), cd: sec(2
 export const FIRST = { quiet: sec(3), window: sec(3), mult: 1.07, cd: sec(25) };
 /** Last Stand: +5 % damage below 60 % HP, +11 % below 30 %. */
 export const LAST_STAND = { low: 0.6, lowMult: 1.05, crit: 0.3, critMult: 1.11 };
-/** Triumph: a takedown heals 10 % of the missing HP. */
-export const TRIUMPH = { pct: 0.1 };
+/** Triumph: a takedown heals 10 % of the missing HP and gives 20 gold. */
+export const TRIUMPH = { pct: 0.1, gold: 20 };
 export const COMET = { min: 30, max: 100, bonusAd: 0.2, ap: 0.1, cd: sec(12) };
 export const VIGILANCE_WARD_MULT = 1.1;
 
@@ -224,6 +225,7 @@ export const RUNE_HOOKS: Record<string, ItemHook> = {
     onTakedown(sim, eid) {
       const { Hp } = sim.c;
       heal(sim, eid, Math.max(0, Hp.max[eid]! - Hp.cur[eid]!) * TRIUMPH.pct);
+      reward(sim, eid, TRIUMPH.gold);
     },
   },
   rune_fleetfoot: {

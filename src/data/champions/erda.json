@@ -1,0 +1,351 @@
+{
+  "id": "erda",
+  "name": "Erda Felsruf",
+  "title": {
+    "de": "die Erdweberin",
+    "en": "the Earthweaver"
+  },
+  "roles": [
+    "support"
+  ],
+  "archetype": "terrain_mage_support",
+  "botBias": {
+    "teamplay": 2,
+    "aggression": -1
+  },
+  "trainingPurpose": {
+    "de": "Eine Gelände-Magierin lesen: der Steinkreis sperrt 2,5 s ein und aus - nicht hineinlaufen, Verbündete nicht darin lassen, das Beben kommt aus dem Stand.",
+    "en": "Reading a terrain mage: the Stone Ring seals the area for 2.5 s - do not run in, do not leave allies inside, Quake comes from standing."
+  },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 585,
+    "hpGrowth": 96,
+    "hpRegen": 5.5,
+    "hpRegenGrowth": 0.6,
+    "mana": 410,
+    "manaGrowth": 40,
+    "manaRegen": 10,
+    "manaRegenGrowth": 0.8,
+    "ad": 53,
+    "adGrowth": 3,
+    "armor": 28,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.625,
+    "asGrowth": 1.6,
+    "range": 525,
+    "ms": 335,
+    "windup": 0.22,
+    "projectileSpeed": 1500,
+    "radius": 65
+  },
+  "passive": {
+    "name": {
+      "de": "Gesteinsblut",
+      "en": "Stone Blood"
+    },
+    "desc": {
+      "de": "Innerhalb von 450 um einen eigenen Steinkreis: +20 Rüstung und Magieresistenz.",
+      "en": "Within 450 of one of her own stone rings: +20 armor and magic resist."
+    },
+    "hooks": [
+      "erda_stone"
+    ]
+  },
+  "abilities": [
+    {
+      "id": "erda_q",
+      "name": {
+        "de": "Felsbrocken",
+        "en": "Boulder"
+      },
+      "desc": {
+        "de": "Linie 900: 55/90/125/160/195 (+55 % AP) magischer Schaden, 25 % Slow für 1,25 s.",
+        "en": "Line 900: 55/90/125/160/195 (+55% AP) magic damage, 25% slow for 1.25 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 900,
+      "cooldown": [
+        8,
+        7.5,
+        7,
+        6.5,
+        6
+      ],
+      "cost": [
+        50,
+        55,
+        60,
+        65,
+        70
+      ],
+      "costType": "mana",
+      "width": 80,
+      "speed": 1700,
+      "flags": [
+        "blocked_by_minions"
+      ],
+      "effects": [
+        {
+          "kind": "damage",
+          "type": "magic",
+          "amount": {
+            "base": [
+              55,
+              90,
+              125,
+              160,
+              195
+            ],
+            "ap": 0.55
+          }
+        },
+        {
+          "kind": "slow",
+          "pct": 25,
+          "duration": 1.25
+        }
+      ]
+    },
+    {
+      "id": "erda_w",
+      "name": {
+        "de": "Steinkreis",
+        "en": "Stone Ring"
+      },
+      "desc": {
+        "de": "Kreis 300 auf 700, schlägt nach 0,6 s ein: 40/70/100/130/160 (+40 % AP) magischer Schaden; ein Steinring (2,5 s) sperrt den Rand des Kreises.",
+        "en": "Circle 300 at 700, lands after 0.6 s: 40/70/100/130/160 (+40% AP) magic damage; a stone ring (2.5 s) seals the edge of the circle."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.3,
+      "movesWhileCasting": false,
+      "range": 700,
+      "cooldown": [
+        20,
+        19,
+        18,
+        17,
+        16
+      ],
+      "cost": [
+        70,
+        75,
+        80,
+        85,
+        90
+      ],
+      "costType": "mana",
+      "radius": 300,
+      "delay": 0.6,
+      "flags": [
+        "ground_target"
+      ],
+      "effects": [
+        {
+          "kind": "damage",
+          "type": "magic",
+          "amount": {
+            "base": [
+              40,
+              70,
+              100,
+              130,
+              160
+            ],
+            "ap": 0.4
+          }
+        },
+        {
+          "kind": "hook",
+          "id": "erda_w_ring"
+        }
+      ]
+    },
+    {
+      "id": "erda_e",
+      "name": {
+        "de": "Felsschild",
+        "en": "Rock Shield"
+      },
+      "desc": {
+        "de": "Ein Schild über 60/95/130/165/200 (+45 % AP) für 3 s auf dich und Verbündete in 700; +15 % Bewegung für 2 s.",
+        "en": "A shield of 60/95/130/165/200 (+45% AP) for 3 s on you and allies within 700; +15% move speed for 2 s."
+      },
+      "type": "self",
+      "castTime": 0.15,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [
+        14,
+        13,
+        12,
+        11,
+        10
+      ],
+      "cost": [
+        50,
+        55,
+        60,
+        65,
+        70
+      ],
+      "costType": "mana",
+      "radius": 700,
+      "effects": [
+        {
+          "kind": "shield",
+          "amount": {
+            "base": [
+              60,
+              95,
+              130,
+              165,
+              200
+            ],
+            "ap": 0.45
+          },
+          "duration": 3,
+          "target": "allies"
+        },
+        {
+          "kind": "buff",
+          "stat": "ms",
+          "pct": 15,
+          "duration": 2,
+          "target": "self"
+        }
+      ]
+    },
+    {
+      "id": "erda_r",
+      "name": {
+        "de": "Beben",
+        "en": "Quake"
+      },
+      "desc": {
+        "de": "Kreis 600 um Erda: 120/200/280 (+70 % AP) magischer Schaden, wirft Gegner 1 s in die Luft.",
+        "en": "Circle 600 around Erda: 120/200/280 (+70% AP) magic damage, throws enemies into the air for 1 s."
+      },
+      "type": "self",
+      "castTime": 0.4,
+      "movesWhileCasting": false,
+      "range": 0,
+      "cooldown": [
+        110,
+        95,
+        80
+      ],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 600,
+      "delay": 0.3,
+      "effects": [
+        {
+          "kind": "damage",
+          "type": "magic",
+          "amount": {
+            "base": [
+              120,
+              200,
+              280
+            ],
+            "ap": 0.7
+          }
+        },
+        {
+          "kind": "airborne",
+          "duration": 1
+        }
+      ]
+    }
+  ],
+  "spikeLevels": [
+    3,
+    6
+  ],
+  "spikeNote": {
+    "de": "Level 3 (Steinkreis sperrt Trades) und Level 6 (Beben im Teamfight).",
+    "en": "Level 3 (Stone Ring seals trades) and level 6 (Quake in teamfights)."
+  },
+  "maxOrder": [
+    "Q",
+    "W",
+    "E"
+  ],
+  "combos": [
+    {
+      "name": {
+        "de": "Kreis und Brocken",
+        "en": "Ring and boulder"
+      },
+      "sequence": [
+        "W",
+        "Q",
+        "AA"
+      ]
+    },
+    {
+      "name": {
+        "de": "Schild und Brocken",
+        "en": "Shield and boulder"
+      },
+      "sequence": [
+        "E",
+        "Q",
+        "AA"
+      ]
+    },
+    {
+      "name": {
+        "de": "Beben",
+        "en": "Quake"
+      },
+      "sequence": [
+        "R",
+        "W",
+        "Q"
+      ]
+    }
+  ],
+  "scores": {
+    "engage": 3,
+    "peel": 4,
+    "range": 3,
+    "scaling": 3,
+    "waveclear": 2,
+    "mobility": 1
+  },
+  "voiceLines": {
+    "pick": {
+      "de": "Der Boden gehorcht.",
+      "en": "The ground obeys."
+    },
+    "firstBlood": {
+      "de": "Fels bricht Knochen.",
+      "en": "Rock breaks bone."
+    },
+    "kill": {
+      "de": "Zu Staub.",
+      "en": "To dust."
+    },
+    "death": {
+      "de": "Ich werde ... wieder Stein.",
+      "en": "I become ... stone again."
+    },
+    "recall": {
+      "de": "Zurück in den Berg.",
+      "en": "Back into the mountain."
+    },
+    "taunt": {
+      "de": "Lauf nur. Die Erde ist schneller.",
+      "en": "Run all you like. The earth is faster."
+    }
+  },
+  "silhouette": "grey stone-skinned woman with a crown of rock shards, a large boulder on one shoulder and three rocks orbiting her hands"
+}

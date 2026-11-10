@@ -102,9 +102,15 @@ describe('Letzter Stand / Triumph', () => {
     const low = dealDamage(d.sim, d.me, d.foe, 100, 'true');
     expect(low).toBeGreaterThan(full * 1.08);
   });
-  it('Triumph heals on a takedown (hook present on the page)', async () => {
+  it('Triumph heals 10 % of the missing HP and gives 20 gold on a takedown', async () => {
     const { RUNE_HOOKS } = await import('../src/sim/items/runeHooks');
-    expect(RUNE_HOOKS.rune_triumph!.onTakedown).toBeTypeOf('function');
+    const d = duel({ champ: 'mira', runes: page('adaptiv', ['triumph', 'none', 'none']) });
+    d.sim.c.Hp.cur[d.me] = d.sim.c.Hp.max[d.me]! * 0.5;
+    const hp = d.sim.c.Hp.cur[d.me]!;
+    const gold = d.sim.c.Champ.gold[d.me]!;
+    RUNE_HOOKS.rune_triumph!.onTakedown!(d.sim, d.me, d.foe);
+    expect(d.sim.c.Hp.cur[d.me]!).toBeGreaterThan(hp);
+    expect(d.sim.c.Champ.gold[d.me]! - gold).toBe(20);
   });
 });
 

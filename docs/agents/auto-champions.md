@@ -47,6 +47,10 @@ Gaps (ordered, picked top-down):
 - **Brigga Bollwerk** (`brigga`, support banner tank): Shield Wall aura, Q stun line, W heal+slow zone, E dash+shield, R ally damage reduction + shield; item **Bollwerkbanner**. **Ignatz Funkenhammer** (`ignatz`, mid bruiser mage): Heat ignites on the 3rd ability hit; item **Schmiedeherz**. **Rhea Doppelbolzen** (`rhea`, ADC repeater): extra bolt after an ability; item **Wundersehne**. Tests `tests/brigga.test.ts`, `ignatz.test.ts`, `rhea.test.ts`. Sprites checked on champLab (Brigga pole + shield, Ignatz glowing hammer, Rhea scarf + crossbow; the scarf reads a bit like a red hoop in the front view).
 - **Runes**: Letzter Stand and Triumph minors. Role counts now: top 11, jungle 13, mid 11, adc 9, support 9.
 - **Tooling**: `register.cjs` style scripts (scratchpad only) did the registry edits; `rhea` taught that champion data allows only one `dash` ability (validate.ts).
+- **Fixes**: Brigga pennant now outside the body (in front, shorter pole); Rhea scarf hangs behind (no hoop); Triumph also gives 20 gold.
+- **Matchup data** for champion-select hints: `src/data/matchups.json` (classes + relations + generated lists), accessor `src/data/matchups.ts` (`matchupOf`, `strongAgainst`), generator `tools/matchups/generate.mjs`, test `tests/matchups.test.ts`.
+- **Zephyra Weitblick** (`zephyra`, mid global mage): R Starfall range 8000 with a 2.2 s telegraph, takedowns cut its cooldown by 15 s; item **Sternkompass** (+80 AP +20 haste, ult gives MS + mana). **Erda Felsruf** (`erda`, support terrain mage): W Stone Ring uses blockTerrain (2.5 s), Stone Blood armor near the ring, E shields allies, R quake; item **Erdanker** (+450 HP +50 MR +15 haste, ability hit roots 0.75 s). Tests `tests/zephyra.test.ts`, `tests/erda.test.ts`.
+- Not built this round: a second stealth assassin (Nyx covers it) and another hook support (Gorvam covers it); Zephyra and Erda fill the global-ult and terrain slots.
 
 ## Open
 

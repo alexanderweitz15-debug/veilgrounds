@@ -1,0 +1,150 @@
+{
+  "id": "zephyra",
+  "name": "Zephyra Weitblick",
+  "title": { "de": "die Sternenkundlerin", "en": "the Stargazer" },
+  "roles": ["mid"],
+  "archetype": "global_mage",
+  "botBias": { "kiting": -2, "teamplay": 1 },
+  "trainingPurpose": {
+    "de": "Eine Fern-Magierin lesen: der Sternenfall hat 2,2 s Vorlauf und trifft von überall - den Kreis auf dem Boden sehen und herauslaufen, geschwächte Ziele früh zurückziehen.",
+    "en": "Reading a long-range mage: Starfall has a 2.2 s lead and hits from anywhere - spot the circle on the ground and walk out, pull weakened targets back early."
+  },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 592,
+    "hpGrowth": 99,
+    "hpRegen": 5.5,
+    "hpRegenGrowth": 0.55,
+    "mana": 440,
+    "manaGrowth": 32,
+    "manaRegen": 8,
+    "manaRegenGrowth": 0.8,
+    "ad": 54,
+    "adGrowth": 3,
+    "armor": 24,
+    "armorGrowth": 4,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.62,
+    "asGrowth": 1.6,
+    "range": 550,
+    "ms": 335,
+    "windup": 0.22,
+    "projectileSpeed": 1550,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Sternkarte", "en": "Star Chart" },
+    "desc": {
+      "de": "Jeder Takedown auf einen Champion senkt die Abklingzeit des Sternenfalls um 15 s.",
+      "en": "Every takedown on a champion cuts Starfall's cooldown by 15 s."
+    },
+    "hooks": ["zephyra_chart"]
+  },
+  "abilities": [
+    {
+      "id": "zephyra_q",
+      "name": { "de": "Sternensplitter", "en": "Star Shard" },
+      "desc": {
+        "de": "Linie 1.000: 60/100/140/180/220 (+65 % AP) magischer Schaden, 20 % Slow für 1 s.",
+        "en": "Line 1000: 60/100/140/180/220 (+65% AP) magic damage, 20% slow for 1 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 1000,
+      "cooldown": [7, 6.5, 6, 5.5, 5],
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "width": 70,
+      "speed": 1800,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [60, 100, 140, 180, 220], "ap": 0.65 } },
+        { "kind": "slow", "pct": 20, "duration": 1 }
+      ]
+    },
+    {
+      "id": "zephyra_w",
+      "name": { "de": "Mondschleier", "en": "Moon Veil" },
+      "desc": {
+        "de": "Ein Schild über 70/110/150/190/230 (+45 % AP) für 3 s und 15 % Bewegung für 2 s.",
+        "en": "A shield of 70/110/150/190/230 (+45% AP) for 3 s and +15% move speed for 2 s."
+      },
+      "type": "self",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "effects": [
+        { "kind": "shield", "amount": { "base": [70, 110, 150, 190, 230], "ap": 0.45 }, "duration": 3, "target": "self" },
+        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 2, "target": "self" }
+      ]
+    },
+    {
+      "id": "zephyra_e",
+      "name": { "de": "Kometenbahn", "en": "Comet Trail" },
+      "desc": {
+        "de": "Sprung 350 zum Cursor; Gegner in 200 um das Ziel erleiden 40/70/100/130/160 (+40 % AP) magischen Schaden.",
+        "en": "Dash 350 toward the cursor; enemies within 200 of the landing take 40/70/100/130/160 (+40% AP) magic damage."
+      },
+      "type": "dash",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 350,
+      "cooldown": [16, 15, 14, 13, 12],
+      "cost": 50,
+      "costType": "mana",
+      "radius": 200,
+      "speed": 1500,
+      "distance": 350,
+      "effects": [{ "kind": "damage", "type": "magic", "amount": { "base": [40, 70, 100, 130, 160], "ap": 0.4 }, "target": "enemies" }]
+    },
+    {
+      "id": "zephyra_r",
+      "name": { "de": "Sternenfall", "en": "Starfall" },
+      "desc": {
+        "de": "Kreis 320, von überall auf der Karte (Reichweite 8.000), schlägt nach 2,2 s ein: 250/400/550 (+90 % AP) magischer Schaden, 40 % Slow für 1,5 s.",
+        "en": "Circle 320, anywhere on the map (range 8000), lands after 2.2 s: 250/400/550 (+90% AP) magic damage, 40% slow for 1.5 s."
+      },
+      "type": "skillshot_circle",
+      "castTime": 0.5,
+      "movesWhileCasting": false,
+      "range": 8000,
+      "cooldown": [120, 105, 90],
+      "cost": 120,
+      "costType": "mana",
+      "radius": 320,
+      "delay": 2.2,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [250, 400, 550], "ap": 0.9 } },
+        { "kind": "slow", "pct": 40, "duration": 1.5 }
+      ]
+    }
+  ],
+  "spikeLevels": [6, 11],
+  "spikeNote": {
+    "de": "Level 6 (Sternenfall auf Fluchtwege und Objektive) und Level 11 (zweite Stufe, kürzere Abklingzeit).",
+    "en": "Level 6 (Starfall on escape routes and objectives) and level 11 (second rank, shorter cooldown)."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Splitter und Bahn", "en": "Shard and trail" }, "sequence": ["Q", "E", "AA"] },
+    { "name": { "de": "Schleier und Splitter", "en": "Veil and shard" }, "sequence": ["W", "Q", "AA"] },
+    { "name": { "de": "Sternenfall", "en": "Starfall" }, "sequence": ["R", "Q", "AA"] }
+  ],
+  "scores": { "engage": 1, "peel": 2, "range": 5, "scaling": 4, "waveclear": 3, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Die Sterne stehen günstig.", "en": "The stars are favourable." },
+    "firstBlood": { "de": "Wie vorhergesagt.", "en": "As foretold." },
+    "kill": { "de": "Es stand in den Sternen.", "en": "It was written in the stars." },
+    "death": { "de": "Eine Sternschnuppe ... verglüht.", "en": "A shooting star ... burns out." },
+    "recall": { "de": "Zurück zur Sternwarte.", "en": "Back to the observatory." },
+    "taunt": { "de": "Ich sehe, wo du morgen stehst.", "en": "I can see where you will stand tomorrow." }
+  },
+  "silhouette": "slender woman in a deep blue robe with a wide brimmed pointed hat, a long brass telescope staff and a small ring of floating stars orbiting her shoulders"
+}

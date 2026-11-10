@@ -75,7 +75,9 @@
     "blitzfeder": { "glyph": "stormBow", "hue": 205, "sat": 70, "accent": "bolt", "accentHue": 200 },
     "bollwerkbanner": { "glyph": "wallHeart", "hue": 20, "sat": 40, "accent": "banner", "accentHue": 355 },
     "schmiedeherz": { "glyph": "pickaxe", "hue": 22, "sat": 65, "accent": "flame", "accentHue": 22 },
-    "wundersehne": { "glyph": "arrowBundle", "hue": 20, "sat": 65, "accent": "gear", "accentHue": 42 }
+    "wundersehne": { "glyph": "arrowBundle", "hue": 20, "sat": 65, "accent": "gear", "accentHue": 42 },
+    "sternkompass": { "glyph": "veilStaff", "hue": 225, "sat": 55, "accent": "sun", "accentHue": 48 },
+    "erdanker": { "glyph": "chainBall", "hue": 110, "sat": 30, "accent": "root", "accentHue": 30 }
   },
   "runes": {
     "_doc": "path hues: Präzision 48, Dominanz 355, Zauberei 215, Entschlossenheit 120, Inspiration 180",

@@ -532,8 +532,8 @@
         "en": "Triumph"
       },
       "desc": {
-        "de": "Ein Takedown heilt 10 % der fehlenden HP.",
-        "en": "A takedown heals 10% of your missing HP."
+        "de": "Ein Takedown heilt 10 % der fehlenden HP und gibt 20 Gold.",
+        "en": "A takedown heals 10% of your missing HP and gives 20 gold."
       },
       "kind": "minor",
       "fits": [

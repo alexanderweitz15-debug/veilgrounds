@@ -426,3 +426,15 @@ Total: 110 hook ids across 26 champions.
 ## More runes (auto/champions)
 
 `letzter_stand` (minor, +5 % damage below 60 % HP, +11 % below 30 %) and `triumph` (minor, takedown heals 10 % of missing HP; the gold part of the idea is not implemented), both in `src/sim/items/runeHooks.ts`.
+
+## Zephyra Weitblick (`zephyra`), Erda Felsruf (`erda`) (auto/champions)
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `zephyra_chart` | Passive | `onTakedown`: `reduceCooldown` of Starfall (slot 3) by 15 s. Starfall is data only: ground circle, range 8000, delay 2.2 s. |
+| `erda_stone` | Passive | `onComputeStats`: +20 armor/MR while within 450 of a live own ring. |
+| `erda_w_ring` | W | At impact: `blockTerrain(ringCells(...))` for 2.5 s, ring kept in state for the passive and as snapshot object `erda_ring`. |
+
+## Matchup hints (auto/champions)
+
+`src/data/matchups.json` + `src/data/matchups.ts`: every champion has a matchup class (`classes`), class relations `a>b` with de/en reasons (`relations`) and generated lists of up to 3 strong / weak champion ids (same role first). `matchupOf(id)` returns `{ cls, clsName, strong[], weak[] }` with `reason` texts; `strongAgainst(a, b)` answers by class. After adding a champion: add one line to `classes`, run `node tools/matchups/generate.mjs` (tests/matchups.test.ts checks completeness and consistency).

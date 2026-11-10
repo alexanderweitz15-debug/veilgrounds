@@ -34,10 +34,10 @@ export function longScarf(c: PropCtx): void {
   for (let i = 0; i <= 10; i++) {
     const u = i / 10;
     const wave = Math.sin(u * 8 - pose.t * TAU * 2) * (2 + u * 8);
-    pts.push(at(bk, [wave, -2 + u * 10 * (1 - flat) - u * 2, u * (26 + 40 * flat) + u * u * 10]));
+    pts.push(at(bk, [wave * 1.6, -2 - u * 24 * (1 - flat * 0.6), u * (14 + 22 * flat) + u * u * 6]));
   }
   st.add(pts[4]!, -0.3, (p) => {
-    p.fill(ribbon(st, pts, 6, 3), SCARF, { lw: 1.2, folds: [st.pts2([pts[0]!, pts[3]!, pts[6]!])] });
+    p.fill(ribbon(st, pts, 10, 5), SCARF, { lw: 1.2, folds: [st.pts2([pts[0]!, pts[3]!, pts[6]!])] });
     p.fill(ribbon(st, pts.slice(0, 5), 2, 1.4), SCARF_DARK, { lw: 0.6, rim: false });
   });
 }

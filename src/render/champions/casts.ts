@@ -64,6 +64,8 @@ export const CAST_FAMILIES: Record<string, CastFamilies> = {
   brigga: F('forward', 'raise', 'abba'), // Q shield bash pushed, W banner raised, E advance raised, R bulwark pushed
   ignatz: F('sweep', 'raise', 'abba'), // Q hammer sweep, W/E forge raised, R magma sweep
   rhea: F('point', 'lunge', 'aaba'), // Q/W/R shots pointed, E hop lunged
+  zephyra: F('draw', 'raise', 'abba'), // Q shard drawn, W veil raised, E trail raised, R starfall drawn
+  erda: F('lob', 'stomp', 'aabb'), // Q boulder + W ring lobbed, E shield + R quake stomped
 };
 
 /** Cast family (0 = A, 1 = B) of a slot for an id; unknown ids / extra slots (Sev's R choices) use A / the R slot. */

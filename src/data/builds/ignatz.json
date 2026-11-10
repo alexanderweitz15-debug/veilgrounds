@@ -1,0 +1,44 @@
+{
+  "template": "battlemage",
+  "starter": [
+    "zauberring",
+    "trank"
+  ],
+  "standard": {
+    "boots": "stiefel_magie",
+    "core": [
+      "schmiedeherz",
+      "brandglas",
+      "schleierstab",
+      "sturmgewand"
+    ]
+  },
+  "vsAD": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "schmiedeherz",
+      "brandglas",
+      "wallherz",
+      "schleierstab"
+    ]
+  },
+  "vsAP": {
+    "boots": "stiefel_mr",
+    "core": [
+      "schmiedeherz",
+      "brandglas",
+      "sturmgewand",
+      "schleierstab"
+    ]
+  },
+  "champion": "ignatz",
+  "note": "Component order follows items.json \"from\"; Diamond+ bots reorder components situationally (spec §5).",
+  "runes": {
+    "keystone": "eroberer",
+    "minor": [
+      "adaptiv",
+      "durchdringung",
+      "lebenskraft"
+    ]
+  }
+}

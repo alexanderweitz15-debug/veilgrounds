@@ -1,0 +1,150 @@
+{
+  "id": "brigga",
+  "name": "Brigga Bollwerk",
+  "title": { "de": "die Bannerträgerin", "en": "the Standard Bearer" },
+  "roles": ["support"],
+  "archetype": "banner_tank_support",
+  "botBias": { "teamplay": 2, "aggression": 1 },
+  "trainingPurpose": {
+    "de": "Eine Tank-Supporterin lesen: ihr Schildstoß betäubt den Ersten in der Linie, das Banner heilt Verbündete - Kämpfe nicht im Bannerkreis annehmen und das Bollwerk (30 % weniger Schaden) abwarten.",
+    "en": "Reading a tank support: her Shield Bash stuns the first target in the line and the banner heals allies - do not fight inside the banner ring and wait out Bulwark (30% less damage)."
+  },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 640,
+    "hpGrowth": 104,
+    "hpRegen": 8,
+    "hpRegenGrowth": 0.75,
+    "mana": 340,
+    "manaGrowth": 45,
+    "manaRegen": 8,
+    "manaRegenGrowth": 0.8,
+    "ad": 53,
+    "adGrowth": 3.2,
+    "armor": 37,
+    "armorGrowth": 4.8,
+    "mr": 32,
+    "mrGrowth": 2,
+    "as": 0.625,
+    "asGrowth": 2,
+    "range": 175,
+    "ms": 335,
+    "windup": 0.27,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Schildwall", "en": "Shield Wall" },
+    "desc": {
+      "de": "Pro verbündetem Champion in 600 (höchstens 3) +6 Rüstung und Magieresistenz.",
+      "en": "Per allied champion within 600 (up to 3) +6 armor and magic resist."
+    },
+    "hooks": ["brigga_wall"]
+  },
+  "abilities": [
+    {
+      "id": "brigga_q",
+      "name": { "de": "Schildstoß", "en": "Shield Bash" },
+      "desc": {
+        "de": "Linie 650: 60/95/130/165/200 (+3 % Max-HP) magischer Schaden, betäubt 0,5/0,6/0,7/0,8/0,9 s.",
+        "en": "Line 650: 60/95/130/165/200 (+3% max HP) magic damage, stuns 0.5/0.6/0.7/0.8/0.9 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 650,
+      "cooldown": [13, 12, 11, 10, 9],
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "width": 100,
+      "speed": 1500,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [60, 95, 130, 165, 200], "maxHp": 0.03 } },
+        { "kind": "stun", "duration": [0.5, 0.6, 0.7, 0.8, 0.9] }
+      ]
+    },
+    {
+      "id": "brigga_w",
+      "name": { "de": "Banner", "en": "Standard" },
+      "desc": {
+        "de": "Kreis 400 auf 600, 5 s: heilt Verbündete jede Sekunde um 12/18/24/30/36 (+10 % AP) und verlangsamt Gegner um 20 %.",
+        "en": "Circle 400 at 600, 5 s: heals allies each second for 12/18/24/30/36 (+10% AP) and slows enemies by 20%."
+      },
+      "type": "zone",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 600,
+      "cooldown": [18, 17, 16, 15, 14],
+      "cost": [60, 65, 70, 75, 80],
+      "costType": "mana",
+      "radius": 400,
+      "delay": 0.2,
+      "duration": 5,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "heal", "amount": { "base": [12, 18, 24, 30, 36], "ap": 0.1 }, "target": "allies" },
+        { "kind": "slow", "pct": 20, "duration": 0.6, "target": "enemies" }
+      ]
+    },
+    {
+      "id": "brigga_e",
+      "name": { "de": "Vorstoß", "en": "Advance" },
+      "desc": {
+        "de": "Sprung 350 zum Cursor; ein Schild über 60/90/120/150/180 (+40 % AP) für 2 s.",
+        "en": "Dash 350 toward the cursor; a shield of 60/90/120/150/180 (+40% AP) for 2 s."
+      },
+      "type": "dash",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 350,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": [40, 40, 40, 40, 40],
+      "costType": "mana",
+      "speed": 1400,
+      "distance": 350,
+      "effects": [{ "kind": "shield", "amount": { "base": [60, 90, 120, 150, 180], "ap": 0.4 }, "duration": 2, "target": "self" }]
+    },
+    {
+      "id": "brigga_r",
+      "name": { "de": "Bollwerk", "en": "Bulwark" },
+      "desc": {
+        "de": "Verbündete in 600: 3 s 30 % weniger Schaden und ein Schild über 100/175/250 (+50 % AP).",
+        "en": "Allies within 600: 30% less damage for 3 s and a shield of 100/175/250 (+50% AP)."
+      },
+      "type": "self",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 0,
+      "cooldown": [110, 95, 80],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 600,
+      "effects": [
+        { "kind": "buff", "stat": "dmgReduction", "pct": 30, "duration": 3, "target": "allies" },
+        { "kind": "shield", "amount": { "base": [100, 175, 250], "ap": 0.5 }, "duration": 3, "target": "allies" }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3 (Schildstoß + Banner halten die Lane) und Level 6 (Bollwerk trägt Teamfights).",
+    "en": "Level 3 (Shield Bash + Standard hold the lane) and level 6 (Bulwark carries teamfights)."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Vorstoß und Stoß", "en": "Advance and bash" }, "sequence": ["E", "Q", "AA"] },
+    { "name": { "de": "Banner und Stoß", "en": "Standard and bash" }, "sequence": ["W", "Q", "AA"] },
+    { "name": { "de": "Bollwerk", "en": "Bulwark" }, "sequence": ["R", "W", "Q"] }
+  ],
+  "scores": { "engage": 4, "peel": 4, "range": 1, "scaling": 3, "waveclear": 1, "mobility": 2 },
+  "voiceLines": {
+    "pick": { "de": "Hinter mir. Alle.", "en": "Behind me. All of you." },
+    "firstBlood": { "de": "Das Banner steht.", "en": "The standard stands." },
+    "kill": { "de": "Zurückgeworfen.", "en": "Thrown back." },
+    "death": { "de": "Das Banner ... fällt nicht.", "en": "The standard ... does not fall." },
+    "recall": { "de": "Zurück zur Linie.", "en": "Back to the line." },
+    "taunt": { "de": "Kommt her. Ich warte schon.", "en": "Come here. I am waiting." }
+  },
+  "silhouette": "broad armoured woman with a round shield on the left arm, a tall battle standard with a red-and-gold pennant on her back and a plumed open helm"
+}

@@ -61,6 +61,9 @@ export const CAST_FAMILIES: Record<string, CastFamilies> = {
   hedda: F('draw', 'raise', 'abba'), // Q spear drawn, W/E raised, R pounce
   zinna: F('draw', 'raise', 'abba'), // Q spark drawn, W overcharge raised, E hop raised, R storm drawn
   svea: F('draw', 'raise', 'abba'), // Q arrow drawn, W/E wind raised, R hurricane arrow drawn
+  brigga: F('forward', 'raise', 'abba'), // Q shield bash pushed, W banner raised, E advance raised, R bulwark pushed
+  ignatz: F('sweep', 'raise', 'abba'), // Q hammer sweep, W/E forge raised, R magma sweep
+  rhea: F('point', 'lunge', 'aaba'), // Q/W/R shots pointed, E hop lunged
 };
 
 /** Cast family (0 = A, 1 = B) of a slot for an id; unknown ids / extra slots (Sev's R choices) use A / the R slot. */

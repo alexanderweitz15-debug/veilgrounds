@@ -1,0 +1,145 @@
+{
+  "id": "ignatz",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "frontline",
+    "engage": 3,
+    "peel": 1,
+    "poke": 0,
+    "burst": 3
+  },
+  "keyRanges": {
+    "auto": 175,
+    "trade": 325,
+    "engage": 575,
+    "poke": 175,
+    "threat": 575,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "ignatz_data1",
+      "kind": "engage",
+      "sequence": [
+        "E",
+        "Q",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "ignatz_data2",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "Q",
+        "E"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "ignatz_data3",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "Q",
+        "E"
+      ],
+      "source": "data"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "cone",
+      "roles": [
+        "burst"
+      ],
+      "range": 350,
+      "useRange": [
+        0,
+        322
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "self",
+      "roles": [
+        "sustain"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        325
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.1,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "dash",
+      "roles": [
+        "escape",
+        "engage"
+      ],
+      "range": 400,
+      "useRange": [
+        87.5,
+        575
+      ],
+      "speed": 1400,
+      "width": 0,
+      "radius": 220,
+      "castTime": 0.1,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": false,
+      "threat": 1,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "R",
+      "aim": "circle",
+      "roles": [
+        "zone",
+        "burst",
+        "ult"
+      ],
+      "range": 600,
+      "useRange": [
+        0,
+        552
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 450,
+      "castTime": 0.3,
+      "delay": 0.3,
+      "cc": 1,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

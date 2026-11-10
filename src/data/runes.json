@@ -503,6 +503,49 @@
         "mage_support"
       ],
       "hook": "rune_first_strike"
+    },
+    {
+      "id": "letzter_stand",
+      "name": {
+        "de": "Letzter Stand",
+        "en": "Last Stand"
+      },
+      "desc": {
+        "de": "Unter 60 % HP +5 % Schaden, unter 30 % +11 %.",
+        "en": "Below 60% HP +5% damage, below 30% +11%."
+      },
+      "kind": "minor",
+      "fits": [
+        "duelist",
+        "parry_duelist",
+        "berserker",
+        "tank_bruiser",
+        "jungle_bruiser",
+        "bruiser_mage"
+      ],
+      "hook": "rune_last_stand"
+    },
+    {
+      "id": "triumph",
+      "name": {
+        "de": "Triumph",
+        "en": "Triumph"
+      },
+      "desc": {
+        "de": "Ein Takedown heilt 10 % der fehlenden HP.",
+        "en": "A takedown heals 10% of your missing HP."
+      },
+      "kind": "minor",
+      "fits": [
+        "assassin",
+        "dash_assassin",
+        "reset_assassin",
+        "chain_assassin",
+        "marksman",
+        "repeater_marksman",
+        "arc_marksman"
+      ],
+      "hook": "rune_triumph"
     }
   ]
 }

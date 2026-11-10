@@ -93,6 +93,21 @@ describe('Flinkfuß', () => {
   });
 });
 
+describe('Letzter Stand / Triumph', () => {
+  it('Last Stand raises damage at low HP', async () => {
+    const { dealDamage } = await import('../src/sim/damage');
+    const d = duel({ champ: 'ilvane', runes: page('adaptiv', ['letzter_stand', 'none', 'none']) });
+    const full = dealDamage(d.sim, d.me, d.foe, 100, 'true');
+    d.sim.c.Hp.cur[d.me] = d.sim.c.Hp.max[d.me]! * 0.2;
+    const low = dealDamage(d.sim, d.me, d.foe, 100, 'true');
+    expect(low).toBeGreaterThan(full * 1.08);
+  });
+  it('Triumph heals on a takedown (hook present on the page)', async () => {
+    const { RUNE_HOOKS } = await import('../src/sim/items/runeHooks');
+    expect(RUNE_HOOKS.rune_triumph!.onTakedown).toBeTypeOf('function');
+  });
+});
+
 describe('Erstschlag', () => {
   it('+7 % damage on a champion that has not hit the owner', async () => {
     const { dealDamage } = await import('../src/sim/damage');

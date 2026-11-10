@@ -72,7 +72,10 @@
     "stichblatt": { "glyph": "shortSword", "hue": 350, "sat": 55, "accent": "wing", "accentHue": 48 },
     "gruftkrone": { "glyph": "crown", "hue": 150, "sat": 40, "accent": "skull", "accentHue": 120 },
     "jagdfell": { "glyph": "cloak", "hue": 38, "sat": 55, "accent": "claw", "accentHue": 30 },
-    "blitzfeder": { "glyph": "stormBow", "hue": 205, "sat": 70, "accent": "bolt", "accentHue": 200 }
+    "blitzfeder": { "glyph": "stormBow", "hue": 205, "sat": 70, "accent": "bolt", "accentHue": 200 },
+    "bollwerkbanner": { "glyph": "wallHeart", "hue": 20, "sat": 40, "accent": "banner", "accentHue": 355 },
+    "schmiedeherz": { "glyph": "pickaxe", "hue": 22, "sat": 65, "accent": "flame", "accentHue": 22 },
+    "wundersehne": { "glyph": "arrowBundle", "hue": 20, "sat": 65, "accent": "gear", "accentHue": 42 }
   },
   "runes": {
     "_doc": "path hues: Präzision 48, Dominanz 355, Zauberei 215, Entschlossenheit 120, Inspiration 180",
@@ -100,6 +103,8 @@
     "standhaft": { "glyph": "root", "hue": 120 },
     "flinkfuss": { "glyph": "boot", "hue": 48 },
     "phasenlauf": { "glyph": "wave", "hue": 355 },
-    "erstschlag": { "glyph": "bolt", "hue": 215 }
+    "erstschlag": { "glyph": "bolt", "hue": 215 },
+    "letzter_stand": { "glyph": "heart", "hue": 355 },
+    "triumph": { "glyph": "crown", "hue": 48 }
   }
 }

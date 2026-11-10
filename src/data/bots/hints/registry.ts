@@ -2,6 +2,7 @@
 // under tsx / tools/botSim). One line per champion with a hints file.
 
 import aurel from './aurel.json';
+import brigga from './brigga.json';
 import brom from './brom.json';
 import corvin from './corvin.json';
 import dagny from './dagny.json';
@@ -16,6 +17,7 @@ import hagen from './hagen.json';
 import harrow from './harrow.json';
 import hedda from './hedda.json';
 import henrike from './henrike.json';
+import ignatz from './ignatz.json';
 import ilvane from './ilvane.json';
 import isolde from './isolde.json';
 import kaelen from './kaelen.json';
@@ -32,6 +34,7 @@ import oda from './oda.json';
 import oleth from './oleth.json';
 import ottilie from './ottilie.json';
 import renn from './renn.json';
+import rhea from './rhea.json';
 import rovena from './rovena.json';
 import seraphyne from './seraphyne.json';
 import sev from './sev.json';
@@ -49,6 +52,7 @@ import zinna from './zinna.json';
 
 export const REGISTRY: Readonly<Record<string, unknown>> = {
   aurel,
+  brigga,
   brom,
   corvin,
   dagny,
@@ -63,6 +67,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   harrow,
   hedda,
   henrike,
+  ignatz,
   ilvane,
   isolde,
   kaelen,
@@ -79,6 +84,7 @@ export const REGISTRY: Readonly<Record<string, unknown>> = {
   oleth,
   ottilie,
   renn,
+  rhea,
   rovena,
   seraphyne,
   sev,

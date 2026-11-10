@@ -413,3 +413,16 @@ Total: 110 hook ids across 26 champions.
 | `zinna_arc` | Passive | `onAutoHit`: counts autos on the same target (resets when the target changes); the third arcs to the nearest other enemy within 450 for 70 % of the hit as magic damage. |
 | `zinna_w_charge` | W | The next auto counts as the third. |
 | `zinna_e_backfire` | E | `dashStart`: reverses the dash (hop away from the cursor). |
+
+## Brigga Bollwerk (`brigga`), Ignatz Funkenhammer (`ignatz`), Rhea Doppelbolzen (`rhea`) (auto/champions)
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `brigga_wall` | Passive | `onComputeStats`: +6 armor/MR per allied champion within 600 (max 3). Everything else is data (stun line, heal zone, shield dash, ally buff). |
+| `ignatz_heat` | Passive | `onAbilityHit`: per target a Heat counter (5 s window); the third hit ignites it (`ignatz_burn` dot, 18 + 15 % AP per second for 3 s). Snapshot marks show the stacks. |
+| `rhea_double` | Passive | `onCast` arms; `onAutoFire` returns `[0.6]` once (second bolt for 60 %). |
+| `rhea_e_back` | E | `dashStart`: reverses the dash. |
+
+## More runes (auto/champions)
+
+`letzter_stand` (minor, +5 % damage below 60 % HP, +11 % below 30 %) and `triumph` (minor, takedown heals 10 % of missing HP; the gold part of the idea is not implemented), both in `src/sim/items/runeHooks.ts`.

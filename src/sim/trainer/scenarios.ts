@@ -69,9 +69,9 @@ export const baronScore = (elapsedTicks: number, limitTicks: number, alliesDown:
 export const shoveScore = (lost: number): number => Math.max(60, 100 - 20 * lost);
 
 const JG = ['grimald', 'nyx', 'lio', 'vessa', 'sev', 'vargrim', 'dorrak', 'kerrin', 'gerwin', 'hedda'];
-const MID = ['thessaly', 'renn', 'aurel', 'ilvane', 'sev', 'rovena', 'truda', 'marga'];
+const MID = ['thessaly', 'renn', 'aurel', 'ilvane', 'sev', 'rovena', 'truda', 'marga', 'ignatz'];
 const TOP = ['isolde', 'brom', 'dagny', 'vargrim', 'gneis', 'knarr', 'torben', 'ysmay'];
-const ADC = ['tobin', 'lysa', 'corvin', 'mira', 'henrike', 'svea', 'zinna'];
+const ADC = ['tobin', 'lysa', 'corvin', 'mira', 'henrike', 'svea', 'zinna', 'rhea'];
 /** Attackers: all-in, long trades, tower dives allowed (playstyle axes, src/data/bots/playstyleAxes.json). */
 const DIVE = { aggression: 5, tradeLength: 5, teamplay: 5 };
 
@@ -100,7 +100,7 @@ export const SCENARIOS: Record<ScenarioId, ScenarioInfo> = {
     id: 'dragonSteal', startMin: 10, limitSec: 22, playerRole: 'jungle', needSummoner: 'bannen', items: true,
     units: [
       { slot: 6, team: 1, role: 'jungle', champs: JG, bot: false, summoners: ['sprung', 'bannen'] },
-      { slot: 9, team: 1, role: 'support', champs: ['kiran', 'gorvam', 'hagen', 'lumi'], bot: false, summoners: ['sprung', 'erschoepfen'] },
+      { slot: 9, team: 1, role: 'support', champs: ['kiran', 'gorvam', 'hagen', 'lumi', 'brigga'], bot: false, summoners: ['sprung', 'erschoepfen'] },
     ],
   },
   freezeWave: { id: 'freezeWave', startMin: 5, limitSec: 60, playerRole: 'mid', minions: true, units: [] },

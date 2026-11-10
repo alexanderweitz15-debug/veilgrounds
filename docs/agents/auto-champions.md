@@ -44,6 +44,9 @@ Gaps (ordered, picked top-down):
 - **Sprites**: Marga mortar redrawn in front of the body in bright brass (clearly visible now); Gerwin bell checked on champLab (visible).
 - **Zinna Funkenlauf** (`zinna`, ADC arc marksman): every 3rd auto arcs to the nearest other enemy (70 % magic), Q piercing shot, W Overcharge (AS + next auto arcs), E backward hop + slow, R Storm Wall (1500 line, stun). Kit: coil rifle, back antennae with an arc (checked on champLab). Item **Blitzfeder** (+40 AD +30 % AS +20 % crit, +20 magic on hit). Hedda got **Jagdfell** (+60 AP +250 HP +10 haste, +20 % MS 2 s after an ability hit). Test `tests/zinna.test.ts`.
 - **Balance sanity (base stats vs same-role average of the older roster)**: all ten newest champions are within about 6 % on HP, AD, armor, MS and AS. Ranged junglers (Gerwin, Hedda) have 550 range vs melee average, with 590-610 HP (5 % below). Role counts now: top 11, jungle 13, mid 10, adc 8, support 8 (adc and support are the thinnest; mid has no bruiser-mage left).
+- **Brigga Bollwerk** (`brigga`, support banner tank): Shield Wall aura, Q stun line, W heal+slow zone, E dash+shield, R ally damage reduction + shield; item **Bollwerkbanner**. **Ignatz Funkenhammer** (`ignatz`, mid bruiser mage): Heat ignites on the 3rd ability hit; item **Schmiedeherz**. **Rhea Doppelbolzen** (`rhea`, ADC repeater): extra bolt after an ability; item **Wundersehne**. Tests `tests/brigga.test.ts`, `ignatz.test.ts`, `rhea.test.ts`. Sprites checked on champLab (Brigga pole + shield, Ignatz glowing hammer, Rhea scarf + crossbow; the scarf reads a bit like a red hoop in the front view).
+- **Runes**: Letzter Stand and Triumph minors. Role counts now: top 11, jungle 13, mid 11, adc 9, support 9.
+- **Tooling**: `register.cjs` style scripts (scratchpad only) did the registry edits; `rhea` taught that champion data allows only one `dash` ability (validate.ts).
 
 ## Open
 

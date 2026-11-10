@@ -280,3 +280,12 @@ Musikerin: Noten (grün/blau/rot) erscheinen auf der Karte, nur für ihr Team si
 
 39. **Zinna Funkenlauf, die Blitzschützin** – ADC, Funken-Schützin (AD), Ranged 525. Training: nicht eng stehen (jeder 3. Auto springt über), nach der Überladung Abstand halten, Gewitterwand meiden.
     - Passiv Funkensprung: jeder dritte Auto auf dasselbe Ziel springt auf den nächsten anderen Gegner in 450 (70 % als Magie). Q Funkenschuss (durchschlägt), W Überladung (AS + nächster Auto springt), E Rückzünder (Sprung vom Cursor weg + Slow), R Gewitterwand (Linie 1500, Stun).
+
+40. **Brigga Bollwerk, die Bannerträgerin** – Support, Banner-Tank (AP/Tank), Melee 175. Training: Schildstoß-Stun meiden, nicht im Bannerkreis kämpfen, das Bollwerk abwarten.
+    - Passiv Schildwall: +6 Rüstung/MR pro verbündetem Champion in 600 (max 3). Q Schildstoß (Linie, Stun), W Banner (Zone: heilt Verbündete, verlangsamt Gegner), E Vorstoß (Sprung + Schild), R Bollwerk (Verbündete: 30 % weniger Schaden + Schild).
+
+41. **Ignatz Funkenhammer, der Essemeister** – Mid, Nahkampf-Magier (AP), Melee 175. Training: nach zwei Treffern abdrehen (der dritte entzündet), Hammer-Kegel und Magmastrom meiden.
+    - Passiv Glut: der dritte Fähigkeitstreffer auf dasselbe Ziel (5 s) entzündet es (3 s Magie-DoT). Q Hammerschlag (Kegel), W Esse (Schild + Tempo), E Funkensprung, R Magmastrom (Zone).
+
+42. **Rhea Doppelbolzen, die Schnellschützin** – ADC, Repetier-Schützin (AD), Ranged 500. Training: nach jeder Fähigkeit kommt ein Doppelschuss, Fährtenschuss ausweichen, Bolzensturm-Kegel meiden.
+    - Passiv Doppelbolzen: nach einer Fähigkeit feuert der nächste Auto einen zweiten Bolzen (60 %). Q Streuschuss (Kegel), W Fährtenschuss (Linie), E Rückzug (Sprung weg + Tempo), R Bolzensturm (Kegel 800).

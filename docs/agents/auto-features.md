@@ -44,3 +44,6 @@ Branch `auto/features` (from origin/main). Area: game features, UI/UX, QoL, poli
 - [x] Honor vote after classic games (src/ui/honorVote.ts, giveHonor in progression: +20 XP, honor level on profile card).
 - [x] Summoner tips show the value at the current level; minor rune tips show stat chips.
 - npm test (read from file): 158 files / 1974 tests pass.
+
+## Round 4
+- [x] Browser-checked (own vite on 5175, closed): spectator bar placement ok at 800 px (no overlap), emote strip opens with Z and shows the bubble ('Gut gespielt'), honor panel renders. Note: an emote clicked within the first second is replaced by the start greeting bubble.

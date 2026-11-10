@@ -67,6 +67,8 @@ function describeKiller(state: ClientState, ev: Extract<SimEvent, { e: 'death' }
 export class DeathRecap {
   readonly root: HTMLElement;
   private hits: Hit[] = [];
+  /** Own damage to champions (time, amount): the recap shows what you dealt in the same window. */
+  private dealt: { at: number; amount: number }[] = [];
   private shown = false;
 
   constructor(parent: HTMLElement) {
@@ -82,9 +84,13 @@ export class DeathRecap {
       this.hits.push({ at: snap.time, ...d, amount: ev.amount, type: ev.type, auto: !!ev.auto });
       // keep a little more than the window
       if (this.hits.length > 400 || (this.hits.length && this.hits[0]!.at < snap.time - RECAP_S * 2)) this.hits = this.hits.filter((h) => h.at >= snap.time - RECAP_S);
+    } else if (ev.e === 'damage' && ev.src === me.eid && ev.amount > 0 && state.entity(ev.dst)?.kind === Kind.Champion) {
+      this.dealt.push({ at: snap.time, amount: ev.amount });
+      if (this.dealt.length > 400) this.dealt = this.dealt.filter((h) => h.at >= snap.time - RECAP_S);
     } else if (ev.e === 'death' && ev.eid === me.eid) {
       this.build(state, ev, snap.time);
       this.hits = [];
+      this.dealt = [];
     }
   }
 
@@ -130,6 +136,10 @@ export class DeathRecap {
       const recent = this.hits.filter((h) => h.at >= now - RECAP_S).map((h) => ({ ago: now - h.at, kind: h.kind, key: h.key, amount: h.amount, type: h.type }));
       el('div', 'dr-hint', r, t(`recap.hint.${deathHint(recent)}`));
     }
+    // fight length and what you dealt back in the same window
+    const mine = this.dealt.filter((h) => h.at >= now - RECAP_S).reduce((a, h) => a + h.amount, 0);
+    const first = this.hits.find((h) => h.at >= now - RECAP_S);
+    if (first) el('div', 'dr-dealt', r, t('recap.fight', { s: Math.max(1, Math.round(now - first.at)), dealt: Math.round(mine) }));
     const rows = [...src.values()].sort((a, b) => b.total - a.total).slice(0, 5);
     for (const s of rows) {
       const row = el('div', 'dr-row', r);

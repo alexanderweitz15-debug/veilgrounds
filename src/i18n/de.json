@@ -1220,5 +1220,6 @@
   "set.preset": "Voreinstellung",
   "set.preset.beginner": "Einsteiger",
   "set.preset.pro": "Wettkampf",
-  "set.preset.standard": "Standard"
+  "set.preset.standard": "Standard",
+  "recap.fight": "Kampf: {s} s, du hast {dealt} Schaden an Champions verursacht"
 }

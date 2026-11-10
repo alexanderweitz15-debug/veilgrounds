@@ -69,3 +69,7 @@ Branch `auto/features` (from origin/main). Area: game features, UI/UX, QoL, poli
 ## Round 9
 - [x] Epic respawn warnings (30 s ahead + spawn banner) after a Leviathan / Veil Warden kill (announce.ts epicNext).
 - [~] Browser check: build review renders (title + missing label; icons not visible in the tiny shared pane); banners not seen (shared tab was navigated away by another agent twice). Needs a proper look in a real window.
+
+## Round 10
+- [x] Unit test for the respawn schedule (epicDue pure function extracted from the announcer; warns once at -30 s, spawn once, re-arms after another kill).
+- [x] Nexus death: camera glides to the destroyed nexus for the ending (game.ts nexusCam).

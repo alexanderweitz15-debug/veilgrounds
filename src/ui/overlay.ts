@@ -66,6 +66,11 @@ export class Overlay {
   private dpr = 1;
   /** Phase 6: visual cues for important sounds (off-screen pings, tower fire, captions). */
   private readonly cues = new VisualCues();
+  /** Own emote (emoteStrip.ts) as a speech bubble. */
+  emote(text: string, state: ClientState, now: number): void {
+    this.voice.emote(text, state, now);
+  }
+
   /** Champion voice lines as speech bubbles (FEATURE-GAP 7.12). */
   private readonly voice = new VoiceBubbles();
 

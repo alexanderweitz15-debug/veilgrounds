@@ -1,6 +1,6 @@
 // Spectator bar for a live bot-vs-bot game (classic lobby "Zuschauen"): pause, game speed, whose eyes (any of the 10
-// players), camera follow / free, exit. Same look and i18n keys as the replay bar (replay.css, rp.*); the sim runs in
-// the normal worker link, commands are dropped (main.ts spectate).
+// players), camera follow / free, exit. Same look as the replay bar (replay.css); the sim runs in
+// the normal worker link, commands are dropped (main.ts spectate). Own i18n keys spec.*.
 import './replay.css';
 import type { ReplayHost } from '../game/game';
 import type { SimLink } from '../game/link';
@@ -21,7 +21,7 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, parent: 
 export function spectateMount(link: SimLink, config: SimConfig): (root: HTMLElement, host: ReplayHost) => void {
   return (root, host) => {
     root.classList.add('rp-mode');
-    const bar = el('div', 'rp-bar', root);
+    const bar = el('div', 'rp-bar spec-bar', root);
     for (const ev of ['pointerdown', 'mousedown', 'contextmenu'] as const) bar.addEventListener(ev, (e) => e.stopPropagation());
     const r1 = el('div', 'rp-row', bar);
     const pause = el('button', 'rp-btn', r1, t('spec.pause'));
@@ -36,16 +36,16 @@ export function spectateMount(link: SimLink, config: SimConfig): (root: HTMLElem
       return b;
     });
     let cam: 'follow' | 'free' = 'follow';
-    const camBtn = el('button', 'rp-btn', r1, t('rp.freeCam'));
+    const camBtn = el('button', 'rp-btn', r1, t('spec.freeCam'));
     camBtn.addEventListener('click', () => {
       cam = cam === 'follow' ? 'free' : 'follow';
       host.setCamera(cam);
-      camBtn.textContent = t(cam === 'follow' ? 'rp.freeCam' : 'rp.followCam');
+      camBtn.textContent = t(cam === 'follow' ? 'spec.freeCam' : 'spec.followCam');
     });
-    el('button', 'rp-btn', r1, t('rp.exit')).addEventListener('click', () => host.exit());
+    el('button', 'rp-btn', r1, t('spec.exit')).addEventListener('click', () => host.exit());
 
     const r2 = el('div', 'rp-row', bar);
-    el('span', 'rp-label', r2, t('rp.view'));
+    el('span', 'rp-label', r2, t('spec.view'));
     const first = config.players[0]?.slot;
     const views = [...config.players]
       .sort((a, b) => a.team - b.team || a.slot - b.slot)

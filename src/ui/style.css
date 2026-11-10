@@ -286,3 +286,13 @@ html.minimap-left .game .chat-box { bottom: calc(292px * var(--mm, 1) + 56px); }
 .cast-fail { position: absolute; left: 50%; bottom: calc(100% + 34px); transform: translateX(-50%); padding: 3px 12px; background: rgba(40, 10, 8, 0.82); border: 1px solid #a8442e; color: #ffb4a0; font: 700 14px 'Barlow Condensed', sans-serif; letter-spacing: 0.04em; white-space: nowrap; pointer-events: none; opacity: 0; }
 .cast-fail.show { animation: cast-fail 1.1s ease-out forwards; }
 @keyframes cast-fail { 0% { opacity: 0; transform: translate(-50%, 4px); } 10% { opacity: 1; transform: translate(-50%, 0); } 75% { opacity: 1; } 100% { opacity: 0; } }
+
+.emote-strip { position: absolute; left: 50%; bottom: 150px; transform: translateX(-50%); z-index: 31; display: flex; gap: 6px; padding: 6px 8px; background: rgba(10, 12, 14, 0.9); border: 1px solid var(--line, rgba(201, 162, 78, 0.35)); }
+.emote-strip button { background: rgba(255, 255, 255, 0.05); color: #f0e6d2; border: 1px solid #5a4b2e; padding: 4px 10px; font: 600 13px var(--font-label, sans-serif); cursor: pointer; }
+.emote-strip button:hover { background: rgba(200, 170, 110, 0.25); }
+
+.honor-box { margin: 10px 0; padding: 8px 12px; border: 1px solid #3a352a; background: rgba(0, 0, 0, 0.2); }
+.honor-hint { font-size: 12px; color: var(--text-dim, #a09b8c); margin-bottom: 6px; }
+.honor-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 3px 0; font-size: 13px; }
+.honor-row > span { min-width: 220px; }
+.honor-btn { padding: 2px 10px; font-size: 12px; }

@@ -49,3 +49,6 @@
 .pe-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 10px; align-items: center; padding: 4px 8px; background: rgba(255, 255, 255, 0.03); font-size: 13px; }
 .pe-row.att { opacity: 0.85; }
 .pe-t { font-variant-numeric: tabular-nums; color: var(--text-dim, #a09b8c); }
+
+/* spectator bar sits below the own-champion panel (top left, ~120 px tall), not over it */
+.rp-bar.spec-bar { top: 128px; min-width: 0; width: min(760px, calc(100% - 20px)); }

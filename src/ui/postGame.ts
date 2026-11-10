@@ -133,7 +133,7 @@ function damageChart(parent: HTMLElement, d: MatchSummary): void {
 
 const sum = (a: number[]): number => a.reduce((p, v) => p + v, 0);
 
-export function renderPostGame(root: HTMLElement, d: MatchSummary, onBack: () => void, onRetry?: () => void, errors?: { list: ErrorList; onJump?: (tick: number) => void }, progress?: ProgressDelta | null): void {
+export function renderPostGame(root: HTMLElement, d: MatchSummary, onBack: () => void, onRetry?: () => void, errors?: { list: ErrorList; onJump?: (tick: number) => void }, progress?: ProgressDelta | null, extra?: (panel: HTMLElement) => void): void {
   root.textContent = '';
   root.classList.add('menu-screen', 'pg-screen');
   const panel = el('div', 'menu-panel pg-panel', root);
@@ -202,6 +202,7 @@ export function renderPostGame(root: HTMLElement, d: MatchSummary, onBack: () =>
   }
   if (errors) renderErrorList(panel, errors.list, errors.onJump); // S2: bot errors + own patterns, each with a replay jump
   renderGhostReview(panel, d.ghost); // Challenger-Geist timeline
+  extra?.(panel);
   const row = el('div', 'row-buttons', panel);
   el('button', 'menu-btn secondary', row, t('menu.quit')).addEventListener('click', onBack);
   if (onRetry) el('button', 'menu-btn', row, t('trainer.retry')).addEventListener('click', onRetry);

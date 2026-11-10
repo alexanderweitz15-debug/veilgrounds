@@ -14,6 +14,7 @@ import { World } from '../render/world';
 import { InputController, type Armed, type Panel } from '../input/controller';
 import { Hud } from '../ui/hud';
 import { Overlay } from '../ui/overlay';
+import { EmoteStrip } from '../ui/emoteStrip';
 import { Minimap } from '../ui/minimap';
 import { minimapPingFor } from './minimapPing';
 import { PingSender } from './pingSender';
@@ -69,6 +70,7 @@ export class Game {
   private readonly input: InputController;
   private readonly hud: Hud;
   private readonly overlay = new Overlay();
+  private readonly emotes: EmoteStrip;
   private readonly minimap: Minimap;
   private readonly map: MapData;
   private readonly menu: HTMLElement;
@@ -127,6 +129,7 @@ export class Game {
     canvas.className = 'gl';
     this.root.appendChild(canvas);
     this.root.appendChild(this.overlay.canvas);
+    this.emotes = new EmoteStrip(this.root, (text) => this.overlay.emote(text, this.state, performance.now()));
 
     this.pingCtx = () => ({
       epics: this.state.objectives.epicTimers(),
@@ -331,6 +334,7 @@ export class Game {
         pings: this.pings,
         pingCtx: this.pingCtx,
         minimapAt: (cx, cy) => this.minimap.simAtClient(cx, cy),
+        emote: () => this.emotes.toggle(),
         // the menu, chat input and the victory/defeat screen swallow game input
         menuOpen: () => this.menu.classList.contains('open') || this.chat.typing || this.state.winner !== null,
       },

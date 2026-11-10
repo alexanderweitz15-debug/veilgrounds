@@ -193,6 +193,14 @@ export class VoiceBubbles {
     this.wasDead = false;
   }
 
+  /** Own emote: the text as a bubble over the own champion (replaces its current bubble). */
+  emote(text: string, state: ClientState, now: number): void {
+    const me = state.me();
+    if (!me) return;
+    this.bubbles = this.bubbles.filter((b) => b.eid !== me.id);
+    this.bubbles.push({ eid: me.id, text, team: me.team, own: true, x: me.x, y: me.y, follow: true, t0: now, dur: bubbleMs(text) });
+  }
+
   private say(eid: number, champ: string, trigger: VoiceTrigger, state: ClientState, now: number, x: number, y: number, follow: boolean, teamOverride?: number, ownOverride?: boolean): void {
     const own = ownOverride ?? eid === (state.snap?.me?.eid ?? -1);
     const ok = this.limiter.allow(eid, trigger, { own, now, rand: this.rand(), othersLive: this.bubbles.filter((b) => !b.own && b.t0 + b.dur > now).length });
@@ -213,7 +221,7 @@ export class VoiceBubbles {
   draw(ctx: CanvasRenderingContext2D, state: ClientState, world: World, w: number, h: number, now: number): void {
     this.observe(state, now);
     this.bubbles = this.bubbles.filter((b) => now - b.t0 < b.dur);
-    if (!settings.voiceLines || !this.bubbles.length) return;
+    if (!this.bubbles.length) return; // creation is gated by settings.voiceLines (emotes always show)
     ctx.font = '600 13px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';

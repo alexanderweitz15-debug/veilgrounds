@@ -52,3 +52,8 @@ Branch `auto/features` (from origin/main). Area: game features, UI/UX, QoL, poli
 - [x] Emote wins over the voice-line greeting (Bubble.emote).
 - [x] Announcer: killing sprees (3..8+ kills without dying) and Shutdown (ending a spree of 3+); tests/announceSpree.test.ts.
 - [x] Low-HP red screen vignette (<25 % HP, pulse, off with reduce-motion).
+
+## Round 6
+- [x] Browser-checked the low-HP vignette CSS (forced class; the hud toggles it from own HP) - spree banners not seen live (banner pipeline unchanged, text via t()).
+- [x] Settings presets Beginner / Standard / Competitive (src/ui/settingsPresets.ts, row at the top of the settings panel; keeps graphics, audio, keys).
+- Skipped as already done: shop build-path hints (shopRecommend nextBuy + tooltip build tree), minimap ping animation (inward/expanding rings exist).

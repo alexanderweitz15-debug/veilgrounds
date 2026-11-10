@@ -33,6 +33,8 @@ import { LiveTraining } from './liveTraining';
 import { DummyMeter } from './dummyMeter';
 
 const KILLFEED_MS = 9000;
+/** Below this share of max HP the screen edge turns red. */
+const LOW_HP_FRAC = 0.25;
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', parent?: HTMLElement, text?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -130,6 +132,8 @@ export class Hud {
   private readonly training: LiveTraining;
   /** Practice-dummy damage meter (sandbox only; src/ui/dummyMeter.ts). */
   private readonly dummyMeter: DummyMeter | null;
+  /** Red screen edge while the own champion is below LOW_HP_FRAC (LoL-like). */
+  private readonly vignette: HTMLElement;
   private readonly jungleMode: boolean;
   private readonly junglers: PlayerSetup[];
   private epicKey = '';
@@ -206,6 +210,9 @@ export class Hud {
     this.jungleMode = mode === 'classic';
     this.junglers = players.filter((p) => p.role === 'jungle');
     r.appendChild(this.jungle.root);
+    this.vignette = document.createElement('div');
+    this.vignette.className = 'lowhp-vignette';
+    r.appendChild(this.vignette);
     this.training = new LiveTraining(mode);
     r.appendChild(this.training.root);
     this.dummyMeter = mode === 'sandbox' || sandbox ? new DummyMeter() : null;
@@ -477,6 +484,10 @@ export class Hud {
     this.jungle.update(state, now);
     this.target.update(state);
     this.training.update(state);
+    const hero = state.me();
+    const lowHp = !!hero && hero.alive && hero.maxHp > 0 && hero.hp / hero.maxHp < LOW_HP_FRAC;
+    toggle(this.vignette, 'on', lowHp);
+    this.vignette.style.setProperty('--lowhp', lowHp ? String(1 - hero!.hp / hero!.maxHp / LOW_HP_FRAC) : '0');
     this.dummyMeter?.update(state);
     const me = snap.me;
     setTipContext(me ?? null);

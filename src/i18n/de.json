@@ -1208,5 +1208,13 @@
   "honor.hint": "Wähle einen Mitspieler und eine Kategorie (+20 XP). Nur einmal pro Partie.",
   "honor.level": "Ehre-Level {n} ({given} vergeben)",
   "honor.thanks": "Ehre vergeben. Danke!",
-  "honor.title": "Ehre vergeben"
+  "honor.title": "Ehre vergeben",
+  "ann.shutdown": "Shutdown!",
+  "ann.shutdownSub": "{a} beendet die Serie von {b} ({n} Kills)",
+  "ann.spree3": "Killing Spree!",
+  "ann.spree4": "Wütend!",
+  "ann.spree5": "Unaufhaltsam!",
+  "ann.spree6": "Dominierend!",
+  "ann.spree7": "Gottgleich!",
+  "ann.spree8": "Legendär!"
 }

@@ -1,0 +1,149 @@
+{
+  "id": "ignatz",
+  "name": "Ignatz Funkenhammer",
+  "title": { "de": "der Essemeister", "en": "the Forgemaster" },
+  "roles": ["mid"],
+  "archetype": "bruiser_mage",
+  "botBias": { "aggression": 2, "tradeLength": 2 },
+  "trainingPurpose": {
+    "de": "Einen Nahkampf-Magier lesen: nach drei Treffern entzündet sich das Ziel - nach zwei Treffern abdrehen, den Hammer-Kegel meiden und im Magmastrom nicht stehen bleiben.",
+    "en": "Reading a melee mage: the third hit ignites the target - back off after two hits, avoid the hammer cone and do not stand in the Magma Flow."
+  },
+  "attackType": "melee",
+  "resource": "mana",
+  "base": {
+    "hp": 645,
+    "hpGrowth": 106,
+    "hpRegen": 8,
+    "hpRegenGrowth": 0.8,
+    "mana": 380,
+    "manaGrowth": 40,
+    "manaRegen": 8,
+    "manaRegenGrowth": 0.8,
+    "ad": 58,
+    "adGrowth": 3.2,
+    "armor": 32,
+    "armorGrowth": 4.5,
+    "mr": 32,
+    "mrGrowth": 1.8,
+    "as": 0.65,
+    "asGrowth": 2,
+    "range": 175,
+    "ms": 340,
+    "windup": 0.26,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Glut", "en": "Heat" },
+    "desc": {
+      "de": "Fähigkeitstreffer laden Glut auf das Ziel (5 s). Beim dritten Treffer entzündet es sich: 3 s lang 18 (+15 % AP) magischer Schaden pro Sekunde.",
+      "en": "Ability hits stack Heat on the target (5 s). On the third hit it ignites: 18 (+15% AP) magic damage per second for 3 s."
+    },
+    "hooks": ["ignatz_heat"]
+  },
+  "abilities": [
+    {
+      "id": "ignatz_q",
+      "name": { "de": "Hammerschlag", "en": "Hammer Blow" },
+      "desc": {
+        "de": "Kegel 350 (90°): 70/110/150/190/230 (+70 % AP) magischer Schaden, 20 % Slow für 1 s.",
+        "en": "Cone 350 (90°): 70/110/150/190/230 (+70% AP) magic damage, 20% slow for 1 s."
+      },
+      "type": "cone",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 350,
+      "cooldown": [7, 6.5, 6, 5.5, 5],
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "angle": 90,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [70, 110, 150, 190, 230], "ap": 0.7 } },
+        { "kind": "slow", "pct": 20, "duration": 1 }
+      ]
+    },
+    {
+      "id": "ignatz_w",
+      "name": { "de": "Esse", "en": "Forge" },
+      "desc": {
+        "de": "Ein Schild über 70/110/150/190/230 (+50 % AP) für 3 s und 15 % Bewegung für 2 s.",
+        "en": "A shield of 70/110/150/190/230 (+50% AP) for 3 s and +15% move speed for 2 s."
+      },
+      "type": "self",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": [50, 55, 60, 65, 70],
+      "costType": "mana",
+      "effects": [
+        { "kind": "shield", "amount": { "base": [70, 110, 150, 190, 230], "ap": 0.5 }, "duration": 3, "target": "self" },
+        { "kind": "buff", "stat": "ms", "pct": 15, "duration": 2, "target": "self" }
+      ]
+    },
+    {
+      "id": "ignatz_e",
+      "name": { "de": "Funkensprung", "en": "Spark Leap" },
+      "desc": {
+        "de": "Sprung 400 zum Cursor, Aufprall im Kreis 220: 50/85/120/155/190 (+50 % AP) magischer Schaden.",
+        "en": "Leap 400 toward the cursor, landing in a 220 circle: 50/85/120/155/190 (+50% AP) magic damage."
+      },
+      "type": "dash",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 400,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": [50, 50, 50, 50, 50],
+      "costType": "mana",
+      "radius": 220,
+      "speed": 1400,
+      "distance": 400,
+      "flags": ["ground_target"],
+      "effects": [{ "kind": "damage", "type": "magic", "amount": { "base": [50, 85, 120, 155, 190], "ap": 0.5 }, "target": "enemies" }]
+    },
+    {
+      "id": "ignatz_r",
+      "name": { "de": "Magmastrom", "en": "Magma Flow" },
+      "desc": {
+        "de": "Zone 450 auf 600, 4 s: jede Sekunde 60/90/120 (+40 % AP) magischer Schaden und 30 % Slow.",
+        "en": "Zone 450 at 600, 4 s: each second 60/90/120 (+40% AP) magic damage and a 30% slow."
+      },
+      "type": "zone",
+      "castTime": 0.3,
+      "movesWhileCasting": false,
+      "range": 600,
+      "cooldown": [100, 85, 70],
+      "cost": 100,
+      "costType": "mana",
+      "radius": 450,
+      "delay": 0.3,
+      "duration": 4,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [60, 90, 120], "ap": 0.4 } },
+        { "kind": "slow", "pct": 30, "duration": 0.6 }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3 (drei Treffer entzünden) und Level 6 (Magmastrom hält Kämpfe im Nahbereich).",
+    "en": "Level 3 (three hits ignite) and level 6 (Magma Flow holds close fights)."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Sprung, Hammer", "en": "Leap, hammer" }, "sequence": ["E", "Q", "AA"] },
+    { "name": { "de": "Esse und Hammer", "en": "Forge and hammer" }, "sequence": ["W", "Q", "E"] },
+    { "name": { "de": "Magma", "en": "Magma" }, "sequence": ["R", "Q", "E"] }
+  ],
+  "scores": { "engage": 3, "peel": 1, "range": 1, "scaling": 3, "waveclear": 3, "mobility": 3 },
+  "voiceLines": {
+    "pick": { "de": "Das Eisen ist heiß.", "en": "The iron is hot." },
+    "firstBlood": { "de": "Frisch aus der Esse.", "en": "Fresh from the forge." },
+    "kill": { "de": "Gut gehärtet.", "en": "Well tempered." },
+    "death": { "de": "Die Esse ... erkaltet.", "en": "The forge ... goes cold." },
+    "recall": { "de": "Zurück an den Amboss.", "en": "Back to the anvil." },
+    "taunt": { "de": "Komm näher. Ich habe noch Platz auf dem Amboss.", "en": "Come closer. There is room on my anvil." }
+  },
+  "silhouette": "stocky bearded smith in a leather apron with a huge glowing hammer over the shoulder, soot-black arms, sparks flying and a heat haze rising from the hammer head"
+}

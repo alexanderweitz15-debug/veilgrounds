@@ -59,6 +59,9 @@ import { backAntennae, coilRifle } from './zinna';
 import { DORRAK_KIT } from './worm';
 import { bloodDrips, bloodOrbs, thornCrown } from './rovena';
 import { floatNotes, hatPlume, luteBack } from './tilda';
+import { battleStandard, roundShield } from './brigga';
+import { forgeHammer, forgeSparks } from './ignatz';
+import { repeaterCrossbow, longScarf } from './rhea';
 import type { Kit } from './types';
 
 const SKIN = { fair: '#e9c6a4', light: '#ddb08a', tan: '#c08a62', brown: '#946244', dark: '#6a4430', pale: '#e8cfba', old: '#d6b094', ash: '#c8b8a8' };
@@ -1319,6 +1322,91 @@ kit({
   cast: 'draw',
   gait: 'light',
   props: [coilRifle, backAntennae],
+});
+// Brigga Bollwerk: broad armoured standard bearer with a round shield
+kit({
+  id: 'brigga',
+  name: 'Brigga Bollwerk',
+  world: 196,
+  look: 'broad armoured woman in a steel breastplate over a red tabard, plumed open helm, steel pauldrons and gauntlets, a long red-and-gold battle standard strapped to her back with a swallow-tail pennant, a big round steel shield with a brass boss on the left arm',
+  feature: 'tall banner pole with pennant + round shield',
+  body: { ...FEMALE, H: 186, shW: 21, hipW: 16, girth: 1.08, bust: 0.3, headR: 12.8 },
+  outfit: {
+    skin: SKIN.fair,
+    face: { eyes: '#4a6a8a', brows: 1.1 },
+    top: m('#a0a6b0', 'metal'),
+    sleeves: m('#8a909a', 'metal'),
+    forearms: m('#8a909a', 'metal'),
+    hands: leather('#3a2c26'),
+    legs: cloth('#3c3a44'),
+    boots: m('#8a909a', 'metal'),
+    tabard: cloth('#a82a32'),
+    belt: { mat: leather('#3a2c26'), buckle: BRASS },
+    pauldrons: { mat: m('#a0a6b0', 'metal'), size: 1.1 },
+    hat: { kind: 'helm', mat: m('#a0a6b0', 'metal') },
+    hair: { style: 'tied', mat: hair('#b87a3a') },
+  },
+  hold: 'shield',
+  attack: 'bash',
+  cast: 'forward',
+  gait: 'heavy',
+  props: [battleStandard, roundShield],
+});
+// Ignatz Funkenhammer: stocky bearded smith with a glowing sledge hammer
+kit({
+  id: 'ignatz',
+  name: 'Ignatz Funkenhammer',
+  world: 190,
+  look: 'stocky bearded smith with soot-black forearms in a scorched leather apron over a rust-red shirt, a thick black beard and a bald head under a leather cap, a huge sledge hammer with a glowing orange striking face and a shower of orange sparks around his shoulders',
+  feature: 'big glowing hammer + sparks + leather apron',
+  body: { ...MALE, H: 170, shW: 24, hipW: 16, girth: 1.18, belly: 0.3, headR: 13 },
+  outfit: {
+    skin: SKIN.brown,
+    face: { brows: 1.5, eyes: '#e8a040' },
+    top: cloth('#9a4a2a'),
+    sleeves: cloth('#9a4a2a'),
+    forearms: leather('#2a2420'),
+    hands: leather('#2a2420'),
+    legs: cloth('#3a3436'),
+    boots: leather('#2a2018'),
+    apron: { mat: leather('#6a4a30'), len: 1 },
+    belt: { mat: leather('#3a2c20'), buckle: BRASS },
+    hat: { kind: 'cap', mat: leather('#4a3626') },
+    beard: { style: 'full', mat: hair('#1e1a18') },
+  },
+  hold: 'overhead',
+  attack: 'hammer',
+  cast: 'sweep',
+  gait: 'heavy',
+  props: [forgeHammer, forgeSparks],
+});
+// Rhea Doppelbolzen: agile repeater-crossbow gunner with a very long red scarf
+kit({
+  id: 'rhea',
+  name: 'Rhea Doppelbolzen',
+  world: 186,
+  look: 'agile young gunner with a short dark ponytail, a short forest-green jacket over a cream shirt, brown trousers and boots, a very long red scarf streaming behind her, a bandolier of bolts across the chest and a boxy repeater crossbow with a brass bolt magazine',
+  feature: 'long red scarf + boxy repeater crossbow',
+  body: { ...FEMALE, H: 174, shW: 16.5, hipW: 13.5, girth: 0.9, legs: 0.52, bust: 0.3 },
+  outfit: {
+    skin: SKIN.light,
+    face: { eyes: '#4a7a5a', brows: 0.9 },
+    top: cloth('#efe8d6'),
+    sleeves: cloth('#3a6a46'),
+    forearms: leather('#6a4a30'),
+    hands: leather('#4a3626'),
+    legs: cloth('#6a5a44'),
+    boots: leather('#4a3626'),
+    coat: { mat: cloth('#3a6a46'), len: 0.5, flare: 0.5, split: true },
+    strap: { mat: leather('#5a3a26'), items: 'studs', itemMat: BRASS },
+    belt: { mat: leather('#4a3626'), buckle: BRASS, y: 0.15 },
+    hair: { style: 'tied', mat: hair('#2a2022') },
+  },
+  hold: 'rifle',
+  attack: 'rifle',
+  cast: 'point',
+  gait: 'light',
+  props: [repeaterCrossbow, longScarf],
 });
 // Knarr: giant crab, painted by the SpriteDrawer in crab.ts (atlas.ts DRAWERS); the Kit stub carries the icon colours
 kit(KNARR_KIT);

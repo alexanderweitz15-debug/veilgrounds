@@ -1,0 +1,166 @@
+{
+  "id": "brigga",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "support",
+    "engage": 4,
+    "peel": 4,
+    "poke": 2,
+    "burst": 1
+  },
+  "keyRanges": {
+    "auto": 175,
+    "trade": 600,
+    "engage": 650,
+    "poke": 650,
+    "threat": 650,
+    "peel": 600
+  },
+  "combos": [
+    {
+      "id": "brigga_data1",
+      "kind": "engage",
+      "sequence": [
+        "E",
+        "Q",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "brigga_data2",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "Q",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "brigga_data3",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "W",
+        "Q"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "brigga_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    },
+    {
+      "id": "brigga_peel",
+      "kind": "peel",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "line",
+      "roles": [
+        "cc",
+        "engage",
+        "poke"
+      ],
+      "range": 650,
+      "useRange": [
+        0,
+        598
+      ],
+      "speed": 1500,
+      "width": 100,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 4,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 3,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "W",
+      "aim": "circle",
+      "roles": [
+        "peel",
+        "sustain",
+        "zone"
+      ],
+      "range": 600,
+      "useRange": [
+        0,
+        552
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 400,
+      "castTime": 0.25,
+      "delay": 0.2,
+      "cc": 1,
+      "damage": false,
+      "dodgeable": true,
+      "threat": 0,
+      "holdFor": "peel"
+    },
+    {
+      "slot": "E",
+      "aim": "dash",
+      "roles": [
+        "escape",
+        "engage",
+        "sustain"
+      ],
+      "range": 350,
+      "useRange": [
+        87.5,
+        525
+      ],
+      "speed": 1400,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.1,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "R",
+      "aim": "self",
+      "roles": [
+        "peel",
+        "sustain",
+        "ult"
+      ],
+      "range": 600,
+      "useRange": [
+        0,
+        600
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 600,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "kill"
+    }
+  ]
+}

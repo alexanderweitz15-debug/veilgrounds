@@ -1,0 +1,328 @@
+{
+  "id": "rhea",
+  "name": "Rhea Doppelbolzen",
+  "title": {
+    "de": "die Schnellschützin",
+    "en": "the Quickshot"
+  },
+  "roles": [
+    "adc"
+  ],
+  "archetype": "repeater_marksman",
+  "botBias": {
+    "aggression": 1,
+    "kiting": -1,
+    "tradeLength": -1
+  },
+  "trainingPurpose": {
+    "de": "Eine Schnellschützin lesen: nach jeder Fähigkeit folgt ein Doppelschuss - in ihrem Fähigkeitsfenster nicht trades annehmen, Fährtenschuss ausweichen, den Kugelhagel-Kegel meiden.",
+    "en": "Reading a quickshot: every ability is followed by a double shot - do not accept trades in her ability window, dodge Tracking Shot, avoid the Bolt Storm cone."
+  },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 598,
+    "hpGrowth": 96,
+    "hpRegen": 3.7,
+    "hpRegenGrowth": 0.55,
+    "mana": 315,
+    "manaGrowth": 38,
+    "manaRegen": 7.2,
+    "manaRegenGrowth": 0.65,
+    "ad": 60,
+    "adGrowth": 3,
+    "armor": 26,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.66,
+    "asGrowth": 2.8,
+    "range": 500,
+    "ms": 335,
+    "windup": 0.18,
+    "projectileSpeed": 2200,
+    "radius": 60
+  },
+  "passive": {
+    "name": {
+      "de": "Doppelbolzen",
+      "en": "Double Bolt"
+    },
+    "desc": {
+      "de": "Nach einer Fähigkeit feuert der nächste Auto einen zweiten Bolzen für 60 % Schaden.",
+      "en": "After an ability, the next basic attack fires a second bolt for 60% damage."
+    },
+    "hooks": [
+      "rhea_double"
+    ]
+  },
+  "abilities": [
+    {
+      "id": "rhea_q",
+      "name": {
+        "de": "Streuschuss",
+        "en": "Scatter Shot"
+      },
+      "desc": {
+        "de": "Kegel 450 (40°): 30/55/80/105/130 (+60 % AD) physischer Schaden, 20 % Slow für 1 s.",
+        "en": "Cone 450 (40°): 30/55/80/105/130 (+60% AD) physical damage, 20% slow for 1 s."
+      },
+      "type": "cone",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 450,
+      "cooldown": [
+        8,
+        7.5,
+        7,
+        6.5,
+        6
+      ],
+      "cost": [
+        30,
+        32,
+        34,
+        36,
+        38
+      ],
+      "costType": "mana",
+      "angle": 40,
+      "effects": [
+        {
+          "kind": "damage",
+          "type": "phys",
+          "amount": {
+            "base": [
+              30,
+              55,
+              80,
+              105,
+              130
+            ],
+            "ad": 0.6
+          }
+        },
+        {
+          "kind": "slow",
+          "pct": 20,
+          "duration": 1
+        }
+      ]
+    },
+    {
+      "id": "rhea_w",
+      "name": {
+        "de": "Fährtenschuss",
+        "en": "Tracking Shot"
+      },
+      "desc": {
+        "de": "Linie 900: 40/70/100/130/160 (+70 % AD) physischer Schaden, 25 % Slow für 1,25 s.",
+        "en": "Line 900: 40/70/100/130/160 (+70% AD) physical damage, 25% slow for 1.25 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 900,
+      "cooldown": [
+        9,
+        8.5,
+        8,
+        7.5,
+        7
+      ],
+      "cost": [
+        40,
+        45,
+        50,
+        55,
+        60
+      ],
+      "costType": "mana",
+      "width": 60,
+      "speed": 2200,
+      "flags": [
+        "blocked_by_minions"
+      ],
+      "effects": [
+        {
+          "kind": "damage",
+          "type": "phys",
+          "amount": {
+            "base": [
+              40,
+              70,
+              100,
+              130,
+              160
+            ],
+            "ad": 0.7
+          }
+        },
+        {
+          "kind": "slow",
+          "pct": 25,
+          "duration": 1.25
+        }
+      ]
+    },
+    {
+      "id": "rhea_e",
+      "name": {
+        "de": "Rückzug",
+        "en": "Fall Back"
+      },
+      "desc": {
+        "de": "Sprung 350 vom Cursor weg und 1,5 s +20 % Bewegung.",
+        "en": "Hop 350 away from the cursor and +20% move speed for 1.5 s."
+      },
+      "type": "dash",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 350,
+      "cooldown": [
+        16,
+        15,
+        14,
+        13,
+        12
+      ],
+      "cost": 40,
+      "costType": "mana",
+      "speed": 1500,
+      "distance": 350,
+      "effects": [
+        {
+          "kind": "buff",
+          "stat": "ms",
+          "pct": 20,
+          "duration": 1.5,
+          "target": "self"
+        },
+        {
+          "kind": "hook",
+          "id": "rhea_e_back"
+        }
+      ]
+    },
+    {
+      "id": "rhea_r",
+      "name": {
+        "de": "Bolzensturm",
+        "en": "Bolt Storm"
+      },
+      "desc": {
+        "de": "Kegel 800 (35°): 200/320/440 (+100 % Bonus-AD) physischer Schaden.",
+        "en": "Cone 800 (35°): 200/320/440 (+100% bonus AD) physical damage."
+      },
+      "type": "cone",
+      "castTime": 0.35,
+      "movesWhileCasting": false,
+      "range": 800,
+      "cooldown": [
+        100,
+        85,
+        70
+      ],
+      "cost": 100,
+      "costType": "mana",
+      "angle": 35,
+      "effects": [
+        {
+          "kind": "damage",
+          "type": "phys",
+          "amount": {
+            "base": [
+              200,
+              320,
+              440
+            ],
+            "bonusAd": 1
+          }
+        }
+      ]
+    }
+  ],
+  "spikeLevels": [
+    3,
+    6
+  ],
+  "spikeNote": {
+    "de": "Level 3 (Fährtenschuss + Doppelbolzen im Trade) und Level 6 (Bolzensturm im Nahkampf-Engage).",
+    "en": "Level 3 (Tracking Shot + Double Bolt in trades) and level 6 (Bolt Storm against melee engages)."
+  },
+  "maxOrder": [
+    "W",
+    "Q",
+    "E"
+  ],
+  "combos": [
+    {
+      "name": {
+        "de": "Schuss und Doppel",
+        "en": "Shot and double"
+      },
+      "sequence": [
+        "W",
+        "AA",
+        "AA"
+      ]
+    },
+    {
+      "name": {
+        "de": "Streuschuss und Salve",
+        "en": "Scatter and volley"
+      },
+      "sequence": [
+        "Q",
+        "AA",
+        "W"
+      ]
+    },
+    {
+      "name": {
+        "de": "Sturm",
+        "en": "Storm"
+      },
+      "sequence": [
+        "R",
+        "AA",
+        "Q"
+      ]
+    }
+  ],
+  "scores": {
+    "engage": 1,
+    "peel": 3,
+    "range": 3,
+    "scaling": 4,
+    "waveclear": 3,
+    "mobility": 2
+  },
+  "voiceLines": {
+    "pick": {
+      "de": "Zweimal gezielt, einmal getroffen.",
+      "en": "Aimed twice, hit once."
+    },
+    "firstBlood": {
+      "de": "Der erste Bolzen sitzt.",
+      "en": "The first bolt lands."
+    },
+    "kill": {
+      "de": "Doppelt hält besser.",
+      "en": "Twice is safer."
+    },
+    "death": {
+      "de": "Ich ... habe nicht nachgeladen.",
+      "en": "I ... did not reload."
+    },
+    "recall": {
+      "de": "Bolzen auffüllen.",
+      "en": "Restocking bolts."
+    },
+    "taunt": {
+      "de": "Der zweite kommt immer.",
+      "en": "The second one always comes."
+    }
+  },
+  "silhouette": "agile gunner with a short ponytail and a very long red scarf streaming behind, a boxy repeater crossbow with a bolt magazine and a bandolier of bolts across the chest"
+}

@@ -1528,5 +1528,107 @@
       "de": "Akkus laden.",
       "en": "Recharging."
     }
+  },
+  "brigga": {
+    "pick": {
+      "de": "Hinter mir. Alle.",
+      "en": "Behind me. All of you."
+    },
+    "move1": {
+      "de": "Das Banner voran.",
+      "en": "Standard forward."
+    },
+    "move2": {
+      "de": "Schilde hoch.",
+      "en": "Shields up."
+    },
+    "attack": {
+      "de": "Zurück!",
+      "en": "Back!"
+    },
+    "ability": {
+      "de": "Haltet die Linie!",
+      "en": "Hold the line!"
+    },
+    "kill": {
+      "de": "Zurückgeworfen.",
+      "en": "Thrown back."
+    },
+    "death": {
+      "de": "Das Banner ... fällt nicht.",
+      "en": "The standard ... does not fall."
+    },
+    "recall": {
+      "de": "Zurück zur Linie.",
+      "en": "Back to the line."
+    }
+  },
+  "ignatz": {
+    "pick": {
+      "de": "Das Eisen ist heiß.",
+      "en": "The iron is hot."
+    },
+    "move1": {
+      "de": "Funken fliegen.",
+      "en": "Sparks fly."
+    },
+    "move2": {
+      "de": "Noch ein Stück Erz.",
+      "en": "One more bit of ore."
+    },
+    "attack": {
+      "de": "Härten!",
+      "en": "Temper it!"
+    },
+    "ability": {
+      "de": "Aufs Eisen!",
+      "en": "On the iron!"
+    },
+    "kill": {
+      "de": "Gut gehärtet.",
+      "en": "Well tempered."
+    },
+    "death": {
+      "de": "Die Esse ... erkaltet.",
+      "en": "The forge ... goes cold."
+    },
+    "recall": {
+      "de": "Zurück an den Amboss.",
+      "en": "Back to the anvil."
+    }
+  },
+  "rhea": {
+    "pick": {
+      "de": "Zweimal gezielt, einmal getroffen.",
+      "en": "Aimed twice, hit once."
+    },
+    "move1": {
+      "de": "Immer in Bewegung.",
+      "en": "Always moving."
+    },
+    "move2": {
+      "de": "Das Magazin ist voll.",
+      "en": "The magazine is full."
+    },
+    "attack": {
+      "de": "Doppelt!",
+      "en": "Double!"
+    },
+    "ability": {
+      "de": "Los geht's!",
+      "en": "Here we go!"
+    },
+    "kill": {
+      "de": "Doppelt hält besser.",
+      "en": "Twice is safer."
+    },
+    "death": {
+      "de": "Ich ... habe nicht nachgeladen.",
+      "en": "I ... did not reload."
+    },
+    "recall": {
+      "de": "Bolzen auffüllen.",
+      "en": "Restocking bolts."
+    }
   }
 }

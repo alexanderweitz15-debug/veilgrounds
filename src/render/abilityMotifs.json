@@ -74,6 +74,9 @@
     "gerwin": [["bell",150],["fang",120],["horn",140],["moon",165]],
     "hedda": [["arrow",35],["claw",28],["leaf",95],["boot",42]],
     "zinna": [["bolt",205],["gear",25],["boot",190],["wave",215]],
-    "knarr": [["claw",15],["shield",205],["boot",190],["axe",5]]
+    "knarr": [["claw",15],["shield",205],["boot",190],["axe",5]],
+    "brigga": [["shield",25],["banner",355],["boot",30],["sun",48]],
+    "ignatz": [["axe",20],["shield",28],["flame",18],["bomb",12]],
+    "rhea": [["boot",45],["arrow",355],["wing",20],["claw",8]]
   }
 }

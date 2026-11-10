@@ -41,6 +41,10 @@ export const FLEET = { max: 100, perUnit: 0.25, perAuto: 8, heal: 15, ad: 0.1, a
 export const PHASE = { hits: 3, window: sec(3), ms: 30, ticks: sec(3), cd: sec(25) };
 /** First Strike: damage on a champion that has not hit you for 3 s opens a 3 s window of +7 % damage on it, CD 25 s. */
 export const FIRST = { quiet: sec(3), window: sec(3), mult: 1.07, cd: sec(25) };
+/** Last Stand: +5 % damage below 60 % HP, +11 % below 30 %. */
+export const LAST_STAND = { low: 0.6, lowMult: 1.05, crit: 0.3, critMult: 1.11 };
+/** Triumph: a takedown heals 10 % of the missing HP. */
+export const TRIUMPH = { pct: 0.1 };
 export const COMET = { min: 30, max: 100, bonusAd: 0.2, ap: 0.1, cd: sec(12) };
 export const VIGILANCE_WARD_MULT = 1.1;
 
@@ -209,6 +213,19 @@ function fleetAuto(sim: Sim, eid: number, t: number): void {
 }
 
 export const RUNE_HOOKS: Record<string, ItemHook> = {
+  rune_last_stand: {
+    modifyDamage(sim, _eid, _t, amount) {
+      const { Hp } = sim.c;
+      const f = Hp.cur[_eid]! / Hp.max[_eid]!;
+      return f < LAST_STAND.crit ? amount * LAST_STAND.critMult : f < LAST_STAND.low ? amount * LAST_STAND.lowMult : amount;
+    },
+  },
+  rune_triumph: {
+    onTakedown(sim, eid) {
+      const { Hp } = sim.c;
+      heal(sim, eid, Math.max(0, Hp.max[eid]! - Hp.cur[eid]!) * TRIUMPH.pct);
+    },
+  },
   rune_fleetfoot: {
     onTick(sim, eid) {
       const e = ent(sim, eid);

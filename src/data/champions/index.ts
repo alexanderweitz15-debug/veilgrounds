@@ -48,6 +48,9 @@ import svea from './svea.json';
 import rovena from './rovena.json';
 import dorrak from './dorrak.json';
 import tilda from './tilda.json';
+import brigga from './brigga.json';
+import ignatz from './ignatz.json';
+import rhea from './rhea.json';
 
 const raw = {
   ilvane,
@@ -95,6 +98,9 @@ const raw = {
   rovena,
   dorrak,
   tilda,
+  brigga,
+  ignatz,
+  rhea,
 } satisfies Record<string, Json<ChampionData>>;
 
 export const champions: Record<string, ChampionData> = Object.fromEntries(

@@ -23,6 +23,10 @@ interface Item {
 const SHOW_MS = 2600;
 const MULTI_S = 10;
 const PENTA_S = 30;
+/** Spree banner by kills in a row: 3 Killing Spree .. 8+ Legendary. */
+export const spreeKey = (n: number): string | null => (n >= 3 ? `ann.spree${Math.min(8, n)}` : null);
+/** A kill ends the victim's spree at this many kills (LoL: shutdown). */
+export const SHUTDOWN_AT = 3;
 const MULTI_KEYS = ['', '', 'ann.double', 'ann.triple', 'ann.quadra', 'ann.penta'];
 /** Modes with the regular minion schedule (first wave at FIRST_WAVE_TICK). */
 const WAVE_MODES = new Set(['classic', 'laneOnly']);
@@ -41,6 +45,8 @@ export class Announcer {
   private firstBlood = false;
   private readonly streak = new Map<string, { n: number; at: number }>();
   private readonly aced = [false, false];
+  /** Champion kills since the last death, per champion id (killing sprees / shutdown). */
+  private readonly sprees = new Map<string, number>();
   /** Own Kesselbrut stacks last seen, and when they last rose (pending banner), -1 = none pending. */
   /** Kesselbrut stacks per team as last seen and when they last rose (one banner once the count settled). */
   private kessel: [number, number] = [0, 0];
@@ -133,6 +139,24 @@ export class Announcer {
         this.push(t(MULTI_KEYS[n]!), allyDied ? 'bad' : 'epic', 1, kName);
         done = true;
       }
+      // sprees: kills since the last death; killing a champion on a spree is a shutdown
+      const vChamp = deathVictimChamp(ev, state);
+      const victimSpree = vChamp ? (this.sprees.get(vChamp) ?? 0) : 0;
+      if (vChamp) this.sprees.set(vChamp, 0);
+      const sp = (this.sprees.get(kChamp!) ?? 0) + 1;
+      this.sprees.set(kChamp!, sp);
+      if (!done && victimSpree >= SHUTDOWN_AT) {
+        this.push(t('ann.shutdown'), allyDied ? 'bad' : 'epic', 1, t('ann.shutdownSub', { a: kName, b: vName, n: victimSpree }));
+        done = true;
+      }
+      const key = spreeKey(sp);
+      if (!done && key) {
+        this.push(t(key), allyDied ? 'bad' : 'epic', 1, kName);
+        done = true;
+      }
+    } else {
+      const vChamp = deathVictimChamp(ev, state);
+      if (vChamp) this.sprees.set(vChamp, 0); // executed by a tower / minion: the spree is over without a shutdown
     }
     if (!done) {
       if (ev.eid === meId) this.push(t('ann.youDied'), 'bad', 1, sub);

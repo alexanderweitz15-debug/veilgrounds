@@ -99,6 +99,8 @@ interface Bubble {
   follow: boolean;
   t0: number;
   dur: number;
+  /** Player emote: voice lines of the same champion must not replace it while it is up. */
+  emote?: true;
 }
 
 const FADE_MS = 350;
@@ -198,7 +200,7 @@ export class VoiceBubbles {
     const me = state.me();
     if (!me) return;
     this.bubbles = this.bubbles.filter((b) => b.eid !== me.id);
-    this.bubbles.push({ eid: me.id, text, team: me.team, own: true, x: me.x, y: me.y, follow: true, t0: now, dur: bubbleMs(text) });
+    this.bubbles.push({ eid: me.id, text, team: me.team, own: true, x: me.x, y: me.y, follow: true, t0: now, dur: bubbleMs(text), emote: true });
   }
 
   private say(eid: number, champ: string, trigger: VoiceTrigger, state: ClientState, now: number, x: number, y: number, follow: boolean, teamOverride?: number, ownOverride?: boolean): void {
@@ -214,6 +216,7 @@ export class VoiceBubbles {
     const text = voiceLine(champ, key);
     if (!text) return;
     const team = teamOverride ?? state.byId.get(eid)?.team ?? state.myTeam;
+    if (this.bubbles.some((b) => b.eid === eid && b.emote && now - b.t0 < b.dur)) return; // the emote wins
     this.bubbles = this.bubbles.filter((b) => b.eid !== eid);
     this.bubbles.push({ eid, text, team, own, x, y, follow, t0: now, dur: bubbleMs(text) });
   }

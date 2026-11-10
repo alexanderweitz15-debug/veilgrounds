@@ -47,3 +47,8 @@ Branch `auto/features` (from origin/main). Area: game features, UI/UX, QoL, poli
 
 ## Round 4
 - [x] Browser-checked (own vite on 5175, closed): spectator bar placement ok at 800 px (no overlap), emote strip opens with Z and shows the bubble ('Gut gespielt'), honor panel renders. Note: an emote clicked within the first second is replaced by the start greeting bubble.
+
+## Round 5
+- [x] Emote wins over the voice-line greeting (Bubble.emote).
+- [x] Announcer: killing sprees (3..8+ kills without dying) and Shutdown (ending a spree of 3+); tests/announceSpree.test.ts.
+- [x] Low-HP red screen vignette (<25 % HP, pulse, off with reduce-motion).

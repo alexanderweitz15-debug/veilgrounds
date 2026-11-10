@@ -70,7 +70,9 @@
     "raserbeil": { "glyph": "doubleAxe", "hue": 350, "sat": 60, "accent": "flame", "accentHue": 22 },
     "sterndiadem": { "glyph": "crown", "hue": 190, "sat": 50, "accent": "sun", "accentHue": 48 },
     "stichblatt": { "glyph": "shortSword", "hue": 350, "sat": 55, "accent": "wing", "accentHue": 48 },
-    "gruftkrone": { "glyph": "crown", "hue": 150, "sat": 40, "accent": "skull", "accentHue": 120 }
+    "gruftkrone": { "glyph": "crown", "hue": 150, "sat": 40, "accent": "skull", "accentHue": 120 },
+    "jagdfell": { "glyph": "cloak", "hue": 38, "sat": 55, "accent": "claw", "accentHue": 30 },
+    "blitzfeder": { "glyph": "stormBow", "hue": 205, "sat": 70, "accent": "bolt", "accentHue": 200 }
   },
   "runes": {
     "_doc": "path hues: Präzision 48, Dominanz 355, Zauberei 215, Entschlossenheit 120, Inspiration 180",

@@ -43,6 +43,7 @@ import lumi from './lumi.json';
 import ysmay from './ysmay.json';
 import gerwin from './gerwin.json';
 import hedda from './hedda.json';
+import zinna from './zinna.json';
 import svea from './svea.json';
 import rovena from './rovena.json';
 import dorrak from './dorrak.json';
@@ -89,6 +90,7 @@ const raw = {
   ysmay,
   gerwin,
   hedda,
+  zinna,
   knarr,
   rovena,
   dorrak,

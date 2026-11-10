@@ -1494,5 +1494,39 @@
       "de": "Zurück ins Lager.",
       "en": "Back to camp."
     }
+  },
+  "zinna": {
+    "pick": {
+      "de": "Alles unter Strom.",
+      "en": "Everything is live."
+    },
+    "move1": {
+      "de": "Es knistert.",
+      "en": "Crackling."
+    },
+    "move2": {
+      "de": "Spannung halten.",
+      "en": "Keep the tension."
+    },
+    "attack": {
+      "de": "Funken!",
+      "en": "Sparks!"
+    },
+    "ability": {
+      "de": "Volle Ladung.",
+      "en": "Full charge."
+    },
+    "kill": {
+      "de": "Kurzschluss.",
+      "en": "Short circuit."
+    },
+    "death": {
+      "de": "Die Leitung ... ist tot.",
+      "en": "The line ... is dead."
+    },
+    "recall": {
+      "de": "Akkus laden.",
+      "en": "Recharging."
+    }
   }
 }

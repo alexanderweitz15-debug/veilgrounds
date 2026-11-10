@@ -405,3 +405,11 @@ Total: 110 hook ids across 26 champions.
 | `hedda_w_shift` | W | Toggles the form; to panther +25 % MS 2 s, to human heals 8 % of missing HP. |
 | `hedda_e_wild` | E | Human: heal; panther: magic swipe in 300. |
 | `hedda_r_pounce` | R | After the dash damage: shifts into the panther. |
+
+## Zinna Funkenlauf (`zinna`) (auto/champions)
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `zinna_arc` | Passive | `onAutoHit`: counts autos on the same target (resets when the target changes); the third arcs to the nearest other enemy within 450 for 70 % of the hit as magic damage. |
+| `zinna_w_charge` | W | The next auto counts as the third. |
+| `zinna_e_backfire` | E | `dashStart`: reverses the dash (hop away from the cursor). |

@@ -73,6 +73,7 @@
     "ysmay": [["sword",350],["shield",210],["wave",25],["arrow",8]],
     "gerwin": [["bell",150],["fang",120],["horn",140],["moon",165]],
     "hedda": [["arrow",35],["claw",28],["leaf",95],["boot",42]],
+    "zinna": [["bolt",205],["gear",25],["boot",190],["wave",215]],
     "knarr": [["claw",15],["shield",205],["boot",190],["axe",5]]
   }
 }

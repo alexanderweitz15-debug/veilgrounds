@@ -1,0 +1,149 @@
+{
+  "id": "zinna",
+  "name": "Zinna Funkenlauf",
+  "title": { "de": "die Blitzschützin", "en": "the Arc Gunner" },
+  "roles": ["adc"],
+  "archetype": "arc_marksman",
+  "botBias": { "aggression": 1, "kiting": -1 },
+  "trainingPurpose": {
+    "de": "Eine Funken-Schützin lesen: jeder dritte Auto springt auf den Nachbarn über - nicht eng stehen, nach der Überladung Abstand halten, die Gewitterwand-Linie meiden.",
+    "en": "Reading a spark marksman: every third basic attack jumps to a neighbour - do not clump, keep distance after Overcharge, sidestep the Storm Wall line."
+  },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 600,
+    "hpGrowth": 97,
+    "hpRegen": 3.7,
+    "hpRegenGrowth": 0.55,
+    "mana": 320,
+    "manaGrowth": 38,
+    "manaRegen": 7.2,
+    "manaRegenGrowth": 0.65,
+    "ad": 59,
+    "adGrowth": 3.1,
+    "armor": 25,
+    "armorGrowth": 4.2,
+    "mr": 30,
+    "mrGrowth": 1.3,
+    "as": 0.65,
+    "asGrowth": 2.8,
+    "range": 525,
+    "ms": 335,
+    "windup": 0.19,
+    "projectileSpeed": 2200,
+    "radius": 60
+  },
+  "passive": {
+    "name": { "de": "Funkensprung", "en": "Arc Jump" },
+    "desc": {
+      "de": "Jeder dritte Auto auf dasselbe Ziel springt auf den nächsten anderen Gegner in 450 über und verursacht 70 % seines Schadens als Magieschaden.",
+      "en": "Every third basic attack springs to the nearest other enemy within 450 for 70% of its damage as magic damage."
+    },
+    "hooks": ["zinna_arc"]
+  },
+  "abilities": [
+    {
+      "id": "zinna_q",
+      "name": { "de": "Funkenschuss", "en": "Spark Shot" },
+      "desc": {
+        "de": "Linie 900, durchschlägt: 30/60/90/120/150 (+80 % AD) physischer Schaden.",
+        "en": "Line 900, pierces: 30/60/90/120/150 (+80% AD) physical damage."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 900,
+      "cooldown": [8, 7.5, 7, 6.5, 6],
+      "cost": [40, 45, 50, 55, 60],
+      "costType": "mana",
+      "width": 70,
+      "speed": 2200,
+      "flags": ["pierce"],
+      "effects": [{ "kind": "damage", "type": "phys", "amount": { "base": [30, 60, 90, 120, 150], "ad": 0.8 } }]
+    },
+    {
+      "id": "zinna_w",
+      "name": { "de": "Überladung", "en": "Overcharge" },
+      "desc": {
+        "de": "3 s +30/35/40/45/50 % Angriffstempo; der nächste Auto springt sofort über.",
+        "en": "3 s +30/35/40/45/50% attack speed; the next basic attack arcs at once."
+      },
+      "type": "self",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [16, 15, 14, 13, 12],
+      "cost": [40, 40, 40, 40, 40],
+      "costType": "mana",
+      "effects": [
+        { "kind": "buff", "stat": "as", "pct": [30, 35, 40, 45, 50], "duration": 3, "target": "self" },
+        { "kind": "hook", "id": "zinna_w_charge" }
+      ]
+    },
+    {
+      "id": "zinna_e",
+      "name": { "de": "Rückzünder", "en": "Backfire" },
+      "desc": {
+        "de": "Sprung 300 vom Cursor weg; Gegner in 250 um dein Ziel werden 1 s um 35 % verlangsamt.",
+        "en": "Hop 300 away from the cursor; enemies within 250 of the landing are slowed 35% for 1 s."
+      },
+      "type": "dash",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 300,
+      "cooldown": [14, 13, 12, 11, 10],
+      "cost": 40,
+      "costType": "mana",
+      "speed": 1500,
+      "distance": 300,
+      "radius": 250,
+      "effects": [
+        { "kind": "slow", "pct": 35, "duration": 1, "target": "enemies" },
+        { "kind": "hook", "id": "zinna_e_backfire" }
+      ]
+    },
+    {
+      "id": "zinna_r",
+      "name": { "de": "Gewitterwand", "en": "Storm Wall" },
+      "desc": {
+        "de": "Linie 1.500, breit 200: 150/250/350 (+90 % AD) magischer Schaden, betäubt 0,75 s.",
+        "en": "Line 1500, 200 wide: 150/250/350 (+90% AD) magic damage, stuns for 0.75 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.5,
+      "movesWhileCasting": false,
+      "range": 1500,
+      "cooldown": [100, 85, 70],
+      "cost": 100,
+      "costType": "mana",
+      "width": 200,
+      "speed": 1800,
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [150, 250, 350], "ad": 0.9 } },
+        { "kind": "stun", "duration": 0.75 }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3 (Überladung + Funkensprung im Trade) und Level 6 (Gewitterwand stoppt Engage).",
+    "en": "Level 3 (Overcharge + Arc Jump in trades) and level 6 (Storm Wall stops engages)."
+  },
+  "maxOrder": ["Q", "W", "E"],
+  "combos": [
+    { "name": { "de": "Überladung und Hiebe", "en": "Overcharge and shots" }, "sequence": ["W", "AA", "AA"] },
+    { "name": { "de": "Schuss und Sprung", "en": "Shot and hop" }, "sequence": ["Q", "AA", "E"] },
+    { "name": { "de": "Gewitter", "en": "Storm" }, "sequence": ["R", "Q", "AA"] }
+  ],
+  "scores": { "engage": 1, "peel": 3, "range": 4, "scaling": 4, "waveclear": 3, "mobility": 3 },
+  "voiceLines": {
+    "pick": { "de": "Alles unter Strom.", "en": "Everything is live." },
+    "firstBlood": { "de": "Der erste Funke.", "en": "The first spark." },
+    "kill": { "de": "Kurzschluss.", "en": "Short circuit." },
+    "death": { "de": "Die Leitung ... ist tot.", "en": "The line ... is dead." },
+    "recall": { "de": "Akkus laden.", "en": "Recharging." },
+    "taunt": { "de": "Steht ruhig eng zusammen.", "en": "Go on, stand close together." }
+  },
+  "silhouette": "small wiry gunner with spiky blue-white hair, a copper-plated vest, a long coil rifle wrapped in copper windings and two thin antenna rods on her back with a blue arc between the tips"
+}

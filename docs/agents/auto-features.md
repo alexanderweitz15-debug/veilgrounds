@@ -65,3 +65,7 @@ Branch `auto/features` (from origin/main). Area: game features, UI/UX, QoL, poli
 - [x] Epic first-spawn warnings (30 s ahead) for Leviathan, Kesselbrut, Veil Warden + spawn banners (classic).
 - [x] Post-game build review (src/ui/buildReview.ts): final items + missing standard-build items; MatchSummary.items.
 - Skipped: champion-select counters (no matchup data; would be invented), minimap fog tint already exists.
+
+## Round 9
+- [x] Epic respawn warnings (30 s ahead + spawn banner) after a Leviathan / Veil Warden kill (announce.ts epicNext).
+- [~] Browser check: build review renders (title + missing label; icons not visible in the tiny shared pane); banners not seen (shared tab was navigated away by another agent twice). Needs a proper look in a real window.

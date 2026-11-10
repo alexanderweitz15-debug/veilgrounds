@@ -55,6 +55,8 @@ export class Announcer {
   private kesselSpawned = false;
   /** First-spawn epic objectives already warned (30 s ahead) / announced (classic schedule, CAMPS first). */
   private readonly epicSeen = new Set<string>();
+  /** Next respawn time (game seconds) of an epic monster after it was killed. */
+  private readonly epicNext = new Map<string, number>();
   private readonly drakeSeen = newDrakeSeen();
 
   constructor(parent: HTMLElement, private readonly mode?: string) {
@@ -107,6 +109,9 @@ export class Announcer {
     if (ev.kind === Kind.Monster) {
       const which = this.epic(ev, state);
       if (!which) return;
+      // respawn schedule (public): warn 30 s ahead and announce the spawn, like the first one
+      const campId = which === 'leviathan' ? 'leviathan' : 'schleierwaechter';
+      this.epicNext.set(campId, snap.time + CAMPS[campId].respawn);
       const killerTeam = ev.killerTeam ?? state.entity(ev.killer)?.team;
       const ours = killerTeam === mine;
       if (which === 'leviathan') {
@@ -210,6 +215,18 @@ export class Announcer {
             this.epicSeen.add(`s${id}`);
             this.push(t(`ann.spawn.${id}`), 'epic', 1);
           }
+        }
+      }
+      for (const [id, at] of this.epicNext) {
+        const tag = `${id}@${at}`;
+        if (snap.time >= at - 30 && snap.time < at - 20 && !this.epicSeen.has(`w${tag}`)) {
+          this.epicSeen.add(`w${tag}`);
+          this.push(t(`ann.warn.${id}`), 'neutral', 1);
+        }
+        if (snap.time >= at && snap.time < at + 10 && !this.epicSeen.has(`s${tag}`)) {
+          this.epicSeen.add(`s${tag}`);
+          this.push(t(`ann.spawn.${id}`), 'epic', 1);
+          this.epicNext.delete(id);
         }
       }
       const mine = state.myTeam;

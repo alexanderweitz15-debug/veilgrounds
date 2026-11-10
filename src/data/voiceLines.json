@@ -1426,5 +1426,39 @@
       "de": "Klinge reinigen.",
       "en": "Time to clean the blade."
     }
+  },
+  "gerwin": {
+    "pick": {
+      "de": "Meine Gäste warten schon.",
+      "en": "My guests are already waiting."
+    },
+    "move1": {
+      "de": "Die Glocke ruft.",
+      "en": "The bell calls."
+    },
+    "move2": {
+      "de": "Still. Sie schlafen noch.",
+      "en": "Quiet. They still sleep."
+    },
+    "attack": {
+      "de": "Erhebt euch!",
+      "en": "Rise!"
+    },
+    "ability": {
+      "de": "Kommt aus euren Gräbern.",
+      "en": "Come out of your graves."
+    },
+    "kill": {
+      "de": "Ruhe in Frieden. Oder auch nicht.",
+      "en": "Rest in peace. Or do not."
+    },
+    "death": {
+      "de": "Jetzt ... läuten die Glocken für mich.",
+      "en": "Now ... the bells toll for me."
+    },
+    "recall": {
+      "de": "Zurück in die Gruft.",
+      "en": "Back to the crypt."
+    }
   }
 }

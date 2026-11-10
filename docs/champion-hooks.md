@@ -382,3 +382,17 @@ Total: 110 hook ids across 26 champions.
 | `ysmay_w_parry` | W | Opens the parry window (0.8 s). |
 | `ysmay_riposte` | Passive | `onDamageTaken` inside the window: gives the damage back (HP restored before the death check), closes the window, +30 % AS 3 s, halves the W cooldown left, stuns a champion attacker within 500 (1-2 s). |
 | `ysmay_q_lunge` | Q | `dashStart`: `stopAtEnemy` = width/2. |
+
+## Gerwin Totenglocke (`gerwin`) (auto/champions)
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `gerwin_crypt` | Passive | `onComputeStats`: +4 armor/MR per living skeleton (`petsOf` tag `gerwin_skeleton`). |
+| `gerwin_q_raise` | Q | Raises a skeleton pet (follow, HP 90-300 + 40 % AP, 20 s); max 4, the oldest is removed. |
+| `gerwin_w_burst` | W | Removes the skeleton nearest the cursor, damages + slows enemies within 260 of it; no skeleton = cooldown refunded. |
+| `gerwin_e_command` | E | Pets focus the enemy nearest the cursor (`setPetBehaviour` follow + focus), +25 % MS 2 s. |
+| `gerwin_r_host` | R | Three skeletons with 1.5x HP, 12 s. |
+
+## Rune keystones Flinkfuß, Phasenlauf, Erstschlag (auto/champions)
+
+`rune_fleetfoot` (walk 0.25 energy/unit + 8 per auto; full: next champion auto heals + 20 % MS 1 s), `rune_phase_rush` (3 hits in 3 s: +30 % MS 3 s, CD 25 s), `rune_first_strike` (+7 % damage 3 s on a champion that has not hit you for 3 s, CD 25 s; the gold part of the idea is not implemented). All in `src/sim/items/runeHooks.ts`.

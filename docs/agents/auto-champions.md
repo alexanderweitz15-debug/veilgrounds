@@ -18,6 +18,9 @@ Gaps (ordered, picked top-down):
 | 5c | Parry duelist (top): **Ysmay Degenfeld** | shipped |
 | 5d | Henrike turret as a real pet unit with HP | shipped |
 | 5b | Shapeshifter (two forms, jungle) | idea |
+| 5e | Summoner with killable pets (jungle): **Gerwin Totenglocke** | shipped |
+| 5f | Runes Flinkfuß, Phasenlauf, Erstschlag | shipped |
+| 5g | Items Stichblatt (Ysmay), Gruftkrone (Gerwin) | shipped |
 | 6 | Summoner with killable pets (support/jungle) | idea |
 | 7 | Henrike turret killable (needs pet unit) | idea, not cheap |
 | 8 | Rune options from docs/IDEAS-FEEL-SHOP.md: Eroberer, Komet + 4 stat minors | shipped (Flinkfuß and the rest still open) |
@@ -35,6 +38,8 @@ Gaps (ordered, picked top-down):
 - **Ysmay Degenfeld** (`ysmay`, top parry duelist): W Parry gives all damage back for 0.8 s and stuns the attacker, passive refunds half the parry cooldown, Q lunge stops at the first enemy, E whirl, R Challenge. Painted kit (plume, rapier, parrying dagger). Test `tests/ysmay.test.ts`. Uses existing items (no new item yet).
 - **Henrike turret**: now a `spawnPet` unit (tag `henrike_turret`, HP 140-300 by rank, armor/MR 20) that enemies can kill; shots stop when it dies. Test in `tests/henrike.test.ts`.
 - **Sprite check** (own vite on port 5199, closed): Torben and Lumi read well; Lumi crescent enlarged, Marga mortar tube enlarged (still mostly behind the body).
+- **Gerwin Totenglocke** (`gerwin`, jungle summoner): skeletons are `spawnPet` units (HP, killable, max 4); Q raise, W burst the nearest, E command, R three reinforced. Kit: bell on a pole, key ring, ghost lights. Item **Gruftkrone** (+55 AP +300 HP +10 haste, takedown heal + mana). Test `tests/gerwin.test.ts`.
+- **Runes**: Flinkfuß, Phasenlauf, Erstschlag keystones (tests in `tests/autoRunes.test.ts`). **Stichblatt** (+45 AD +20 % AS +5 % MS, +15 % damage dealt 2 s after being auto-hit) for Ysmay.
 
 ## Open
 

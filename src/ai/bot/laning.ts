@@ -11,6 +11,8 @@ import { dst, laneProgress, lanePoint } from './geo';
 
 /** Units further than this from the lane polyline are not "in the lane". */
 const LANE_WIDTH = 900;
+/** Until this game time (s) a laner without an enemy minion in the lane waits at its own tower for the first wave. */
+const FIRST_WAVE_WAIT_S = 95;
 
 const laneTowerAlive = (towers: SnapEntity[], p: Pt): boolean => towers.some((t) => dst(t, p) < 200);
 
@@ -54,9 +56,9 @@ function laneFronts(v: View, ctx: BotStatic, lane: LaneName): { anchor: number; 
   let enemyTower = Infinity;
   for (const t of ctx.map.sides[1 - ctx.team]!.towers[lane]) if (laneTowerAlive(v.enemyTowers, t)) enemyTower = Math.min(enemyTower, laneProgress(pts, t).s);
   let anchor: number;
-  // no enemy minion in the lane yet (first wave, a fresh wave leaving the base): wait at the own tower until the own
+  // no enemy minion in the lane yet (first wave): wait at the own tower until the own
   // wave walks past it, instead of running back to the freshly spawned minions
-  if (ownFront > -Infinity) anchor = enemyFront < Infinity ? Math.min(ownFront, enemyFront) : Math.max(ownFront, ownTower + 700);
+  if (ownFront > -Infinity) anchor = enemyFront < Infinity ? Math.min(ownFront, enemyFront) : v.time < FIRST_WAVE_WAIT_S && ctx.players.some((p) => p.team === ctx.team && p.slot !== ctx.slot) ? Math.max(ownFront, ownTower + 700) : ownFront;
   else anchor = enemyFront < Infinity ? enemyFront : ownTower + 700;
   const out = { anchor, ownFront, enemyTower };
   byKey.set(key, out);

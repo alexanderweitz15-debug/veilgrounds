@@ -5,6 +5,7 @@
       "type": "selector",
       "id": "u.farm",
       "children": [
+        { "type": "action", "name": "earlyPlan" },
         { "type": "action", "name": "gankRiskReaction" },
         { "type": "action", "name": "enemyRoamReaction" },
         { "type": "action", "name": "jungle" },

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { step } from '../src/sim/sim';
 import { Kind, Lane } from '../src/sim/types';
 import { spawnMinion } from '../src/sim/systems/minions';
+import { structureAt } from '../src/sim/systems/towers';
 import { inBush, MAP_SCALE } from '../src/sim/map';
 
 describe('BUG-01: minions chasing a minion hidden in a bush', () => {
@@ -64,13 +65,18 @@ describe('BUG-02: a waypoint inside a structure never completes', () => {
   it('a siege minion at the rim of its own tower walks on (matchProbe seed 13: stuck for good at 2:41)', () => {
     // exact state from the probe: the lane vertex (1200, 11267) lies inside the collision circle of the outer top tower
     // (1300, 11300); the push-out kept the minion on a fixed point of walk-in / push-out for ever
+    // same geometry on any map size: the vertex sits just inside the own top outer tower's collision circle
     const sim = newSim(false);
-    const m = spawnMinion(sim, Kind.MinionSiege, 0, Lane.Top, 1155.2117692165352, 11250.508907603547);
+    const t = structureAt(sim, 0, Kind.Tower, Lane.Top, 0)!.eid;
+    const tx = sim.c.Pos.x[t]!;
+    const ty = sim.c.Pos.y[t]!;
+    const S = sim.map.size;
+    const m = spawnMinion(sim, Kind.MinionSiege, 0, Lane.Top, tx - 145, ty - 50);
     sim.c.Face.x[m] = 0.9555492125467194;
     sim.c.Face.y[m] = 0.2948316509490533;
-    sim.paths.set(m, [{ x: 1200, y: 11266.613553357407 }, { x: 1200, y: 14800 }, { x: 13000, y: 14800 }, { x: 14200, y: 14200 }]);
+    sim.paths.set(m, [{ x: tx - 100, y: ty - 33 }, { x: tx - 100, y: S - 200 }, { x: S - 1200, y: S - 200 }, { x: S - 800, y: S - 800 }]);
     sim.c.Move.mode[m] = 1;
     for (let i = 0; i < 30 * 8; i++) step(sim);
-    expect(sim.c.Pos.y[m]!).toBeGreaterThan(11600);
+    expect(sim.c.Pos.y[m]!).toBeGreaterThan(ty + 300);
   });
 });

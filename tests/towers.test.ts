@@ -172,8 +172,8 @@ describe('plates', () => {
     const sim = newSim(false);
     sim.tick = sec(5 * 60) + 1; // past fortification (outer towers take half damage until 5:00)
     const t = outer(sim, 1, Lane.Mid);
-    const c = spawnChamp(sim, 0, 9000, 9000);
-    const { Tower, Champ, Stats } = sim.c;
+    const { Tower, Champ, Stats, Pos } = sim.c;
+    const c = spawnChamp(sim, 0, Pos.x[t]! - 600, Pos.y[t]! - 600);
     expect(Tower.plates[t]).toBe(5);
     dealDamage(sim, c, t, 700, 'true');
     stepA(sim);
@@ -184,8 +184,8 @@ describe('plates', () => {
     expect(Tower.plates[t]).toBe(4);
     expect(Champ.gold[c]).toBe(PLATE_GOLD);
     // a minion breaking a plate: split between enemy champions within 1000 of the tower
-    const c2 = spawnChamp(sim, 0, 9300, 9300);
-    const m = spawnMinion(sim, Kind.MinionMelee, 0, Lane.Mid, 9500, 9500);
+    const c2 = spawnChamp(sim, 0, Pos.x[t]! - 300, Pos.y[t]! - 300);
+    const m = spawnMinion(sim, Kind.MinionMelee, 0, Lane.Mid, Pos.x[t]! - 100, Pos.y[t]! - 100);
     dealDamage(sim, m, t, 800, 'true');
     stepA(sim);
     expect(Tower.plates[t]).toBe(3);

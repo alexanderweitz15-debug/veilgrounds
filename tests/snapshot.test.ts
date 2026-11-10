@@ -13,10 +13,14 @@ describe('snapshot fog for ground objects', () => {
     const blue = sim.slots[0]!;
     const red = sim.slots[5]!;
     const { Pos } = sim.c;
+    // red stands mid-map, away from its base structures (towers / fountain grant true sight since mech-vision)
+    Pos.x[red] = sim.map.size / 2 + 500;
+    Pos.y[red] = sim.map.size / 2 + 500;
+    step(sim);
     // stealthed trap inside red's vision but not under anyone (red sees the spot, yet stealth hides it from enemies)
     addGroundObject(sim, { owner: blue, tag: 'grimald_trap', x: Pos.x[red]! - 600, y: Pos.y[red]! - 600, r: 75, ticks: 900, stealth: true });
     // red blade far away from any blue vision
-    addGroundObject(sim, { owner: red, tag: 'renn_blade', x: 8000, y: 8000, r: 40, ticks: 900 });
+    addGroundObject(sim, { owner: red, tag: 'renn_blade', x: sim.map.size * 0.78, y: sim.map.size * 0.35, r: 40, ticks: 900 });
     step(sim);
     const blueView = buildSnapshot(sim, 0, 0);
     const redView = buildSnapshot(sim, 1, 5);

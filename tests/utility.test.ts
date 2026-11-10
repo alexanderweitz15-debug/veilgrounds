@@ -1,6 +1,7 @@
 // Utility model (docs/BRAIN-REWORK.md §5, §4.6): values.json consistency, rank curves, style factors, value
 // functions, selection (hysteresis, rank noise, logging) and test 8 (shove-and-recall) in scenario form.
 import { describe, expect, it } from 'vitest';
+import { MAP_SCALE as K } from '../src/sim/map';
 import { Kind } from '../src/sim/types';
 import { PLATE_GOLD } from '../src/sim/systems/towers';
 import { BASE_BOUNTY } from '../src/sim/systems/economy';
@@ -32,7 +33,7 @@ function midBot(rank: Rank, seed = 1, params?: BotParams): ScriptedBot {
 }
 
 /** Mid lane point at arc fraction t (blue frame: 0 = blue nexus side). */
-const mid = (t: number): { x: number; y: number } => ({ x: 1800 + 12400 * t, y: 1800 + 12400 * t });
+const mid = (t: number): { x: number; y: number } => ({ x: K * (1800 + 12400 * t), y: K * (1800 + 12400 * t) }); // design space x map scale
 const at = (p: { x: number; y: number }, dx = 0, dy = 0): [number, number] => [p.x + dx, p.y + dy];
 
 function wave(team: number, c: { x: number; y: number }, n = 3, kind: number = Kind.MinionCaster): SnapEntity[] {
@@ -125,7 +126,7 @@ describe('value functions', () => {
 
   it('push: a crashed wave with the opponent away is worth plates before 14:00', () => {
     const bot = midBot('gold');
-    const tower = { x: 9350, y: 9350 };
+    const tower = { x: 9350 * K, y: 9350 * K }; // red mid outer tower, design space x map scale
     const ents = [champEnt(2, ...at(tower, -650, -650)), ...wave(0, { x: tower.x - 350, y: tower.y - 350 }, 4, Kind.MinionMelee)];
     const n = bot.node(snapshot({ tick: 9000, team: 0, entities: ents, me: hud(2) }));
     const p = pushValue(buildWorld(n));
@@ -200,7 +201,7 @@ describe('test 8 (scenario): shove-and-recall', () => {
     expect(n2.out.some((a) => a.cmd.t === 'recall')).toBe(false);
     expect(bot.mem.ext.wave.state).toBe('crash');
     // crashed: own minions under the enemy outer tower, no enemy minions, nobody around -> recall now
-    const tower = { x: 9350, y: 9350 };
+    const tower = { x: 9350 * K, y: 9350 * K }; // red mid outer tower, design space x map scale
     const crashed = [champEnt(2, ...at(tower, -1500, -1500)), ...wave(0, { x: tower.x - 300, y: tower.y - 300 }, 3, Kind.MinionMelee)];
     const n3 = bot.node(snapshot({ tick: 7 * 1800 + 400, team: 0, entities: crashed, me: hud(2, { gold: 1300 }) }));
     utilitySelect(n3);

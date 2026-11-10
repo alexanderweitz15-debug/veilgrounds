@@ -2,7 +2,7 @@
 // jungler gank score (spec test 3), roam prerequisite (spec test 4).
 import { describe, expect, it } from 'vitest';
 import { Kind, type SimEvent } from '../src/sim/types';
-import { loadMap } from '../src/sim/map';
+import { loadMap, MAP_SCALE as K } from '../src/sim/map';
 import type { Rank } from '../src/ai/profiles/schema';
 import { escape } from '../src/ai/ganks/escape';
 import { laningSafety } from '../src/ai/ganks/risk';
@@ -97,16 +97,16 @@ describe('spec test 2: escape Flash timing', () => {
 
 describe('spec test 3: jungler gank score', () => {
   // red top (Isolde) pushed into the blue half at 40 % HP, Flash known down; blue jungler (Lio) close by
-  const TARGET = { x: 1200, y: 12500 };
+  const TARGET = { x: 1200 * K, y: 12500 * K }; // design space x map scale
   function scenario(rank: Rank, o: { hp?: number; flashDown?: boolean; pushed?: boolean } = {}) {
     const bot = new ScriptedBot(1, paramsFor(rank, {}, 1), 7);
     const tick = 400 * 30;
-    const maxHp = champEnt(5, 0, 0).maxHp;
+    const maxHp = champEnt(5, 0 * K, 0 * K).maxHp;
     const pushed = o.pushed ?? true;
     const wave = pushed
-      ? [minion(1, 1200, 12100), minion(1, 1250, 12000), minion(1, 1150, 11950), minion(1, 1200, 11900), minion(0, 1200, 11800)]
-      : [minion(1, 1200, 14000), minion(0, 1200, 13800), minion(0, 1250, 13900)];
-    const ents = [champEnt(1, 2000, 11700), champEnt(0, 1250, 11000), champEnt(5, TARGET.x, pushed ? TARGET.y : 14100, { hp: maxHp * (o.hp ?? 0.4) }), ...wave];
+      ? [minion(1, 1200 * K, 12100 * K), minion(1, 1250 * K, 12000 * K), minion(1, 1150 * K, 11950 * K), minion(1, 1200 * K, 11900 * K), minion(0, 1200 * K, 11800 * K)]
+      : [minion(1, 1200 * K, 14000 * K), minion(0, 1200 * K, 13800 * K), minion(0, 1250 * K, 13900 * K)];
+    const ents = [champEnt(1, 2000 * K, 11700 * K), champEnt(0, 1250 * K, 11000 * K), champEnt(5, TARGET.x, pushed ? TARGET.y : 14100 * K, { hp: maxHp * (o.hp ?? 0.4) }), ...wave];
     const s = (t: number) => snapshot({ tick: t, team: 0, entities: ents, me: hud(1) });
     bot.perceive(s(tick - 30));
     const n = bot.node(s(tick));
@@ -137,18 +137,18 @@ describe('spec test 4: roam prerequisite', () => {
   function roams(rank: Rank, seed: number): boolean {
     const bot = new ScriptedBot(2, paramsFor(rank, {}, 2), seed);
     const tick = 500 * 30;
-    const maxHp = champEnt(5, 0, 0).maxHp;
+    const maxHp = champEnt(5, 0 * K, 0 * K).maxHp;
     const ents = [
-      champEnt(2, 6900, 6900),
-      champEnt(0, 1250, 11000),
-      champEnt(1, 2000, 11500),
-      champEnt(5, 1200, 12500, { hp: maxHp * 0.3 }),
-      ...[0, 1, 2, 3, 4, 5].map((i) => minion(0, 7200 + i * 40, 7200 + i * 30)),
-      minion(1, 7600, 7600),
-      minion(1, 7650, 7620),
+      champEnt(2, 6900 * K, 6900 * K),
+      champEnt(0, 1250 * K, 11000 * K),
+      champEnt(1, 2000 * K, 11500 * K),
+      champEnt(5, 1200 * K, 12500 * K, { hp: maxHp * 0.3 }),
+      ...[0, 1, 2, 3, 4, 5].map((i) => minion(0, (7200 + i * 40) * K, (7200 + i * 30) * K)),
+      minion(1, 7600 * K, 7600 * K),
+      minion(1, 7650 * K, 7620 * K),
     ];
     // own ping forces a minimap glance so the far target is perceived
-    const ping: SimEvent = { e: 'ping', slot: 2, team: 0, kind: 'alert', x: 1200, y: 12500, target: -1 };
+    const ping: SimEvent = { e: 'ping', slot: 2, team: 0, kind: 'alert', x: 1200 * K, y: 12500 * K, target: -1 };
     bot.perceive(snapshot({ tick: tick - 30, team: 0, entities: ents, me: hud(2) }));
     const n = bot.node(snapshot({ tick, team: 0, entities: ents, me: hud(2), events: [ping] }));
     const pv = n.pv as BotPerception;

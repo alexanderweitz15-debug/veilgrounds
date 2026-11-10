@@ -35,6 +35,7 @@ import marga from '../../data/builds/marga.json';
 import torben from '../../data/builds/torben.json';
 import lumi from '../../data/builds/lumi.json';
 import ysmay from '../../data/builds/ysmay.json';
+import gerwin from '../../data/builds/gerwin.json';
 import svea from '../../data/builds/svea.json';
 import rovena from '../../data/builds/rovena.json';
 import dorrak from '../../data/builds/dorrak.json';
@@ -45,4 +46,4 @@ import wren from '../../data/builds/wren.json';
 export interface BuildVariant { boots: string; core: string[] }
 export interface BuildData { champion: string; starter: string[]; standard: BuildVariant; vsAD?: BuildVariant; vsAP?: BuildVariant }
 
-export const BUILDS: Record<string, BuildData> = { aurel, brom, corvin, dagny, ferris, gorvam, grimald, hagen, harrow, ilvane, isolde, kaelen, kiran, lio, lysa, mira, nyx, oda, oleth, ottilie, renn, seraphyne, sev, fenna, rovena, dorrak, tilda, gneis, kerrin, henrike, thessaly, tobin, vargrim, vessa, wren, svea, truda, knarr, marga, torben, lumi, ysmay };
+export const BUILDS: Record<string, BuildData> = { aurel, brom, corvin, dagny, ferris, gorvam, grimald, hagen, harrow, ilvane, isolde, kaelen, kiran, lio, lysa, mira, nyx, oda, oleth, ottilie, renn, seraphyne, sev, fenna, rovena, dorrak, tilda, gneis, kerrin, henrike, thessaly, tobin, vargrim, vessa, wren, svea, truda, knarr, marga, torben, lumi, ysmay, gerwin };

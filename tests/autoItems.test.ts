@@ -62,6 +62,15 @@ describe('Notanker', () => {
   });
 });
 
+describe('Stichblatt', () => {
+  it('a basic attack hitting the owner gives +15 % damage dealt for 2 s', () => {
+    const { sim, me, foe } = duel({ champ: 'mira', items: ['stichblatt'] });
+    dealDamage(sim, foe, me, 20, 'phys', { isAuto: true });
+    expect(buffs(sim, me).some((b) => b.id === 'counterthrust')).toBe(true);
+    expect(goldEfficiency(itemById('stichblatt')!)!.pct).toBeGreaterThan(80);
+  });
+});
+
 describe('boots upgrades', () => {
   it('Zauberbrecherstiefel add magic penetration, Zähe Stiefel tenacity', () => {
     const a = duel({ items: ['stiefel_magie'] });

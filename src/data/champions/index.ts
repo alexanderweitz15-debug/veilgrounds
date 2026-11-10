@@ -41,6 +41,7 @@ import marga from './marga.json';
 import torben from './torben.json';
 import lumi from './lumi.json';
 import ysmay from './ysmay.json';
+import gerwin from './gerwin.json';
 import svea from './svea.json';
 import rovena from './rovena.json';
 import dorrak from './dorrak.json';
@@ -85,6 +86,7 @@ const raw = {
   torben,
   lumi,
   ysmay,
+  gerwin,
   knarr,
   rovena,
   dorrak,

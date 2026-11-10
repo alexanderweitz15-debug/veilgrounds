@@ -12,6 +12,7 @@
 //             an estimate everywhere ("~" and "?"), never overrides an observation.
 // Spawn timings come from the shared sim data (src/sim/systems/jungle.ts CAMPS); the sim itself is not touched.
 // Epic objectives (Leviathan, Kesselbrut, Schleierwaechter) stay with ObjectiveTracker (public by design).
+import { MAP_SCALE } from '../sim/map';
 import type { Snapshot, SnapEntity } from '../sim/snapshot';
 import { Kind, type SimEvent } from '../sim/types';
 import { CAMPS, type CampId } from '../sim/systems/jungle';
@@ -61,15 +62,18 @@ export interface CampView extends CampSite {
 
 /** All tracked camps: 6 per side from map.json (red side is the point mirror of blue) plus the two river scuttlers. */
 export function campSites(): CampSite[] {
+  // map.json is authored in the 16000 design space: scale like the sim (MAP_SCALE), mirror on the playable size
+  // (the unscaled design coordinates put every camp ~2 km off on the smaller map: timers never matched)
   const S = raw.size;
+  const K = MAP_SCALE;
   const out: CampSite[] = [];
   for (const side of [0, 1] as const) {
     for (const c of raw.blue.camps) {
       if (!(c.id in CAMPS) || CAMPS[c.id as CampId].epic) continue;
-      out.push({ key: `${side}:${c.id}`, id: c.id as CampId, side, x: side === 0 ? c.x : S - c.x, y: side === 0 ? c.y : S - c.y });
+      out.push({ key: `${side}:${c.id}`, id: c.id as CampId, side, x: side === 0 ? c.x * K : S - c.x * K, y: side === 0 ? c.y * K : S - c.y * K });
     }
   }
-  raw.neutral.objectives.nebelschleicher.forEach((p, i) => out.push({ key: `river:${i}`, id: 'nebelschleicher', side: 2, x: p.x, y: p.y }));
+  raw.neutral.objectives.nebelschleicher.forEach((p, i) => out.push({ key: `river:${i}`, id: 'nebelschleicher', side: 2, x: p.x * K, y: p.y * K }));
   return out;
 }
 

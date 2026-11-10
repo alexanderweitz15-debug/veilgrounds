@@ -9,7 +9,7 @@ import type { RuneData } from './schema';
 import { Kind, sec } from '../types';
 import { championData, champIdOf } from '../champions';
 import { addBuff, buffs } from '../buffs';
-import { dealDamage, heal, lastCombatTick } from '../damage';
+import { dealDamage, heal, lastCombatTick, lastDamageTick } from '../damage';
 import { ITEM_SLOTS, inventory, itemById, itemStats } from './inventory';
 import { RUNES, defaultRunes, type RuneChoice } from './runes';
 import { startSecondWind } from './itemHooks';
@@ -35,6 +35,12 @@ export const COUP = { below: 0.4, mult: 1.08 };
 /** Conqueror: +2 adaptive (3.3 AP) per stack, 8 stacks, 6 s; at 8 stacks hits heal 2 % max HP (1 s apart). */
 export const CONQUEROR = { per: 2, apPerAd: 5 / 3, max: 8, ticks: sec(6), healPct: 0.02, icd: sec(1) };
 /** Comet: ability hit on a champion, 30-100 by level (+20 % bonus AD, +10 % AP), CD 12 s, adaptive damage type. */
+/** Fleetfoot: 100 energy from walking (0.25 per unit) and autos (+8); full: next auto on a champion heals 15 (+10 % AD, +5 % AP) and gives +20 % MS 1 s. */
+export const FLEET = { max: 100, perUnit: 0.25, perAuto: 8, heal: 15, ad: 0.1, ap: 0.05, ms: 20, ticks: sec(1), jump: 120 };
+/** Phase Rush: 3 hits on champions within 3 s: +30 % MS 3 s, CD 25 s. */
+export const PHASE = { hits: 3, window: sec(3), ms: 30, ticks: sec(3), cd: sec(25) };
+/** First Strike: damage on a champion that has not hit you for 3 s opens a 3 s window of +7 % damage on it, CD 25 s. */
+export const FIRST = { quiet: sec(3), window: sec(3), mult: 1.07, cd: sec(25) };
 export const COMET = { min: 30, max: 100, bonusAd: 0.2, ap: 0.1, cd: sec(12) };
 export const VIGILANCE_WARD_MULT = 1.1;
 
@@ -54,6 +60,13 @@ interface RuneEnt {
   bootsDone: boolean;
   conqNext: number;
   cometReady: number;
+  fleet: number;
+  fleetX: number;
+  fleetY: number;
+  phase: number[];
+  phaseReady: number;
+  firstUntil: number;
+  firstReady: number;
 }
 
 interface RuneState {
@@ -71,7 +84,7 @@ function runeState(sim: Sim): RuneState {
 function ent(sim: Sim, eid: number): RuneEnt {
   const s = runeState(sim);
   let e = s.ent.get(eid);
-  if (!e) s.ent.set(eid, (e = { harmReady: 0, harm: new Map(), gritSince: -1, manaFlow: 0, manaFlowNext: 0, bootsDone: false, conqNext: 0, cometReady: 0 }));
+  if (!e) s.ent.set(eid, (e = { harmReady: 0, harm: new Map(), gritSince: -1, manaFlow: 0, manaFlowNext: 0, bootsDone: false, conqNext: 0, cometReady: 0, fleet: 0, fleetX: sim.c.Pos.x[eid]!, fleetY: sim.c.Pos.y[eid]!, phase: [], phaseReady: 0, firstUntil: -1, firstReady: 0 }));
   return e;
 }
 
@@ -174,7 +187,54 @@ function comet(sim: Sim, eid: number, t: number): void {
   dealDamage(sim, eid, t, amount, adaptiveIsAp(sim, eid) ? 'magic' : 'phys');
 }
 
+function phaseRush(sim: Sim, eid: number, t: number): void {
+  if (!isEnemyChamp(sim, eid, t)) return;
+  const e = ent(sim, eid);
+  e.phase = e.phase.filter((k) => sim.tick - k < PHASE.window);
+  if (e.phase[e.phase.length - 1] !== sim.tick) e.phase.push(sim.tick);
+  if (e.phase.length < PHASE.hits || sim.tick < e.phaseReady) return;
+  e.phase = [];
+  e.phaseReady = sim.tick + PHASE.cd;
+  addBuff(sim, eid, { kind: 'stat', stat: 'ms', id: 'phasenlauf', src: eid, pct: PHASE.ms, ticks: PHASE.ticks });
+}
+
+function fleetAuto(sim: Sim, eid: number, t: number): void {
+  const e = ent(sim, eid);
+  e.fleet = Math.min(FLEET.max, e.fleet + FLEET.perAuto);
+  if (e.fleet < FLEET.max || !isEnemyChamp(sim, eid, t)) return;
+  e.fleet = 0;
+  const { Stats } = sim.c;
+  heal(sim, eid, FLEET.heal + FLEET.ad * Stats.ad[eid]! + FLEET.ap * Stats.ap[eid]!);
+  addBuff(sim, eid, { kind: 'stat', stat: 'ms', id: 'flinkfuss', src: eid, pct: FLEET.ms, ticks: FLEET.ticks });
+}
+
 export const RUNE_HOOKS: Record<string, ItemHook> = {
+  rune_fleetfoot: {
+    onTick(sim, eid) {
+      const e = ent(sim, eid);
+      const { Pos, Unit } = sim.c;
+      const moved = Math.sqrt((Pos.x[eid]! - e.fleetX) ** 2 + (Pos.y[eid]! - e.fleetY) ** 2);
+      e.fleetX = Pos.x[eid]!;
+      e.fleetY = Pos.y[eid]!;
+      if (Unit.alive[eid] && moved < FLEET.jump) e.fleet = Math.min(FLEET.max, e.fleet + moved * FLEET.perUnit);
+    },
+    onAutoHit: (sim, eid, t) => fleetAuto(sim, eid, t),
+  },
+  rune_phase_rush: {
+    onAutoHit: (sim, eid, t) => phaseRush(sim, eid, t),
+    onAbilityHit: (sim, eid, t) => phaseRush(sim, eid, t),
+  },
+  rune_first_strike: {
+    modifyDamage(sim, eid, t, amount) {
+      if (!isEnemyChamp(sim, eid, t)) return amount;
+      const e = ent(sim, eid);
+      if (sim.tick > e.firstUntil && sim.tick >= e.firstReady && sim.tick - lastDamageTick(sim, t, eid) > FIRST.quiet) {
+        e.firstUntil = sim.tick + FIRST.window;
+        e.firstReady = sim.tick + FIRST.cd;
+      }
+      return sim.tick <= e.firstUntil ? amount * FIRST.mult : amount;
+    },
+  },
   rune_conqueror: {
     onAutoHit: (sim, eid, t) => conqueror(sim, eid, t),
     onAbilityHit: (sim, eid, t) => conqueror(sim, eid, t),
@@ -269,3 +329,6 @@ export function bootsPriceMult(sim: Sim, eid: number): number {
 export function wardDurationMult(sim: Sim, eid: number): number {
   return hasRune(sim, eid, 'wachsamkeit') ? VIGILANCE_WARD_MULT : 1;
 }
+
+/** Fleetfoot energy 0..100 (tests, HUD). */
+export const fleetCharge = (sim: Sim, eid: number): number => runeState(sim).ent.get(eid)?.fleet ?? 0;

@@ -30,6 +30,7 @@
     "min": 5,
     "thresholds": [100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200, 4000]
   },
+  "honor": { "xp": 20, "perLevel": 5 },
   "missionCount": { "daily": 3, "weekly": 3 },
   "missions": [
     { "id": "cs10", "kind": "daily", "metric": "cs10", "agg": "max", "target": 70, "xp": 60, "focus": "farming" },

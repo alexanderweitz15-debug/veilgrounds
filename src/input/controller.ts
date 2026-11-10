@@ -49,6 +49,8 @@ export interface InputHost {
   pingCtx?(): PingCtx;
   /** Map point under a screen position when it is over the minimap (ping wheel on the minimap). */
   minimapAt?(cx: number, cy: number): [number, number] | null;
+  /** Emote key: open / close the emote strip. */
+  emote?(): void;
 }
 
 export class InputController {
@@ -329,6 +331,9 @@ export class InputController {
         if (g) this.missing(g.x, g.y, this.hover);
         return;
       }
+      case 'emote':
+        this.host.emote?.();
+        return;
       case 'pingQuestion': {
         // '?' on the hovered unit (enemy / objective) or the ground under the cursor
         const g = this.cursorGround();

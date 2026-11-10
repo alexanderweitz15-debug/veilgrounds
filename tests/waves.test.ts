@@ -93,7 +93,7 @@ describe('wave schedule', () => {
 });
 
 describe('wave arrival', () => {
-  it('waves meet in the lane middle at ~1:28 mid and ~1:38 side (+-3 s)', () => {
+  it('waves meet in the lane middle at ~1:22 mid and ~1:30 side (+-3 s)', () => {
     const sim = newSim();
     const meet: (number | null)[] = [null, null, null];
     const { Unit, Pos } = sim.c;
@@ -115,9 +115,10 @@ describe('wave arrival', () => {
         }
       }
     }
-    expect(Math.abs(meet[Lane.Mid]! - 88)).toBeLessThanOrEqual(3);
-    expect(Math.abs(meet[Lane.Top]! - 98)).toBeLessThanOrEqual(3);
-    expect(Math.abs(meet[Lane.Bot]! - 98)).toBeLessThanOrEqual(3);
+    // map 13000 (user 2026-11-06: map too big): waves meet ~6 s earlier than LoL's 1:28 / 1:38
+    expect(Math.abs(meet[Lane.Mid]! - 82)).toBeLessThanOrEqual(3);
+    expect(Math.abs(meet[Lane.Top]! - 90)).toBeLessThanOrEqual(3);
+    expect(Math.abs(meet[Lane.Bot]! - 90)).toBeLessThanOrEqual(3);
   });
 
   it('waveState reports front, minion difference and next wave', () => {

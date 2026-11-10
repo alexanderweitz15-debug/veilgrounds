@@ -53,6 +53,7 @@ import { mortarPack, ramrod, sootPuffs } from './marga';
 import { rageHaze, skullBelt, warAxes } from './torben';
 import { moonCrescent, twinkleStars, wishStaff } from './lumi';
 import { parryDagger, plume, rapier } from './ysmay';
+import { ghostLight, keyRing, tollBell } from './gerwin';
 import { DORRAK_KIT } from './worm';
 import { bloodDrips, bloodOrbs, thornCrown } from './rovena';
 import { floatNotes, hatPlume, luteBack } from './tilda';
@@ -1232,6 +1233,33 @@ kit({
   cast: 'lunge',
   gait: 'light',
   props: [plume, rapier, parryDagger],
+});
+// Gerwin Totenglocke: gaunt hooded gravekeeper with a bell on a pole
+kit({
+  id: 'gerwin',
+  name: 'Gerwin Totenglocke',
+  world: 196,
+  look: 'stooped gaunt gravekeeper in a long black tattered coat and a deep hood with pale green ghost-light inside, grey bony hands, a long pole with a big tarnished bell swinging from its hook, a ring of iron keys at the belt and green wisps drifting round the hood',
+  feature: 'bell on a long pole + glowing hood',
+  body: { ...MALE, H: 190, shW: 18, hipW: 13.5, girth: 0.88, hunch: 0.14, legs: 0.5, headR: 12.4 },
+  outfit: {
+    skin: '#b8c0b4',
+    face: { eyes: '#b8f0c8', brows: 1.2, old: true },
+    top: cloth('#24242a'),
+    sleeves: cloth('#2a2a30'),
+    forearms: cloth('#2a2a30'),
+    hands: leather('#b0b8b0'),
+    legs: cloth('#1e1e24'),
+    boots: leather('#2a2420'),
+    coat: { mat: cloth('#26262c'), len: 1.5, flare: 0.55, tatter: true, split: true },
+    hood: { mat: cloth('#1e1e24'), dark: true },
+    belt: { mat: leather('#2a2420'), buckle: BRASS, y: 0.15 },
+  },
+  hold: 'pole',
+  attack: 'cane',
+  cast: 'lob',
+  gait: 'normal',
+  props: [tollBell, keyRing, ghostLight],
 });
 // Knarr: giant crab, painted by the SpriteDrawer in crab.ts (atlas.ts DRAWERS); the Kit stub carries the icon colours
 kit(KNARR_KIT);

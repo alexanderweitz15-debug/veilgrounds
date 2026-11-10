@@ -9,7 +9,7 @@ import { CHAMPION_DATA } from '../sim/champions';
 import { abilityForSlot } from '../data/champions';
 import { ITEMS, itemById, recipePrice, sellValue } from '../sim/items/inventory';
 import { RUNES } from '../sim/items/runes';
-import { summonerDef } from '../sim/summoners';
+import { BARRIER_SHIELD, summonerDef } from '../sim/summoners';
 import type { PlayerHud } from '../sim/snapshot';
 import { settings } from '../settings';
 import { t } from '../i18n';
@@ -17,7 +17,7 @@ import { abilityIcon, itemIcon, passiveIcon, runeIcon, summonerIcon } from './ic
 import { statLines } from './shop';
 import { goldEfficiency } from './goldEfficiency';
 import { summonerName } from './names';
-import { S, buildTree, compareStats, compareTarget, fmtNum, hasteCooldown, hasteReductionPct, isPctStat, keywordSegs, rankedSegs, scalingSegs, type Lang, type Ratio, type Seg, type TipStats } from './tooltipMath';
+import { S, buildTree, byLevelValue, compareStats, compareTarget, fmtNum, hasteCooldown, hasteReductionPct, isPctStat, keywordSegs, rankedSegs, scalingSegs, type Lang, type Ratio, type Seg, type TipStats } from './tooltipMath';
 
 interface Tip {
   icon: string | null;
@@ -170,18 +170,40 @@ const SUMMONER_DESC: Record<string, [string, string]> = {
   bannen: ['Verursacht 450–900 absoluten Schaden an einem Monster oder Vasallen in 500 Reichweite.', 'Deals 450–900 true damage to a monster or minion within 500 range.'],
 };
 
+/** Level-scaled summoner values (lo at level 1, hi at 18; same numbers as sim/summoners.ts): id -> [what, lo, hi, unit]. */
+const SUMMONER_SCALING: Record<string, [string, string, number, number, string]> = {
+  heilen: ['Heilung', 'Heal', 90, 345, ''],
+  geist: ['Lauftempo', 'Move speed', 24, 48, ' %'],
+  entflammen: ['Absoluter Schaden', 'True damage', 60, 410, ''],
+  barriere: ['Schild', 'Shield', BARRIER_SHIELD[0], BARRIER_SHIELD[1], ''],
+  bannen: ['Schaden an Monstern', 'Damage to monsters', 450, 900, ''],
+};
+
 function summonerTip(id: string): Tip | null {
   const d = summonerDef(id);
   if (!d) return null;
   const desc = SUMMONER_DESC[id];
-  return { icon: summonerIcon(id), title: summonerName(id), sub: L('Beschwörerzauber', 'Summoner spell'), meta: [P(`⟳ ${d.cooldown} s`)], body: desc ? [keywordSegs(L(...desc), lang())] : [] };
+  return { icon: summonerIcon(id), title: summonerName(id), sub: L('Beschwörerzauber', 'Summoner spell'), meta: [P(`⟳ ${d.cooldown} s`)], body: desc ? [keywordSegs(L(...desc), lang())] : [], ...liveSummoner(id) };
+}
+
+/** Foot line with the value at the player's current level (only inside a match). */
+function liveSummoner(id: string): { foot: Seg[][] } | Record<string, never> {
+  const s = SUMMONER_SCALING[id];
+  if (!s || !ctx) return {};
+  const v = byLevelValue([s[2], s[3]], ctx.stats.level);
+  return { foot: [[S(L(`Stufe ${ctx.stats.level}: `, `Level ${ctx.stats.level}: `), 'dim'), S(` ${fmtNum(v, lang())}${s[4]}`, 'cur')]] };
 }
 
 function runeTip(id: string): Tip | null {
   const r = RUNES.find((x) => x.id === id);
   if (!r) return null;
   const key = r.kind === 'keystone';
-  return { icon: runeIcon(id, key), title: r.name[settings.lang], sub: key ? L('Schlüsselprägung', 'Keystone') : L('Nebenprägung', 'Minor rune'), meta: [], body: [keywordSegs(r.desc[settings.lang], lang())] };
+  return { icon: runeIcon(id, key), title: r.name[settings.lang], sub: key ? L('Schlüsselprägung', 'Keystone') : L('Nebenprägung', 'Minor rune'), meta: [], chips: runeStats(r), body: [keywordSegs(r.desc[settings.lang], lang())] };
+}
+
+/** Flat stats of a minor rune as chips (+8 AD ...). */
+function runeStats(r: (typeof RUNES)[number]): { segs: Seg[]; cls: string }[] {
+  return Object.entries(r.stats ?? {}).map(([k, v]) => ({ segs: P(`+${v}${isPctStat(k) ? ' %' : ''} ${k === 'adaptive' ? L('Adaptiv', 'Adaptive') : t(`stat.${k}`)}`), cls: 'stat' }));
 }
 
 function build(spec: string): Tip | null {

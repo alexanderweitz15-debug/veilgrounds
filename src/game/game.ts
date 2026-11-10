@@ -6,7 +6,7 @@ import { audioStop, audioUnlock, playFizzle, setListener, setVolume } from '../a
 import { blockBrowserShortcuts, enterGameFullscreen, exitGameFullscreen } from './fullscreen';
 import type { MapData } from '../sim/map';
 import { mapFor } from '../sim/aramMap';
-import type { SimConfig } from '../sim/types';
+import { Kind, type SimConfig } from '../sim/types';
 import { ClientState } from './state';
 import { mockLink } from './mock';
 import { workerLink, type SimLink } from './link';
@@ -61,6 +61,8 @@ export class Game {
   private readonly root: HTMLElement;
   private readonly clock: (realNow: number) => number;
   private replayCam: 'follow' | 'free' | null = null;
+  /** Destroyed nexus: the camera glides there for the ending (LoL-like). */
+  private nexusCam: { x: number; y: number } | null = null;
   private exiting = false;
   /** setInterval id of the 3 s resume countdown (0 = none). */
   private resumeTimer = 0;
@@ -245,6 +247,7 @@ export class Game {
         this.hud.onEvent(ev, this.state, now);
         this.chat?.onEvent(ev);
         this.surrender?.onEvent(ev);
+        if (ev.e === 'death' && ev.kind === Kind.Nexus) this.nexusCam = { x: ev.x, y: ev.y };
         if (!quiet) soundForEvent(ev, this.state);
       }
       if (!quiet) for (const e of this.state.fired) soundForFire(e, this.state);
@@ -543,6 +546,11 @@ export class Game {
       if (this.replayCam === 'follow') {
         if (v) this.world.rig.focus(st.x(v), st.y(v));
       } else this.input.cameraPeekUntil = now + 1000;
+    }
+    if (this.nexusCam) {
+      this.input.cameraPeekUntil = now + 100;
+      const c = this.world.rig;
+      c.focus(c.tx + (this.nexusCam.x - c.tx) * 0.05, c.ty + (this.nexusCam.y - c.ty) * 0.05);
     }
     // C8: the highlighted unit is the one a click hits (hover, or the predicted attack-move target while A is armed)
     const hoverId = this.input.highlight?.id ?? -1;

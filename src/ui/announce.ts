@@ -35,6 +35,30 @@ const OBJ = MAP_OBJECTIVES;
 /** Grubs die within seconds of each other: one banner once the own stack count settled for this long. */
 const KESSEL_SETTLE_MS = 2500;
 
+/**
+ * Epic respawn schedule: ids to warn about (30 s before the respawn time) and ids that just spawned at game time 
+ow.
+ * 
+ext = id -> respawn time in game seconds; seen remembers what was already announced (mutated); a spawned id leaves 
+ext.
+ */
+export function epicDue(now: number, next: Map<string, number>, seen: Set<string>): { warn: string[]; spawn: string[] } {
+  const out = { warn: [] as string[], spawn: [] as string[] };
+  for (const [id, at] of [...next]) {
+    const tag = `${id}@${at}`;
+    if (now >= at - 30 && now < at - 20 && !seen.has(`w${tag}`)) {
+      seen.add(`w${tag}`);
+      out.warn.push(id);
+    }
+    if (now >= at && now < at + 10 && !seen.has(`s${tag}`)) {
+      seen.add(`s${tag}`);
+      out.spawn.push(id);
+      next.delete(id);
+    }
+  }
+  return out;
+}
+
 export class Announcer {
   readonly root: HTMLElement;
   private readonly title: HTMLElement;
@@ -217,18 +241,9 @@ export class Announcer {
           }
         }
       }
-      for (const [id, at] of this.epicNext) {
-        const tag = `${id}@${at}`;
-        if (snap.time >= at - 30 && snap.time < at - 20 && !this.epicSeen.has(`w${tag}`)) {
-          this.epicSeen.add(`w${tag}`);
-          this.push(t(`ann.warn.${id}`), 'neutral', 1);
-        }
-        if (snap.time >= at && snap.time < at + 10 && !this.epicSeen.has(`s${tag}`)) {
-          this.epicSeen.add(`s${tag}`);
-          this.push(t(`ann.spawn.${id}`), 'epic', 1);
-          this.epicNext.delete(id);
-        }
-      }
+      const due = epicDue(snap.time, this.epicNext, this.epicSeen);
+      for (const id of due.warn) this.push(t(`ann.warn.${id}`), 'neutral', 1);
+      for (const id of due.spawn) this.push(t(`ann.spawn.${id}`), 'epic', 1);
       const mine = state.myTeam;
       for (const team of [0, 1] as const) {
         const k = snap.objectives?.kesselbrut[team] ?? (team === mine ? (snap.kesselbrut ?? 0) : 0);

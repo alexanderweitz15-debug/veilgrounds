@@ -57,3 +57,6 @@ Branch `auto/features` (from origin/main). Area: game features, UI/UX, QoL, poli
 - [x] Browser-checked the low-HP vignette CSS (forced class; the hud toggles it from own HP) - spree banners not seen live (banner pipeline unchanged, text via t()).
 - [x] Settings presets Beginner / Standard / Competitive (src/ui/settingsPresets.ts, row at the top of the settings panel; keeps graphics, audio, keys).
 - Skipped as already done: shop build-path hints (shopRecommend nextBuy + tooltip build tree), minimap ping animation (inward/expanding rings exist).
+
+## Round 7
+- [x] Death recap: fight length + own damage to champions in the same window (recap.fight).

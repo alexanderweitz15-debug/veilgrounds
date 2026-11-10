@@ -7,7 +7,7 @@
   "standard": {
     "boots": "stiefel_hast",
     "core": [
-      "gruftkrone",
+      "jagdfell",
       "brandglas",
       "schleierstab",
       "funkenkelch"
@@ -16,7 +16,7 @@
   "vsAD": {
     "boots": "stiefel_ruestung",
     "core": [
-      "gruftkrone",
+      "jagdfell",
       "brandglas",
       "zeitglas",
       "schleierstab"
@@ -25,7 +25,7 @@
   "vsAP": {
     "boots": "stiefel_mr",
     "core": [
-      "gruftkrone",
+      "jagdfell",
       "brandglas",
       "schleierstab",
       "sturmgewand"

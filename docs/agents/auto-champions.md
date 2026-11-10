@@ -42,6 +42,8 @@ Gaps (ordered, picked top-down):
 - **Runes**: Flinkfuß, Phasenlauf, Erstschlag keystones (tests in `tests/autoRunes.test.ts`). **Stichblatt** (+45 AD +20 % AS +5 % MS, +15 % damage dealt 2 s after being auto-hit) for Ysmay.
 - **Hedda Fellwechsel** (`hedda`, jungle shapeshifter): human (range 550, E heals) and panther (range 175, +12 % MS, +15 % AD, +50 % ability damage on hunted targets, E swipes); W toggles (botManual), R leaps and shifts. Kit: cat ears, ringed tail, hunting spear, claw necklace. Test `tests/hedda.test.ts`. Uses existing items.
 - **Sprites**: Marga mortar redrawn in front of the body in bright brass (clearly visible now); Gerwin bell checked on champLab (visible).
+- **Zinna Funkenlauf** (`zinna`, ADC arc marksman): every 3rd auto arcs to the nearest other enemy (70 % magic), Q piercing shot, W Overcharge (AS + next auto arcs), E backward hop + slow, R Storm Wall (1500 line, stun). Kit: coil rifle, back antennae with an arc (checked on champLab). Item **Blitzfeder** (+40 AD +30 % AS +20 % crit, +20 magic on hit). Hedda got **Jagdfell** (+60 AP +250 HP +10 haste, +20 % MS 2 s after an ability hit). Test `tests/zinna.test.ts`.
+- **Balance sanity (base stats vs same-role average of the older roster)**: all ten newest champions are within about 6 % on HP, AD, armor, MS and AS. Ranged junglers (Gerwin, Hedda) have 550 range vs melee average, with 590-610 HP (5 % below). Role counts now: top 11, jungle 13, mid 10, adc 8, support 8 (adc and support are the thinnest; mid has no bruiser-mage left).
 
 ## Open
 

@@ -55,6 +55,7 @@ import { moonCrescent, twinkleStars, wishStaff } from './lumi';
 import { parryDagger, plume, rapier } from './ysmay';
 import { ghostLight, keyRing, tollBell } from './gerwin';
 import { clawNecklace, huntSpear } from './hedda';
+import { backAntennae, coilRifle } from './zinna';
 import { DORRAK_KIT } from './worm';
 import { bloodDrips, bloodOrbs, thornCrown } from './rovena';
 import { floatNotes, hatPlume, luteBack } from './tilda';
@@ -1291,6 +1292,33 @@ kit({
   cast: 'draw',
   gait: 'prowl',
   props: [huntSpear, clawNecklace],
+});
+// Zinna Funkenlauf: small wiry arc gunner, coil rifle and two back antennae
+kit({
+  id: 'zinna',
+  name: 'Zinna Funkenlauf',
+  world: 184,
+  look: 'small wiry gunner with spiky blue-white hair, a copper-plated vest over a dark grey jumpsuit, rubber gloves and boots, a long rifle wrapped in copper coils with a glowing blue muzzle and two thin antenna rods on her back with a blue arc flickering between the tips',
+  feature: 'two back antennae with a blue arc + copper coil rifle',
+  body: { ...FEMALE, H: 168, shW: 16.5, hipW: 13.5, girth: 0.88, legs: 0.5, bust: 0.3 },
+  outfit: {
+    skin: SKIN.pale,
+    face: { eyes: '#6ac0f0', brows: 0.9 },
+    top: m('#b0663a', 'metal'),
+    sleeves: cloth('#3c4048'),
+    forearms: leather('#2a2c34'),
+    hands: leather('#2a2c34'),
+    legs: cloth('#3c4048'),
+    boots: leather('#2a2c34'),
+    belt: { mat: leather('#2a2c34'), buckle: BRASS, y: 0.15 },
+    hair: { style: 'wild', mat: hair('#cfe4f4') },
+    pouches: { mat: leather('#2a2c34'), n: 2 },
+  },
+  hold: 'rifle',
+  attack: 'rifle',
+  cast: 'draw',
+  gait: 'light',
+  props: [coilRifle, backAntennae],
 });
 // Knarr: giant crab, painted by the SpriteDrawer in crab.ts (atlas.ts DRAWERS); the Kit stub carries the icon colours
 kit(KNARR_KIT);

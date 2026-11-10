@@ -99,6 +99,24 @@
     "towerMitigation": 0.67
   },
 
+  "early": {
+    "note": "Level-1 plans (src/ai/bot/early.ts, TeamAI.earlyPlan): chance per team of an invade (jungler + mid + support to the enemy buff camp) or a guard (mid + support at the own buff camp) until endS, by rank; invade chance grows with the mean aggression axis of the comp. pointInset = how far in front of the camp the squad stands (units, toward the map centre).",
+    "invadeChance": { "iron": 0.02, "bronze": 0.04, "silver": 0.08, "gold": 0.14, "diamond": 0.24, "challenger": 0.35 },
+    "guardChance": { "iron": 0, "bronze": 0.05, "silver": 0.15, "gold": 0.25, "diamond": 0.35, "challenger": 0.4 },
+    "aggressionStep": 0.12,
+    "endS": 80,
+    "pointInset": 450
+  },
+
+  "roam": {
+    "note": "Roam gating by rank (src/ai/roams/roam.ts): how old the last sighting of the target may be (seconds; the laner is probably still in its lane), the chance that a wave pushing toward a crash already allows the roam (shove, then roam), and the support/mid roam wave minimum.",
+    "freshS": { "iron": 2, "bronze": 3, "silver": 5, "gold": 9, "diamond": 14, "challenger": 18 },
+    "shoveRoamChance": { "iron": 0, "bronze": 0.05, "silver": 0.3, "gold": 0.6, "diamond": 0.85, "challenger": 1 },
+    "shovePos": 0.5,
+    "shoveLead": 2,
+    "stalePenaltyPerS": 0.02
+  },
+
   "closing": {
     "note": "A14: a structure is also a step to the Nexus (the only way a game ends), which the gold equivalents do not price. Structure value x mult(t): 1 before fromS, linear to mult over rampS, then mult.",
     "fromS": 840,

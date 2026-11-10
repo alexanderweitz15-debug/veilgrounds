@@ -89,6 +89,12 @@ export function objectiveThresholds(skill: number): { dragon: number; baron: num
 
 const LANES: LaneName[] = ['top', 'mid', 'bot'];
 
+export interface EarlyPlan {
+  kind: 'normal' | 'invade' | 'guard';
+  squad: Set<number>;
+  point: Pt | null;
+}
+
 export class TeamAI {
   desires: Desire[] = [];
   readonly members: Member[] = [];
@@ -132,6 +138,36 @@ export class TeamAI {
 
   register(m: Member): void {
     this.members.push(m);
+  }
+
+  private early: EarlyPlan | null = null;
+  /**
+   * Level-1 plan, rolled once per team when the first bot asks (rank chance + aggression of the comp, values.json
+   * "early"): 'invade' sends jungler, mid and support to the enemy buff camp; 'guard' keeps mid and support at the own
+   * buff camp; both end at early.endS and everybody walks to the lane / the first camp.
+   */
+  earlyPlan(): EarlyPlan {
+    if (this.early) return this.early;
+    const E = VALUES.early;
+    const skill = this.meanSkill();
+    const aggro = this.mean((m) => m.params.playstyle.aggression ?? 0);
+    const roll = this.rng.next();
+    const pInv = Math.max(0, rankCurve(E.invadeChance, skill) * (1 + E.aggressionStep * aggro));
+    const pGuard = rankCurve(E.guardChance, skill);
+    const slotsOf = (roles: string[]): Set<number> => new Set(this.members.filter((m) => roles.includes(m.role)).map((m) => m.slot));
+    const side = this.rng.chance(0.5) ? 0 : 1; // which of the two buff camps
+    const buffs = (t: number): Pt[] => this.map.sides[t as 0 | 1].camps.filter((c) => c.buff).sort((a, b) => a.x - b.x);
+    const toward = (p: Pt): Pt => {
+      const c = { x: this.map.size / 2, y: this.map.size / 2 };
+      const d = dst(p, c) || 1;
+      return { x: p.x + ((c.x - p.x) * E.pointInset) / d, y: p.y + ((c.y - p.y) * E.pointInset) / d };
+    };
+    let plan: EarlyPlan = { kind: 'normal', squad: new Set(), point: null };
+    if (roll < pInv) plan = { kind: 'invade', squad: slotsOf(['jungle', 'mid', 'support']), point: toward(buffs(1 - this.team)[side]!) };
+    else if (roll < pInv + pGuard) plan = { kind: 'guard', squad: slotsOf(['mid', 'support']), point: toward(buffs(this.team)[side]!) };
+    this.early = plan;
+    this.teamLog(0, plan.kind, 'level-1 plan', { roll: +roll.toFixed(3), pInvade: +pInv.toFixed(3), pGuard: +pGuard.toFixed(3) });
+    return plan;
   }
 
   private meanSkill(): number {

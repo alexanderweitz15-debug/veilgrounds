@@ -16,6 +16,7 @@ import { holdTrades, followUp, pingRetreat, pingsIn, socialTick } from '../bot/s
 import { joinFight, teamfight, teamfightNear } from '../bot/teamfight';
 import { hasObjectiveDesire, idleAfterShove, objective, recall, recallScore, splitPush, vision } from '../bot/macro';
 import { plants } from '../bot/plants';
+import { earlyPlan } from '../bot/early';
 import { dst } from '../bot/geo';
 import { MAX_TILT, withTilt } from '../params';
 import { attentionOn } from '../humanize/attention';
@@ -64,6 +65,7 @@ export const registry = (): Registry => ({
     recall,
     idleAfterShove,
     gankRiskReaction,
+    earlyPlan,
     gank: jungleGank,
     counterGank,
     roam,

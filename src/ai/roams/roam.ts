@@ -9,6 +9,7 @@ import type { LaneName, Pt } from '../../sim/map';
 import { dst, lanePoint } from '../bot/geo';
 import { rollErrorUntil } from '../errors';
 import { atLeast } from '../perception/rankModel';
+import { VALUES, rankCurve } from '../utility/values';
 import { estimateStyle } from '../perception/enemyStyle';
 import { laneLength, lanePos } from '../perception/waves';
 import { logTrack, trackPos } from '../perception/logInputs';
@@ -28,8 +29,8 @@ interface RoamState {
   active: { lane: LaneName; slot: number; since: number; startT: number; reached: boolean; home: LaneName } | null;
 }
 
-/** Target sighting age limit for a roam start (ticks). */
-const ROAM_FRESH_TICKS = 60;
+/** Target sighting age limit for a roam start (ticks), by rank: better players trust that the laner is still there. */
+const roamFreshTicks = (n: NodeCtx): number => Math.round(rankCurve(VALUES.roam.freshS, n.ctx.params.skill) * 30);
 /** No new roam evaluation for this long after a roam ended (ticks): no start/abort flicker, back to the wave. */
 export const ROAM_COOLDOWN_TICKS = 30 * 30;
 
@@ -42,6 +43,9 @@ export function roamPrerequisite(n: NodeCtx, pv: BotPerception): { ok: boolean; 
   const w = pv.waves[lane];
   if (n.p.playstyle.roam >= 4) return { ok: true, why: 'roam axis >= +4' };
   if (w.crashed) return { ok: true, why: 'wave crashed into the enemy tower' };
+  // shove, then roam: a clearly bigger own wave past the middle crashes by itself, the laner may leave now
+  const R = VALUES.roam;
+  if (w.visible && w.pushing && w.pos >= R.shovePos && w.ownCount >= w.enemyCount + R.shoveLead && n.rng.chance(rankCurve(R.shoveRoamChance, n.ctx.params.skill))) return { ok: true, why: 'wave pushing to a crash (shove, then roam)' };
   if (w.visible && w.pos < 0.45 && w.enemyCount >= w.ownCount) return { ok: true, why: 'wave frozen on the own side' };
   if (w.visible && (w.pushing || w.pos >= 0.45) && !atLeast(n.p, 'gold')) {
     const err = rollErrorUntil(n.mem, n.ctx, n.p, 'roam_from_push', n.snap.tick, n.rng) >= 0 ? ('roam_from_push' as const) : undefined; // §9 episode with the new brain
@@ -58,13 +62,16 @@ export function roamScore(n: NodeCtx, pv: BotPerception, lane: LaneName): RoamEv
   const map = n.ctx.map;
   const team = n.ctx.team as 0 | 1;
   // a target must be fresh: runRoam aborts once it is unseen for 5 s, so a stale one would start and abort at once
-  const cands = laneEnemies(pv, lane).filter((t) => !t.dead && t.known && tick - t.lastTick <= ROAM_FRESH_TICKS);
+  const fresh = roamFreshTicks(n);
+  const cands = laneEnemies(pv, lane).filter((t) => !t.dead && t.known && tick - t.lastTick <= fresh);
   if (!cands.length) return null;
   const target = cands.sort((a, b) => a.hpFrac - b.hpFrac)[0]!;
   const pos = trackPos(target)!;
   const terms: Record<string, number> = { desire: n.p.knobs.roamDesireBase - 0.4 };
   if (lanePos(map, team, lane, pos).t < 0.5) terms.pastMid = 0.3;
   if (target.hpFrac < 0.5) terms.hp = 0.25;
+  const ageS = (tick - target.lastTick) / 30;
+  if (ageS > 2) terms.stale = -VALUES.roam.stalePenaltyPerS * (ageS - 2);
   const ally = LANE_ROLES[lane].map((r) => allyOfRole(n, pv, r)).find((e) => !!e);
   if (ally && hasCC(champOf(n.ctx.players.find((p) => p.slot === ally.slot)?.champion ?? ''))) terms.allyCC = 0.15;
   if ((target.cds.flashReadyAt ?? -1) > tick) terms.flashDown = 0.2;
@@ -207,7 +214,7 @@ function runRoam(n: NodeCtx, pv: BotPerception, st: RoamState): NodeResult {
   if (!a.reached) {
     // target backs off before we arrive: ward the spot, go back
     const t = lanePos(n.ctx.map, n.ctx.team, a.lane, pos).t;
-    if (t > a.startT + 0.06 || (!target.visibleNow && tick - target.lastTick > 5 * 30)) {
+    if (t > a.startT + 0.06 || (!target.visibleNow && tick - target.lastTick > Math.max(5 * 30, roamFreshTicks(n) + 5 * 30))) {
       if (canWard(n)) {
         const spot = n.ctx.map.bushes.slice().sort((x, y) => dst(x, self) - dst(y, self))[0];
         if (spot && dst(spot, self) < 900) n.out.push({ cmd: { t: 'ward', x: Math.round(spot.x), y: Math.round(spot.y) } });

@@ -1460,5 +1460,39 @@
       "de": "Zurück in die Gruft.",
       "en": "Back to the crypt."
     }
+  },
+  "hedda": {
+    "pick": {
+      "de": "Ich rieche euch schon.",
+      "en": "I can smell you already."
+    },
+    "move1": {
+      "de": "Leise Pfoten.",
+      "en": "Soft paws."
+    },
+    "move2": {
+      "de": "Der Wind verrät sie.",
+      "en": "The wind betrays them."
+    },
+    "attack": {
+      "de": "Zähne und Speer!",
+      "en": "Fang and spear!"
+    },
+    "ability": {
+      "de": "Das Fell sträubt sich.",
+      "en": "My fur bristles."
+    },
+    "kill": {
+      "de": "Beute gemacht.",
+      "en": "Prey taken."
+    },
+    "death": {
+      "de": "Das Raubtier ... wurde zur Beute.",
+      "en": "The hunter ... became the prey."
+    },
+    "recall": {
+      "de": "Zurück ins Lager.",
+      "en": "Back to camp."
+    }
   }
 }

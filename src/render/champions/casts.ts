@@ -58,6 +58,7 @@ export const CAST_FAMILIES: Record<string, CastFamilies> = {
   lumi: F('point', 'raise', 'abba'), // Q star shot, W/E blessings raised, R wish pointed at an ally
   ysmay: F('lunge', 'raise', 'abba'), // Q lunge, W parry raised, E whirl raised, R challenge lunge
   gerwin: F('lob', 'raise', 'abba'), // Q grave called, W burst, E command raised, R host called
+  hedda: F('draw', 'raise', 'abba'), // Q spear drawn, W/E raised, R pounce
   svea: F('draw', 'raise', 'abba'), // Q arrow drawn, W/E wind raised, R hurricane arrow drawn
 };
 

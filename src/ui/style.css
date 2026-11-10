@@ -296,3 +296,10 @@ html.minimap-left .game .chat-box { bottom: calc(292px * var(--mm, 1) + 56px); }
 .honor-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 3px 0; font-size: 13px; }
 .honor-row > span { min-width: 220px; }
 .honor-btn { padding: 2px 10px; font-size: 12px; }
+
+.lowhp-vignette { position: absolute; inset: 0; pointer-events: none; z-index: 5; opacity: 0; transition: opacity 0.25s; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(170, 20, 20, 0.55) 100%); }
+.lowhp-vignette.on { opacity: calc(0.35 + 0.65 * var(--lowhp, 0)); animation: lowhp-pulse 1.1s ease-in-out infinite; }
+@keyframes lowhp-pulse { 50% { filter: brightness(0.7); } }
+.reduce-motion .lowhp-vignette.on, .no-motion .lowhp-vignette.on { animation: none; }
+
+.death-recap .dr-dealt { font-size: 12px; color: var(--text-dim, #a09b8c); margin: 4px 0; }

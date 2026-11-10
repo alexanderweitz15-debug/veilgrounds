@@ -1,0 +1,44 @@
+{
+  "template": "mage",
+  "starter": [
+    "jaegerzahn",
+    "trank"
+  ],
+  "standard": {
+    "boots": "stiefel_hast",
+    "core": [
+      "jagdfell",
+      "brandglas",
+      "schleierstab",
+      "funkenkelch"
+    ]
+  },
+  "vsAD": {
+    "boots": "stiefel_ruestung",
+    "core": [
+      "jagdfell",
+      "brandglas",
+      "zeitglas",
+      "schleierstab"
+    ]
+  },
+  "vsAP": {
+    "boots": "stiefel_mr",
+    "core": [
+      "jagdfell",
+      "brandglas",
+      "schleierstab",
+      "sturmgewand"
+    ]
+  },
+  "champion": "hedda",
+  "note": "Component order follows items.json \"from\"; Diamond+ bots reorder components situationally (spec §5).",
+  "runes": {
+    "keystone": "phasenlauf",
+    "minor": [
+      "adaptiv",
+      "hast",
+      "lebenskraft"
+    ]
+  }
+}

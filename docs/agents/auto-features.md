@@ -44,3 +44,19 @@ Branch `auto/features` (from origin/main). Area: game features, UI/UX, QoL, poli
 - [x] Honor vote after classic games (src/ui/honorVote.ts, giveHonor in progression: +20 XP, honor level on profile card).
 - [x] Summoner tips show the value at the current level; minor rune tips show stat chips.
 - npm test (read from file): 158 files / 1974 tests pass.
+
+## Round 4
+- [x] Browser-checked (own vite on 5175, closed): spectator bar placement ok at 800 px (no overlap), emote strip opens with Z and shows the bubble ('Gut gespielt'), honor panel renders. Note: an emote clicked within the first second is replaced by the start greeting bubble.
+
+## Round 5
+- [x] Emote wins over the voice-line greeting (Bubble.emote).
+- [x] Announcer: killing sprees (3..8+ kills without dying) and Shutdown (ending a spree of 3+); tests/announceSpree.test.ts.
+- [x] Low-HP red screen vignette (<25 % HP, pulse, off with reduce-motion).
+
+## Round 6
+- [x] Browser-checked the low-HP vignette CSS (forced class; the hud toggles it from own HP) - spree banners not seen live (banner pipeline unchanged, text via t()).
+- [x] Settings presets Beginner / Standard / Competitive (src/ui/settingsPresets.ts, row at the top of the settings panel; keeps graphics, audio, keys).
+- Skipped as already done: shop build-path hints (shopRecommend nextBuy + tooltip build tree), minimap ping animation (inward/expanding rings exist).
+
+## Round 7
+- [x] Death recap: fight length + own damage to champions in the same window (recap.fight).

@@ -1,0 +1,161 @@
+{
+  "id": "zinna",
+  "schema": 1,
+  "status": "generated",
+  "roleHints": {
+    "fightRole": "carry",
+    "engage": 1,
+    "peel": 3,
+    "poke": 3,
+    "burst": 2
+  },
+  "keyRanges": {
+    "auto": 525,
+    "trade": 675,
+    "engage": 825,
+    "poke": 900,
+    "threat": 900,
+    "peel": 0
+  },
+  "combos": [
+    {
+      "id": "zinna_data1",
+      "kind": "trade",
+      "sequence": [
+        "W",
+        "AA",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "zinna_data2",
+      "kind": "trade",
+      "sequence": [
+        "Q",
+        "AA",
+        "E"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "zinna_data3",
+      "kind": "allin",
+      "sequence": [
+        "R",
+        "Q",
+        "AA"
+      ],
+      "source": "data"
+    },
+    {
+      "id": "zinna_poke",
+      "kind": "poke",
+      "sequence": [
+        "Q"
+      ],
+      "source": "generated"
+    },
+    {
+      "id": "zinna_peel",
+      "kind": "peel",
+      "sequence": [
+        "R"
+      ],
+      "source": "generated"
+    }
+  ],
+  "abilities": [
+    {
+      "slot": "Q",
+      "aim": "line",
+      "roles": [
+        "poke"
+      ],
+      "range": 900,
+      "useRange": [
+        0,
+        828
+      ],
+      "speed": 2200,
+      "width": 70,
+      "radius": 0,
+      "castTime": 0.25,
+      "delay": 0,
+      "cc": 0,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 1,
+      "holdFor": "none"
+    },
+    {
+      "slot": "W",
+      "aim": "self",
+      "roles": [
+        "buff"
+      ],
+      "range": 0,
+      "useRange": [
+        0,
+        675
+      ],
+      "speed": 0,
+      "width": 0,
+      "radius": 0,
+      "castTime": 0.1,
+      "delay": 0,
+      "cc": 0,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "none"
+    },
+    {
+      "slot": "E",
+      "aim": "dash",
+      "roles": [
+        "escape",
+        "engage"
+      ],
+      "range": 300,
+      "useRange": [
+        262.5,
+        825
+      ],
+      "speed": 1500,
+      "width": 0,
+      "radius": 250,
+      "castTime": 0.1,
+      "delay": 0,
+      "cc": 1,
+      "damage": false,
+      "dodgeable": false,
+      "threat": 0,
+      "holdFor": "engage"
+    },
+    {
+      "slot": "R",
+      "aim": "line",
+      "roles": [
+        "cc",
+        "burst",
+        "ult"
+      ],
+      "range": 1500,
+      "useRange": [
+        0,
+        1380
+      ],
+      "speed": 1800,
+      "width": 200,
+      "radius": 0,
+      "castTime": 0.5,
+      "delay": 0,
+      "cc": 4,
+      "damage": true,
+      "dodgeable": true,
+      "threat": 3,
+      "holdFor": "kill"
+    }
+  ]
+}

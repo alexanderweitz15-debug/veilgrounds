@@ -1,5 +1,6 @@
 // Settings form (used in the main menu and the in-game Escape menu): language, camera, UI scale, toggles and
 // key rebinding. Rebuilds itself on language change.
+import { PRESETS, type PresetId } from './settingsPresets';
 import { t } from '../i18n';
 import { DEFAULT_SETTINGS, GRAPHICS_QUALITIES, settings, updateSettings, type Settings } from '../settings';
 import { currentFields, matchPreset, presetFields } from '../render/gfxPreset';
@@ -104,6 +105,16 @@ export function buildSettingsPanel(onLang: () => void): HTMLElement {
       render();
       onLang();
     }));
+    const presets = document.createElement('span');
+    for (const id of Object.keys(PRESETS) as PresetId[]) {
+      const b = document.createElement('button');
+      b.className = 'btn small';
+      b.textContent = t(`set.preset.${id}`);
+      b.title = t('set.presetTip');
+      b.addEventListener('click', () => (updateSettings(PRESETS[id]), render()));
+      presets.appendChild(b);
+    }
+    row(t('set.preset'), presets);
     row(t('set.cameraSpeed'), slider('cameraSpeed', 0.3, 3, 0.1, (v) => `${v.toFixed(1)}×`));
     autoBox = check('uiScaleAuto');
     row(t('set.uiScaleAuto'), autoBox);

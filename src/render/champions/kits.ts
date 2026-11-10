@@ -54,6 +54,8 @@ import { rageHaze, skullBelt, warAxes } from './torben';
 import { moonCrescent, twinkleStars, wishStaff } from './lumi';
 import { parryDagger, plume, rapier } from './ysmay';
 import { ghostLight, keyRing, tollBell } from './gerwin';
+import { clawNecklace, huntSpear } from './hedda';
+import { backAntennae, coilRifle } from './zinna';
 import { DORRAK_KIT } from './worm';
 import { bloodDrips, bloodOrbs, thornCrown } from './rovena';
 import { floatNotes, hatPlume, luteBack } from './tilda';
@@ -1260,6 +1262,63 @@ kit({
   cast: 'lob',
   gait: 'normal',
   props: [tollBell, keyRing, ghostLight],
+});
+// Hedda Fellwechsel: huntress with cat ears, a ringed tail and a spotted pelt, hunting spear
+kit({
+  id: 'hedda',
+  name: 'Hedda Fellwechsel',
+  world: 194,
+  look: 'lean tawny huntress with dark spots on her cheeks, cat ears and a long ringed tail, a spotted pelt cape over the shoulders, leather wraps and a short moss-green tunic, a bone-tipped hunting spear with an orange feather tassel and a necklace of curved claws',
+  feature: 'cat ears + long ringed tail + hunting spear',
+  body: { ...FEMALE, H: 182, shW: 17, hipW: 14, girth: 0.9, legs: 0.52, bust: 0.35 },
+  outfit: {
+    skin: SKIN.tan,
+    ears: { kind: 'pointy', mat: m('#d8a860', 'fur'), inner: '#c88a72' },
+    tail: { kind: 'bushy', mat: m('#d8a860', 'fur'), tip: m('#3a2c24', 'fur'), len: 50 },
+    face: { eyes: '#e8c040', brows: 1, paint: '#5a3a24' },
+    top: cloth('#6a7a3a'),
+    sleeves: leather('#7a5a38'),
+    forearms: leather('#5a4028'),
+    hands: leather('#5a4028'),
+    legs: leather('#6a4a30'),
+    boots: leather('#4a3422'),
+    bootH: 0.6,
+    cape: { mat: m('#d8a860', 'fur'), len: 0.8, short: true },
+    belt: { mat: leather('#4a3422'), buckle: BRASS, y: 0.15 },
+    hair: { style: 'tied', mat: hair('#6a3a22') },
+  },
+  hold: 'pole',
+  attack: 'spear',
+  cast: 'draw',
+  gait: 'prowl',
+  props: [huntSpear, clawNecklace],
+});
+// Zinna Funkenlauf: small wiry arc gunner, coil rifle and two back antennae
+kit({
+  id: 'zinna',
+  name: 'Zinna Funkenlauf',
+  world: 184,
+  look: 'small wiry gunner with spiky blue-white hair, a copper-plated vest over a dark grey jumpsuit, rubber gloves and boots, a long rifle wrapped in copper coils with a glowing blue muzzle and two thin antenna rods on her back with a blue arc flickering between the tips',
+  feature: 'two back antennae with a blue arc + copper coil rifle',
+  body: { ...FEMALE, H: 168, shW: 16.5, hipW: 13.5, girth: 0.88, legs: 0.5, bust: 0.3 },
+  outfit: {
+    skin: SKIN.pale,
+    face: { eyes: '#6ac0f0', brows: 0.9 },
+    top: m('#b0663a', 'metal'),
+    sleeves: cloth('#3c4048'),
+    forearms: leather('#2a2c34'),
+    hands: leather('#2a2c34'),
+    legs: cloth('#3c4048'),
+    boots: leather('#2a2c34'),
+    belt: { mat: leather('#2a2c34'), buckle: BRASS, y: 0.15 },
+    hair: { style: 'wild', mat: hair('#cfe4f4') },
+    pouches: { mat: leather('#2a2c34'), n: 2 },
+  },
+  hold: 'rifle',
+  attack: 'rifle',
+  cast: 'draw',
+  gait: 'light',
+  props: [coilRifle, backAntennae],
 });
 // Knarr: giant crab, painted by the SpriteDrawer in crab.ts (atlas.ts DRAWERS); the Kit stub carries the icon colours
 kit(KNARR_KIT);

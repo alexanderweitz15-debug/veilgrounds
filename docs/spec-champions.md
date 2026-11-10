@@ -274,3 +274,9 @@ Musikerin: Noten (grün/blau/rot) erscheinen auf der Karte, nur für ihr Team si
 
 37. **Gerwin Totenglocke, der Gruftwärter** – Jungle, Beschwörer (AP), Ranged 525. Training: Skelette sind echte Einheiten mit Leben, zuerst Gerwin jagen, Knochensplitter-Explosion erwarten.
     - Passiv Gruftdiener: bis zu 4 Skelette (20 s), je +4 Rüstung/MR. Q Totenruf (Kreis + Skelett), W Knochensplitter (Skelett explodiert), E Befehl (Skelette greifen Cursor-Ziel an), R Totenheer (3 verstärkte Skelette).
+
+38. **Hedda Fellwechsel, die Gestaltwandlerin** – Jungle, Gestaltwandlerin (AP), Mensch Ranged 550 / Panther 175. Training: Markierte nicht in Reichweite des Panthersprungs stehen lassen.
+    - Passiv Zwiegestalt: Panther +12 % Bewegung, +15 % AD, +50 % Fähigkeitsschaden auf Gejagte. Q Jagdspeer (markiert), W Gestaltwechsel (Bots nutzen ihn nicht, `botManual`), E Wildheit (Mensch heilt, Panther Hieb), R Beutesprung (Sprung + Panther).
+
+39. **Zinna Funkenlauf, die Blitzschützin** – ADC, Funken-Schützin (AD), Ranged 525. Training: nicht eng stehen (jeder 3. Auto springt über), nach der Überladung Abstand halten, Gewitterwand meiden.
+    - Passiv Funkensprung: jeder dritte Auto auf dasselbe Ziel springt auf den nächsten anderen Gegner in 450 (70 % als Magie). Q Funkenschuss (durchschlägt), W Überladung (AS + nächster Auto springt), E Rückzünder (Sprung vom Cursor weg + Slow), R Gewitterwand (Linie 1500, Stun).

@@ -1,0 +1,148 @@
+{
+  "id": "hedda",
+  "name": "Hedda Fellwechsel",
+  "title": { "de": "die Gestaltwandlerin", "en": "the Shapeshifter" },
+  "roles": ["jungle"],
+  "archetype": "shapeshifter",
+  "botBias": { "aggression": 1, "kiting": -1 },
+  "trainingPurpose": {
+    "de": "Eine Gestaltwandlerin lesen: in Menschengestalt hält sie Abstand und markiert, als Panther springt sie auf markierte Ziele - Markierte nicht in Reichweite des Sprungs stehen lassen.",
+    "en": "Reading a shapeshifter: as a human she keeps range and marks, as a panther she pounces on marked targets - do not stand marked inside her pounce range."
+  },
+  "attackType": "ranged",
+  "resource": "mana",
+  "base": {
+    "hp": 610,
+    "hpGrowth": 100,
+    "hpRegen": 7,
+    "hpRegenGrowth": 0.7,
+    "mana": 330,
+    "manaGrowth": 38,
+    "manaRegen": 7,
+    "manaRegenGrowth": 0.7,
+    "ad": 58,
+    "adGrowth": 3.2,
+    "armor": 30,
+    "armorGrowth": 4.4,
+    "mr": 32,
+    "mrGrowth": 1.4,
+    "as": 0.67,
+    "asGrowth": 2.2,
+    "range": 550,
+    "ms": 345,
+    "windup": 0.2,
+    "projectileSpeed": 1700,
+    "radius": 65
+  },
+  "passive": {
+    "name": { "de": "Zwiegestalt", "en": "Two Forms" },
+    "desc": {
+      "de": "Mensch: 550 Reichweite. Panther: 175 Reichweite, +12 % Bewegung, +15 % AD und 50 % mehr Fähigkeitsschaden gegen Gejagte (markiert).",
+      "en": "Human: 550 range. Panther: 175 range, +12% move speed, +15% AD and 50% more ability damage against the hunted (marked)."
+    },
+    "hooks": ["hedda_forms"]
+  },
+  "abilities": [
+    {
+      "id": "hedda_q",
+      "name": { "de": "Jagdspeer", "en": "Hunting Spear" },
+      "desc": {
+        "de": "Linie 800: 50/85/120/155/190 (+70 % AP) magischer Schaden, markiert das Ziel 4 s als Gejagten.",
+        "en": "Line 800: 50/85/120/155/190 (+70% AP) magic damage, marks the target as hunted for 4 s."
+      },
+      "type": "skillshot_line",
+      "castTime": 0.25,
+      "movesWhileCasting": false,
+      "range": 800,
+      "cooldown": [7, 6.5, 6, 5.5, 5],
+      "cost": [40, 45, 50, 55, 60],
+      "costType": "mana",
+      "width": 70,
+      "speed": 1800,
+      "flags": ["blocked_by_minions"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [50, 85, 120, 155, 190], "ap": 0.7 } },
+        { "kind": "mark", "id": "hedda_hunt", "duration": 4 }
+      ]
+    },
+    {
+      "id": "hedda_w",
+      "name": { "de": "Gestaltwechsel", "en": "Shift" },
+      "desc": {
+        "de": "Wechselt zwischen Mensch und Panther. Zum Panther: +25 % Bewegung für 2 s. Zum Menschen: heilt 8 % der fehlenden HP.",
+        "en": "Switches between human and panther. To panther: +25% move speed for 2 s. To human: heals 8% of missing HP."
+      },
+      "type": "self",
+      "castTime": 0,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [4, 4, 4, 4, 4],
+      "cost": 0,
+      "costType": "none",
+      "botManual": true,
+      "effects": [{ "kind": "hook", "id": "hedda_w_shift" }]
+    },
+    {
+      "id": "hedda_e",
+      "name": { "de": "Wildheit", "en": "Wildness" },
+      "desc": {
+        "de": "Mensch: heilt 50/80/110/140/170 (+40 % AP). Panther: Hieb im Kreis 300 für 50/85/120/155/190 (+60 % AP) magischen Schaden.",
+        "en": "Human: heals 50/80/110/140/170 (+40% AP). Panther: a swipe in a 300 circle for 50/85/120/155/190 (+60% AP) magic damage."
+      },
+      "type": "self",
+      "castTime": 0.15,
+      "movesWhileCasting": true,
+      "range": 0,
+      "cooldown": [10, 9.5, 9, 8.5, 8],
+      "cost": [40, 45, 50, 55, 60],
+      "costType": "mana",
+      "radius": 300,
+      "effects": [{ "kind": "hook", "id": "hedda_e_wild" }]
+    },
+    {
+      "id": "hedda_r",
+      "name": { "de": "Beutesprung", "en": "Prey Pounce" },
+      "desc": {
+        "de": "Sprung 500 zum Cursor und Verwandlung in den Panther; Aufprall im Kreis 250: 100/170/240 (+60 % AP) magischer Schaden, 30 % Slow für 1 s.",
+        "en": "Leap 500 toward the cursor and shift into the panther; landing in a 250 circle: 100/170/240 (+60% AP) magic damage, 30% slow for 1 s."
+      },
+      "type": "dash",
+      "castTime": 0.1,
+      "movesWhileCasting": true,
+      "range": 500,
+      "cooldown": [60, 50, 40],
+      "cost": 80,
+      "costType": "mana",
+      "speed": 1600,
+      "distance": 500,
+      "radius": 250,
+      "flags": ["ground_target"],
+      "effects": [
+        { "kind": "damage", "type": "magic", "amount": { "base": [100, 170, 240], "ap": 0.6 } },
+        { "kind": "slow", "pct": 30, "duration": 1 },
+        { "kind": "hook", "id": "hedda_r_pounce" }
+      ]
+    }
+  ],
+  "spikeLevels": [3, 6],
+  "spikeNote": {
+    "de": "Level 3 (beide Gestalten voll nutzbar) und Level 6 (Beutesprung holt markierte Ziele).",
+    "en": "Level 3 (both forms usable) and level 6 (Prey Pounce reaches marked targets)."
+  },
+  "maxOrder": ["Q", "E", "W"],
+  "combos": [
+    { "name": { "de": "Speer, Sprung", "en": "Spear, pounce" }, "sequence": ["Q", "AA", "AA"] },
+    { "name": { "de": "Speer und Heilung", "en": "Spear and mend" }, "sequence": ["Q", "E", "AA"] },
+    { "name": { "de": "Jagd", "en": "The hunt" }, "sequence": ["Q", "R", "E", "AA"] }
+  ],
+  "scores": { "engage": 3, "peel": 1, "range": 3, "scaling": 3, "waveclear": 3, "mobility": 4 },
+  "voiceLines": {
+    "pick": { "de": "Ich rieche euch schon.", "en": "I can smell you already." },
+    "firstBlood": { "de": "Die Jagd beginnt.", "en": "The hunt begins." },
+    "kill": { "de": "Beute gemacht.", "en": "Prey taken." },
+    "death": { "de": "Das Raubtier ... wurde zur Beute.", "en": "The hunter ... became the prey." },
+    "recall": { "de": "Zurück ins Lager.", "en": "Back to camp." },
+    "taunt": { "de": "Lauf nur. Ich mag es, wenn sie laufen.", "en": "Run all you like. I enjoy it when they run." }
+  },
+  "silhouette": "lean huntress with tawny skin and dark spots, cat ears and a long ringed tail, a spotted pelt over the shoulders, a bone-tipped hunting spear and a necklace of claws"
+}

@@ -396,3 +396,20 @@ Total: 110 hook ids across 26 champions.
 ## Rune keystones Flinkfuß, Phasenlauf, Erstschlag (auto/champions)
 
 `rune_fleetfoot` (walk 0.25 energy/unit + 8 per auto; full: next champion auto heals + 20 % MS 1 s), `rune_phase_rush` (3 hits in 3 s: +30 % MS 3 s, CD 25 s), `rune_first_strike` (+7 % damage 3 s on a champion that has not hit you for 3 s, CD 25 s; the gold part of the idea is not implemented). All in `src/sim/items/runeHooks.ts`.
+
+## Hedda Fellwechsel (`hedda`) (auto/champions)
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `hedda_forms` | Passive | `onComputeStats` in panther form: range 175, x1.12 MS, x1.15 AD. `modifyDamage`: ability damage x1.5 on targets with the `hedda_hunt` mark while panther. |
+| `hedda_w_shift` | W | Toggles the form; to panther +25 % MS 2 s, to human heals 8 % of missing HP. |
+| `hedda_e_wild` | E | Human: heal; panther: magic swipe in 300. |
+| `hedda_r_pounce` | R | After the dash damage: shifts into the panther. |
+
+## Zinna Funkenlauf (`zinna`) (auto/champions)
+
+| Hook | Slot | Behaviour |
+|---|---|---|
+| `zinna_arc` | Passive | `onAutoHit`: counts autos on the same target (resets when the target changes); the third arcs to the nearest other enemy within 450 for 70 % of the hit as magic damage. |
+| `zinna_w_charge` | W | The next auto counts as the third. |
+| `zinna_e_backfire` | E | `dashStart`: reverses the dash (hop away from the cursor). |

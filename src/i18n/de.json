@@ -1221,5 +1221,12 @@
   "set.preset.beginner": "Einsteiger",
   "set.preset.pro": "Wettkampf",
   "set.preset.standard": "Standard",
-  "recap.fight": "Kampf: {s} s, du hast {dealt} Schaden an Champions verursacht"
+  "recap.fight": "Kampf: {s} s, du hast {dealt} Schaden an Champions verursacht",
+  "ann.spawn.leviathan": "Flussleviathan ist erschienen",
+  "ann.spawn.schleierwaechter": "Schleierwächter ist erschienen",
+  "ann.warn.kesselbrut": "Kesselbrut erscheint in 30 Sekunden",
+  "ann.warn.leviathan": "Flussleviathan erscheint in 30 Sekunden",
+  "ann.warn.schleierwaechter": "Schleierwächter erscheint in 30 Sekunden",
+  "build.missing": "Aus dem Standard-Build fehlte noch:",
+  "build.title": "Dein Build"
 }

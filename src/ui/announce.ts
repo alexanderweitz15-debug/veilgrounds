@@ -27,6 +27,7 @@ const PENTA_S = 30;
 export const spreeKey = (n: number): string | null => (n >= 3 ? `ann.spree${Math.min(8, n)}` : null);
 /** A kill ends the victim's spree at this many kills (LoL: shutdown). */
 export const SHUTDOWN_AT = 3;
+const EPIC_FIRST = ['leviathan', 'kesselbrut', 'schleierwaechter'] as const;
 const MULTI_KEYS = ['', '', 'ann.double', 'ann.triple', 'ann.quadra', 'ann.penta'];
 /** Modes with the regular minion schedule (first wave at FIRST_WAVE_TICK). */
 const WAVE_MODES = new Set(['classic', 'laneOnly']);
@@ -52,6 +53,8 @@ export class Announcer {
   private kessel: [number, number] = [0, 0];
   private kesselRoseAt: [number, number] = [-1, -1];
   private kesselSpawned = false;
+  /** First-spawn epic objectives already warned (30 s ahead) / announced (classic schedule, CAMPS first). */
+  private readonly epicSeen = new Set<string>();
   private readonly drakeSeen = newDrakeSeen();
 
   constructor(parent: HTMLElement, private readonly mode?: string) {
@@ -194,6 +197,20 @@ export class Announcer {
       if (!this.kesselSpawned && this.mode === 'classic' && snap.time >= first && snap.time < first + 10) {
         this.kesselSpawned = true;
         this.push(t('ann.kesselbrutSpawn'), 'neutral', 1);
+      }
+      // 30 s warning and spawn banner of the first Leviathan / Kesselbrut / Schleierwaechter (the schedule is public)
+      if (this.mode === 'classic') {
+        for (const id of EPIC_FIRST) {
+          const at = CAMPS[id].first;
+          if (snap.time >= at - 30 && snap.time < at - 20 && !this.epicSeen.has(`w${id}`)) {
+            this.epicSeen.add(`w${id}`);
+            this.push(t(`ann.warn.${id}`), 'neutral', 1);
+          }
+          if (id !== 'kesselbrut' && snap.time >= at && snap.time < at + 10 && !this.epicSeen.has(`s${id}`)) {
+            this.epicSeen.add(`s${id}`);
+            this.push(t(`ann.spawn.${id}`), 'epic', 1);
+          }
+        }
       }
       const mine = state.myTeam;
       for (const team of [0, 1] as const) {

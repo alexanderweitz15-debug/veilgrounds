@@ -303,3 +303,8 @@ html.minimap-left .game .chat-box { bottom: calc(292px * var(--mm, 1) + 56px); }
 .reduce-motion .lowhp-vignette.on, .no-motion .lowhp-vignette.on { animation: none; }
 
 .death-recap .dr-dealt { font-size: 12px; color: var(--text-dim, #a09b8c); margin: 4px 0; }
+
+.br-box { margin: 8px 0; }
+.br-row { display: flex; gap: 6px; margin: 4px 0; }
+.br-item { width: 38px; height: 38px; border: 1px solid #5a4b2e; background: #1d1c20 center / cover no-repeat; }
+.br-label { font-size: 12px; color: var(--text-dim, #a09b8c); margin-top: 6px; }

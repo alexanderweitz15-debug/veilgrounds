@@ -1221,5 +1221,12 @@
   "set.preset.beginner": "Beginner",
   "set.preset.pro": "Competitive",
   "set.preset.standard": "Standard",
-  "recap.fight": "Fight: {s} s, you dealt {dealt} damage to champions"
+  "recap.fight": "Fight: {s} s, you dealt {dealt} damage to champions",
+  "ann.spawn.leviathan": "The River Leviathan has spawned",
+  "ann.spawn.schleierwaechter": "The Veil Warden has spawned",
+  "ann.warn.kesselbrut": "Kesselbrut spawns in 30 seconds",
+  "ann.warn.leviathan": "River Leviathan spawns in 30 seconds",
+  "ann.warn.schleierwaechter": "Veil Warden spawns in 30 seconds",
+  "build.missing": "Still missing from the standard build:",
+  "build.title": "Your build"
 }

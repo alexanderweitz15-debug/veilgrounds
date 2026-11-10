@@ -12,6 +12,7 @@ import type { ErrorList } from '../stats/errorList';
 import { recordFromSummary } from '../stats/history';
 import type { ProgressDelta } from '../stats/progression';
 import { renderProgressDelta } from './progressView';
+import { renderBuildReview } from './buildReview';
 import { calibrateMatch, CATEGORY_IDS } from '../stats/rankCalibration';
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -166,6 +167,7 @@ export function renderPostGame(root: HTMLElement, d: MatchSummary, onBack: () =>
   }
 
   if (progress) renderProgressDelta(panel, progress);
+  if ((d.mode === 'classic' || d.mode === 'laneOnly') && d.duration >= 300) renderBuildReview(panel, d.champion, d.items);
 
   // rank calibration per category (Table A targets): which rank this match plays like - classic / lane games only
   if ((d.mode === 'classic' || d.mode === 'laneOnly') && d.duration >= 300) {

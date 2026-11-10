@@ -60,3 +60,8 @@ Branch `auto/features` (from origin/main). Area: game features, UI/UX, QoL, poli
 
 ## Round 7
 - [x] Death recap: fight length + own damage to champions in the same window (recap.fight).
+
+## Round 8
+- [x] Epic first-spawn warnings (30 s ahead) for Leviathan, Kesselbrut, Veil Warden + spawn banners (classic).
+- [x] Post-game build review (src/ui/buildReview.ts): final items + missing standard-build items; MatchSummary.items.
+- Skipped: champion-select counters (no matchup data; would be invented), minimap fog tint already exists.

@@ -47,6 +47,8 @@ export interface MatchSummary {
   objectives?: ObjectiveMark[];
   /** Challenger-Geist timeline (src/ai/ghost.ts), absent if the mode has no ghost. */
   ghost?: import('../ai/ghost').GhostMoment[];
+  /** Item slots at the last snapshot (post-game build review); absent in older summaries. */
+  items?: (string | null)[];
 }
 
 const SAMPLE_EVERY = 5; // seconds
@@ -90,6 +92,7 @@ export class MatchStats {
     for (const ev of snap.events) if (ev.e === 'death' && ev.kind === Kind.Champion) this.champs.add(ev.eid);
     s.duration = snap.time;
     s.team = snap.team;
+    if (me) s.items = me.items.slice();
     if (snap.trainer) s.trainer = snap.trainer;
     if (!me) return;
     let lead = 0;

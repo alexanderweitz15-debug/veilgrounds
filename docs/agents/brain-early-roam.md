@@ -40,3 +40,10 @@ tools/scratch/out (base-*, new-*, v2-*). Two games are noisy: read the direction
   roam that arrives with CC/flash and waits in a bush near the lane, not a chase of a stale position.
 - Gold laner CS/min target 4 not reached (2.7). Next: heal/recall trips (30 %), mid in_range_no_attack (15-25 % at mid).
 - Invade effect on first-wave CS is not measured over many seeds (only the one-seed test).
+
+## Slow tests (merged with main 11:3x)
+- tests/utilityRecall.test.ts, tests/bots.test.ts, tests/attention.test.ts: green.
+- tests/brainReflex.test.ts: green except test 3 "Diamond loses fewer last hits to colliding windows than Gold"
+  (base: passes; branch: 25 vs 19 once, 31 vs 29 once, green once). It is a small-sample Diamond-vs-Gold count that the
+  first-wave wait shifts through the rng trajectory; the rank ordering is not broken by logic. First-wave wait is off for
+  a laner without allies (lane-alone trainer), which fixed the attack-utilisation test (test 1).
